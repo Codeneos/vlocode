@@ -1,3 +1,9 @@
+import type {
+    OmniStudioFormulaContext,
+    OmniStudioFormulaFunctionRegistry,
+    OmniStudioFormulaQueryRunner
+} from '../omnistudio/formula/types';
+
 export type DataMapperType = 'Extract' | 'Transform' | 'Load' | string;
 
 export interface DataMapperDefinition {
@@ -115,13 +121,9 @@ export interface DataMapperExecutionPlan {
     readonly requiredFieldsByObject: ReadonlyMap<string, readonly string[]>;
 }
 
-export interface DataMapperQueryRunner {
-    query(query: string): Promise<Record<string, unknown>[]>;
-}
+export type DataMapperQueryRunner = OmniStudioFormulaQueryRunner;
 
-export interface DataMapperFunctionRegistry {
-    invoke(name: string, args: unknown[], context: DataMapperFormulaContext): unknown | Promise<unknown>;
-}
+export type DataMapperFunctionRegistry = OmniStudioFormulaFunctionRegistry;
 
 export interface DataMapperExecutionOptions {
     queryRunner?: DataMapperQueryRunner;
@@ -130,14 +132,9 @@ export interface DataMapperExecutionOptions {
     now?: Date | (() => Date);
 }
 
-export interface DataMapperFormulaContext {
-    readonly source: unknown;
-    readonly variables?: Record<string, unknown>;
+export interface DataMapperFormulaContext extends OmniStudioFormulaContext {
     readonly queryRunner?: DataMapperQueryRunner;
     readonly functionRegistry?: DataMapperFunctionRegistry;
-    readonly timezone?: string;
-    readonly now?: Date | (() => Date);
-    resolvePath(path: string): unknown;
 }
 
 export interface DataMapperFormulaAst {

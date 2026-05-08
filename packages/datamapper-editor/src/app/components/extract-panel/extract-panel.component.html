@@ -1,7 +1,7 @@
 @if (groups().length) {
     <section class="dm-flow" aria-label="Extraction objects">
         <div class="dm-flow__start" aria-hidden="true"></div>
-        @for (group of groups(); track group.id) {
+        @for (group of groups(); track group.trackId) {
             <article class="dm-card dm-card--extract">
                 <header class="dm-card__header">
                     <span class="dm-card__icon codicon codicon-symbol-object" aria-hidden="true"></span>

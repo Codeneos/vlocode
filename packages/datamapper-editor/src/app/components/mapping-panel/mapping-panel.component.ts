@@ -24,6 +24,7 @@ export class MappingPanelComponent {
 
     readonly mappingFilterChange = output<string>();
     readonly createMappingRequested = output<void>();
+    readonly insertMappingRequested = output<{ after: DataMapperItem; item: DataMapperItem }>();
     readonly editMappingRequested = output<DataMapperItem>();
     readonly updateMappingRequested = output<DataMapperItem>();
     readonly deleteMappingRequested = output<DataMapperItem>();
@@ -35,6 +36,7 @@ export class MappingPanelComponent {
     protected readonly sortDirection = signal<1 | -1>(1);
     protected readonly editingKey = signal<string | undefined>(undefined);
     protected readonly draft = signal<DataMapperItem | undefined>(undefined);
+    protected readonly insertAfterKey = signal<string | undefined>(undefined);
 
     protected readonly title = computed(() => this.mapperKind() === 'transform' ? 'Transforms' : 'Mapped Fields');
     protected readonly inputColumn = computed(() => this.mapperKind() === 'extract' ? 'Extract JSON Path' : 'JSON Input Path');
@@ -42,11 +44,21 @@ export class MappingPanelComponent {
     protected readonly sortedMappingItems = computed(() => {
         const key = this.sortKey();
         const direction = this.sortDirection();
-        return [...this.filteredMappingItems()].sort((a, b) => {
+        const sorted = [...this.filteredMappingItems()].sort((a, b) => {
             const left = key === 'input' ? this.displayInputPath(a) : this.displayOutputPath(a);
             const right = key === 'input' ? this.displayInputPath(b) : this.displayOutputPath(b);
             return left.localeCompare(right) * direction;
         });
+        const insertAfterKey = this.insertAfterKey();
+        const draft = this.draft();
+        if (!insertAfterKey || !draft) {
+            return sorted;
+        }
+        const draftKey = this.rowKey(draft);
+        const withoutDraft = sorted.filter(item => this.rowKey(item) !== draftKey);
+        const index = withoutDraft.findIndex(item => this.rowKey(item) === insertAfterKey);
+        withoutDraft.splice(index >= 0 ? index + 1 : withoutDraft.length, 0, draft);
+        return withoutDraft;
     });
 
     protected setSort(key: 'input' | 'output') {
@@ -91,6 +103,16 @@ export class MappingPanelComponent {
         }
     }
 
+    protected insertMappingAfter(item: DataMapperItem) {
+        if (this.saveInlineEdit()) {
+            const inserted = this.createEmptyMapping(item);
+            this.insertAfterKey.set(this.rowKey(item));
+            this.editingKey.set(this.rowKey(inserted));
+            this.draft.set(inserted);
+            this.insertMappingRequested.emit({ after: item, item: inserted });
+        }
+    }
+
     protected beginInlineEdit(item: DataMapperItem) {
         if (!this.saveInlineEdit()) {
             return;
@@ -119,6 +141,7 @@ export class MappingPanelComponent {
     protected cancelInlineEdit() {
         this.editingKey.set(undefined);
         this.draft.set(undefined);
+        this.insertAfterKey.set(undefined);
     }
 
     protected canSaveDraft() {
@@ -135,10 +158,7 @@ export class MappingPanelComponent {
             this.draft.set({ ...draft, InputFieldName: path });
             return;
         }
-        const separator = path.lastIndexOf(':');
-        const objectName = separator >= 0 ? path.slice(0, separator) : draft.InputObjectName;
-        const fieldName = separator >= 0 ? path.slice(separator + 1) : path;
-        this.draft.set({ ...draft, InputObjectName: objectName, InputFieldName: fieldName });
+        this.draft.set({ ...draft, InputObjectName: undefined, InputFieldName: path });
     }
 
     protected setDraftOutputPath(path: string) {
@@ -182,5 +202,22 @@ export class MappingPanelComponent {
 
     protected rowKey(item: DataMapperItem) {
         return String(item.GlobalKey ?? `${inputPath(item)}:${outputPath(item)}:${item.OutputCreationSequence ?? ''}`);
+    }
+
+    private createEmptyMapping(previous?: DataMapperItem): DataMapperItem {
+        return {
+            GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}`,
+            IsDisabled: false,
+            IsRequiredForUpsert: false,
+            IsUpsertKey: false,
+            OutputCreationSequence: this.mapperKind() === 'load'
+                ? (previous?.OutputCreationSequence ?? this.loadObjects()[0]?.sequence ?? 1)
+                : undefined,
+            OutputObjectName: this.mapperKind() === 'load'
+                ? (previous?.OutputObjectName ?? this.loadObjects()[0]?.outputObjectName ?? '')
+                : 'json',
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'OmniDataTransformItem'
+        };
     }
 }

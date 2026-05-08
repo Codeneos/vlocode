@@ -22,7 +22,7 @@ interface VsCodeApi {
 
 type ExtensionToWebviewMessage =
     | { type: 'load'; state: EditorState }
-    | { type: 'fields'; sourceFields: FieldSuggestion[]; outputFields: FieldSuggestion[]; error?: string }
+    | { type: 'fields'; objectSuggestions?: FieldSuggestion[]; sourceFields: FieldSuggestion[]; outputFields: FieldSuggestion[]; error?: string }
     | { type: 'previewResult'; result: DataMapperPreviewResult }
     | { type: 'previewError'; message: string; debug?: DataMapperPreviewDebug }
     | { type: 'error'; message: string };
@@ -83,6 +83,7 @@ export class AppComponent {
     protected readonly model = signal<DataMapperModel>(EMPTY_MODEL);
     protected readonly sourceFields = signal<FieldSuggestion[]>([]);
     protected readonly outputFields = signal<FieldSuggestion[]>([]);
+    protected readonly sObjectSuggestions = signal<FieldSuggestion[]>([]);
     protected readonly error = signal<string | undefined>(undefined);
     protected readonly mappingFilter = signal('');
     protected readonly saving = signal(false);
@@ -127,7 +128,7 @@ export class AppComponent {
         }
         return 'Fetching Salesforce object fields for autocomplete.';
     });
-    private readonly fieldMetadataObjects = computed(() => this.fieldObjectNamesForModel(this.model()));
+    private readonly fieldMetadataObjects = computed(() => this.fieldObjectNamesForModel(this.model(), this.sObjectSuggestions()));
     protected readonly previewInputError = computed(() => this.validatePreviewInput(this.previewInputJson()));
 
     protected readonly formulaItems = computed(() =>
@@ -152,19 +153,18 @@ export class AppComponent {
         return items.filter(item => `${inputPath(item)} ${outputPath(item)}`.toLowerCase().includes(filter));
     });
 
-    protected readonly sourceSuggestions = computed(() => this.uniqueSuggestions([
-        ...this.sourceFields(),
-        ...this.model().items
-            .map(item => inputPath(item))
-            .filter(Boolean)
-            .map(path => ({ path, name: path }))
-    ]));
+    protected readonly sourceSuggestions = computed(() => this.mapperKind() === 'extract'
+        ? this.extractSourceSuggestions(this.sourceFields(), this.extractionGroups(), this.formulaItems(), this.model().items)
+        : this.uniqueSuggestions([
+            ...this.sourceFields(),
+            ...this.model().items
+                .map(item => inputPath(item))
+                .filter(Boolean)
+                .map(path => ({ path, name: path }))
+        ]));
 
     protected readonly objectSuggestions = computed(() => this.uniqueSuggestions([
-        ...this.sourceFields()
-            .map(field => field.objectName)
-            .filter(Boolean)
-            .map(objectName => ({ path: String(objectName), name: String(objectName) })),
+        ...this.sObjectSuggestions(),
         ...this.model().items
             .map(item => item.InputObjectName)
             .filter(Boolean)
@@ -180,6 +180,7 @@ export class AppComponent {
     ]));
 
     protected readonly domainObjectSuggestions = computed(() => this.uniqueSuggestions([
+        ...this.sObjectSuggestions(),
         ...this.loadObjectGroups().map(group => ({
             path: String(group.outputObjectName || ''),
             name: String(group.outputObjectName || '')
@@ -296,6 +297,13 @@ export class AppComponent {
     protected createMapping() {
         this.editIndex.set(-1);
         this.editing.set(this.createMappingItem());
+    }
+
+    protected insertMappingAfter(item: DataMapperItem, mappingItem = this.createMappingItem(item)) {
+        const index = this.model().items.findIndex(candidate => this.isSameItem(candidate, item));
+        const items = [...this.model().items];
+        items.splice(index >= 0 ? index + 1 : items.length, 0, mappingItem);
+        this.model.update(model => ({ ...model, items }));
     }
 
     protected createFormula(afterItem?: DataMapperItem) {
@@ -486,15 +494,15 @@ export class AppComponent {
         this.model.update(model => ({ ...model, items }));
     }
 
-    protected updateFormula(item: DataMapperItem) {
+    protected updateFormula(item: DataMapperItem, updatedItem = item) {
         const formulaItem: DataMapperItem = {
-            ...item,
-            FormulaSequence: Number(item.FormulaSequence || this.nextFormulaSequence()),
-            OutputCreationSequence: item.OutputCreationSequence ?? 0,
+            ...updatedItem,
+            FormulaSequence: Number(updatedItem.FormulaSequence || this.nextFormulaSequence()),
+            OutputCreationSequence: updatedItem.OutputCreationSequence ?? 0,
             OutputFieldName: 'Formula',
             OutputObjectName: 'Formula',
-            VlocityDataPackType: item.VlocityDataPackType ?? 'SObject',
-            VlocityRecordSObjectType: item.VlocityRecordSObjectType ?? 'OmniDataTransformItem'
+            VlocityDataPackType: updatedItem.VlocityDataPackType ?? 'SObject',
+            VlocityRecordSObjectType: updatedItem.VlocityRecordSObjectType ?? 'OmniDataTransformItem'
         };
         this.model.update(model => ({
             ...model,
@@ -551,6 +559,9 @@ export class AppComponent {
         }
         if (message.type === 'fields') {
             this.error.set(message.error);
+            if (message.objectSuggestions) {
+                this.sObjectSuggestions.set(message.objectSuggestions);
+            }
             this.sourceFields.set(message.sourceFields);
             this.outputFields.set(message.outputFields);
             this.fieldMetadataLoading.set(false);
@@ -559,9 +570,10 @@ export class AppComponent {
         if (message.type === 'load') {
             this.error.set(message.state.error);
             this.model.set(message.state.model);
+            this.sObjectSuggestions.set(message.state.objectSuggestions);
             this.sourceFields.set(message.state.sourceFields);
             this.outputFields.set(message.state.outputFields);
-            this.lastFieldObjectsKey = this.fieldObjectNamesForModel(message.state.model).join('\u001f');
+            this.lastFieldObjectsKey = this.fieldObjectNamesForModel(message.state.model, message.state.objectSuggestions).join('\u001f');
             if (!this.previewInputDirty) {
                 this.previewInputJson.set(this.getInitialPreviewJson(message.state.model));
             }
@@ -589,6 +601,100 @@ export class AppComponent {
             seen.add(key);
             return true;
         }).sort((a, b) => a.path.localeCompare(b.path));
+    }
+
+    private extractSourceSuggestions(
+        sourceFields: FieldSuggestion[],
+        extractionGroups: ExtractGroup[],
+        formulaItems: DataMapperItem[],
+        items: DataMapperItem[]
+    ) {
+        const suggestions = new Array<FieldSuggestion>();
+        const fieldsByObject = new Map<string, FieldSuggestion[]>();
+
+        for (const field of sourceFields) {
+            const objectName = this.sourceFieldObjectName(field);
+            if (!objectName) {
+                continue;
+            }
+            const key = objectName.toLowerCase();
+            const fields = fieldsByObject.get(key);
+            if (fields) {
+                fields.push(field);
+            } else {
+                fieldsByObject.set(key, [field]);
+            }
+        }
+
+        for (const group of extractionGroups) {
+            const extractPath = String(group.outputFieldName || '').trim();
+            const objectName = String(group.inputObjectName || '').trim();
+            if (!extractPath || !objectName) {
+                continue;
+            }
+            suggestions.push({
+                objectName,
+                name: extractPath.split(':').pop() ?? extractPath,
+                label: 'Extract object path',
+                path: extractPath
+            });
+            for (const field of fieldsByObject.get(objectName.toLowerCase()) ?? []) {
+                suggestions.push({
+                    ...field,
+                    objectName,
+                    name: field.name,
+                    path: `${extractPath}:${field.name}`
+                });
+            }
+        }
+
+        for (const formula of formulaItems) {
+            const formulaPath = String(formula.FormulaResultPath || '').trim();
+            if (!formulaPath) {
+                continue;
+            }
+            suggestions.push({
+                name: formulaPath.split(':').pop() ?? formulaPath,
+                label: 'Formula result path',
+                path: formulaPath
+            });
+        }
+
+        for (const item of items) {
+            const path = this.extractSourcePathForItem(item, extractionGroups);
+            if (path) {
+                suggestions.push({ path, name: path.split(':').pop() ?? path });
+            }
+        }
+
+        return this.uniqueSuggestions(suggestions);
+    }
+
+    private sourceFieldObjectName(field: FieldSuggestion) {
+        if (field.objectName) {
+            return field.objectName;
+        }
+        const separator = field.path.indexOf(':');
+        return separator > 0 ? field.path.slice(0, separator) : undefined;
+    }
+
+    private extractSourcePathForItem(item: DataMapperItem, extractionGroups: ExtractGroup[]) {
+        const inputFieldName = String(item.InputFieldName || '').trim();
+        if (!inputFieldName) {
+            return '';
+        }
+        if (inputFieldName.includes(':')) {
+            return inputFieldName;
+        }
+        const inputObjectName = String(item.InputObjectName || '').trim();
+        if (!inputObjectName) {
+            return inputFieldName;
+        }
+        const matchingGroups = extractionGroups.filter(group => String(group.inputObjectName || '').toLowerCase() === inputObjectName.toLowerCase());
+        if (matchingGroups.length === 1 && matchingGroups[0].outputFieldName) {
+            return `${matchingGroups[0].outputFieldName}:${inputFieldName}`;
+        }
+        return inputPath(item);
     }
 
     private deleteItem(item: DataMapperItem) {
@@ -640,7 +746,7 @@ export class AppComponent {
         };
     }
 
-    private fieldObjectNamesForModel(model: DataMapperModel) {
+    private fieldObjectNamesForModel(model: DataMapperModel, objectSuggestions: FieldSuggestion[] = []) {
         const kind = getDataMapperKind(model);
         const objectNames = new Set<string>();
         for (const item of model.items) {
@@ -651,7 +757,10 @@ export class AppComponent {
                 objectNames.add(String(item.OutputObjectName));
             }
         }
-        return [...objectNames].sort((a, b) => a.localeCompare(b));
+        const knownObjectNames = new Set(objectSuggestions.map(suggestion => suggestion.path.toLowerCase()));
+        return [...objectNames]
+            .filter(objectName => !knownObjectNames.size || knownObjectNames.has(objectName.toLowerCase()))
+            .sort((a, b) => a.localeCompare(b));
     }
 
     private getInitialPreviewJson(model: DataMapperModel) {

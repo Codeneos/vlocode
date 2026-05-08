@@ -34,6 +34,7 @@ export type DataMapperKind = 'extract' | 'load' | 'transform';
 
 export interface ExtractGroup {
     id: string;
+    trackId: string;
     inputObjectName?: string;
     outputFieldName?: string;
     sequence: number;
@@ -42,6 +43,7 @@ export interface ExtractGroup {
 
 export interface LoadObjectGroup {
     id: string;
+    trackId: string;
     outputObjectName?: string;
     sequence: number;
     items: DataMapperItem[];
@@ -58,6 +60,7 @@ export interface FieldSuggestion {
 
 export interface EditorState {
     model: DataMapperModel;
+    objectSuggestions: FieldSuggestion[];
     sourceFields: FieldSuggestion[];
     outputFields: FieldSuggestion[];
     error?: string;

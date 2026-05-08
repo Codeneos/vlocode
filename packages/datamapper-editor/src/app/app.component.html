@@ -67,7 +67,7 @@
                     [outputSuggestions]="outputSuggestions()"
                     (createFormulaRequested)="createFormula()"
                     (insertFormulaRequested)="insertFormulaAfter($event)"
-                    (updateFormulaRequested)="updateFormula($event)"
+                    (updateFormulaRequested)="updateFormula($event.item, $event.updatedItem)"
                     (moveFormulaRequested)="moveFormula($event.item, $event.direction)"
                     (deleteFormulaRequested)="deleteFormula($event)" />
             }
@@ -82,6 +82,7 @@
                     [loadObjects]="loadObjectGroups()"
                     (mappingFilterChange)="mappingFilter.set($event)"
                     (createMappingRequested)="createMapping()"
+                    (insertMappingRequested)="insertMappingAfter($event.after, $event.item)"
                     (editMappingRequested)="editMapping($event)"
                     (updateMappingRequested)="saveMappingRow($event)"
                     (deleteMappingRequested)="deleteMapping($event)" />

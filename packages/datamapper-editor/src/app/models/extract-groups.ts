@@ -26,7 +26,7 @@ export const EXTRACT_ACTIONS = [
 ];
 
 export function isExtractionItem(item: DataMapperItem) {
-    return (!!item.InputObjectName || Number(item.InputObjectQuerySequence || 0) > 0) && !item.FormulaExpression && item.OutputObjectName !== 'Formula';
+    return Number(item.InputObjectQuerySequence || 0) > 0 && !item.FormulaExpression && item.OutputObjectName !== 'Formula';
 }
 
 export function isSpecialFilter(item: DataMapperItem) {
@@ -52,6 +52,7 @@ export function createExtractGroups(items: DataMapperItem[]): ExtractGroup[] {
         }
         groups.set(id, {
             id,
+            trackId: String(item.InputObjectQuerySequence ?? item.GlobalKey ?? groups.size + 1),
             inputObjectName: item.InputObjectName,
             outputFieldName: item.OutputFieldName,
             sequence: Number(item.InputObjectQuerySequence || groups.size + 1),

@@ -36,6 +36,7 @@ export function createLoadObjectGroups(items: DataMapperItem[]): LoadObjectGroup
         }
         groups.set(id, {
             id,
+            trackId: String(item.OutputCreationSequence ?? item.GlobalKey ?? groups.size + 1),
             outputObjectName: item.OutputObjectName,
             sequence: Number(item.OutputCreationSequence || groups.size + 1),
             items: isLoadLinkItem(item) ? [] : [item],

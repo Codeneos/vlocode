@@ -1,5 +1,5 @@
 import { deepClone } from '@vlocode/util';
-import { DataMapperFormulaEvaluator } from './formula';
+import { OmniStudioFormulaEvaluator } from '../omnistudio/formula';
 import {
     getDataMapperPathValue,
     getRecordFieldValue,
@@ -40,7 +40,7 @@ interface OutputContainer {
 }
 
 export class DataMapperExecutor {
-    private readonly formulas = new DataMapperFormulaEvaluator();
+    private readonly formulas = new OmniStudioFormulaEvaluator();
 
     public buildExecutionPlan(definition: DataMapperDefinition): DataMapperExecutionPlan {
         const data = this.getDefinitionData(definition);

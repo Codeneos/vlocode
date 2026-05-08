@@ -80,6 +80,9 @@
                                 } @else {
                                     <button type="button" class="dm-button dm-button--compact" (click)="editMappingRequested.emit(item)">Edit</button>
                                     <button type="button" class="dm-button dm-button--compact" (click)="deleteMappingRequested.emit(item)">Delete</button>
+                                    <button type="button" class="dm-icon-button dm-icon-button--compact" title="Insert mapping below" aria-label="Insert mapping below" (click)="insertMappingAfter(item)">
+                                        <span class="codicon codicon-add" aria-hidden="true"></span>
+                                    </button>
                                 }
                             </div>
                         </td>

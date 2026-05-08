@@ -25,10 +25,14 @@
                     </div>
                 </header>
                 <div class="dm-card__body dm-card__body--edit">
-                    <label class="dm-field">
+                    <div class="dm-field">
                         <span>Formula Expression</span>
-                        <textarea rows="7" [disabled]="item.IsDisabled === true" [ngModel]="item.FormulaExpression || ''" (ngModelChange)="updateFormula(item, 'FormulaExpression', $event)"></textarea>
-                    </label>
+                        <dm-formula-editor
+                            [readOnly]="item.IsDisabled === true"
+                            [value]="item.FormulaExpression || ''"
+                            ariaLabel="Formula expression"
+                            (valueChange)="updateFormula(item, 'FormulaExpression', $event)" />
+                    </div>
 
                     <label class="dm-field">
                         <span>Formula Result Path</span>

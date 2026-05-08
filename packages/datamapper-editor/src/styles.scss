@@ -88,8 +88,15 @@ button, input, select, textarea { font: inherit; }
         &:hover, &:focus-visible { color: var(--vscode-button-foreground); background: var(--vscode-button-hoverBackground); @include ring; }
     }
 }
-.dm-icon-button { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; line-height: 1; }
+.dm-icon-button {
+    display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; line-height: 1;
+    &--compact { flex: 0 0 26px; width: 26px; height: 26px; min-width: 26px; min-height: 26px; }
+}
 .dm-button .codicon[class*='codicon-'], .dm-icon-button .codicon[class*='codicon-'], .dm-table__sort .codicon[class*='codicon-'] { @include icon; }
+.dm-icon-button--compact .codicon[class*='codicon-'] {
+    @include icon(14px);
+    &::before { display: block; font-size: inherit; line-height: 1; }
+}
 
 .dm-flow {
     position: relative; width: min(960px, calc(100% - 40px)); margin: 36px auto; padding: 28px 0 60px;
@@ -177,10 +184,46 @@ button, input, select, textarea { font: inherit; }
     @include control;
 }
 
+.dm-field dm-formula-editor {
+    display: block; overflow: hidden; height: 160px; min-height: 120px;
+    border: 1px solid $input-border; border-radius: 3px; background: var(--vscode-editor-background);
+}
+
+.dm-field dm-formula-editor dm-monaco-editor,
+.dm-field dm-formula-editor .dm-monaco-editor {
+    display: block; width: 100%; height: 100%; min-height: 0;
+}
+
+dm-monaco-editor,
+.dm-monaco-editor {
+    position: relative;
+}
+
+.dm-monaco-editor {
+    overflow: hidden;
+}
+
+.dm-monaco-overflow-widgets {
+    position: fixed; inset: 0; z-index: 10000; overflow: visible; pointer-events: none;
+    background: transparent !important;
+
+    .overflowingContentWidgets,
+    .overflowingOverlayWidgets {
+        overflow: visible;
+    }
+
+    .suggest-widget,
+    .suggest-details,
+    .parameter-hints-widget,
+    .monaco-hover {
+        z-index: 10000; pointer-events: auto;
+    }
+}
+
 .dm-combobox {
     position: relative;
     &__list {
-        position: absolute; z-index: 20; top: calc(100% + 3px); right: 0; left: 0; overflow: auto; max-height: min(300px, 45vh);
+        position: fixed; z-index: 1000; overflow: auto;
         margin: 0; padding: 2px 0; border: 1px solid var(--vscode-widget-border, #{$input-border}); border-radius: 4px;
         color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); box-shadow: 0 4px 12px var(--vscode-widget-shadow); list-style: none;
     }
@@ -212,8 +255,8 @@ button, input, select, textarea { font: inherit; }
             td { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
         }
     }
-    &__actions { width: 144px; }
-    &__action-list { display: flex; gap: 6px; }
+    &__actions { width: 152px; }
+    &__action-list { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
     &__inline-grid { display: grid; grid-template-columns: minmax(96px, 0.7fr) minmax(120px, 1fr); gap: 8px; }
     &__empty { color: $desc; text-align: center; }
 }
@@ -290,7 +333,7 @@ button, input, select, textarea { font: inherit; }
         h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; }
         span { color: $desc; font-size: 12px; }
     }
-    dm-json-editor, .dm-json-editor {
+    dm-json-editor, dm-formula-editor, dm-monaco-editor, .dm-monaco-editor {
         display: block; overflow: hidden; width: 100%; height: 100%; min-height: 0;
         background: var(--vscode-editor-background);
     }

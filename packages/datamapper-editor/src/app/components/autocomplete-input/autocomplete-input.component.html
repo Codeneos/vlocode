@@ -8,12 +8,18 @@
         [disabled]="disabled()"
         [placeholder]="placeholder()"
         [ngModel]="value()"
-        (focus)="open.set(true); search.set(value())"
+        (focus)="search.set(value()); openList()"
         (blur)="closeSoon()"
         (ngModelChange)="updateValue($event)">
 
     @if (open() && filteredSuggestions().length) {
-        <ul class="dm-combobox__list" role="listbox">
+        <ul
+            class="dm-combobox__list"
+            role="listbox"
+            [style.top.px]="listTop()"
+            [style.left.px]="listLeft()"
+            [style.width.px]="listWidth()"
+            [style.max-height.px]="listMaxHeight()">
             @for (field of filteredSuggestions(); track field.path) {
                 <li role="option">
                     <button type="button" class="dm-combobox__option" (mousedown)="selectValue(field.path)">

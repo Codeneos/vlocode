@@ -49,6 +49,7 @@ interface FieldSuggestion {
 
 interface EditorState {
     model: DataMapperModel;
+    objectSuggestions: FieldSuggestion[];
     sourceFields: FieldSuggestion[];
     outputFields: FieldSuggestion[];
     error?: string;
@@ -95,6 +96,7 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
     }
 
     private readonly metadataConverter = container.get(MetadataDatapackConverter);
+    private sObjectSuggestions?: Promise<FieldSuggestion[]>;
 
     public async resolveCustomTextEditor(
         document: vscode.TextDocument,
@@ -160,6 +162,7 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
                             const state = await this.createEditorState(message.model ?? loaded.model, message.objects);
                             webviewPanel.webview.postMessage({
                                 type: 'fields',
+                                objectSuggestions: state.objectSuggestions,
                                 sourceFields: state.sourceFields,
                                 outputFields: state.outputFields,
                                 error: state.error
@@ -190,17 +193,21 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
     }
 
     private async createEditorState(model: DataMapperModel, requestedObjects?: string[]): Promise<EditorState> {
+        const objectSuggestions = await this.getSObjectSuggestions();
+        const knownObjects = new Set(objectSuggestions.map(suggestion => suggestion.path.toLowerCase()));
+        const isKnownObject = (objectName: string) => !knownObjects.size || knownObjects.has(objectName.toLowerCase());
         const sourceFields = await this.getSourceFields([
             ...new Set([
-                ...model.items.map(item => item.InputObjectName).filter(Boolean).map(String),
-                ...(requestedObjects ?? [])
+                ...model.items.map(item => item.InputObjectName).filter(Boolean).map(String).filter(isKnownObject),
+                ...(requestedObjects ?? []).filter(isKnownObject)
             ])
         ]);
         const outputObjectFields = this.getDataMapperKind(model) === 'load'
-            ? await this.getSourceFields([...new Set(model.items.map(item => item.OutputObjectName).filter(Boolean).map(String))])
+            ? await this.getSourceFields([...new Set(model.items.map(item => item.OutputObjectName).filter(Boolean).map(String).filter(isKnownObject))])
             : [];
         return {
             model,
+            objectSuggestions,
             sourceFields: this.mergeSuggestions(sourceFields, this.getExistingInputFields(model.items)),
             outputFields: this.mergeSuggestions(this.getOutputFields(model), outputObjectFields.map(field => ({
                 ...field,
@@ -317,6 +324,18 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
             }
         }));
         return fields;
+    }
+
+    private async getSObjectSuggestions(): Promise<FieldSuggestion[]> {
+        if (!this.service.isInitialized) {
+            return [];
+        }
+        this.sObjectSuggestions ??= this.service.salesforceService.schema.describeSObjects().then(objects => objects.map(object => ({
+            name: object.name,
+            label: object.label,
+            path: object.name
+        })).sort((a, b) => a.path.localeCompare(b.path))).catch(() => []);
+        return this.sObjectSuggestions;
     }
 
     private getExistingInputFields(items: DataMapperItem[]): FieldSuggestion[] {

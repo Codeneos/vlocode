@@ -44,11 +44,7 @@ export class MappingDialogComponent {
             this.itemChange.emit({ ...this.item(), InputFieldName: path });
             return;
         }
-        const item = this.item();
-        const separator = path.lastIndexOf(':');
-        const objectName = separator >= 0 ? path.slice(0, separator) : item.InputObjectName;
-        const fieldName = separator >= 0 ? path.slice(separator + 1) : path;
-        this.itemChange.emit({ ...item, InputObjectName: objectName, InputFieldName: fieldName });
+        this.itemChange.emit({ ...this.item(), InputObjectName: undefined, InputFieldName: path });
     }
 
     protected setOutputPath(path: string) {

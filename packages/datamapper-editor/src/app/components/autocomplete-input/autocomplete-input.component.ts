@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import type { FieldSuggestion } from '../../models/datamapper.model';
@@ -11,6 +11,8 @@ import type { FieldSuggestion } from '../../models/datamapper.model';
     templateUrl: './autocomplete-input.component.html'
 })
 export class AutocompleteInputComponent {
+    private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
     readonly value = input('');
     readonly suggestions = input<FieldSuggestion[]>([]);
     readonly placeholder = input('');
@@ -21,6 +23,10 @@ export class AutocompleteInputComponent {
 
     protected readonly open = signal(false);
     protected readonly search = signal('');
+    protected readonly listTop = signal(0);
+    protected readonly listLeft = signal(0);
+    protected readonly listWidth = signal(0);
+    protected readonly listMaxHeight = signal(300);
 
     protected readonly filteredSuggestions = computed(() => {
         const query = (this.search() || this.value()).trim().toLowerCase();
@@ -35,7 +41,7 @@ export class AutocompleteInputComponent {
 
     protected updateValue(value: string) {
         this.search.set(value);
-        this.open.set(true);
+        this.openList();
         this.valueChange.emit(value);
     }
 
@@ -47,5 +53,34 @@ export class AutocompleteInputComponent {
 
     protected closeSoon() {
         window.setTimeout(() => this.open.set(false), 120);
+    }
+
+    protected openList() {
+        this.updateListPosition();
+        this.open.set(true);
+    }
+
+    @HostListener('window:resize')
+    @HostListener('window:scroll')
+    protected updateListPosition() {
+        const inputElement = this.host.nativeElement.querySelector('input');
+        if (!inputElement) {
+            return;
+        }
+
+        const rect = inputElement.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const gap = 3;
+        const viewportPadding = 12;
+        const maxPreferredHeight = 300;
+        const availableBelow = viewportHeight - rect.bottom - viewportPadding;
+        const availableAbove = rect.top - viewportPadding;
+        const openBelow = availableBelow >= 120 || availableBelow >= availableAbove;
+        const maxHeight = Math.max(96, Math.min(maxPreferredHeight, openBelow ? availableBelow : availableAbove));
+
+        this.listLeft.set(rect.left);
+        this.listWidth.set(rect.width);
+        this.listMaxHeight.set(maxHeight);
+        this.listTop.set(openBelow ? rect.bottom + gap : rect.top - maxHeight - gap);
     }
 }
