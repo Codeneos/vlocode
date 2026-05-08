@@ -41,7 +41,7 @@ export default defineConfig((options: UserConfig) => {
     shims: true,
     minify: false,
     treeshake: false,
-    dts: developmentBuild ? false : { build: true },
+    dts: false,
     sourcemap: developmentBuild,
     clean: !developmentBuild,
     env: {

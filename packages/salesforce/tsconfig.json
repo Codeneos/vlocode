@@ -8,5 +8,6 @@
         "declarationMap": true
     },
     "include": ["src/**/*.ts", "src/**/*.json"],
+    "exclude": ["**/__tests__/**", "**/*.test.ts"],
     "references": [{ "path": "../util" }, { "path": "../core" }]
 }
