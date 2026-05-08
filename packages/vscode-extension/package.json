@@ -1152,12 +1152,7 @@
                             "verbose",
                             "debug"
                         ],
-                        "markdownDescription": "Determines the amount of details printed to the integrated terminal for Vlocode"
-                    },
-                    "vlocity.logInTerminal": {
-                        "type": "boolean",
-                        "default": true,
-                        "markdownDescription": "Enable logging in `TERMINAL` tab instead of in the `OUTPUT` tab, terminal logging uses a vscode *Pseudoterminal* and has support for colors but might not work correctly on all platforms.\n\n**Note** Changing this will require you to restart for the changes to be applied."
+                        "markdownDescription": "Determines the amount of detail printed to the Vlocode output channel."
                     },
                     "vlocity.conditionalContextMenus": {
                         "type": "boolean",
@@ -1359,6 +1354,11 @@
                 "language": "sfhttp",
                 "scopeName": "source.sfhttp",
                 "path": "./syntax/sfhttp.tmLanguage.json"
+            },
+            {
+                "language": "vlocode-log",
+                "scopeName": "source.vlocode-log",
+                "path": "./syntax/vlocode-log.tmLanguage.json"
             }
         ],
         "languages": [
@@ -1384,6 +1384,14 @@
                     ".http"
                 ],
                 "configuration": "./syntax/sfhttp-language.json"
+            },
+            {
+                "id": "vlocode-log",
+                "aliases": [
+                    "Vlocode Log"
+                ],
+                "extensions": [],
+                "configuration": "./syntax/vlocode-log-language.json"
             },
             {
                 "id": "xml",

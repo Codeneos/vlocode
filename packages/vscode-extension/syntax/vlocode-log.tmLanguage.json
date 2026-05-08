@@ -1,0 +1,107 @@
+{
+    "scopeName": "source.vlocode-log",
+    "name": "Vlocode Log",
+    "patterns": [
+        { "include": "#error-line" },
+        { "include": "#warn-line" },
+        { "include": "#debug-line" },
+        { "include": "#verbose-line" },
+        { "include": "#info-line" },
+        { "include": "#message" }
+    ],
+    "repository": {
+        "line-prefix": {
+            "patterns": []
+        },
+        "error-line": {
+            "begin": "^(\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3})(\\s*\\|\\s*)(.{26})(\\s*\\|\\s*)(err|ftl)(\\s*\\|\\s*)",
+            "beginCaptures": {
+                "1": { "name": "comment.line.timestamp.vlocode-log" },
+                "2": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "3": { "name": "entity.name.section.component.vlocode-log" },
+                "4": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "5": { "name": "invalid.illegal.log.level.vlocode-log" },
+                "6": { "name": "punctuation.separator.pipe.vlocode-log" }
+            },
+            "contentName": "invalid.illegal.log.message.vlocode-log",
+            "end": "$",
+            "patterns": [{ "include": "#message" }]
+        },
+        "warn-line": {
+            "begin": "^(\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3})(\\s*\\|\\s*)(.{26})(\\s*\\|\\s*)(wrn)(\\s*\\|\\s*)",
+            "beginCaptures": {
+                "1": { "name": "comment.line.timestamp.vlocode-log" },
+                "2": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "3": { "name": "entity.name.section.component.vlocode-log" },
+                "4": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "5": { "name": "invalid.deprecated.log.level.vlocode-log" },
+                "6": { "name": "punctuation.separator.pipe.vlocode-log" }
+            },
+            "contentName": "invalid.deprecated.log.message.vlocode-log",
+            "end": "$",
+            "patterns": [{ "include": "#message" }]
+        },
+        "debug-line": {
+            "begin": "^(\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3})(\\s*\\|\\s*)(.{26})(\\s*\\|\\s*)(dbg)(\\s*\\|\\s*)",
+            "beginCaptures": {
+                "1": { "name": "comment.line.timestamp.vlocode-log" },
+                "2": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "3": { "name": "entity.name.section.component.vlocode-log" },
+                "4": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "5": { "name": "constant.language.log.level.debug.vlocode-log" },
+                "6": { "name": "punctuation.separator.pipe.vlocode-log" }
+            },
+            "contentName": "constant.other.log.message.debug.vlocode-log",
+            "end": "$",
+            "patterns": [{ "include": "#message" }]
+        },
+        "verbose-line": {
+            "begin": "^(\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3})(\\s*\\|\\s*)(.{26})(\\s*\\|\\s*)(vrb)(\\s*\\|\\s*)",
+            "beginCaptures": {
+                "1": { "name": "comment.line.timestamp.vlocode-log" },
+                "2": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "3": { "name": "entity.name.section.component.vlocode-log" },
+                "4": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "5": { "name": "comment.line.log.level.verbose.vlocode-log" },
+                "6": { "name": "punctuation.separator.pipe.vlocode-log" }
+            },
+            "contentName": "comment.line.log.message.verbose.vlocode-log",
+            "end": "$",
+            "patterns": [{ "include": "#message" }]
+        },
+        "info-line": {
+            "begin": "^(\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3})(\\s*\\|\\s*)(.{26})(\\s*\\|\\s*)(log)(\\s*\\|\\s*)",
+            "beginCaptures": {
+                "1": { "name": "comment.line.timestamp.vlocode-log" },
+                "2": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "3": { "name": "entity.name.section.component.vlocode-log" },
+                "4": { "name": "punctuation.separator.pipe.vlocode-log" },
+                "5": { "name": "keyword.other.log.level.info.vlocode-log" },
+                "6": { "name": "punctuation.separator.pipe.vlocode-log" }
+            },
+            "end": "$",
+            "patterns": [{ "include": "#message" }]
+        },
+        "message": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.duration.vlocode-log",
+                    "match": "\\[(\\d+(?:\\.\\d+)?\\s*(?:ms|s|sec|secs|seconds?|min|mins|minutes?))\\]"
+                },
+                {
+                    "name": "string.quoted.single.vlocode-log",
+                    "match": "'[^']*'"
+                },
+                {
+                    "name": "string.quoted.double.vlocode-log",
+                    "match": "\"(?:\\\\.|[^\"])*\""
+                },
+                {
+                    "name": "string.quoted.backtick.vlocode-log",
+                    "match": "`[^`]*`"
+                }
+            ]
+        }
+    },
+    "uuid": "e25f0a91-65f2-4a11-8f15-a6e32ef6fbcb"
+}

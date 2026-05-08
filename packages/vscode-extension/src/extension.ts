@@ -3,13 +3,13 @@ import * as vscode from 'vscode';
 import vlocityPackageManifest from 'vlocity/package.json';
 
 import * as constants from './constants';
-import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container, NodeFileSystem } from '@vlocode/core';
+import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, container, LifecyclePolicy, Container, NodeFileSystem } from '@vlocode/core';
 import * as vlocityUtil from './lib/vlocity/vlocityLogging';
-import { getContext, initializeContext } from './lib/vlocodeContext';
+import { initializeContext } from './lib/vlocodeContext';
 import { ConfigurationManager } from './lib/config';
 import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
-import { getErrorMessage, lazy } from '@vlocode/util';
+import { getErrorMessage } from '@vlocode/util';
 import { WorkspaceContextDetector } from './lib/workspaceContextDetector';
 import { MetadataDetector } from './lib/salesforce/metadataDetector';
 import { DatapackDetector } from './lib/vlocity/datapackDetector';
@@ -35,6 +35,7 @@ import { SfdxConfigManager } from './lib/sfdxConfigManager';
 import { SalesforceApexContentProvider } from './contentProviders/salesforceApexContentProvider';
 import { VirtualContentProvider } from './contentProviders/virtualApexContentProvider';
 import { DataMapperEditorProvider } from './webviews/dataMapperEditorProvider';
+import { VlocodeLogLinkProvider } from './lib/vlocodeLogLinkProvider';
 
 /**
  * Start time of the extension set when the bundled entrypoint is loaded by VSCode.
@@ -88,20 +89,13 @@ class Vlocode {
     }
 
     private startLogger() {
-        // Simple switch that decides how to log
-        const terminalOptions = { 
-            iconPath: {
-                light: vscode.Uri.file(getContext().asAbsolutePath('resources/light/log-terminal.svg')),
-                dark: vscode.Uri.file(getContext().asAbsolutePath('resources/dark/log-terminal.svg'))
-            }
-        };
-        const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode', terminalOptions)));
-        const outputChannelWriter = lazy(() => this.service.registerDisposable(new OutputChannelWriter('Vlocode')));
-        let logInTerminal = this.service.config.logInTerminal;
+        const outputChannelWriter = this.service.registerDisposable(new OutputChannelWriter('Vlocode', {
+            languageId: 'vlocode-log'
+        }));
 
         LogManager.registerWriter({
-            write: entry => logInTerminal ? terminalWriter.write(entry) : outputChannelWriter.write(entry),
-            focus: () => logInTerminal ? terminalWriter.focus() : outputChannelWriter.focus(),
+            write: entry => outputChannelWriter.write(entry),
+            focus: () => outputChannelWriter.focus(),
         });
 
         if (this.isDebug) {
@@ -111,7 +105,6 @@ class Vlocode {
 
         // set logging level
         ConfigurationManager.onConfigChange(this.service.config, [ 'logLevel' ], config => LogManager.setGlobalLogLevel(LogLevel[config.logLevel]), { initial: true });
-        ConfigurationManager.onConfigChange(this.service.config, [ 'logInTerminal' ], config => logInTerminal = config.logInTerminal, { initial: true });
 
         // setup Vlocity logger and filters
         LogManager.registerFilter(LogManager.get('vlocity'), new VlocityLogFilter());
@@ -207,6 +200,7 @@ class Vlocode {
         PushSourceLensProvider.register(this.service);
         SalesforceApexContentProvider.register(this.service);
         VirtualContentProvider.register(this.service);
+        VlocodeLogLinkProvider.register(this.service);
         this.service.registerDisposable(DataMapperEditorProvider.register(context, this.service));
 
         // Watch conditionalContextMenus for changes

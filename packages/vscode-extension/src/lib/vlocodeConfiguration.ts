@@ -32,7 +32,6 @@ export default abstract class VlocodeConfiguration extends BaseConfiguration {
     deployOnSave: boolean;
     autoActivate: boolean;
     compileOnBuild: boolean;
-    logInTerminal: boolean;
     deploymentMode: 'direct' | 'compatibility';
     conditionalContextMenus: boolean;
     deploy: VlocodeVlocityDeployConfiguration;
