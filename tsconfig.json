@@ -22,15 +22,15 @@
         "isolatedModules": true,
         "noUncheckedSideEffectImports": true,
         "moduleDetection": "force",
-        "skipLibCheck": true,
-        "paths": {
-            "@vlocode/apex": ["./packages/apex/src"],
-            "@vlocode/core": ["./packages/core/src"],
-            "@vlocode/util": ["./packages/util/src"],
-            "@vlocode/salesforce": ["./packages/salesforce/src"],
-            "@vlocode/vlocity": ["./packages/vlocity/src"],
-            "@vlocode/vlocity-deploy": ["./packages/vlocity-deploy/src"],
-            "@vlocode/omniscript": ["./packages/omniscript/src"]
-        }
+        "skipLibCheck": true
+        // "paths": {
+        //     "@vlocode/apex": ["./packages/apex/src"],
+        //     "@vlocode/core": ["./packages/core/src"],
+        //     "@vlocode/util": ["./packages/util/src"],
+        //     "@vlocode/salesforce": ["./packages/salesforce/src"],
+        //     "@vlocode/vlocity": ["./packages/vlocity/src"],
+        //     "@vlocode/vlocity-deploy": ["./packages/vlocity-deploy/src"],
+        //     "@vlocode/omniscript": ["./packages/omniscript/src"]
+        // }
     }
 }
