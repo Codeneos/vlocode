@@ -65,6 +65,11 @@ export class CommandExecutor implements Command {
         return this.command.initialize?.();
     }
 
+    public dispose(): void {
+        const disposable = this.command as Command & { dispose?: () => void };
+        disposable.dispose?.();
+    }
+
     /**
      * Show a warning message about making changes to a production org allowing
      * the user to cancel the operation in case it was unintended.
