@@ -19,7 +19,6 @@
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": true,
         "strict": true,
-        "noEmit": true,
         "isolatedModules": true,
         "noUncheckedSideEffectImports": true,
         "moduleDetection": "force",
