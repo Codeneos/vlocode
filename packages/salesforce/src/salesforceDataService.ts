@@ -255,9 +255,10 @@ export class SalesforceDataService {
 
             for (const { index } of matchedFilters.filter(f => f.isMatch)) {
                 if (lookupResults[index]) {
-                    lookupResults[index].push(record)
+                    lookupResults[index].push(record);
+                } else {
+                    lookupResults[index] = [ record ];
                 }
-                lookupResults[index] = [ record ];
             }
         }
 
