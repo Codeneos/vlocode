@@ -26,9 +26,9 @@
     },
     "devDependencies": {
         "@arethetypeswrong/core": "^0.18.2",
-        "@lerna-lite/cli": "^4.11.3",
-        "@lerna-lite/publish": "^4.11.3",
-        "@lerna-lite/version": "^4.11.3",
+        "@lerna-lite/cli": "^5.2.1",
+        "@lerna-lite/publish": "^5.2.1",
+        "@lerna-lite/version": "^5.2.1",
         "@oxc-project/runtime": "^0.112.0",
         "@types/fs-extra": "^11",
         "@types/jest": "^29.5.11",
@@ -51,7 +51,7 @@
         "log-symbols": "^4.1.0",
         "prettier": "^3.3.3",
         "rolldown": "1.0.0-rc.3",
-        "ts-jest": "^29.3.4",
+        "ts-jest": "^29.4.9",
         "tsdown": "0.20.3",
         "typedoc": "^0.28.12",
         "typedoc-plugin-rename-defaults": "^0.7.0",
@@ -66,7 +66,8 @@
             "vlocity@1.14.18": "patches/vlocity@1.14.18.patch",
             "@types/jsforce@1.9.42": "patches/@types__jsforce@1.9.42.patch",
             "@salesforce/core@2.37.1": "patches/@salesforce__core@2.33.1.patch",
-            "@salesforce/core@3.31.18": "patches/@salesforce__core@3.31.18.patch"
+            "@salesforce/core@3.31.18": "patches/@salesforce__core@3.31.18.patch",
+            "buffer-equal-constant-time@1.0.1": "patches/buffer-equal-constant-time@1.0.1.patch"
         },
         "allowUnusedPatches": true,
         "overrides": {

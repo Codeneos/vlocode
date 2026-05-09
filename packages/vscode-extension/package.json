@@ -1671,7 +1671,7 @@
         "reflect-metadata": "^0.1.13",
         "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
-        "ts-jest": "^29.3.4",
+        "ts-jest": "^29.4.9",
         "tsx": "^4.19.4",
         "type-fest": "^2.12.2",
         "vlocity": "1.14.18",
