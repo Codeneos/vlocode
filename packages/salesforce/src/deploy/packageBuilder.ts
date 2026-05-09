@@ -3,8 +3,8 @@ import chalk from 'chalk';
 import ZipArchive from 'jszip';
 import { Minimatch } from 'minimatch';
 
-import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container, inject } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache, stringEqualsIgnoreCase } from '@vlocode/util';
+import { Logger, injectable, FileSystem, Container, container, inject } from '@vlocode/core';
+import { cache, substringAfterLast, Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache, stringEqualsIgnoreCase } from '@vlocode/util';
 
 import { PackageManifest } from './maifest';
 import { SalesforcePackage, SalesforcePackageComponent, SalesforcePackageComponentFile } from './package';
@@ -307,6 +307,7 @@ export class SalesforcePackageBuilder {
                 // Only Aura and LWC are bundled at this moment
                 // Classic metadata package all related files
                 await this.addBundledSources(path.dirname(file), metadataType);
+                continue;
             }
 
             // add source
@@ -388,7 +389,8 @@ export class SalesforcePackageBuilder {
             }
 
             // Ignore files matching ignore patterns
-            if (this.ignorePatterns.some(pattern => pattern.match(file))) {
+            const normalizedFile = file.replace(/\\/g, '/');
+            if (this.ignorePatterns.some(pattern => pattern.match(normalizedFile))) {
                 this.logger.verbose(`Ignoring file ${file} matching global ignore patterns`);
                 continue;
             }
@@ -456,7 +458,8 @@ export class SalesforcePackageBuilder {
             .map(d => ({ name: d!.name, suffix: (d as any).metaFileSuffix as string }));
 
         for await (const file of this.readDirectoryRecursive(bundleFolder)) {
-            if (this.ignorePatterns.some(pattern => pattern.match(file))) {
+            const normalizedFile = file.replace(/\\/g, '/');
+            if (this.ignorePatterns.some(pattern => pattern.match(normalizedFile))) {
                 this.logger.verbose(`Ignoring bundle file ${file} matching global ignore patterns`);
                 this.addParsedFile(file);
                 continue;
