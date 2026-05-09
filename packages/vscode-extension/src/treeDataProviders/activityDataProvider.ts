@@ -10,27 +10,11 @@ import BaseDataProvider from './baseDataProvider';
 @injectable()
 export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivity> {
 
-    private readonly propertyListeners = new Map<VlocodeActivity, vscode.Disposable>();
-
     constructor(service: VlocodeService) {
         super(service);
-        this.vlocode.registerDisposable(this.vlocode.activities.onArrayChanged(event => {
-            for (const removed of event.oldValues ?? []) {
-                this.propertyListeners.get(removed)?.dispose();
-                this.propertyListeners.delete(removed);
-            }
-            for (const added of event.newValues ?? []) {
-                this.propertyListeners.set(added, added.onPropertyChanged(() => this.dataChangedEmitter.fire(added)));
-            }
+        this.vlocode.activities.onArrayChanged(event => {
+            event.newValues?.map(v => v.onPropertyChanged(() => this.dataChangedEmitter.fire(v)));
             this.dataChangedEmitter.fire(undefined);
-        }));
-        this.vlocode.registerDisposable({
-            dispose: () => {
-                for (const listener of this.propertyListeners.values()) {
-                    listener.dispose();
-                }
-                this.propertyListeners.clear();
-            }
         });
     }
 
