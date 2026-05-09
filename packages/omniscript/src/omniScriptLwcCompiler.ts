@@ -1,5 +1,4 @@
 
-import { JSDOM } from 'jsdom';
 import { Script } from 'vm';
 import { SalesforceService, SalesforcePackage } from '@vlocode/salesforce';
 import { injectable } from '@vlocode/core';
@@ -93,6 +92,7 @@ export class OmniScriptLwcCompiler {
             this.compilerApiVersion = connection.version;
         }
 
+        const { JSDOM } = await import('jsdom');
         const localDom = new JSDOM(`<!DOCTYPE html><script src="stub.js" type="text/javascript"></script>`, {
             url: connection.instanceUrl,
             contentType: "text/html",
