@@ -105,7 +105,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
 
     constructor() {
         super();
-        this.vlocode.registerDisposable(this.vlocode.onUsernameChanged(async () => {
+        this.registerDisposable(this.vlocode.onUsernameChanged(async () => {
             this.currentTraceFlagsId = undefined;
             if (this.traceFlagsWatcherId) {
                 await this.createAndSetTraceFlags(this.currentDebugLevelName, this.currentDebugLevel);
