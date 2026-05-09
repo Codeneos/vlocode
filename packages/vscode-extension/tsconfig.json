@@ -11,16 +11,15 @@
         "allowImportingTsExtensions": true,
         "noEmit": true,
         "types": ["node", "jest"],
-        "typeRoots": [
-            "./types",
-            "./node_modules/@types",
-            "../../node_modules/@types"
-        ]
+        "typeRoots": ["./types", "./node_modules/@types", "../../node_modules/@types"]
     },
-    "include": [
-        "src/**/*.ts", 
-        "../sass/src/**/*.ts",
-        "../../build/**/*.ts", 
-        "tsdown.config.mts" 
+    "include": ["src/**/*.ts", "../../build/**/*.ts", "tsdown.config.mts"],
+    "references": [
+        { "path": "../util" },
+        { "path": "../core" },
+        { "path": "../salesforce" },
+        { "path": "../omniscript" },
+        { "path": "../vlocity" },
+        { "path": "../vlocity-deploy" }
     ]
 }
