@@ -140,7 +140,7 @@ export function substringBefore(value: string, delimiter: string | RegExp): stri
     if (typeof delimiter === 'string') {
         // parse as string
         const indexOfDelimiter = value.indexOf(delimiter);
-        if (indexOfDelimiter && indexOfDelimiter >= 0) {
+        if (indexOfDelimiter >= 0) {
             return value.substring(0, indexOfDelimiter);
         }
         return value;
@@ -156,7 +156,7 @@ export function substringBefore(value: string, delimiter: string | RegExp): stri
 export function substringBeforeLast(value: string, delimiter: string): string {
     // parse as string
     const indexOfDelimiter = value.lastIndexOf(delimiter);
-    if (indexOfDelimiter && indexOfDelimiter >= 0) {
+    if (indexOfDelimiter >= 0) {
         return value.substring(0, indexOfDelimiter);
     }
     return value;
@@ -171,7 +171,7 @@ export function substringAfterLast(value: string, delimiter: string | RegExp): s
     if (typeof delimiter === 'string') {
         // parse as string
         const indexOfDelimiter = value.lastIndexOf(delimiter);
-        if (indexOfDelimiter && indexOfDelimiter >= 0) {
+        if (indexOfDelimiter >= 0) {
             return value.substring(indexOfDelimiter + delimiter.length);
         }
         return value;
@@ -188,7 +188,7 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
     if (typeof delimiter === 'string') {
         // parse as string
         const indexOfDelimiter = value.indexOf(delimiter);
-        if (indexOfDelimiter && indexOfDelimiter >= 0) {
+        if (indexOfDelimiter >= 0) {
             return value.substring(indexOfDelimiter + delimiter.length);
         }
         return value;

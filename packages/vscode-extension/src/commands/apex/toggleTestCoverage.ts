@@ -50,7 +50,7 @@ export default class ToggleApexTestCoverage extends CommandBase {
      * Initializes the toggleTestCoverage feature.
      */
     public initialize() {
-        vscode.window.onDidChangeActiveTextEditor(editor => {
+        this.vlocode.registerDisposable(vscode.window.onDidChangeActiveTextEditor(editor => {
             if (!editor?.document) {
                 return;
             }
@@ -58,7 +58,7 @@ export default class ToggleApexTestCoverage extends CommandBase {
             if (this.coverageShowingFor.has(className.toLowerCase())) {
                 this.showCoverageDecorations(className);
             }
-        });
+        }));
     }
 
     /**
