@@ -11,6 +11,10 @@ type DatapackLoaderFunc = (fileName: string) => OptionalPromise<string | object>
 @injectable()
 export class DatapackLoader {
 
+    private normalizePath(filePath: string): string {
+        return filePath.replace(/\\/g, '/');
+    }
+
     private readonly loaders : { test?: RegExp; load: DatapackLoaderFunc }[] = [
         { test: /\.json$/i, load: file => this.loadJson(file) },
         { test: /\.(png|jpeg|jpg|doc|docx|xls|xlsx|zip|pdf)$/i, load: file => this.loadBinary(file) },
@@ -29,8 +33,23 @@ export class DatapackLoader {
     }
 
     public async loadDatapacksFromFolder(datapackFolder: string, cancellationToken?: CancellationToken) {
-        const datapackHeaders = await this.fileSystem.findFiles(path.join(datapackFolder, '**/*_DataPack.json'));
+        const datapackHeaders = await this.findDatapackHeaders(this.normalizePath(datapackFolder));
         return this.loadDatapacks(datapackHeaders, cancellationToken);
+    }
+
+    private async findDatapackHeaders(folder: string): Promise<string[]> {
+        const headers: string[] = [];
+        for (const entry of await this.fileSystem.readDirectory(folder)) {
+            const fullPath = this.normalizePath(path.join(folder, entry.name));
+            if (entry.isDirectory()) {
+                headers.push(...await this.findDatapackHeaders(fullPath));
+                continue;
+            }
+            if (/_DataPack\.json$/i.test(entry.name)) {
+                headers.push(fullPath);
+            }
+        }
+        return headers;
     }
 
     public async loadDatapack(datapackHeader: string): Promise<VlocityDatapack>;
@@ -131,7 +150,7 @@ export class DatapackLoader {
             const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fieldValue));
             if (loader) {
                 try {
-                    const resolvedFile = path.join(baseDir, fieldValue);
+                    const resolvedFile = this.normalizePath(path.join(baseDir, fieldValue));
                     const value = /\.json$/i.test(fieldValue)
                         ? await this.loadJson(resolvedFile, true)
                         : await loader.load(resolvedFile);
@@ -148,7 +167,7 @@ export class DatapackLoader {
         } else if (Array.isArray(fieldValue)) {
             return Promise.all(fieldValue.map(value => this.resolveValue(baseDir, value)));
         } else if (fieldValue !== null && typeof fieldValue === 'object') {
-            setDatapackSource(fieldValue, { fileName: path.join(baseDir, '.'), external: false });
+            setDatapackSource(fieldValue, { fileName: this.normalizePath(path.join(baseDir, '.')), external: false });
             await Promise.all(Object.keys(fieldValue).map(
                 async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key], fieldValue, key)));
         }
@@ -156,8 +175,9 @@ export class DatapackLoader {
     }
 
     private async fileExists(fileName: string) : Promise<boolean> {
+        const normalizedFileName = this.normalizePath(fileName);
         const files = await this.readDirFiles(directoryName(fileName));
-        return files.has(fileName);
+        return files.has(normalizedFileName);
     }
 
     @cache({ ttl: 2, unwrapPromise: true })
@@ -165,7 +185,7 @@ export class DatapackLoader {
         const filePaths = new Set<string>();
         for (const file of await this.fileSystem.readDirectory(dir)) {
             if (file.isFile()) {
-                filePaths.add(path.join(dir, file.name));
+                filePaths.add(this.normalizePath(path.join(dir, file.name)));
             }
         }
         return filePaths;
