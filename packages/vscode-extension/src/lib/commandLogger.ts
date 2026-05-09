@@ -40,11 +40,16 @@ export class CommandLogger {
         private outputChannel: { 
             appendLine: (message: string) => void 
             show?: () => unknown,
+            dispose?: () => unknown
         },
         private options?: {
             argFormatter?: (arg: unknown) => string,
         }
     ) {}
+
+    dispose() {
+        this.outputChannel.dispose?.();
+    }
 
     public appendLine(message: string, options?: CommandOutputOptions<{ args: unknown[] }> | unknown[]) {
         const args = (!options || Array.isArray(options)) ? options : options?.args;
