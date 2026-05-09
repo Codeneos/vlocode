@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-input.component';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import type { DataMapperItem, FieldSuggestion, LoadObjectGroup } from '../../models/datamapper.model';
+import { newGlobalKey } from '../../models/items';
 import { loadObjectLabel } from '../../models/load-objects';
 
 @Component({
@@ -41,7 +42,7 @@ export class LoadObjectsPanelComponent {
             ...group.items,
             ...group.links,
             {
-                GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}-${group.links.length}`,
+                GlobalKey: newGlobalKey(),
                 OutputObjectName: group.outputObjectName,
                 OutputCreationSequence: group.sequence,
                 LinkedObjectSequence: Math.max(1, group.sequence - 1),

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-input.component';
 import type { DataMapperItem, DataMapperKind, FieldSuggestion, LoadObjectGroup } from '../../models/datamapper.model';
 import { inputPath, outputPath } from '../../models/datamapper-paths';
+import { createMappingItem } from '../../models/items';
 import { loadObjectLabel } from '../../models/load-objects';
 
 @Component({
@@ -105,7 +106,7 @@ export class MappingPanelComponent {
 
     protected insertMappingAfter(item: DataMapperItem) {
         if (this.saveInlineEdit()) {
-            const inserted = this.createEmptyMapping(item);
+            const inserted = createMappingItem(this.mapperKind(), this.loadObjects(), item);
             this.insertAfterKey.set(this.rowKey(item));
             this.editingKey.set(this.rowKey(inserted));
             this.draft.set(inserted);
@@ -202,22 +203,5 @@ export class MappingPanelComponent {
 
     protected rowKey(item: DataMapperItem) {
         return String(item.GlobalKey ?? `${inputPath(item)}:${outputPath(item)}:${item.OutputCreationSequence ?? ''}`);
-    }
-
-    private createEmptyMapping(previous?: DataMapperItem): DataMapperItem {
-        return {
-            GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}`,
-            IsDisabled: false,
-            IsRequiredForUpsert: false,
-            IsUpsertKey: false,
-            OutputCreationSequence: this.mapperKind() === 'load'
-                ? (previous?.OutputCreationSequence ?? this.loadObjects()[0]?.sequence ?? 1)
-                : undefined,
-            OutputObjectName: this.mapperKind() === 'load'
-                ? (previous?.OutputObjectName ?? this.loadObjects()[0]?.outputObjectName ?? '')
-                : 'json',
-            VlocityDataPackType: 'SObject',
-            VlocityRecordSObjectType: 'OmniDataTransformItem'
-        };
     }
 }

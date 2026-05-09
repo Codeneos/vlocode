@@ -120,8 +120,8 @@
             <section class="dm-loading" role="status" aria-live="polite" aria-busy="true">
                 <div class="dm-loading__content">
                     <span class="dm-loading__spinner" aria-hidden="true"></span>
-                    <h2>{{ loadingTitle() }}</h2>
-                    <p>{{ loadingMessage() }}</p>
+                    <h2>{{ loadingPhase().title }}</h2>
+                    <p>{{ loadingPhase().message }}</p>
                 </div>
             </section>
         }
