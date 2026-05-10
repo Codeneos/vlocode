@@ -4,19 +4,25 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "shell",
-            "command": "pnpm --filter vlocode watch",
-            "isBackground": true,
             "label": "build-extension",
-            "presentation": {
-                "reveal": "always"
-            },
+            "dependsOn": ["watch-extension", "watch-datamapper-editor"],
+            "dependsOrder": "parallel",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "command": "pnpm --filter vlocode watch",
+            "isBackground": true,
+            "label": "watch-extension",
+            "presentation": {
+                "reveal": "always"
+            },
             "problemMatcher": {
-                "owner": "build-extension",
+                "owner": "watch-extension",
                 "pattern": {
                     "regexp": "^$"
                 },
@@ -24,6 +30,27 @@
                     "activeOnStart": true,
                     "beginsPattern": ".*Build start.*",
                     "endsPattern": ".*((Build complete)|(Rebuilt)) in \\d+ms.*"
+                }
+            }
+        },
+        {
+            "type": "shell",
+            "command": "pnpm --filter @vlocode/datamapper-editor watch",
+            "isBackground": true,
+            "label": "watch-datamapper-editor",
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": {
+                "owner": "watch-datamapper-editor",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/datamapper-editor"],
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": ".*(Application bundle generation complete|Watch mode enabled).*"
                 }
             }
         },
