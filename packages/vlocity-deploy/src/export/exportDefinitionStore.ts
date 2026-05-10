@@ -84,7 +84,7 @@ export class DatapackExportDefinitionStore {
 
         const globalValue: any = this.globalConfig[key];
         if (globalValue && this.mergeFields.includes(key)) {
-            return value.concat(globalValue);
+            return (value ?? []).concat(globalValue);
         }
 
         return value ?? globalValue;

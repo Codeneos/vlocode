@@ -102,7 +102,7 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
 
             const newConfig = await sfdx.getConfig<T>(uri.fsPath.slice(0, -sfdx.defaultConfigPath.length));
             const currentConfig = this.configs.get(workspace.uri.fsPath);
-            const path = currentConfig?.path ?? currentConfig?.path;
+            const path = currentConfig?.path ?? newConfig?.path;
             
             if (!path) {
                 // This should not happen, but if it does, we log a warning and return

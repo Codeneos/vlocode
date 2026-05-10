@@ -74,6 +74,10 @@ export default class CommandRouter {
             registration.dispose();
         }
 
+        for (const command of this.commands.values()) {
+            command.dispose();
+        }
+
         this.commands.clear();
         this.commandTypes.clear();
         this.commandRegistrations.clear();

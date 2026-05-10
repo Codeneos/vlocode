@@ -574,6 +574,8 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 return;
             }
             this.showStatus(`$(cloud-upload) Vlocode ${userAliasOrName}`, VlocodeCommand.selectOrg)
+        }).catch(err => {
+            this.logger.warn(`Failed to resolve SFDX alias for ${this.sfUsername}:`, err);
         });
     }
 

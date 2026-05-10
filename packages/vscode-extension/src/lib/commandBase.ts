@@ -12,6 +12,7 @@ export abstract class CommandBase implements Command {
 
     private outputLogger?: CommandLogger;
     private outputChannel?: vscode.OutputChannel;
+    private disposables: vscode.Disposable[] = [];
     
     protected outputChannelName?: string;
     protected readonly logger = LogManager.get(this.getName());
@@ -24,6 +25,16 @@ export abstract class CommandBase implements Command {
     public abstract execute(...args: any[]): any | Promise<any>;
 
     public validate?(...args: any[]): any | Promise<any>;
+
+    public dispose() {
+        this.outputLogger?.dispose();
+        this.outputChannel?.dispose();
+        this.disposables.forEach(d => d.dispose());
+    }
+
+    public registerDisposable(disposable: vscode.Disposable) {
+        this.disposables.push(disposable);
+    }
 
     public get context(): VlocodeContext {
         return getContext();

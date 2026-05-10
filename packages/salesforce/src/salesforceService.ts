@@ -365,8 +365,6 @@ export class SalesforceService implements SalesforceConnectionProvider {
                 const filteredRecord = records.find(r => nameFieldPath.reduce((obj, p) => obj && obj[p], r) == metadataInfo.fullName);
                 Object.assign(objectData, { id: (filteredRecord ?? records[0]).Id });
             }
-
-            Object.assign(objectData, { id: records[0]?.Id });
         }
 
         return evalTemplate(metadataUrlFormat.url, objectData);

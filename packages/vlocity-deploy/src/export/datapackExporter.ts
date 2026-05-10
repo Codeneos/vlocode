@@ -179,14 +179,14 @@ export class DatapackExporter {
     private async buildDatapack(record: Record<string, any>, context: DatapackExportOptions): Promise<VlocityDatapackSObject>;
     private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null>;
     private async buildDatapack(record: Record<string, any>, context: ExportContext) {
-        const describe = await this.salesforce.schema.describeSObjectById(record.id);
+        const describe = await this.salesforce.schema.describeSObjectById(record.Id);
         const matchingKey = await this.getMatchingKey(describe, record, context?.scope);
         const exportStack = this.getExportPath(context.parent);
         this.logger.verbose(`Build ${describe.name} (${record.Id}) datapack: ${matchingKey}`);
 
-        if (exportStack.includes(record.id)) {
+        if (exportStack.includes(record.Id)) {
             this.logger.warn(`Internal reference detected for ${matchingKey}: ${exportStack.join(' -> ')}`);
-            return this.buildLookup(context.parent!, record.id, 'VlocityMatchingKeyObject');
+            return this.buildLookup(context.parent!, record.Id, 'VlocityMatchingKeyObject');
         }
 
         const dependencyDepth = context.dependencyDepth ?? 0;
@@ -195,13 +195,13 @@ export class DatapackExporter {
             return this.buildMatchingKeyObject(context.parent!, 'VlocityLookupMatchingKeyObject', record);
         }
 
-        if (this.datapacks[record.id]) {
+        if (this.datapacks[record.Id]) {
             // Don't export the same object twice
-            return this.datapacks[record.id].data;
+            return this.datapacks[record.Id].data;
         }
 
         const datapack: ExportDatapack = {
-            id: record.id,
+            id: record.Id,
             objectType: describe.name,
             normalizedObjectType: removeNamespacePrefix(describe.name),
             scope: context?.scope,
@@ -212,7 +212,7 @@ export class DatapackExporter {
                     VlocityDataPackType: 'SObject',
                     VlocityRecordSourceKey: matchingKey,
                     VlocityRecordSObjectType: describe.name
-                }, { Id: record.id }
+                }, { Id: record.Id }
             ),
             children: {},
             references: {},
@@ -222,7 +222,7 @@ export class DatapackExporter {
             foreignKeys: {}
         };
 
-        this.datapacks[record.id] = datapack;
+        this.datapacks[record.Id] = datapack;
 
         await this.exportObjectFields(datapack, record);
         await this.exportEmbeddedObjects(datapack);

@@ -497,8 +497,8 @@ export namespace sfdx {
         let configPath: string | undefined;
         let limit = options.limit ?? 2;
 
-        if (folderPath.endsWith(defaultConfigPath)) { 
-            folderPath = folderPath.substring(0, -defaultConfigPath.length);
+        if (folderPath.endsWith(defaultConfigPath)) {
+            folderPath = folderPath.slice(0, -defaultConfigPath.length);
         }
 
         while(limit-- > 0) {
@@ -513,8 +513,10 @@ export namespace sfdx {
 
             if (config) {
                 return { config, path: configPath! };
-            } else if (folderPath.lastIndexOf('/')) {
+            } else if (folderPath.lastIndexOf('/') > 0) {
                 folderPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
+            } else {
+                break;
             }
         }
     }

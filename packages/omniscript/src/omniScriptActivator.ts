@@ -218,8 +218,8 @@ export class OmniScriptActivator {
         let offset = 0;
 
         while(serializedDefinition.length > offset) {
-            let splitIndex = offset + chunkSize;
-            while(/\s/.test(serializedDefinition[splitIndex]) || (splitIndex+1 < serializedDefinition.length && /\s/.test(serializedDefinition[splitIndex+1]))) {
+            let splitIndex = Math.min(offset + chunkSize, serializedDefinition.length);
+            while(splitIndex > offset + 1 && (/\s/.test(serializedDefinition[splitIndex]) || (splitIndex+1 < serializedDefinition.length && /\s/.test(serializedDefinition[splitIndex+1])))) {
                 // while the end or start of the chunk is a whitespace character, move the split index backward
                 splitIndex--;
             }
