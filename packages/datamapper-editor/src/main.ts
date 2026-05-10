@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, provideZonelessChangeDetection, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
 import { EmptyStateComponent } from './app/components/empty-state/empty-state.component';
@@ -11,8 +11,11 @@ import { PreviewPanelComponent } from './app/components/preview-panel/preview-pa
 import type { DataMapperItem, DataMapperModel, DataMapperPreviewDebug, DataMapperPreviewResult, EditorState, ExtractGroup, FieldSuggestion, LoadObjectGroup, TabId } from './app/models/datamapper.model';
 import { firstTab, getDataMapperKind, getDataMapperSubtitle, getTabs } from './app/models/datamapper-kind';
 import { createExtractGroups, extractGroupId, isExtractionItem, nextExtractSequence, normalizeExtractSequences } from './app/models/extract-groups';
-import { createLoadObjectGroups, isFormulaItem, isLoadItem, isLoadMappingItem, loadObjectGroupId, nextLoadSequence, normalizeLoadSequences } from './app/models/load-objects';
+import { createLoadObjectGroups, isLoadItem, isLoadMappingItem, loadObjectGroupId, nextLoadSequence, normalizeLoadSequences } from './app/models/load-objects';
+import { isFormulaItem, nextFormulaSequence, normalizeFormulaSequences } from './app/models/formulas';
 import { inputPath, outputPath } from './app/models/datamapper-paths';
+import { createMappingItem, newGlobalKey } from './app/models/items';
+import { extractSourceSuggestions, pathSuggestions, uniqueSuggestions } from './app/models/field-suggestions';
 
 declare const acquireVsCodeApi: undefined | (() => VsCodeApi);
 
@@ -76,8 +79,6 @@ const DATA_TYPES = [
     templateUrl: './app/app.component.html'
 })
 export class AppComponent {
-    private readonly changeDetectorRef = inject(ChangeDetectorRef);
-
     protected readonly dataTypes = DATA_TYPES;
     protected readonly activeTab = signal<TabId>('extract');
     protected readonly model = signal<DataMapperModel>(EMPTY_MODEL);
@@ -110,26 +111,16 @@ export class AppComponent {
     protected readonly extractionGroups = computed(() => createExtractGroups(this.model().items));
     protected readonly loadObjectGroups = computed(() => createLoadObjectGroups(this.model().items));
     protected readonly loading = computed(() => !this.hasLoaded() || this.fieldMetadataLoading() || this.refreshing());
-    protected readonly loadingTitle = computed(() => {
+    protected readonly loadingPhase = computed(() => {
         if (!this.hasLoaded()) {
-            return 'Loading DataMapper';
+            return { title: 'Loading DataMapper', message: 'Reading the DataMapper and fetching field metadata.' };
         }
         if (this.refreshing()) {
-            return 'Refreshing DataMapper';
+            return { title: 'Refreshing DataMapper', message: 'Refreshing the source file from the selected org.' };
         }
-        return 'Loading field metadata';
+        return { title: 'Loading field metadata', message: 'Fetching Salesforce object fields for autocomplete.' };
     });
-    protected readonly loadingMessage = computed(() => {
-        if (!this.hasLoaded()) {
-            return 'Reading the DataMapper and fetching field metadata.';
-        }
-        if (this.refreshing()) {
-            return 'Refreshing the source file from the selected org.';
-        }
-        return 'Fetching Salesforce object fields for autocomplete.';
-    });
-    private readonly fieldMetadataObjects = computed(() => this.fieldObjectNamesForModel(this.model(), this.sObjectSuggestions()));
-    protected readonly previewInputError = computed(() => this.validatePreviewInput(this.previewInputJson()));
+    protected readonly previewInputError = computed(() => validatePreviewInput(this.previewInputJson()));
 
     protected readonly formulaItems = computed(() =>
         this.model().items
@@ -154,71 +145,31 @@ export class AppComponent {
     });
 
     protected readonly sourceSuggestions = computed(() => this.mapperKind() === 'extract'
-        ? this.extractSourceSuggestions(this.sourceFields(), this.extractionGroups(), this.formulaItems(), this.model().items)
-        : this.uniqueSuggestions([
+        ? extractSourceSuggestions(this.sourceFields(), this.extractionGroups(), this.formulaItems(), this.model().items)
+        : uniqueSuggestions([
             ...this.sourceFields(),
-            ...this.model().items
-                .map(item => inputPath(item))
-                .filter(Boolean)
-                .map(path => ({ path, name: path }))
+            ...pathSuggestions(this.model().items.map(inputPath))
         ]));
 
-    protected readonly objectSuggestions = computed(() => this.uniqueSuggestions([
+    protected readonly objectSuggestions = computed(() => uniqueSuggestions([
         ...this.sObjectSuggestions(),
-        ...this.model().items
-            .map(item => item.InputObjectName)
-            .filter(Boolean)
-            .map(objectName => ({ path: String(objectName), name: String(objectName) }))
+        ...pathSuggestions(this.model().items.map(item => item.InputObjectName))
     ]));
 
-    protected readonly outputSuggestions = computed(() => this.uniqueSuggestions([
+    protected readonly outputSuggestions = computed(() => uniqueSuggestions([
         ...this.outputFields(),
-        ...this.model().items
-            .map(item => outputPath(item))
-            .filter(Boolean)
-            .map(path => ({ path, name: path }))
+        ...pathSuggestions(this.model().items.map(outputPath))
     ]));
 
-    protected readonly domainObjectSuggestions = computed(() => this.uniqueSuggestions([
+    protected readonly domainObjectSuggestions = computed(() => uniqueSuggestions([
         ...this.sObjectSuggestions(),
-        ...this.loadObjectGroups().map(group => ({
-            path: String(group.outputObjectName || ''),
-            name: String(group.outputObjectName || '')
-        })).filter(field => field.path),
-        ...this.model().items
-            .map(item => item.OutputObjectName)
-            .filter(Boolean)
-            .map(objectName => ({ path: String(objectName), name: String(objectName) }))
+        ...pathSuggestions(this.loadObjectGroups().map(group => group.outputObjectName)),
+        ...pathSuggestions(this.model().items.map(item => item.OutputObjectName))
     ]));
 
     constructor() {
-        window.addEventListener('message', event => {
-            this.handleMessage(event.data as ExtensionToWebviewMessage);
-            this.changeDetectorRef.markForCheck();
-        });
-        effect(() => {
-            if (!this.hasLoaded()) {
-                return;
-            }
-
-            const objects = this.fieldMetadataObjects();
-            const key = objects.join('\u001f');
-            if (!key) {
-                this.fieldMetadataLoading.set(false);
-                this.lastFieldObjectsKey = '';
-                return;
-            }
-
-            if (key !== this.lastFieldObjectsKey) {
-                this.lastFieldObjectsKey = key;
-                if (!this.vscode) {
-                    this.fieldMetadataLoading.set(false);
-                    return;
-                }
-                this.fieldMetadataLoading.set(true);
-                this.vscode.postMessage({ type: 'refreshFields', model: this.model(), objects });
-            }
-        });
+        window.addEventListener('message', event => this.handleMessage(event.data as ExtensionToWebviewMessage));
+        effect(() => this.requestFieldsForCurrentObjects());
         if (this.vscode) {
             this.vscode.postMessage({ type: 'ready' });
         } else {
@@ -276,7 +227,12 @@ export class AppComponent {
         try {
             input = JSON.parse(this.previewInputJson());
         } catch (error) {
-            this.previewError.set(this.getErrorMessage(error));
+            this.previewError.set(getErrorMessage(error));
+            return;
+        }
+
+        if (!this.vscode) {
+            this.previewError.set('Preview is only available inside the VS Code DataMapper editor.');
             return;
         }
 
@@ -284,23 +240,16 @@ export class AppComponent {
         this.previewError.set(undefined);
         this.previewDebug.set(undefined);
         this.previewOutputJson.set('');
-
-        if (!this.vscode) {
-            this.previewRunning.set(false);
-            this.previewError.set('Preview is only available inside the VS Code DataMapper editor.');
-            return;
-        }
-
         this.vscode.postMessage({ type: 'preview', model: this.model(), input });
     }
 
     protected createMapping() {
         this.editIndex.set(-1);
-        this.editing.set(this.createMappingItem());
+        this.editing.set(createMappingItem(this.mapperKind(), this.loadObjectGroups()));
     }
 
-    protected insertMappingAfter(item: DataMapperItem, mappingItem = this.createMappingItem(item)) {
-        const index = this.model().items.findIndex(candidate => this.isSameItem(candidate, item));
+    protected insertMappingAfter(item: DataMapperItem, mappingItem = createMappingItem(this.mapperKind(), this.loadObjectGroups(), item)) {
+        const index = this.model().items.findIndex(candidate => isSameItem(candidate, item));
         const items = [...this.model().items];
         items.splice(index >= 0 ? index + 1 : items.length, 0, mappingItem);
         this.model.update(model => ({ ...model, items }));
@@ -308,10 +257,10 @@ export class AppComponent {
 
     protected createFormula(afterItem?: DataMapperItem) {
         const item: DataMapperItem = {
-            GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}`,
+            GlobalKey: newGlobalKey(),
             FormulaExpression: '',
             FormulaResultPath: '',
-            FormulaSequence: afterItem ? Number(afterItem.FormulaSequence || 0) + 0.5 : this.nextFormulaSequence(),
+            FormulaSequence: afterItem ? Number(afterItem.FormulaSequence || 0) + 0.5 : nextFormulaSequence(this.model().items),
             IsDisabled: false,
             IsRequiredForUpsert: false,
             IsUpsertKey: false,
@@ -322,13 +271,13 @@ export class AppComponent {
             VlocityDataPackType: 'SObject',
             VlocityRecordSObjectType: 'OmniDataTransformItem'
         };
-        this.model.update(model => ({ ...model, items: this.normalizeFormulaSequences([...model.items, item]) }));
+        this.model.update(model => ({ ...model, items: normalizeFormulaSequences([...model.items, item]) }));
     }
 
     protected createExtraction(afterGroup?: ExtractGroup) {
         const sequence = afterGroup ? afterGroup.sequence + 0.5 : nextExtractSequence(this.model().items);
         const item: DataMapperItem = {
-            GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}`,
+            GlobalKey: newGlobalKey(),
             FilterGroup: 0,
             FilterOperator: '=',
             InputObjectQuerySequence: sequence,
@@ -341,8 +290,7 @@ export class AppComponent {
     }
 
     protected createLoadObject() {
-        const sequence = nextLoadSequence(this.model().items);
-        this.createLoadObjectAtSequence(sequence);
+        this.createLoadObjectAtSequence(nextLoadSequence(this.model().items));
     }
 
     protected insertLoadObjectAfter(group: LoadObjectGroup) {
@@ -351,7 +299,7 @@ export class AppComponent {
 
     private createLoadObjectAtSequence(sequence: number) {
         const item: DataMapperItem = {
-            GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}`,
+            GlobalKey: newGlobalKey(),
             OutputCreationSequence: sequence,
             OutputObjectName: '',
             IsDisabled: false,
@@ -364,12 +312,7 @@ export class AppComponent {
     }
 
     protected updateExtractionGroup(group: ExtractGroup) {
-        const items = this.model().items.filter(item => {
-            if (!isExtractionItem(item)) {
-                return true;
-            }
-            return extractGroupId(item) !== group.id;
-        });
+        const items = this.model().items.filter(item => !isExtractionItem(item) || extractGroupId(item) !== group.id);
         items.push(...group.items);
         this.model.update(model => ({ ...model, items: normalizeExtractSequences(items) }));
     }
@@ -404,12 +347,7 @@ export class AppComponent {
 
     protected updateLoadObjectGroup(group: LoadObjectGroup) {
         const rows = [...group.items, ...group.links];
-        const items = this.model().items.filter(item => {
-            if (!isLoadItem(item)) {
-                return true;
-            }
-            return loadObjectGroupId(item) !== group.id;
-        });
+        const items = this.model().items.filter(item => !isLoadItem(item) || loadObjectGroupId(item) !== group.id);
         items.push(...rows);
         this.model.update(model => ({ ...model, items: normalizeLoadSequences(items) }));
     }
@@ -449,7 +387,7 @@ export class AppComponent {
     }
 
     protected deleteMapping(item: DataMapperItem) {
-        this.deleteItem(item);
+        this.model.update(model => ({ ...model, items: model.items.filter(candidate => !isSameItem(candidate, item)) }));
     }
 
     protected updateEditing(item: DataMapperItem) {
@@ -462,26 +400,28 @@ export class AppComponent {
     }
 
     protected applyEdit(item: DataMapperItem) {
-        if (this.mapperKind() === 'load' ? !item.OutputFieldName : !outputPath(item)) {
+        if (!this.canSaveMapping(item)) {
             return;
         }
-
         this.upsertMappingItem(item, this.editIndex());
         this.cancelEdit();
     }
 
     protected applyEditAndCreateNext(item: DataMapperItem) {
-        if (this.mapperKind() === 'load' ? !item.OutputFieldName : !outputPath(item)) {
+        if (!this.canSaveMapping(item)) {
             return;
         }
-
         this.upsertMappingItem(item, this.editIndex());
         this.editIndex.set(-1);
-        this.editing.set(this.createMappingItem(item));
+        this.editing.set(createMappingItem(this.mapperKind(), this.loadObjectGroups(), item));
     }
 
     protected saveMappingRow(item: DataMapperItem) {
-        this.upsertMappingItem(item, this.model().items.findIndex(candidate => this.isSameItem(candidate, item)));
+        this.upsertMappingItem(item, this.model().items.findIndex(candidate => isSameItem(candidate, item)));
+    }
+
+    private canSaveMapping(item: DataMapperItem) {
+        return this.mapperKind() === 'load' ? !!item.OutputFieldName : !!outputPath(item);
     }
 
     private upsertMappingItem(item: DataMapperItem, index: number) {
@@ -497,7 +437,7 @@ export class AppComponent {
     protected updateFormula(item: DataMapperItem, updatedItem = item) {
         const formulaItem: DataMapperItem = {
             ...updatedItem,
-            FormulaSequence: Number(updatedItem.FormulaSequence || this.nextFormulaSequence()),
+            FormulaSequence: Number(updatedItem.FormulaSequence || nextFormulaSequence(this.model().items)),
             OutputCreationSequence: updatedItem.OutputCreationSequence ?? 0,
             OutputFieldName: 'Formula',
             OutputObjectName: 'Formula',
@@ -506,301 +446,177 @@ export class AppComponent {
         };
         this.model.update(model => ({
             ...model,
-            items: model.items.map(candidate => this.isSameItem(candidate, item) ? formulaItem : candidate)
+            items: model.items.map(candidate => isSameItem(candidate, item) ? formulaItem : candidate)
         }));
     }
 
     protected moveFormula(item: DataMapperItem, direction: -1 | 1) {
         const formulas = this.formulaItems();
-        const index = formulas.findIndex(candidate => this.isSameItem(candidate, item));
+        const index = formulas.findIndex(candidate => isSameItem(candidate, item));
         const target = index + direction;
         if (index < 0 || target < 0 || target >= formulas.length) {
             return;
         }
         [formulas[index], formulas[target]] = [formulas[target], formulas[index]];
         const sequenceByKey = new Map<string, number>();
-        formulas.forEach((formula, formulaIndex) => sequenceByKey.set(this.itemKey(formula), formulaIndex + 1));
+        formulas.forEach((formula, formulaIndex) => sequenceByKey.set(formulaKey(formula), formulaIndex + 1));
         this.model.update(model => ({
             ...model,
             items: model.items.map(candidate => isFormulaItem(candidate)
-                ? { ...candidate, FormulaSequence: sequenceByKey.get(this.itemKey(candidate)) ?? candidate.FormulaSequence }
+                ? { ...candidate, FormulaSequence: sequenceByKey.get(formulaKey(candidate)) ?? candidate.FormulaSequence }
                 : candidate)
         }));
     }
 
     protected deleteFormula(item: DataMapperItem) {
-        this.deleteItem(item);
+        this.model.update(model => ({ ...model, items: model.items.filter(candidate => !isSameItem(candidate, item)) }));
     }
 
     protected insertFormulaAfter(item: DataMapperItem) {
         this.createFormula(item);
     }
 
+    private requestFieldsForCurrentObjects() {
+        if (!this.hasLoaded()) {
+            return;
+        }
+        const objects = this.fieldObjectNamesForModel(this.model(), this.sObjectSuggestions());
+        const key = objects.join('');
+        if (!key) {
+            this.fieldMetadataLoading.set(false);
+            this.lastFieldObjectsKey = '';
+            return;
+        }
+        if (key === this.lastFieldObjectsKey) {
+            return;
+        }
+        this.lastFieldObjectsKey = key;
+        if (!this.vscode) {
+            this.fieldMetadataLoading.set(false);
+            return;
+        }
+        this.fieldMetadataLoading.set(true);
+        this.vscode.postMessage({ type: 'refreshFields', model: this.model(), objects });
+    }
+
     private handleMessage(message: ExtensionToWebviewMessage) {
-        if (message.type === 'previewResult') {
-            this.previewOutputJson.set(this.stringifyJson(message.result.output));
-            this.previewDebug.set(message.result.debug);
-            this.previewError.set(undefined);
-            this.previewRunning.set(false);
-            return;
-        }
-        if (message.type === 'previewError') {
-            this.previewError.set(message.message);
-            this.previewDebug.set(message.debug);
-            this.previewRunning.set(false);
-            return;
-        }
-        if (message.type === 'error') {
-            this.error.set(message.message);
-            this.fieldMetadataLoading.set(false);
-            this.refreshing.set(false);
-            this.previewRunning.set(false);
-            return;
-        }
-        if (message.type === 'fields') {
-            this.error.set(message.error);
-            if (message.objectSuggestions) {
-                this.sObjectSuggestions.set(message.objectSuggestions);
-            }
-            this.sourceFields.set(message.sourceFields);
-            this.outputFields.set(message.outputFields);
-            this.fieldMetadataLoading.set(false);
-            return;
-        }
-        if (message.type === 'load') {
-            this.error.set(message.state.error);
-            this.model.set(message.state.model);
-            this.sObjectSuggestions.set(message.state.objectSuggestions);
-            this.sourceFields.set(message.state.sourceFields);
-            this.outputFields.set(message.state.outputFields);
-            this.lastFieldObjectsKey = this.fieldObjectNamesForModel(message.state.model, message.state.objectSuggestions).join('\u001f');
-            if (!this.previewInputDirty) {
-                this.previewInputJson.set(this.getInitialPreviewJson(message.state.model));
-            }
-            this.previewOutputJson.set('');
-            this.previewError.set(undefined);
-            this.previewDebug.set(undefined);
-            this.hasLoaded.set(true);
-            this.fieldMetadataLoading.set(false);
-            this.refreshing.set(false);
-            this.previewRunning.set(false);
-            const visibleTabs = getTabs(getDataMapperKind(message.state.model)).map(tab => tab.id);
-            if (!visibleTabs.includes(this.activeTab())) {
-                this.activeTab.set(firstTab(getDataMapperKind(message.state.model)));
-            }
+        switch (message.type) {
+            case 'previewResult':
+                this.previewOutputJson.set(stringifyJson(message.result.output));
+                this.previewDebug.set(message.result.debug);
+                this.previewError.set(undefined);
+                this.previewRunning.set(false);
+                return;
+            case 'previewError':
+                this.previewError.set(message.message);
+                this.previewDebug.set(message.debug);
+                this.previewRunning.set(false);
+                return;
+            case 'error':
+                this.error.set(message.message);
+                this.fieldMetadataLoading.set(false);
+                this.refreshing.set(false);
+                this.previewRunning.set(false);
+                return;
+            case 'fields':
+                this.error.set(message.error);
+                if (message.objectSuggestions) {
+                    this.sObjectSuggestions.set(message.objectSuggestions);
+                }
+                this.sourceFields.set(message.sourceFields);
+                this.outputFields.set(message.outputFields);
+                this.fieldMetadataLoading.set(false);
+                return;
+            case 'load':
+                this.applyLoadedState(message.state);
+                return;
         }
     }
 
-    private uniqueSuggestions(fields: FieldSuggestion[]) {
-        const seen = new Set<string>();
-        return fields.filter(field => {
-            const key = field.path.toLowerCase();
-            if (seen.has(key)) {
-                return false;
-            }
-            seen.add(key);
-            return true;
-        }).sort((a, b) => a.path.localeCompare(b.path));
+    private applyLoadedState(state: EditorState) {
+        this.error.set(state.error);
+        this.model.set(state.model);
+        this.sObjectSuggestions.set(state.objectSuggestions);
+        this.sourceFields.set(state.sourceFields);
+        this.outputFields.set(state.outputFields);
+        this.lastFieldObjectsKey = this.fieldObjectNamesForModel(state.model, state.objectSuggestions).join('');
+        if (!this.previewInputDirty) {
+            this.previewInputJson.set(initialPreviewJson(state.model));
+        }
+        this.previewOutputJson.set('');
+        this.previewError.set(undefined);
+        this.previewDebug.set(undefined);
+        this.hasLoaded.set(true);
+        this.fieldMetadataLoading.set(false);
+        this.refreshing.set(false);
+        this.previewRunning.set(false);
+        const visibleTabs = getTabs(getDataMapperKind(state.model)).map(tab => tab.id);
+        if (!visibleTabs.includes(this.activeTab())) {
+            this.activeTab.set(firstTab(getDataMapperKind(state.model)));
+        }
     }
 
-    private extractSourceSuggestions(
-        sourceFields: FieldSuggestion[],
-        extractionGroups: ExtractGroup[],
-        formulaItems: DataMapperItem[],
-        items: DataMapperItem[]
-    ) {
-        const suggestions = new Array<FieldSuggestion>();
-        const fieldsByObject = new Map<string, FieldSuggestion[]>();
-
-        for (const field of sourceFields) {
-            const objectName = this.sourceFieldObjectName(field);
-            if (!objectName) {
-                continue;
-            }
-            const key = objectName.toLowerCase();
-            const fields = fieldsByObject.get(key);
-            if (fields) {
-                fields.push(field);
-            } else {
-                fieldsByObject.set(key, [field]);
-            }
-        }
-
-        for (const group of extractionGroups) {
-            const extractPath = String(group.outputFieldName || '').trim();
-            const objectName = String(group.inputObjectName || '').trim();
-            if (!extractPath || !objectName) {
-                continue;
-            }
-            suggestions.push({
-                objectName,
-                name: extractPath.split(':').pop() ?? extractPath,
-                label: 'Extract object path',
-                path: extractPath
-            });
-            for (const field of fieldsByObject.get(objectName.toLowerCase()) ?? []) {
-                suggestions.push({
-                    ...field,
-                    objectName,
-                    name: field.name,
-                    path: `${extractPath}:${field.name}`
-                });
-            }
-        }
-
-        for (const formula of formulaItems) {
-            const formulaPath = String(formula.FormulaResultPath || '').trim();
-            if (!formulaPath) {
-                continue;
-            }
-            suggestions.push({
-                name: formulaPath.split(':').pop() ?? formulaPath,
-                label: 'Formula result path',
-                path: formulaPath
-            });
-        }
-
-        for (const item of items) {
-            const path = this.extractSourcePathForItem(item, extractionGroups);
-            if (path) {
-                suggestions.push({ path, name: path.split(':').pop() ?? path });
-            }
-        }
-
-        return this.uniqueSuggestions(suggestions);
-    }
-
-    private sourceFieldObjectName(field: FieldSuggestion) {
-        if (field.objectName) {
-            return field.objectName;
-        }
-        const separator = field.path.indexOf(':');
-        return separator > 0 ? field.path.slice(0, separator) : undefined;
-    }
-
-    private extractSourcePathForItem(item: DataMapperItem, extractionGroups: ExtractGroup[]) {
-        const inputFieldName = String(item.InputFieldName || '').trim();
-        if (!inputFieldName) {
-            return '';
-        }
-        if (inputFieldName.includes(':')) {
-            return inputFieldName;
-        }
-        const inputObjectName = String(item.InputObjectName || '').trim();
-        if (!inputObjectName) {
-            return inputFieldName;
-        }
-        const matchingGroups = extractionGroups.filter(group => String(group.inputObjectName || '').toLowerCase() === inputObjectName.toLowerCase());
-        if (matchingGroups.length === 1 && matchingGroups[0].outputFieldName) {
-            return `${matchingGroups[0].outputFieldName}:${inputFieldName}`;
-        }
-        return inputPath(item);
-    }
-
-    private deleteItem(item: DataMapperItem) {
-        this.model.update(model => ({
-            ...model,
-            items: model.items.filter(candidate => {
-                return !this.isSameItem(candidate, item);
-            })
-        }));
-    }
-
-    private nextFormulaSequence() {
-        return this.formulaItems().reduce((max, item) => Math.max(max, Number(item.FormulaSequence || 0)), 0) + 1;
-    }
-
-    private normalizeFormulaSequences(items: DataMapperItem[]) {
-        const formulas = items
-            .filter(isFormulaItem)
-            .sort((a, b) => Number(a.FormulaSequence || 0) - Number(b.FormulaSequence || 0));
-        formulas.forEach((item, index) => item.FormulaSequence = index + 1);
-        return items;
-    }
-
-    private isSameItem(candidate: DataMapperItem, item: DataMapperItem) {
-        if (item.GlobalKey && candidate.GlobalKey) {
-            return candidate.GlobalKey === item.GlobalKey;
-        }
-        return candidate === item;
-    }
-
-    private itemKey(item: DataMapperItem) {
-        return String(item.GlobalKey ?? `${item.FormulaSequence ?? ''}:${item.FormulaResultPath ?? ''}:${item.FormulaExpression ?? ''}`);
-    }
-
-    private createMappingItem(previous?: DataMapperItem): DataMapperItem {
-        return {
-            GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}`,
-            IsDisabled: false,
-            IsRequiredForUpsert: false,
-            IsUpsertKey: false,
-            OutputCreationSequence: this.mapperKind() === 'load'
-                ? (previous?.OutputCreationSequence ?? this.loadObjectGroups()[0]?.sequence ?? 1)
-                : undefined,
-            OutputObjectName: this.mapperKind() === 'load'
-                ? (previous?.OutputObjectName ?? this.loadObjectGroups()[0]?.outputObjectName ?? '')
-                : 'json',
-            VlocityDataPackType: 'SObject',
-            VlocityRecordSObjectType: 'OmniDataTransformItem'
-        };
-    }
-
-    private fieldObjectNamesForModel(model: DataMapperModel, objectSuggestions: FieldSuggestion[] = []) {
+    private fieldObjectNamesForModel(model: DataMapperModel, objectSuggestions: FieldSuggestion[]) {
         const kind = getDataMapperKind(model);
+        const targetField: keyof DataMapperItem = kind === 'load' ? 'OutputObjectName' : 'InputObjectName';
         const objectNames = new Set<string>();
         for (const item of model.items) {
-            if (kind !== 'load' && item.InputObjectName) {
-                objectNames.add(String(item.InputObjectName));
-            }
-            if (kind === 'load' && item.OutputObjectName) {
-                objectNames.add(String(item.OutputObjectName));
+            const value = item[targetField];
+            if (value) {
+                objectNames.add(String(value));
             }
         }
-        const knownObjectNames = new Set(objectSuggestions.map(suggestion => suggestion.path.toLowerCase()));
+        const known = new Set(objectSuggestions.map(suggestion => suggestion.path.toLowerCase()));
         return [...objectNames]
-            .filter(objectName => !knownObjectNames.size || knownObjectNames.has(objectName.toLowerCase()))
+            .filter(name => !known.size || known.has(name.toLowerCase()))
             .sort((a, b) => a.localeCompare(b));
     }
+}
 
-    private getInitialPreviewJson(model: DataMapperModel) {
-        const value = model.header.PreviewJsonData ?? model.header.ExpectedInputJson;
-        if (typeof value === 'string' && value.trim()) {
-            return this.formatJsonText(value);
-        }
-        if (value && typeof value === 'object') {
-            return this.stringifyJson(value);
-        }
-        return '{\n}';
+function isSameItem(candidate: DataMapperItem, item: DataMapperItem) {
+    if (item.GlobalKey && candidate.GlobalKey) {
+        return candidate.GlobalKey === item.GlobalKey;
     }
+    return candidate === item;
+}
 
-    private validatePreviewInput(inputJson: string) {
-        if (!inputJson.trim()) {
-            return 'Input must be valid JSON.';
-        }
-        try {
-            JSON.parse(inputJson);
-            return undefined;
-        } catch (error) {
-            return this.getErrorMessage(error);
-        }
-    }
+function formulaKey(item: DataMapperItem) {
+    return String(item.GlobalKey ?? `${item.FormulaSequence ?? ''}:${item.FormulaResultPath ?? ''}:${item.FormulaExpression ?? ''}`);
+}
 
-    private formatJsonText(value: string) {
+function initialPreviewJson(model: DataMapperModel) {
+    const value = model.header.PreviewJsonData ?? model.header.ExpectedInputJson;
+    if (typeof value === 'string' && value.trim()) {
         try {
-            return this.stringifyJson(JSON.parse(value));
+            return stringifyJson(JSON.parse(value));
         } catch {
             return value;
         }
     }
-
-    private stringifyJson(value: unknown) {
-        return JSON.stringify(value ?? null, null, 2) ?? 'null';
+    if (value && typeof value === 'object') {
+        return stringifyJson(value);
     }
+    return '{\n}';
+}
 
-    private getErrorMessage(error: unknown) {
-        return error instanceof Error ? error.message : String(error);
+function validatePreviewInput(inputJson: string) {
+    if (!inputJson.trim()) {
+        return 'Input must be valid JSON.';
     }
+    try {
+        JSON.parse(inputJson);
+        return undefined;
+    } catch (error) {
+        return getErrorMessage(error);
+    }
+}
+
+function stringifyJson(value: unknown) {
+    return JSON.stringify(value ?? null, null, 2);
+}
+
+function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
 }
 
 bootstrapApplication(AppComponent, {

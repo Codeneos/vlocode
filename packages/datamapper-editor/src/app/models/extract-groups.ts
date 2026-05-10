@@ -37,7 +37,7 @@ export function extractGroupId(item: DataMapperItem) {
     return [
         item.InputObjectName ?? '',
         item.OutputFieldName ?? '',
-        String(item.InputObjectQuerySequence ?? '0')
+        item.InputObjectQuerySequence ?? 0
     ].join(GROUP_SEPARATOR);
 }
 

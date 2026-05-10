@@ -1,10 +1,7 @@
 import type { DataMapperItem, LoadObjectGroup } from './datamapper.model';
+import { isFormulaItem } from './formulas';
 
 const GROUP_SEPARATOR = '\u001f';
-
-export function isFormulaItem(item: DataMapperItem) {
-    return !!item.FormulaExpression || item.OutputObjectName === 'Formula' || item.OutputFieldName === 'Formula';
-}
 
 export function isLoadItem(item: DataMapperItem) {
     return !!item.OutputObjectName && !isFormulaItem(item) && item.OutputObjectName !== 'json';
@@ -21,7 +18,7 @@ export function isLoadMappingItem(item: DataMapperItem) {
 export function loadObjectGroupId(item: DataMapperItem) {
     return [
         item.OutputObjectName ?? '',
-        String(item.OutputCreationSequence ?? '1')
+        item.OutputCreationSequence ?? 1
     ].join(GROUP_SEPARATOR);
 }
 

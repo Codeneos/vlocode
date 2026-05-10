@@ -5,6 +5,7 @@ import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-i
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import type { DataMapperItem, ExtractGroup, FieldSuggestion } from '../../models/datamapper.model';
 import { FILTER_OPERATORS, isSpecialFilter } from '../../models/extract-groups';
+import { newGlobalKey } from '../../models/items';
 
 @Component({
     selector: 'dm-extract-panel',
@@ -87,7 +88,7 @@ export class ExtractPanelComponent {
 
     private createFilterItem(group: ExtractGroup, item: Partial<DataMapperItem>): DataMapperItem {
         return {
-            GlobalKey: crypto.randomUUID?.() ?? `${Date.now()}-${group.items.length}`,
+            GlobalKey: newGlobalKey(),
             InputObjectName: group.inputObjectName,
             InputObjectQuerySequence: group.sequence,
             OutputFieldName: group.outputFieldName,
