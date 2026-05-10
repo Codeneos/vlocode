@@ -99,15 +99,21 @@ export function resumeOnce<A, E extends string | symbol>(
     timeout?: number
 ): Promise<A> {
     return new Promise<A>((resolve, reject) => {
-        let isTimeout = false;
-        timeout && wait(timeout).then(() => {
-            isTimeout = true;
-            reject(new Error(`Event '${String(eventName)}' not emitted within the set timeout of ${timeout}ms`));
-        });
+        let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+        if (timeout) {
+            timeoutHandle = setTimeout(() => {
+                timeoutHandle = undefined;
+                reject(new Error(`Event '${String(eventName)}' not emitted within the set timeout of ${timeout}ms`));
+            }, timeout);
+        }
+
         emitter.once(eventName, (...args: A[]) => {
-            if (!isTimeout) {
-                resolve(args.length === 1 ? args[0] as any : args);
+            if (timeoutHandle !== undefined) {
+                clearTimeout(timeoutHandle);
+                timeoutHandle = undefined;
             }
+            resolve(args.length === 1 ? args[0] as any : args);
         });
     });
 }
