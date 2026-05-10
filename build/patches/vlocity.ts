@@ -9,12 +9,14 @@ export default function vlocityPatch(): Plugin {
     return {
         name: 'vlocity-patch',
         async transform(code: string, id: string) {
-            if (!/vlocity\/lib\//.test(id)) {
+            const normalizedId = id.replace(/\\/g, '/');
+
+            if (!/vlocity\/lib\//.test(normalizedId)) {
                 // Skip non-vlocity files
                 return null;
             }
 
-            if (/vlocity\/lib\/vlocityutils\.js$/.test(id)) {
+            if (/vlocity\/lib\/vlocityutils\.js$/.test(normalizedId)) {
                 const replaced = code.replace(
                     'VlocityUtils = {',
                     'globalThis.VlocityUtils = {'
@@ -23,7 +25,7 @@ export default function vlocityPatch(): Plugin {
                 return { code: replaced, map: null as any };
             }
 
-            if (/vlocity\/lib\/(datapacksutils|vlocity)\.js$/.test(id)) {
+            if (/vlocity\/lib\/(datapacksutils|vlocity)\.js$/.test(normalizedId)) {
                 const replaced = code.replace(
                     /(VLOCITY_BUILD_SALESFORCE_API_VERSION|VLOCITY_BUILD_VERSION) = /g,
                     'globalThis.$1 = '
@@ -32,7 +34,7 @@ export default function vlocityPatch(): Plugin {
                 return { code: replaced, map: null as any };
             }
 
-            if (/vlocity\/lib\/datapacksjob\.js$/.test(id)) {
+            if (/vlocity\/lib\/datapacksjob\.js$/.test(normalizedId)) {
                 const replaced = code.replace(
                     'for (settingsKey in',
                     'for (const settingsKey in'
