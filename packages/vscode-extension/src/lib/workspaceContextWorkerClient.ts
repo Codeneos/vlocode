@@ -69,8 +69,8 @@ export class WorkspaceContextWorkerClient {
     }
 
     private getWorkerPath() {
-        const workerPath = path.join(__dirname, 'workspaceContextWorker.mjs');
-        return existsSync(workerPath) ? workerPath : path.join(__dirname, 'workspaceContextWorker.js');
+        const workerPath = path.join(__dirname, 'ws-ctx-worker.mjs');
+        return existsSync(workerPath) ? workerPath : path.join(__dirname, 'ws-ctx-worker.js');
     }
 
     private handleMessage(message: WorkspaceContextWorkerResponse) {
