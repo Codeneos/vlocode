@@ -64,14 +64,14 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         owner.removeInstance(this.schemaAccess);
     }
 
-    @cache({ unwrapPromise: true, immutable: true })
+    @cache({ immutable: true })
     public async describeSObjects() : Promise<Array<DescribeGlobalSObjectResult>> {
         const con = await this.connectionProvider.getJsForceConnection();
         const { sobjects } = await con.describeGlobal();
         return sobjects;
     }
 
-    @cache({ unwrapPromise: true, immutable: true })
+    @cache({ immutable: true })
     public async describeCustomMetadataObjects() : Promise<Array<string>> {
         const con = await this.connectionProvider.getJsForceConnection();
         const components = await con.metadata.list({ type: 'CustomMetadata' });
@@ -177,7 +177,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         throw Error(`No object type found matching the key id specified: ${id}`);
     }
 
-    @cache({ unwrapPromise: true, immutable: true })
+    @cache({ immutable: true })
     public async describeByPrefix(prefix: string) {
         for (const obj of await this.describeSObjects()) {
             if (obj.keyPrefix === prefix) {
@@ -188,7 +188,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
 
     public async describePicklistValues(type: string, fieldName: string): Promise<PicklistEntry[]>;
     public async describePicklistValues(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<PicklistEntry[] | undefined>;
-    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
+    @cache({ cacheExceptions: true, immutable: true })
     public async describePicklistValues(type: string, fieldName: string, throwWhenNotFound: boolean = true): Promise<PicklistEntry[] | undefined> {
         const field = await this.describeSObjectField(type, fieldName, throwWhenNotFound);
         if (!field) {
@@ -225,7 +225,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
 
     public async describeSObjectField(type: string, fieldName: string) : Promise<Field>
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<Field | undefined>
-    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
+    @cache({ cacheExceptions: true, immutable: true })
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<Field | undefined> {
         return (await this.describeSObjectFieldPath(type, fieldName, throwWhenNotFound))?.slice(-1).pop();
     }
@@ -238,7 +238,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
      * @param fieldPath Full field path
      * @param throwWhenNotFound trye to throw an exception when the type is not found otherwise return null;
      */
-    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
+    @cache({ cacheExceptions: true, immutable: true })
     public async describeSObjectFieldPath(type: string, fieldPath: string, throwWhenNotFound: boolean = true) : Promise<ReadonlyArray<Field> | undefined> {
         const resolved = new Array<Field>();
 
@@ -302,7 +302,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
      * @param type SObject Type
      * @returns 
      */
-    @cache({ unwrapPromise: true, immutable: true })
+    @cache({ immutable: true })
     public async getSObjectFields(type: string) : Promise<ReadonlyMap<string, Field>> {
         return new Map((await this.describeSObject(type)).fields.map<[string, Field][]>(field => [
             [field.name, field]
@@ -345,7 +345,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
      * @param type SOBject type
      * @param path Full path of properties
      */
-    @cache({ unwrapPromise: true })
+    @cache()
     public async toSalesforceField(type: string, path: string) : Promise<string> {
         const salesforcePath : any[] = [];
         const pathSplit = path.split('.');
