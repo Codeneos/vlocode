@@ -1,0 +1,21 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true
+    },
+    "include": [
+        "build/**/*.ts",
+        "jest.config.ts",
+        "packages/*/jest.config.ts",
+        "packages/*/src/**/*.ts",
+        "packages/*/tsdown.config.ts",
+        "packages/*/tsdown.config.mts"
+    ],
+    "exclude": [
+        "**/dist/**",
+        "lib/**",
+        "packages/*/lib/**",
+        "**/node_modules/**",
+        "packages/datamapper-editor/.angular/**"
+    ]
+}

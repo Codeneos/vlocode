@@ -99,7 +99,6 @@ export class WorkspaceOverrideConfiguration {
     private unload(workspace: string) {
         if (this.overrideConfigs[workspace]) {
             this.overrideConfigs[workspace].watcher.dispose();
-            // eslint-disable-next-line @typescript-eslint/tslint/config
             delete this.overrideConfigs[workspace];
         }
     }
