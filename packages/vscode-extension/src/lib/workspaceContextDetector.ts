@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as constants from '../constants';
 import * as vscode from 'vscode';
 import { Logger, FileSystem, injectable, LifecyclePolicy } from '@vlocode/core';
-import { clearCache, Timer } from '@vlocode/util';
+import { clearCache, Timer, wait } from '@vlocode/util';
 import { FileFilterInfo, WorkspaceContextScanner, type FileFilterFunction } from './workspaceContextScanner';
 import { WorkspaceContextWorkerClient } from './workspaceContextWorkerClient';
 
