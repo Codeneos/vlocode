@@ -429,7 +429,7 @@ vlocode.datamapper.openEditor:
     - menu: editor/title/run
       when: &whenDataMapperFile
         - resourcePath =~ /[\/\\]omniDataTransforms[\/\\].*\.rpt-meta\.xml$/
-        - resourcePath =~ /[\/\\]DataRaptor[\/\\].*_(DataPack|Items)\.json$/
+        - resourcePath =~ /[\/\\](DataRaptor|OmniDataTransform)[\/\\].*_(DataPack|Items)\.json$/
     - menu: editor/context
       when: *whenDataMapperFile
     - menu: explorer/context
