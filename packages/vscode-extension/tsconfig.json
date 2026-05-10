@@ -2,10 +2,8 @@
     "extends": "../../tsconfig",
     "compilerOptions": {
         "module": "preserve",
-        "target": "es2022",
         "moduleResolution": "bundler",
         "outDir": "lib",
-        "sourceMap": true,
         "declaration": false,
         "allowArbitraryExtensions": true,
         "allowImportingTsExtensions": true,

@@ -1,21 +1,17 @@
 {
     "extends": "../../tsconfig.json",
     "compilerOptions": {
-        "baseUrl": ".",
         "module": "es2022",
+        "rootDir": "..",
         "moduleResolution": "bundler",
-        "target": "ES2022",
         "emitDecoratorMetadata": false,
-        "useDefineForClassFields": false,
         "types": [],
         "paths": {
             "@vlocode/vlocity": ["../vlocity/src"],
             "@vlocode/vlocity/*": ["../vlocity/src/*"]
         }
     },
-    "include": [
-        "src/**/*.ts"
-    ],
+    "include": ["src/**/*.ts"],
     "files": [],
     "references": [
         {
