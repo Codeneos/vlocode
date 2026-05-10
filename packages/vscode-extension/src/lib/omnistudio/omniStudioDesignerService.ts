@@ -1,5 +1,5 @@
 import { Logger, injectable } from '@vlocode/core';
-import { QueryBuilder, SalesforceService } from '@vlocode/salesforce';
+import { SalesforceService } from '@vlocode/salesforce';
 import { DatapackTypeDefinition, SalesforceUrlType } from '@vlocode/vlocity';
 import { getErrorMessage } from '@vlocode/util';
 
