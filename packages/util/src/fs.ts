@@ -75,13 +75,27 @@ export function directoryName(pathLike: string, depth?: number) {
     if (depth !== undefined && depth < 1) {
         throw new Error(`Invalid depth ${depth} for directoryName, must be greater than 0`);
     }
-    const pathParts = pathLike.split(/[\\/]/g);
-    if (pathParts.length == 1) {
-        return '.';
-    } else if (pathParts.length == 2 && (pathParts[0] == '/' || pathParts[0] == '\\')) {
-        return path.sep;
+
+    const preferredSep = pathLike.includes('\\') && !pathLike.includes('/') ? '\\' : '/';
+    const normalized = pathLike.replace(/\\/g, '/');
+
+    // Keep drive and UNC roots stable when traversing with depth.
+    const uncRootMatch = normalized.match(/^\/\/[^/]+\/[^/]+/);
+    const driveRootMatch = normalized.match(/^[A-Za-z]:\//);
+    const root = uncRootMatch?.[0] ?? driveRootMatch?.[0] ?? (normalized.startsWith('/') ? '/' : '');
+
+    const relativePath = root ? normalized.slice(root.length) : normalized;
+    const parts = relativePath.split('/').filter(Boolean);
+    const remainingParts = parts.slice(0, Math.max(0, parts.length - (depth ?? 1)));
+
+    let currentDir: string;
+    if (root) {
+        currentDir = root + (remainingParts.length > 0 ? remainingParts.join('/') : '');
+    } else {
+        currentDir = remainingParts.length > 0 ? remainingParts.join('/') : '.';
     }
-    return pathParts.slice(0, -(depth ?? 1)).join(path.sep);
+
+    return preferredSep === '/' ? currentDir : currentDir.replace(/\//g, '\\');
 }
 
 /**

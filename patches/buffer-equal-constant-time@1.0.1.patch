@@ -1,0 +1,66 @@
+diff --git a/index.js b/index.js
+index 5462c1f830bdbe79bf2b1fcfd811cd9799b4dd11..9fca6560164dd97a8566f78c3c50f7bb9a807276 100644
+--- a/index.js
++++ b/index.js
+@@ -1,41 +1,40 @@
+-/*jshint node:true */
+ 'use strict';
+-var Buffer = require('buffer').Buffer; // browserify
+-var SlowBuffer = require('buffer').SlowBuffer;
++const { Buffer, SlowBuffer } = require('node:buffer');
++const { timingSafeEqual } = require('node:crypto');
++const hasSlowBuffer = Boolean(SlowBuffer?.prototype);
++const isBuffer = Buffer.isBuffer;
+ 
+ module.exports = bufferEq;
+ 
+ function bufferEq(a, b) {
+-
+-  // shortcutting on type is necessary for correctness
+-  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
++  if (!isBuffer(a) || !isBuffer(b)) {
+     return false;
+   }
+ 
+-  // buffer sizes should be well-known information, so despite this
+-  // shortcutting, it doesn't leak any information about the *contents* of the
+-  // buffers.
++  // timingSafeEqual throws when lengths are different, and length is not secret.
+   if (a.length !== b.length) {
+     return false;
+   }
+ 
+-  var c = 0;
+-  for (var i = 0; i < a.length; i++) {
+-    /*jshint bitwise:false */
+-    c |= a[i] ^ b[i]; // XOR
+-  }
+-  return c === 0;
++  return timingSafeEqual(a, b);
+ }
+ 
+-bufferEq.install = function() {
+-  Buffer.prototype.equal = SlowBuffer.prototype.equal = function equal(that) {
++bufferEq.install = function install() {
++  const equal = function equal(that) {
+     return bufferEq(this, that);
+   };
++
++  Buffer.prototype.equal = equal;
++  if (hasSlowBuffer) {
++    SlowBuffer.prototype.equal = equal;
++  }
+ };
+ 
+-var origBufEqual = Buffer.prototype.equal;
+-var origSlowBufEqual = SlowBuffer.prototype.equal;
+-bufferEq.restore = function() {
++const origBufEqual = Buffer.prototype.equal;
++const origSlowBufEqual = hasSlowBuffer ? SlowBuffer.prototype.equal : undefined;
++bufferEq.restore = function restore() {
+   Buffer.prototype.equal = origBufEqual;
+-  SlowBuffer.prototype.equal = origSlowBufEqual;
++  if (hasSlowBuffer) {
++    SlowBuffer.prototype.equal = origSlowBufEqual;
++  }
+ };

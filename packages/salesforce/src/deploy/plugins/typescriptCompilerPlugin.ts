@@ -65,7 +65,7 @@ export class TypeScriptCompilerPlugin implements SalesforcePackageBuilderPlugin 
         }
 
 		const tsSource = typeof entry.data === 'string' ? entry.data : entry.data.toString('utf8');
-        const jsSource = stripTypeScriptTypes(tsSource, { mode: 'strip', sourceMap: false, ...this.options });
+        const jsSource = stripTypeScriptTypes(tsSource, { ...this.options, sourceMap: false, mode: 'strip' });
         
         return {
             ...entry,

@@ -145,6 +145,7 @@ export namespace XML {
         ignoreDeclaration: false,
         ignorePiTags: true,
         processEntities: true,
+        htmlEntities: true,
         numberParseOptions: {
             leadingZeros: false,
             hex: false,
@@ -200,7 +201,7 @@ export namespace XML {
                 return options.valueProcessor!(value, `${path}@${attr}`);
             };
             parserOptions.tagValueProcessor = (tag, value, path) => {
-                return options.valueProcessor!(value, path);
+                return options.valueProcessor!(value, `${path}`);
             };
         }
 
@@ -210,7 +211,7 @@ export namespace XML {
                     return false;
                 }
                 if (typeof options.arrayMode === 'function') {
-                    return options.arrayMode(path);
+                    return options.arrayMode(`${path}`);
                 }
                 return options.arrayMode === true;
             };

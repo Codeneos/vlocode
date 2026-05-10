@@ -27,24 +27,14 @@ describe('TypeScriptCompilerPlugin', () => {
         expect(jsEntry!.data?.toString()).toContain('export const answer');
     });
 
-    it('transpiles (transform) .ts class with constructor properties', async () => {
+    it('strips TS annotations from class source', async () => {
         const tsSample = 
 `export class Sample {
-    constructor(private name: string) {
+    private name: string;
+    constructor(name: string) {
         this.name = name;
     }
     getName(): string {
-        return this.name;
-    }
-}`;
-        const expectedJs = 
-`export class Sample {
-    name;
-    constructor(name){
-        this.name = name;
-        this.name = name;
-    }
-    getName() {
         return this.name;
     }
 }`;
@@ -56,12 +46,16 @@ describe('TypeScriptCompilerPlugin', () => {
 
         const builder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, '58.0');
         container.add(fs);
-        builder.addPlugin(new TypeScriptCompilerPlugin( { mode: 'transform' } ));
+        builder.addPlugin(new TypeScriptCompilerPlugin( { mode: 'strip' } ));
         await builder.addFiles(['src/lwc/sample/sample.ts']);
 
         const pkg = await builder.build();
         const jsEntry = pkg.getPackageData('lwc/sample/sample.js');
+        const jsSource = jsEntry!.data?.toString() ?? '';
         expect(jsEntry).toBeTruthy();
-        expect(jsEntry!.data?.toString()).toContain(expectedJs);
+        expect(jsSource).toMatch(/constructor\(\s*name\s*\)/);
+        expect(jsSource).toMatch(/getName\(\s*\)/);
+        expect(jsSource).not.toContain(': string');
+        expect(jsSource).not.toContain('private name');
     });
 });
