@@ -1,5 +1,5 @@
 
-import { FileFilterFunction, FileFilterInfo } from '../../lib/workspaceContextDetector';
+import type { FileFilterFunction, FileFilterInfo } from '../../lib/workspaceContextScanner';
 
 export class DatapackDetector {
 

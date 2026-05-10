@@ -13,6 +13,7 @@ import { globSync } from 'fs';
  */
 export const entryPoints = {
     'vlocode': './src/extension.ts',
+    'workspaceContextWorker': './src/lib/workspaceContextWorker.ts',
     'sass-compiler': '../sass/src/bin.ts'
 };
 

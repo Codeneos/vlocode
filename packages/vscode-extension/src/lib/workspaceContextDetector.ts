@@ -1,29 +1,12 @@
-import * as path from "path";
+import * as path from 'path';
 import * as constants from '../constants';
 import * as vscode from 'vscode';
-import { Logger, FileSystem, injectable, LifecyclePolicy, FileInfo } from '@vlocode/core';
-import { clearCache, Timer, wait } from '@vlocode/util';
+import { Logger, FileSystem, injectable, LifecyclePolicy } from '@vlocode/core';
+import { clearCache, Timer } from '@vlocode/util';
+import { FileFilterInfo, WorkspaceContextScanner, type FileFilterFunction } from './workspaceContextScanner';
+import { WorkspaceContextWorkerClient } from './workspaceContextWorkerClient';
 
-/**
- * Works in conjunction with the workspace context detector 
- */
-export interface FileFilterFunction {
-    (item: FileFilterInfo): boolean;
-};
-
-export class FileFilterInfo {
-
-    constructor(
-        public readonly folderName: string,
-        public readonly name: string,
-        private readonly file: FileInfo,
-        public siblings: FileFilterInfo[] = [],
-        public readonly fullName = path.join(folderName, name)) {
-    }
-
-    public isFile() { return this.file.isFile(); }
-    public isDirectory(){ return this.file.isDirectory(); }
-}
+export { FileFilterInfo, type FileFilterFunction };
 
 /**
  * Monitors the workspaces and detects workspace support folders for command's where conditions based on an specifiable _isApplicableFile_ FileFilterFunction
@@ -35,8 +18,9 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     private workspaceFolderWatcher: vscode.Disposable;
     private workspaceFileWatcher: vscode.FileSystemWatcher;
     private scheduledContextUpdate?: NodeJS.Timeout;
-    private detectionCounter: number = 0;
     private readonly ignorePattern = /[\\/]+\.[^\\/]+[\\/]+/;
+    private readonly scanner: WorkspaceContextScanner;
+    private readonly scannerWorker?: WorkspaceContextWorkerClient;
 
     /**
      * Create a new WorkspaceContextDetector with the specified configuration.
@@ -49,12 +33,15 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         public readonly isApplicableFile: FileFilterFunction,
         private readonly fs: FileSystem,
         private readonly logger: Logger) {
+        this.scanner = new WorkspaceContextScanner(this.fs, this.isApplicableFile);
+        this.scannerWorker = WorkspaceContextWorkerClient.create(this.editorContextKey, this.logger);
     }
 
     public dispose() {
         this.contextFiles = {};
         this.workspaceFolderWatcher?.dispose();
         this.workspaceFileWatcher?.dispose();
+        this.scannerWorker?.dispose();
         if (this.scheduledContextUpdate) {
             clearTimeout(this.scheduledContextUpdate);
         }
@@ -168,36 +155,13 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     }
 
     public async getApplicableFiles(folder: string) : Promise<string[]> {
-        const files = new Array<string>();
-        const fileInfos = await this.getFolderFileInfo(folder);
-
-        for (const entry of fileInfos) {
-            if (entry.name.startsWith('.') || entry.name == 'node_modules') {
-                continue;
-            }
-            if (this.detectionCounter++ % 100 === 0) {
-                // Yield event loop to other processes to avoid blocking extension host process
-                await wait(10);
-            }
-            if (entry.isDirectory()) {
-                files.push(...await this.getApplicableFiles(entry.fullName));
-            } else if (this.isApplicableFile(entry)) {
-                files.push(entry.fullName);
+        if (this.scannerWorker) {
+            try {
+                return await this.scannerWorker.getApplicableFiles(folder);
+            } catch (error) {
+                this.logger.warn(`Workspace context worker failed for ${this.editorContextKey}; falling back to extension host scan: ${error}`);
             }
         }
-
-        if (files.length) {
-            // Add folder when there are files in this folder
-            files.push(folder);
-        }
-
-        return files;
-    }
-
-    private async getFolderFileInfo(folder: string) : Promise<FileFilterInfo[]> {
-        const entries = await this.fs.readDirectory(folder);
-        const fileInfos = entries.map(file => new FileFilterInfo(folder, file.name, file));
-        fileInfos.forEach(f => f.siblings = fileInfos);
-        return fileInfos;
+        return this.scanner.getApplicableFiles(folder);
     }
 }
