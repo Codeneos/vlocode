@@ -4,6 +4,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
+
+### Bug Fixes
+
+* correct metadata id resolution and merge-field concat ([#447](https://github.com/Codeneos/vlocode/issues/447)) ([4d10570](https://github.com/Codeneos/vlocode/commit/4d10570b63b78a52bd76e34687b79dde308d118d))
+* drop transform TS for LWC compiling as Node26 drops dupport for the transform option. Type srtipping is now the default mode. ([9e8716c](https://github.com/Codeneos/vlocode/commit/9e8716c4c4ccfd7bb9c834542796da04f12831ad))
+* restore build infrastructure and eliminate duplicate builds ([#445](https://github.com/Codeneos/vlocode/issues/445)) ([34431fb](https://github.com/Codeneos/vlocode/commit/34431fbda827f02ea001db8d72e4e75195d091bf))
+
+### Features
+
+* enhance datapack export functionality and configuration ([ceb1a01](https://github.com/Codeneos/vlocode/commit/ceb1a01ebabd8c4ed120f2c1f8d7be8a02894d13))
+* improve direct export functions to match standard datapack export ([110d966](https://github.com/Codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+* optimize export path using query cache ([8db8ef7](https://github.com/Codeneos/vlocode/commit/8db8ef7f2bf468136bb0ffe0576b8146b466ab03))
+
 # [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 **Note:** Version bump only for package @vlocode/omniscript

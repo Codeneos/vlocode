@@ -4,6 +4,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
+
+### Bug Fixes
+
+* clean up tsconfig files by removing unnecessary options and ensuring path consistency ([d48525d](https://github.com/Codeneos/vlocode/commit/d48525d3509fc07fc22d2528f9b45e1af56494b7))
+* update CLI launch configurations to use .mjs files and enable source maps ([fa85ca9](https://github.com/Codeneos/vlocode/commit/fa85ca9d17722284308c494c5dfe629c2dbeee4b))
+
+### Features
+
+* enhance datapack export functionality and configuration ([ceb1a01](https://github.com/Codeneos/vlocode/commit/ceb1a01ebabd8c4ed120f2c1f8d7be8a02894d13))
+* improve direct export functions to match standard datapack export ([110d966](https://github.com/Codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+* integrate new export command in CLI with a job/export file support ([efa74ef](https://github.com/Codeneos/vlocode/commit/efa74ef3ab6f082feb679711190e28952b6caf86))
+* optimize export path using query cache ([8db8ef7](https://github.com/Codeneos/vlocode/commit/8db8ef7f2bf468136bb0ffe0576b8146b466ab03))
+
 # [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 **Note:** Version bump only for package @vlocode/cli

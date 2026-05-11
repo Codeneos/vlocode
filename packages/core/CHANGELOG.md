@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
+
+### Bug Fixes
+
+* correct metadata id resolution and merge-field concat ([#447](https://github.com/Codeneos/vlocode/issues/447)) ([4d10570](https://github.com/Codeneos/vlocode/commit/4d10570b63b78a52bd76e34687b79dde308d118d))
+* restore build infrastructure and eliminate duplicate builds ([#445](https://github.com/Codeneos/vlocode/issues/445)) ([34431fb](https://github.com/Codeneos/vlocode/commit/34431fbda827f02ea001db8d72e4e75195d091bf))
+
+### Features
+
+* enhance dependency injection with new constructor argument support and update export definitions schema ([adf31b3](https://github.com/Codeneos/vlocode/commit/adf31b3f4e257ea5d218303fd699def51b870135))
+* improve direct export functions to match standard datapack export ([110d966](https://github.com/Codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+* switch logging to only use the output panel as it performs better and now also has syntac highlighting support. This avoids poluting the terminal tabs and is much more inline with VSCode standards. ([bc77355](https://github.com/Codeneos/vlocode/commit/bc77355f47a68cc2f39e819d9046beaec2b4324f))
+
 # [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 **Note:** Version bump only for package @vlocode/core

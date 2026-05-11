@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
+
+### Bug Fixes
+
+* clean up tsconfig files by removing unnecessary options and ensuring path consistency ([d48525d](https://github.com/Codeneos/vlocode/commit/d48525d3509fc07fc22d2528f9b45e1af56494b7))
+* correct metadata id resolution and merge-field concat ([#447](https://github.com/Codeneos/vlocode/issues/447)) ([4d10570](https://github.com/Codeneos/vlocode/commit/4d10570b63b78a52bd76e34687b79dde308d118d))
+* restore build infrastructure and eliminate duplicate builds ([#445](https://github.com/Codeneos/vlocode/issues/445)) ([34431fb](https://github.com/Codeneos/vlocode/commit/34431fbda827f02ea001db8d72e4e75195d091bf))
+
+### Features
+
+* improve direct export functions to match standard datapack export ([110d966](https://github.com/Codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+
 # [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 **Note:** Version bump only for package @vlocode/apex

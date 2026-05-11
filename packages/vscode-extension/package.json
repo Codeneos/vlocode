@@ -3,7 +3,7 @@
     "private": true,
     "displayName": "Salesforce Industries & Omnistudio (Vlocity)",
     "description": "Salesforce Industries, Omnistudio (Vlocity) development and deployment extension for VSCode",
-    "version": "1.42.0",
+    "version": "2.0.0",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -1678,9 +1678,9 @@
         "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
         "ts-jest": "^29.4.9",
-        "typescript": "catalog:",
         "tsx": "^4.19.4",
         "type-fest": "^2.12.2",
+        "typescript": "catalog:",
         "vlocity": "1.14.18",
         "vscode-languageclient": "^8.1.0"
     }

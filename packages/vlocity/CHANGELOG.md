@@ -4,6 +4,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
+
+### Bug Fixes
+
+* correct metadata id resolution and merge-field concat ([#447](https://github.com/Codeneos/vlocode/issues/447)) ([4d10570](https://github.com/Codeneos/vlocode/commit/4d10570b63b78a52bd76e34687b79dde308d118d))
+* improve robustness on windows of path related functions ([18f7e11](https://github.com/Codeneos/vlocode/commit/18f7e118bc7087a35796f5f3aaa63f2dfc6782c8))
+* resolve 4 bugs found in recent commits ([#444](https://github.com/Codeneos/vlocode/issues/444)) ([1adf631](https://github.com/Codeneos/vlocode/commit/1adf631c43547e29ad40be8b064141259f340061))
+* restore build infrastructure and eliminate duplicate builds ([#445](https://github.com/Codeneos/vlocode/issues/445)) ([34431fb](https://github.com/Codeneos/vlocode/commit/34431fbda827f02ea001db8d72e4e75195d091bf))
+
+### Features
+
+* add OmniStudio formula language service and related components ([203bd0c](https://github.com/Codeneos/vlocode/commit/203bd0cf520109745f6eb8571b1ff90cc5bf41e6))
+* **datamapper:** add data mapper execution support running/previewing a data mapper ([da4f679](https://github.com/Codeneos/vlocode/commit/da4f6791e15873ce6bb9749b7dd46ab64e2586ef))
+* enhance datapack export functionality and configuration ([ceb1a01](https://github.com/Codeneos/vlocode/commit/ceb1a01ebabd8c4ed120f2c1f8d7be8a02894d13))
+* improve direct export functions to match standard datapack export ([110d966](https://github.com/Codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+* integrate vlocity package and enhance formula evaluation types ([8e4fdac](https://github.com/Codeneos/vlocode/commit/8e4fdacb9aa284f765bddce4be54a8d0cef6ce1e))
+
 # [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 ### Features

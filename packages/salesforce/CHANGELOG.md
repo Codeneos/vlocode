@@ -4,6 +4,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
+
+### Bug Fixes
+
+* clean up tsconfig files by removing unnecessary options and ensuring path consistency ([d48525d](https://github.com/Codeneos/vlocode/commit/d48525d3509fc07fc22d2528f9b45e1af56494b7))
+* correct metadata id resolution and merge-field concat ([#447](https://github.com/Codeneos/vlocode/issues/447)) ([4d10570](https://github.com/Codeneos/vlocode/commit/4d10570b63b78a52bd76e34687b79dde308d118d))
+* drop transform TS for LWC compiling as Node26 drops dupport for the transform option. Type srtipping is now the default mode. ([9e8716c](https://github.com/Codeneos/vlocode/commit/9e8716c4c4ccfd7bb9c834542796da04f12831ad))
+* eslint parsing errors ([f2dee75](https://github.com/Codeneos/vlocode/commit/f2dee753de094c5cc4e8702d488d3b2c3acc3266))
+* normalize file paths for ignore pattern matching in SalesforcePackageBuilder ([8c26dd2](https://github.com/Codeneos/vlocode/commit/8c26dd277a96cbe551036dff6a978953777eac57))
+* resolve 4 bugs found in recent commits ([#444](https://github.com/Codeneos/vlocode/issues/444)) ([1adf631](https://github.com/Codeneos/vlocode/commit/1adf631c43547e29ad40be8b064141259f340061))
+* restore build infrastructure and eliminate duplicate builds ([#445](https://github.com/Codeneos/vlocode/issues/445)) ([34431fb](https://github.com/Codeneos/vlocode/commit/34431fbda827f02ea001db8d72e4e75195d091bf))
+
+### Features
+
+* enhance datapack export functionality and configuration ([ceb1a01](https://github.com/Codeneos/vlocode/commit/ceb1a01ebabd8c4ed120f2c1f8d7be8a02894d13))
+* enhance dependency injection with new constructor argument support and update export definitions schema ([adf31b3](https://github.com/Codeneos/vlocode/commit/adf31b3f4e257ea5d218303fd699def51b870135))
+* improve direct export functions to match standard datapack export ([110d966](https://github.com/Codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+
 # [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 ### Bug Fixes

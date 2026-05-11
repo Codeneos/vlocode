@@ -4,6 +4,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
+
+### Bug Fixes
+
+* clean up tsconfig files by removing unnecessary options and ensuring path consistency ([d48525d](https://github.com/codeneos/vlocode/commit/d48525d3509fc07fc22d2528f9b45e1af56494b7))
+* correct metadata id resolution and merge-field concat ([#447](https://github.com/codeneos/vlocode/issues/447)) ([4d10570](https://github.com/codeneos/vlocode/commit/4d10570b63b78a52bd76e34687b79dde308d118d))
+* data mapper editor doesn't when files re in the OmniDataTransform folder ([3a77820](https://github.com/codeneos/vlocode/commit/3a778202e28affe4d5b073da58fc788717dd83d9))
+* restore build infrastructure and eliminate duplicate builds ([#445](https://github.com/codeneos/vlocode/issues/445)) ([34431fb](https://github.com/codeneos/vlocode/commit/34431fbda827f02ea001db8d72e4e75195d091bf))
+
+### Features
+
+* add direct expansion support for VlocityDatapackService ([033d7a0](https://github.com/codeneos/vlocode/commit/033d7a00b95f34510e7db6dea2aea7bea35ee2a7))
+* add OmniStudio formula language service and related components ([203bd0c](https://github.com/codeneos/vlocode/commit/203bd0cf520109745f6eb8571b1ff90cc5bf41e6))
+* add support for parsing conditions and only displaying datapacks matching in the explorer ([3a868b5](https://github.com/codeneos/vlocode/commit/3a868b51bba75bbcef1b169dc12ccabfcafc039a))
+* enable preview support for Extract and Transform data mappers from VSCode ([d505c26](https://github.com/codeneos/vlocode/commit/d505c260a29148083b925764b6eaa17da2adb641))
+* enhance datapack export functionality and configuration ([ceb1a01](https://github.com/codeneos/vlocode/commit/ceb1a01ebabd8c4ed120f2c1f8d7be8a02894d13))
+* enhance direct export to handle multiple expanded results and write to filesystem ([d9433af](https://github.com/codeneos/vlocode/commit/d9433af516b4caf5130c12b7ee6455a03f329b6e))
+* improve direct export functions to match standard datapack export ([110d966](https://github.com/codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+* initialize global scope in DatapackExportDefinitionStore and clean up export mode in DatapackDefinitionRegistry ([b761336](https://github.com/codeneos/vlocode/commit/b7613364f7278ce30f04d3792b61f868c4dfe7d1))
+* switch logging to only use the output panel as it performs better and now also has syntac highlighting support. This avoids poluting the terminal tabs and is much more inline with VSCode standards. ([bc77355](https://github.com/codeneos/vlocode/commit/bc77355f47a68cc2f39e819d9046beaec2b4324f))
+* update custom datapack definition loading to include file scope in returned definitions ([4cad6cb](https://github.com/codeneos/vlocode/commit/4cad6cb8441de67b9810038b5908ac258df55fb0))
+
 # [1.42.0](https://github.com/codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 ### Bug Fixes
