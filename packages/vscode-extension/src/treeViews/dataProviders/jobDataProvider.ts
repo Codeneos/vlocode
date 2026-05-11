@@ -1,16 +1,18 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import VlocityDatapackService from '../lib/vlocity/vlocityDatapackService';
-import { LogManager, Logger } from '@vlocode/core';
+import VlocityDatapackService from '../../lib/vlocity/vlocityDatapackService';
+import { LogManager, Logger, inject, injectable } from '@vlocode/core';
 import * as yaml from 'js-yaml';
 
-import VlocityJobFile from '../lib/vlocity/vlocityJobFile';
+import VlocityJobFile from '../../lib/vlocity/vlocityJobFile';
 import * as vlocity from 'vlocity';
 import { filterUndefined, getErrorMessage } from '@vlocode/util';
-import BaseDataProvider from './baseDataProvider';
+import { TreeDataProvider } from '../treeDataProvider';
+import VlocodeService from '../../lib/vlocodeService';
 
-export default class JobDataProvider extends BaseDataProvider<JobNode> {
+@injectable()
+export class JobDataProvider extends TreeDataProvider<JobNode> {
 
     private readonly jobCommandOptions = [
         {
@@ -26,6 +28,10 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
             detail: 'upload and deploy previously exported Vlocity datapacks'
         }
     ];
+
+    constructor(service: VlocodeService) {
+        super(service);
+    }
 
     protected getCommands() {
         return {

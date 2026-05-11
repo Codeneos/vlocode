@@ -1,14 +1,15 @@
 import * as vscode from 'vscode';
-import { VlocodeActivity, VlocodeActivityStatus } from '../lib/vlocodeActivity';
-import VlocodeService from '../lib/vlocodeService';
+import { VlocodeActivity, VlocodeActivityStatus } from '../../lib/vlocodeActivity';
+import VlocodeService from '../../lib/vlocodeService';
 import { injectable } from '@vlocode/core';
-import BaseDataProvider from './baseDataProvider';
+import { TreeDataProvider } from '../treeDataProvider';
+import { TreeViewHost } from '../treeViewHost';
 
 /**
  * Provides a list of recently executed or executing activities 
  */
 @injectable()
-export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivity> {
+export class ActivityDataProvider extends TreeDataProvider<VlocodeActivity> {
 
     constructor(service: VlocodeService) {
         super(service);
@@ -23,7 +24,7 @@ export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivi
             label: this.getActivityLabel(node),
             contextValue: 'vlocode:activity',
             tooltip: node.title,
-            iconPath: this.getItemIconPath(this.getIcon(node)),
+            iconPath: TreeViewHost.getItemIconPath(this.getIcon(node)),
             description: this.getActivityDetail(node),
             collapsibleState: vscode.TreeItemCollapsibleState.None
         };
