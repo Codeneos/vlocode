@@ -10,7 +10,8 @@ definitions:
       - Type
       - SubType
       - Language
-      - VersionNumber
+    filter:
+      IsIntegrationProcedure: false
     fields:
       CustomJavaScript:
         fileName:
@@ -33,10 +34,11 @@ definitions:
 
   IntegrationProcedure:
     <<: *omniProcessBase
+    filter:
+      IsIntegrationProcedure: true
     matchingKeyFields:
       - Type
       - SubType
-      - VersionNumber
 
   DataRaptor: &omniDataTransform
     objectType: OmniDataTransform

@@ -10,7 +10,6 @@ definitions:
       - '%vlocity_namespace%__Type__c'
       - '%vlocity_namespace%__SubType__c'
       - '%vlocity_namespace%__Language__c'
-      - '%vlocity_namespace%__Version__c'
     ignoreFields:
       - '%vlocity_namespace%__IsActive__c'
     fields:
