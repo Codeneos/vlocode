@@ -151,7 +151,7 @@ export class DatapackExporter {
             throw new Error(`No SObject with id [${id}] does not exist in target org`);
         }
         const existingDatapacks = new Set(Object.keys(this.datapacks));
-        await this.buildDatapack(data, context ?? {});
+        await this.buildDatapack(data, { ...context, currentDepth: 0 });
         const datapack = this.datapacks[id];
         this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
 
@@ -183,8 +183,9 @@ export class DatapackExporter {
             ...root,
             parentKeys: [ ...new Set([ ...root.parentKeys, ...related.flatMap(item => item.parentKeys) ]) ],
             writeToFilesystem: async (targetPath, options) => {
-                await root.writeToFilesystem(targetPath, options);
-                return (await mapAsyncParallel(related, item => item.writeToFilesystem(targetPath, options), this.exportParallelism)).flat();
+                const files = await root.writeToFilesystem(targetPath, options);
+                files.push(...(await mapAsyncParallel(related, item => item.writeToFilesystem(targetPath, options), this.exportParallelism)).flat());
+                return files;
             }
         };
         return result;
