@@ -30,8 +30,7 @@ interface ExportDatapack {
      */
     foreignKeys: Record<string, string>;
     /**
-     * Map of SourceKeys that are provided by this datapack, embedded child datapacks,
-     * and related top-level datapacks known to this datapack for reference conversion.
+     * Map of SourceKeys that are provided by this datapack and embedded child datapacks.
      * The keys are the SourceKeys and the values are the Id's of the objects.
      */
     sourceKeys: Record<string, string>;
@@ -50,7 +49,6 @@ type DatapackExportOptions = {
 interface ExportContext extends DatapackExportOptions {
     parent?: ExportDatapack;
     embedded?: boolean;
-    currentDepth: number;
 }
 
 interface ExportResult {
@@ -59,7 +57,8 @@ interface ExportResult {
         id: string;
     }[];
     datapack: VlocityDatapackSObject;
-    relatedDatapacks: VlocityDatapackSObject[];
+    relatedDatapacks: ExportResult[];
+    datapackType: string;
     objectType: string;
     sourceKey: string;
 }
@@ -130,11 +129,9 @@ export class DatapackExporter {
      * @param context Optional export context.
      * @returns A promise that resolves to the expanded datapack result.
      */
-    public async exportObjectAndExpand(id: string, context?: DatapackExportOptions): Promise<DatapackExpandResult> {
+    public async exportObjectAndExpand(id: string, context?: DatapackExportOptions): Promise<DatapackExpandResult[]> {
         const result = await this.exportObject(id, context);
-        const expanded = this.expander.expandDatapack(result.datapack, context);
-        const related = (result.relatedDatapacks ?? []).map(datapack => this.expander.expandDatapack(datapack, context));
-        return related.length ? this.combineExpandResults(expanded, related) : expanded;
+        return this.expand(result, context);
     }
 
     /**
@@ -150,12 +147,10 @@ export class DatapackExporter {
         if (!data) {
             throw new Error(`No SObject with id [${id}] does not exist in target org`);
         }
-        const existingDatapacks = new Set(Object.keys(this.datapacks));
-        await this.buildDatapack(data, { ...context, currentDepth: 0 });
+        await this.buildDatapack(data, { ...context });
         const datapack = this.datapacks[id];
         this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
-
-        return this.asExportResult(datapack, existingDatapacks);
+        return this.asExportResult(datapack);
     }
 
     private inferDatapackType(objectType: string, scope?: string) {
@@ -166,34 +161,46 @@ export class DatapackExporter {
         return datapackTypes[0].datapackType;
     }
 
-    private asExportResult(datapack: ExportDatapack, existingDatapacks?: Set<string>): ExportResult {
+    private asExportResult(datapack: ExportDatapack): ExportResult {
         return {
             parentKeys: Object.entries(datapack.foreignKeys).map(([key, id]) => ({ key, id })),
             datapack: datapack.data,
-            relatedDatapacks: Object.values(this.datapacks)
-                .filter(item => !item.parent && item.id !== datapack.id && existingDatapacks?.has(item.id) !== true)
-                .map(item => item.data),
+            relatedDatapacks: [...this.collectRelatedDatapacks(datapack).values()].map(item => this.asExportResult(item)),
             sourceKey: datapack.data.VlocityRecordSourceKey,
+            datapackType: datapack.datapackType,
             objectType: datapack.objectType
         };
     }
 
-    private combineExpandResults(root: DatapackExpandResult, related: DatapackExpandResult[]): DatapackExpandResult {
-        const result: DatapackExpandResult = {
-            ...root,
-            parentKeys: [ ...new Set([ ...root.parentKeys, ...related.flatMap(item => item.parentKeys) ]) ],
-            writeToFilesystem: async (targetPath, options) => {
-                const files = await root.writeToFilesystem(targetPath, options);
-                files.push(...(await mapAsyncParallel(related, item => item.writeToFilesystem(targetPath, options), this.exportParallelism)).flat());
-                return files;
+    private collectRelatedDatapacks(datapack: ExportDatapack, collected = new Map<string, ExportDatapack>()): Map<string, ExportDatapack> {
+        const uniqueIds = new Set(Object.values(datapack.foreignKeys));
+        for (const id of uniqueIds) {
+            if (collected.has(id)) {
+                continue;
             }
-        };
-        return result;
+            const related = this.datapacks[id];
+            if (related) {
+                collected.set(id, related);
+                //this.collectRelatedDatapacks(related, collected);
+            };
+        }
+        return collected;
     }
 
-    private async buildDatapack(record: Record<string, any>, context: DatapackExportOptions): Promise<VlocityDatapackSObject>;
-    private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null>;
-    private async buildDatapack(record: Record<string, any>, context: ExportContext) {
+    private expand(exportResult: ExportResult, context?: DatapackExportOptions): DatapackExpandResult[] {
+        const expanded = [
+            this.expander.expandDatapack(exportResult.datapack, {
+                scope: context?.scope,
+                datapackType: exportResult.datapackType,
+            })
+        ];
+        for (const related of exportResult.relatedDatapacks ?? []) {
+            expanded.push(...this.expand(related, context));
+        }
+        return expanded;
+    }
+
+    private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null> {
         const describe = await this.salesforce.schema.describeSObjectById(record.Id);
         const matchingKey = await this.getMatchingKey(describe, record, context.scope);
         const exportStack = this.getExportPath(context.parent);
@@ -204,21 +211,15 @@ export class DatapackExporter {
             return this.buildLookup(context.parent!, record.Id, 'VlocityMatchingKeyObject');
         }
 
-        const maxDepth = context.maxDepth ?? this.maxExportDepth;
-        const dependencyDepth = context.currentDepth ?? 0;
-        if (!context.embedded && dependencyDepth > maxDepth) {
-            this.logger.warn(`Max export depth reached for ${matchingKey}: ${exportStack.join(' -> ')}`);
-            return this.buildMatchingKeyObject(context.parent!, 'VlocityLookupMatchingKeyObject', record);
-        }
-
         if (this.datapacks[record.Id]) {
             // Don't export the same object twice
             return this.datapacks[record.Id].data;
         }
 
+        const type = context.datapackType ?? this.inferDatapackType(describe.name, context?.scope);
         const datapack: ExportDatapack = {
             id: record.Id,
-            datapackType: context.datapackType ?? this.inferDatapackType(describe.name, context?.scope),
+            datapackType: type,
             objectType: describe.name,
             normalizedObjectType: removeNamespacePrefix(describe.name),
             scope: context?.scope,
@@ -242,12 +243,18 @@ export class DatapackExporter {
 
         await this.exportObjectFields(datapack, record, context);
         await this.exportEmbeddedObjects(datapack, context);
-        this.updateForeignKeys(datapack);
-        this.processFieldValues(datapack);
 
-        if (!context.parent) {
+        if (context.embedded) {
+            this.processFieldValues(datapack);
+        } else {
             this.updateLookupReferences(datapack);
+            this.updateForeignKeys(datapack);
             this.processFieldValues(datapack, { recursive: true });
+        }
+
+        const maxDepth = context.maxDepth ?? this.maxExportDepth;
+        if (maxDepth > 0) {
+            await this.exportRelatedObjects(datapack, context);
         }
 
         return datapack.data;
@@ -308,6 +315,25 @@ export class DatapackExporter {
                 [fieldName]: datapackFieldName,
                 [field.name]: datapackFieldName
             });
+        }
+    }
+
+    private async exportRelatedObjects(datapack: ExportDatapack, context: ExportContext) {
+        for (const [,id] of Object.entries(datapack.foreignKeys)) {
+            try {
+                const relatedRecord = await this.data.lookupById(id);
+                if (!relatedRecord) {
+                    continue;
+                }
+                await this.buildDatapack(relatedRecord, {
+                    scope: context.scope,
+                    maxDepth: (context.maxDepth ?? this.maxExportDepth) - 1,
+                    embedded: true,
+                    parent: datapack
+                });
+            } catch (e) {
+                this.logger.error(`Error exporting related object for ${datapack.objectType}:`, e);
+            }
         }
     }
 
@@ -395,6 +421,14 @@ export class DatapackExporter {
         }
     }
 
+    private updateForeignKeys(datapack: ExportDatapack) {
+        for (const foreignKey of Object.keys(datapack.foreignKeys)) {
+            if (foreignKey in datapack.sourceKeys) {
+                delete datapack.foreignKeys[foreignKey];
+            }
+        }
+    }
+
     private convertToMatchingObject(ref: VlocityDatapackReference): VlocityDatapackMatchingReference {
         if (ref.VlocityDataPackType === 'VlocityLookupMatchingKeyObject') {
             ref = Object.assign(ref, {
@@ -404,19 +438,6 @@ export class DatapackExporter {
             delete ref.VlocityLookupRecordSourceKey;
         }
         return ref;
-    }
-
-    private updateForeignKeys(datapack: ExportDatapack) {
-        const root = this.getDatapackRoot(datapack);
-        for (const [key, id] of Object.entries(datapack.foreignKeys)) {
-            if (this.hasKnownSourceKey(root, id)) {
-                delete datapack.foreignKeys[key];
-            }
-        }
-    }
-
-    private hasKnownSourceKey(datapack: ExportDatapack, id: string) {
-        return datapack.id === id || Object.values(datapack.sourceKeys).includes(id);
     }
 
     private getDatapackRoot(datapack: ExportDatapack) {
@@ -447,8 +468,7 @@ export class DatapackExporter {
             scope: datapack.scope,
             parent: datapack,
             embedded: true,
-            maxDepth: context.maxDepth,
-            currentDepth: context.currentDepth + 1
+            maxDepth: context.maxDepth
         });
         return this.addReference(datapack, id, sobjectPack);
     }
@@ -526,9 +546,10 @@ export class DatapackExporter {
         if (!(refId in datapack.references)) {
             datapack.references[refId] = ref;
             this.logger.debug(`Added reference ${refId} to ${datapack.objectType}`);
-        } else {
+        } 
+        /*else {
             this.logger.info(`Duplicate reference detected for id ${refId} on ${datapack.objectType}`);
-        }
+        }*/
         return datapack.references[refId];
     }
 
@@ -746,16 +767,11 @@ export class DatapackExporter {
 
         const describe = await this.salesforce.schema.describeSObjectById(data.id);
         const fields = await this.getMatchingFields(describe, datapack.scope);
-        const matchingKey = await this.getMatchingKey(describe, data, datapack.scope);
-        const matchingKeyObject = {
-            VlocityDataPackType: refType,
-            VlocityRecordSObjectType: describe.name,
-            [VlocityDatapackSourceKey[refType]]: matchingKey
-        } as VlocityDatapackReference;
+        const matchingKeyObject = {};
 
         for (const fieldName of fields) {
             const value = data[fieldName] ?? null;
-            const field = describe.fields.find(f => f.name === fieldName)!;
+            const field = await this.salesforce.schema.describeSObjectField(describe.name, fieldName);
 
             if (field.referenceTo?.length && value) {
                 matchingKeyObject[field.name] = await this.buildLookup(datapack, value);
@@ -764,7 +780,14 @@ export class DatapackExporter {
             }
         }
 
-        return matchingKeyObject;
+        const matchingKey = await this.getMatchingKey(describe, data, datapack.scope);
+        
+        return {
+            ...matchingKeyObject,
+            VlocityDataPackType: refType,
+            VlocityRecordSObjectType: describe.name,
+            [VlocityDatapackSourceKey[refType]]: matchingKey
+        } as VlocityDatapackReference;
     }
 
     private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string) {
@@ -782,7 +805,7 @@ export class DatapackExporter {
         const matchingKeyFields = await this.getMatchingFields(describe, scope);
 
         // Use cached matching key if available
-        const matchingKeyEntry = [scope, describe.name, data['id']].filter(p => p).join('/');
+        const matchingKeyEntry = [scope, data['id']].filter(p => p).join('/');
         if (this.matchingKeys[matchingKeyEntry]) {
             return this.matchingKeys[matchingKeyEntry];
         }
@@ -797,7 +820,7 @@ export class DatapackExporter {
         }
 
         // Validate the key is unique
-        const matchingKey = [ describe.name, ...matchingKeyFields.map((field) => `${data[field] ?? null}`)].join('/');
+        const matchingKey = [ describe.name, this.buildMatchingKey(matchingKeyFields, data, scope) ].join('/');
         const isUnique = Object.values(this.matchingKeys).filter(key => key === matchingKey).length === 0;
         if (!isUnique) {
             this.logger.warn(`Matching key ${matchingKey} is not unique for ${describe.name} -- using auto-generated matching key instead`);
@@ -806,6 +829,14 @@ export class DatapackExporter {
 
         this.matchingKeys[matchingKeyEntry] = matchingKey;
         return matchingKey;
+    }
+
+    private buildMatchingKey(fields: string[], data: object, scope?: string) {
+        return fields.map((field) =>{
+            const value = data[field] ?? null;
+            const matchingKey = this.matchingKeys[[scope, value].filter(p => p).join('/')];
+            return matchingKey ?? value;
+        }).join('/');
     }
 
     private getAutoMatchingKey(describe: DescribeSObjectResult, id: string, scope?: string) {
