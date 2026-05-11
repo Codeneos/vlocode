@@ -75,14 +75,14 @@ export class OmniScriptAccess {
 
     private async hasOmniProcessSObject() {
         if (this.isOmniProcessSObjectExists === undefined) {
-            this.isOmniProcessSObjectExists = await this.salesforceService.schema.isSObjectDefined(OmniProcessRecord.SObjectType);
+            this.isOmniProcessSObjectExists = await this.salesforceService.schema.isSObjectAccessible(OmniProcessRecord.SObjectType);
         }
         return this.isOmniProcessSObjectExists;
     }
 
     private async hasOmniScriptSObject() {
         if (this.isOmniScriptSObjectExists === undefined) {
-            this.isOmniScriptSObjectExists = await this.salesforceService.schema.isSObjectDefined(OmniScriptRecord.SObjectType);
+            this.isOmniScriptSObjectExists = await this.salesforceService.schema.isSObjectAccessible(OmniScriptRecord.SObjectType);
         }
         return this.isOmniScriptSObjectExists;
     }
@@ -306,7 +306,7 @@ export class OmniScriptAccess {
 
         try {
             return await query.execute<OmniProcessRecord>(this.salesforceService.data);
-        } catch (error) {
+        } catch {
             return []; // Ignore errors (e.g. object not found) and return empty result
         }
     }
@@ -336,7 +336,7 @@ export class OmniScriptAccess {
 
         try {
             return await query.execute<OmniScriptRecord>(this.salesforceService.data);
-        } catch (error) {
+        } catch {
             return []; // Ignore errors (e.g. object not found) and return empty result
         }
     }

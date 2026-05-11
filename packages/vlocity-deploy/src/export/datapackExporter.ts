@@ -93,6 +93,7 @@ export class DatapackExporter {
         'DeveloperName'
     ];
 
+    private lookupCache = new Map<string, Record<string, any> | null>();
     private datapacks: Record<string, ExportDatapack> = {};
     private matchingKeys: Record<string, string> = {};
     /**
@@ -128,7 +129,7 @@ export class DatapackExporter {
      * @param context Optional export context.
      * @returns A promise that resolves to the expanded datapack result.
      */
-    public async exportObjectAndExpand(id: string, context?: DatapackExportOptions): Promise<DatapackExpandResult[]> {
+    public async exportObjectAndExpand(id: string[] | string, context?: DatapackExportOptions): Promise<DatapackExpandResult[]> {
         const result = await this.exportObject(id, context);
         return this.expand(result, context);
     }
@@ -139,17 +140,24 @@ export class DatapackExporter {
      * exporting embedded objects if needed by calling {@link exportObject} with the parent object id.
      * @param id Id of the object to export
      */
-    public async exportObject(id: string, context?: DatapackExportOptions): Promise<ExportResult> {
-        this.logger.verbose(`Export SObject ${id}`);
-        const timer = new Timer();
-        const data = await this.data.lookupById(id);
-        if (!data) {
-            throw new Error(`No SObject with id [${id}] does not exist in target org`);
+    public async exportObject(id: string[] | string, context?: DatapackExportOptions): Promise<ExportResult[]> {
+        const ids = Array.isArray(id) ? id : [id];
+        this.logger.verbose(`Export SObjects ${ids}`);
+        const results: ExportResult[] = [];
+
+        for (const [id, data] of await this.lookupByIds(ids)) {
+            if (!data) {
+                this.logger.warn(`No data found for id ${id}, skipping export`);
+                continue;
+            }
+            const timer = new Timer();
+            await this.buildDatapack(data, { ...context });
+            const datapack = this.datapacks[id];
+            this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
+            results.push(this.asExportResult(datapack));
         }
-        await this.buildDatapack(data, { ...context });
-        const datapack = this.datapacks[id];
-        this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
-        return this.asExportResult(datapack);
+        
+        return results;
     }
 
     private inferDatapackType(objectType: string, scope?: string) {
@@ -186,15 +194,16 @@ export class DatapackExporter {
         return collected;
     }
 
-    private expand(exportResult: ExportResult, context?: DatapackExportOptions): DatapackExpandResult[] {
-        const expanded = [
-            this.expander.expandDatapack(exportResult.datapack, {
-                scope: context?.scope,
-                datapackType: exportResult.datapackType,
-            })
-        ];
-        for (const related of exportResult.relatedDatapacks ?? []) {
-            expanded.push(...this.expand(related, context));
+    private expand(exportResults: ExportResult[], context?: DatapackExportOptions): DatapackExpandResult[] {
+        const expanded: DatapackExpandResult[] = [];
+        for (const exportResult of exportResults) {
+            expanded.push(
+                this.expander.expandDatapack(exportResult.datapack, {
+                    scope: context?.scope,
+                    datapackType: exportResult.datapackType,
+                })
+            );
+            expanded.push(...this.expand(exportResult.relatedDatapacks, context));
         }
         return expanded;
     }
@@ -320,7 +329,7 @@ export class DatapackExporter {
     private async exportRelatedObjects(datapack: ExportDatapack, context: ExportContext) {
         for (const [,id] of Object.entries(datapack.foreignKeys)) {
             try {
-                const relatedRecord = await this.data.lookupById(id);
+                const relatedRecord = await this.lookupById(id);
                 if (!relatedRecord) {
                     continue;
                 }
@@ -366,7 +375,7 @@ export class DatapackExporter {
         }
 
         this.logger.verbose(`Lookup ${embeddedObject.objectType} (${datapack.objectType}) using filter:`, filter);
-        return this.data.lookup(embeddedObject.objectType, filter, undefined, embeddedObject.limit);
+        return this.lookupWithFilter(embeddedObject.objectType, filter, embeddedObject.limit);
     }
 
     private getObjectFilterFromRelationship(datapack: ExportDatapack, embeddedObject: ObjectRelationship): ObjectFilter {
@@ -451,7 +460,7 @@ export class DatapackExporter {
     // }
 
     private async buildSObject(datapack: ExportDatapack, id: string, context: ExportContext) {
-        const data = await this.data.lookupById(id);
+        const data = await this.lookupById(id);
         if (!data) {
             return null;
         }
@@ -482,7 +491,7 @@ export class DatapackExporter {
             return this.addReference(datapack, id, localReference);
         }
 
-        const data = await this.data.lookupById(id);
+        const data = await this.lookupById(id);
         if (!data) {
             return null;
         }
@@ -940,5 +949,39 @@ export class DatapackExporter {
         }
 
         return [];
+    }
+
+    private async lookupWithFilter(objectType: string, filter: Record<string, any>, limit?: number) {
+        const idRecords = await this.data.lookup(objectType, filter, ['Id'], limit);
+        const matchedRecords = await this.lookupByIds(idRecords.map(record => record.Id));
+        return [...matchedRecords.values()].filter(r => !!r);
+    }
+
+    private async lookupByIds(ids: string[]): Promise<Map<string, Record<string, any> | null>> {
+        const result = new Map<string, Record<string, any> | null>();
+        const missingIds: string[] = [];
+        
+        for (const id of ids) {
+            const cachedRecord = this.lookupCache.get(id);
+            if (cachedRecord !== undefined) {
+                result.set(id, cachedRecord);
+            } else {
+                missingIds.push(id);
+            }
+        }
+
+        if (missingIds.length > 0) {
+            this.logger.debug(`Cache misses for ${missingIds.length} records: ${missingIds.join(', ')}`);
+            for (const [id, record] of await this.data.lookupById(missingIds)) {
+                this.lookupCache.set(id, record ?? null);
+                result.set(id, record ?? null);
+            }
+        }
+        
+        return result;
+    }
+
+    private async lookupById(id: string) : Promise<Record<string, any> | null> {
+        return (await this.lookupByIds([id])).get(id) ?? null;
     }
 }

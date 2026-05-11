@@ -19,6 +19,13 @@ describe('DatapackExporter', () => {
         return logger;
     }
 
+    function findDescribeField(describe: any, fieldName: string) {
+        return describe?.fields?.find((field: any) => field.name === fieldName) ?? {
+            name: fieldName,
+            referenceTo: []
+        };
+    }
+
     function createExporter(options?: {
         matchingKeyFields?: string[];
         describe?: object;
@@ -35,7 +42,9 @@ describe('DatapackExporter', () => {
                 }
             },
             schema: {
-                describeSObjectById: jest.fn(async () => options?.describe)
+                describeSObjectById: jest.fn(async () => options?.describe),
+                describeSObjectField: jest.fn(async (_type: string, fieldName: string) =>
+                    findDescribeField(options?.describe, fieldName))
             }
         };
         const matchingKeys = {
@@ -55,6 +64,7 @@ describe('DatapackExporter', () => {
                 definitions as any,
                 expander as any,
                 salesforce as any,
+                salesforce.data as any,
                 matchingKeys as any,
                 createLogger() as any
             ) as any,
@@ -325,7 +335,9 @@ describe('DatapackExporter', () => {
                     : { Id: relatedId, id: relatedId, Name: 'Related' })
             },
             schema: {
-                describeSObjectById: jest.fn(async (id: string) => id === rootId ? rootDescribe : relatedDescribe)
+                describeSObjectById: jest.fn(async (id: string) => id === rootId ? rootDescribe : relatedDescribe),
+                describeSObjectField: jest.fn(async (type: string, fieldName: string) =>
+                    findDescribeField(type === rootDescribe.name ? rootDescribe : relatedDescribe, fieldName))
             },
             replaceNamespace: jest.fn((value: string) => value)
         };
@@ -356,6 +368,7 @@ describe('DatapackExporter', () => {
             definitions as any,
             expander as any,
             salesforce as any,
+            salesforce.data as any,
             matchingKeys as any,
             createLogger() as any
         ) as any;
@@ -447,7 +460,9 @@ describe('DatapackExporter', () => {
                 lookupById: jest.fn()
             },
             schema: {
-                describeSObjectById: jest.fn(async () => childDescribe)
+                describeSObjectById: jest.fn(async () => childDescribe),
+                describeSObjectField: jest.fn(async (_type: string, fieldName: string) =>
+                    findDescribeField(childDescribe, fieldName))
             },
             replaceNamespace: jest.fn((value: string) => value)
         };
@@ -463,6 +478,7 @@ describe('DatapackExporter', () => {
             definitions as any,
             { expandDatapack: jest.fn() } as any,
             salesforce as any,
+            salesforce.data as any,
             matchingKeys as any,
             createLogger() as any
         ) as any;

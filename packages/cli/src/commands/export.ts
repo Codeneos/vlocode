@@ -2,7 +2,7 @@ import { join } from 'path';
 import * as fs from 'fs-extra';
 
 import { Logger, LogManager } from '@vlocode/core';
-import { DatapackExpander, DatapackExportDefinitionStore, DatapackExporter } from '@vlocode/vlocity-deploy';
+import { DatapackExpandResult, DatapackExportDefinitionStore, DatapackExporter } from '@vlocode/vlocity-deploy';
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
@@ -10,7 +10,7 @@ import { SalesforceService } from '@vlocode/salesforce';
 import { getErrorMessage } from '@vlocode/util';
 import { DatapackExportFileLoader, type DatapackExportFile } from '../datapackExportFileLoader';
 
-type DatapackExportResult = Awaited<ReturnType<DatapackExporter['exportObject']>>;
+type DatapackExportResult = Awaited<ReturnType<DatapackExporter['exportObject']>>[number];
 
 type ExportCommandOptions = {
     exportDefinitions?: string;
@@ -30,7 +30,7 @@ type ExportDefaults = {
 };
 
 type ExportRequest = ExportDefaults & {
-    id: string;
+    ids: string[];
 };
 
 function existingFile(label: string): (value: string) => string {
@@ -107,20 +107,19 @@ export default class extends SalesforceCommand {
             ? await this.getRequestsFromFile(exportFile, options, argIds)
             : await this.getRequestsFromOptions(argIds, options);
 
-        if (requests.length === 0) {
+        const datapackCount = requests.reduce((count, request) => count + request.ids.length, 0);
+        if (datapackCount === 0) {
             throw new Error('No datapacks matched the export input');
         }
 
-        this.logger.info(`Exporting ${requests.length} datapack${requests.length === 1 ? '' : 's'}`);
+        this.logger.info(
+            `Exporting ${datapackCount} datapack${datapackCount === 1 ? '' : 's'} ` +
+            `in ${requests.length} batch${requests.length === 1 ? '' : 'es'}`
+        );
         const exporter = this.container.new(DatapackExporter);
-        const expander = this.container.new(DatapackExpander);
 
         for (const request of requests) {
-            const result = await exporter.exportObject(request.id, {
-                datapackType: request.datapackType,
-                maxDepth: request.maxDepth
-            });
-            await this.writeExportTree(result, request, expander);
+            await this.exportRequest(exporter, request);
         }
 
         this.logger.info('Datapack export completed');
@@ -135,13 +134,16 @@ export default class extends SalesforceCommand {
         const requests: ExportRequest[] = [];
 
         for (const [datapackType, queries] of Object.entries(exportFile.export)) {
+            const ids = new Array<string>();
             for (const query of queries) {
-                const queryIds = await this.getIdsFromQuery(query, datapackType);
-                requests.push(...queryIds.map(id => ({
+                ids.push(...await this.getIdsFromQuery(query, datapackType));
+            }
+            if (ids.length) {
+                requests.push({
                     ...requestDefaults,
-                    id,
+                    ids,
                     datapackType
-                })));
+                });
             }
         }
         return requests;
@@ -162,10 +164,30 @@ export default class extends SalesforceCommand {
 
         const requestDefaults = this.getExportDefaults(options);
 
-        return ids.map(id => ({
+        return [{
             ...requestDefaults,
-            id
-        }));
+            ids
+        }];
+    }
+
+    private async exportRequest(exporter: DatapackExporter, request: ExportRequest) {
+        const context = {
+            datapackType: request.datapackType,
+            maxDepth: request.maxDepth
+        };
+
+        if (request.expand) {
+            const results = await exporter.exportObjectAndExpand(request.ids, context);
+            for (const result of results) {
+                await this.writeExpandedDatapack(result, request.folder);
+            }
+            return;
+        }
+
+        const results = await exporter.exportObject(request.ids, context);
+        for (const result of results) {
+            await this.writeExportTree(result, request.folder);
+        }
     }
 
     private getExportDefaults(options: ExportCommandOptions, overrides: Partial<ExportDefaults> = {}): ExportDefaults {
@@ -199,27 +221,17 @@ export default class extends SalesforceCommand {
         return ids;
     }
 
-    private async writeExportTree(result: DatapackExportResult, request: ExportRequest, expander: DatapackExpander) {
-        if (request.expand) {
-            await this.writeExpandedDatapack(result, request, expander);
-        } else {
-            await this.writeConsolidatedDatapack(result, request.folder);
-        }
+    private async writeExportTree(result: DatapackExportResult, folder: string) {
+        await this.writeConsolidatedDatapack(result, folder);
 
         for (const related of result.relatedDatapacks ?? []) {
-            await this.writeExportTree(related, {
-                ...request,
-                datapackType: related.datapackType
-            }, expander);
+            await this.writeExportTree(related, folder);
         }
     }
 
-    private async writeExpandedDatapack(result: DatapackExportResult, request: ExportRequest, expander: DatapackExpander) {
-        const expanded = expander.expandDatapack(result.datapack, {
-            datapackType: result.datapackType ?? request.datapackType
-        });
-        const filesWritten = await expanded.writeToFilesystem(request.folder);
-        this.logger.info(`Wrote ${filesWritten.length} file${filesWritten.length === 1 ? '' : 's'} for ${expanded.sourceKey}`);
+    private async writeExpandedDatapack(result: DatapackExpandResult, folder: string) {
+        const filesWritten = await result.writeToFilesystem(folder);
+        this.logger.info(`Wrote ${filesWritten.length} file${filesWritten.length === 1 ? '' : 's'} for ${result.sourceKey}`);
     }
 
     private async writeConsolidatedDatapack(result: DatapackExportResult, folder: string) {
