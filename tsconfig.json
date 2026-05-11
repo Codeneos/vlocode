@@ -32,5 +32,13 @@
         //     "@vlocode/vlocity-deploy": ["./packages/vlocity-deploy/src"],
         //     "@vlocode/omniscript": ["./packages/omniscript/src"]
         // }
+    },
+    "angularCompilerOptions": {
+        "enableI18nLegacyMessageIdFormat": false,
+        "preserveWhitespaces": false,
+        "strictInjectionParameters": true,
+        "strictInputAccessModifiers": true,
+        "strictStandalone": true,
+        "strictTemplates": true
     }
 }
