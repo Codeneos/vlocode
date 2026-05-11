@@ -26,10 +26,10 @@
         {
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/packages/cli/dist/cli.js",
+            "program": "${workspaceRoot}/packages/cli/dist/cli.mjs",
             "name": "Debug: CLI",
             "args": ["--help", "--debug"],
-            "outFiles": ["${workspaceRoot}/packages/cli/dist/**/*.js"],
+            "outFiles": ["${workspaceRoot}/packages/cli/dist/**/*.mjs"],
             "preLaunchTask": "watch-cli",
             "smartStep": true,
             "sourceMaps": true
@@ -38,7 +38,7 @@
             "type": "node",
             "request": "launch",
             "showAsyncStacks": true,
-            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "program": "${workspaceRoot}/packages/cli/dist/cli.mjs",
             "name": "Debug: CLI-impacted-tests (node)",
             "args": [
                 "impacted-tests",
@@ -47,12 +47,7 @@
                 "--depth", "3"
             ],
             "outFiles": [
-                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
-                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
-                "${workspaceFolder}/packages/core/lib/**/*.js",
-                "${workspaceFolder}/packages/util/lib/**/*.js",
-                "${workspaceFolder}/packages/cli/lib/**/*.js",
-                "${workspaceFolder}/packages/apex/lib/**/*.js"
+                "${workspaceFolder}/packages/cli/dist/**/*.mjs"
             ],
             "preLaunchTask": "watch-cli",
             "smartStep": true,
@@ -62,7 +57,7 @@
             "type": "node",
             "request": "launch",
             "showAsyncStacks": true,
-            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "program": "${workspaceRoot}/packages/cli/dist/cli.mjs",
             "name": "Debug: CLI-convert (node)",
             "args": [
                 "convert",
@@ -70,11 +65,7 @@
                 "-u", "peter@curlybracket.l.dnd "
             ],
             "outFiles": [
-                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
-                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
-                "${workspaceFolder}/packages/core/lib/**/*.js",
-                "${workspaceFolder}/packages/util/lib/**/*.js",
-                "${workspaceFolder}/packages/cli/lib/**/*.js"
+                "${workspaceFolder}/packages/cli/dist/**/*.mjs"
             ],
             "preLaunchTask": "watch-cli",
             "smartStep": true,
@@ -84,20 +75,14 @@
             "type": "node",
             "request": "launch",
             "showAsyncStacks": true,
-            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "program": "${workspaceRoot}/packages/cli/dist/cli.mjs",
             "name": "Debug: CLI-deploy (node)",
             "args": [
                 "deploy",
                 "${workspaceRoot}/.test-deploy/activationError/OmniScript",
-                "-u",
-                "dev10"
             ],
             "outFiles": [
-                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
-                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
-                "${workspaceFolder}/packages/core/lib/**/*.js",
-                "${workspaceFolder}/packages/util/lib/**/*.js",
-                "${workspaceFolder}/packages/cli/lib/**/*.js"
+                "${workspaceFolder}/packages/cli/dist/**/*.mjs"
             ],
             "preLaunchTask": "watch-cli",
             "smartStep": true,
@@ -107,21 +92,16 @@
             "type": "node",
             "request": "launch",
             "showAsyncStacks": true,
-            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "program": "${workspaceRoot}/packages/cli/dist/cli.mjs",
             "name": "Debug: CLI-export (node)",
             "args": [
                 "export",
-                "-q", "select Id from Acount Limit 1", 
-                "-u", "dev10",
-                "-d", "export-defs.yaml",
+                "-q", "select Id from Product2 Limit 10", 
+                "-d", "sbqq-export.yaml",
                 "--expand"
             ],
             "outFiles": [
-                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
-                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
-                "${workspaceFolder}/packages/core/lib/**/*.js",
-                "${workspaceFolder}/packages/util/lib/**/*.js",
-                "${workspaceFolder}/packages/cli/lib/**/*.js"
+                "${workspaceFolder}/packages/cli/dist/**/*.mjs"
             ],
             "preLaunchTask": "watch-cli",
             "smartStep": true,

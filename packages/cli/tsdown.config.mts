@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsdown'
+import { defineConfig, type UserConfig } from 'tsdown'
 
 import yaml from '../../build/plugins/yaml-loader.ts';
 import fileTypesPatch from '../../build/patches/file-types.ts';
@@ -22,37 +22,40 @@ const packageExternals = [
     'electron'
 ];
 
-export default defineConfig({
-  entry: entryPoints,
-  outDir: './dist',
-  format: 'esm',
-  fixedExtension: true,
-  external: [...packageExternals],
-  sourcemap: false,
-  shims: true,
-  minify: false,
-  treeshake: false,
-  inlineOnly: false,
-  env: {
-    NODE_ENV: 'production',
-    DEBUG: false
-  },
-  nodeProtocol: true,
-  tsconfig: './tsconfig.json',
-  inputOptions: {
-    preserveEntrySignatures: 'strict',
-  },
-  outputOptions: {
-    keepNames: true,
-    strictExecutionOrder: true,
-  },
-  plugins: [
-    commands(),
-    yaml(), 
-    fileTypesPatch(), 
-    vlocityPatch(),
-    jsdomPatch(),
-    dtracePatch()
-  ]
+export default defineConfig((options: UserConfig) => {
+  const developmentBuild = Boolean(options.watch);
+  return {
+    entry: entryPoints,
+    outDir: './dist',
+    format: 'esm',
+    fixedExtension: true,
+    external: [...packageExternals],
+    sourcemap: developmentBuild,
+    shims: true,
+    minify: false,
+    treeshake: false,
+    inlineOnly: false,
+    env: {
+      NODE_ENV: 'production',
+      DEBUG: false
+    },
+    nodeProtocol: true,
+    tsconfig: './tsconfig.json',
+    inputOptions: {
+      preserveEntrySignatures: 'strict',
+    },
+    outputOptions: {
+      keepNames: true,
+      strictExecutionOrder: true,
+    },
+    plugins: [
+      commands(),
+      yaml(), 
+      fileTypesPatch(), 
+      vlocityPatch(),
+      jsdomPatch(),
+      dtracePatch()
+    ]
+  };
 });
 
