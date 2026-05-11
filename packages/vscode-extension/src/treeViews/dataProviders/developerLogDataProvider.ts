@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
-import VlocodeService from '../lib/vlocodeService';
+import VlocodeService from '../../lib/vlocodeService';
 import { DeveloperLog } from '@vlocode/salesforce';
 import { DateTime } from 'luxon';
-import { ConfigurationManager } from '../lib/config';
-import { VlocodeCommand } from '../constants';
+import { ConfigurationManager } from '../../lib/config';
+import { VlocodeCommand } from '../../constants';
 import { Logger, injectable } from '@vlocode/core';
-import BaseDataProvider from './baseDataProvider';
-import { DebugLogViewer } from '../lib/salesforce/debugLogViewer';
+import { DebugLogViewer } from '../../lib/salesforce/debugLogViewer';
+import { TreeViewHost } from '../treeViewHost';
+import { TreeDataProvider } from '../treeDataProvider';
 
 /**
  * A Tree Data Provider for managing and displaying Salesforce Developer Logs in a VS Code extension.
@@ -17,7 +18,7 @@ import { DebugLogViewer } from '../lib/salesforce/debugLogViewer';
  * @template DeveloperLog - The type of the developer log objects managed by this provider.
  */
 @injectable.singleton()
-export default class DeveloperLogDataProvider extends BaseDataProvider<DeveloperLog> implements vscode.Disposable {
+export class DeveloperLogDataProvider extends TreeDataProvider<DeveloperLog> implements vscode.Disposable {
 
     private logs: Array<DeveloperLog> = [];
     private lastRefresh?: Date;
@@ -59,6 +60,12 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         }, { initial: true });
     }
 
+    public createTreeViewHost(viewId: string): TreeViewHost<DeveloperLog> {
+        return new TreeViewHost(viewId, this, {
+            onDidChangeVisibility: event => this.onDidChangeVisibility(event)
+        });
+    }
+
     protected getCommands() {
         return {
             'vlocode.developerLogs.refresh': this.refresh.bind(this),
@@ -74,6 +81,13 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
                 this.refresh();
             }
         };
+    }
+
+    private onDidChangeVisibility(event: vscode.TreeViewVisibilityChangeEvent) {
+        this.pauseAutoRefresh(!event.visible);
+        if (event.visible) {
+            void this.refreshLogs({ refreshView: true });
+        }
     }
 
     /**
@@ -134,7 +148,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             description: this.getStatusLabel(log),
             contextValue: 'salesforce:developerLog',
             tooltip: this.getTooltip(log),
-            iconPath: this.getItemIconPath({
+            iconPath: TreeViewHost.getItemIconPath({
                 light: 'resources/light/log.svg',
                 dark: 'resources/dark/log.svg'
             }),

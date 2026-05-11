@@ -14,10 +14,6 @@ import { WorkspaceContextDetector } from './lib/workspaceContextDetector';
 import { MetadataDetector } from './lib/salesforce/metadataDetector';
 import { DatapackDetector } from './lib/vlocity/datapackDetector';
 
-import DeveloperLogDataProvider from './treeDataProviders/developerLogDataProvider';
-import ActivityDataProvider from './treeDataProviders/activityDataProvider';
-import JobDataProvider from './treeDataProviders/jobExplorer';
-import DatapackProvider from './treeDataProviders/datapackDataProvider';
 import HandleClassCreated from './events/onClassCreated';
 import HandleTriggerCreated from './events/onTriggerCreated';
 import HandleSalesforceFileDeleted from './events/onFileDeleted';
@@ -27,16 +23,24 @@ import OnMetadataRenamed from './events/onMetadataRenamed';
 import OnDatapackRenamed from './events/onDatapackRenamed';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 
-import './commands';
 import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvider';
 import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensProvider';
 import { PushSourceLensProvider } from './codeLensProviders/pushSourceLensProvider';
-import { SfdxConfigManager } from './lib/sfdxConfigManager';
+
+import { ActivityDataProvider } from './treeViews/dataProviders/activityDataProvider';
+import { DatapackDataProvider } from './treeViews/dataProviders/datapackDataProvider';
+import { DeveloperLogDataProvider } from './treeViews/dataProviders/developerLogDataProvider';
+import { JobDataProvider } from './treeViews/dataProviders/jobDataProvider';
+
 import { SalesforceApexContentProvider } from './contentProviders/salesforceApexContentProvider';
 import { VirtualContentProvider } from './contentProviders/virtualApexContentProvider';
+
+import { SfdxConfigManager } from './lib/sfdxConfigManager';
 import { DataMapperEditorProvider } from './webviews/dataMapperEditorProvider';
 import { VlocodeLogLinkProvider } from './lib/vlocodeLogLinkProvider';
 import { DatapackDefinitionRegistry } from './lib/vlocity/datapackDefinitionRegistry';
+
+import './commands';
 
 /**
  * Start time of the extension set when the bundled entrypoint is loaded by VSCode.
@@ -112,23 +116,6 @@ class Vlocode {
         vlocityUtil.setLogger(LogManager.get('vlocity'));
     }
 
-    /**
-     * Creates an instance of the Developer log panel and registers the required event handlers
-     */
-    private createDeveloperLogView() {
-        const developerLogDataProvider = container.get(DeveloperLogDataProvider);
-        const developerLogsView = vscode.window.createTreeView('developerLogsView', {
-            treeDataProvider: developerLogDataProvider
-        });
-        developerLogsView.onDidChangeVisibility(e => {
-            developerLogDataProvider.pauseAutoRefresh(!e.visible);
-            if (e.visible) {
-                developerLogDataProvider.refreshLogs({ refreshView: true });
-            }
-        });
-        return developerLogsView;
-    }
-
     private configureLogLinkProvider() {
         let linkProviderRegistration: vscode.Disposable | undefined;
 
@@ -185,17 +172,10 @@ class Vlocode {
         }
 
         // register commands and windows
-        this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', {
-            treeDataProvider: new DatapackProvider(this.service),
-            showCollapseAll: true
-        }));
-        this.service.registerDisposable(vscode.window.createTreeView('jobExplorer', {
-            treeDataProvider: new JobDataProvider(this.service)
-        }));
-        this.service.registerDisposable(vscode.window.createTreeView('activityView', {
-            treeDataProvider: new ActivityDataProvider(this.service)
-        }));
-        this.service.registerDisposable(this.createDeveloperLogView());
+        this.service.registerDisposable(container.get(DatapackDataProvider).createTreeViewHost('datapackExplorer').register(vscode.window));
+        this.service.registerDisposable(container.get(JobDataProvider).createTreeViewHost('jobExplorer').register(vscode.window));
+        this.service.registerDisposable(container.get(ActivityDataProvider).createTreeViewHost('activityView').register(vscode.window));
+        this.service.registerDisposable(container.get(DeveloperLogDataProvider).createTreeViewHost('developerLogsView').register(vscode.window));
 
         // Watch Apex classes
         const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/classes/**/*.cls', false, true, false));

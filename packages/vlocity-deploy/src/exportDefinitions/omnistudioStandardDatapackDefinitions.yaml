@@ -1,8 +1,8 @@
 id: omnistudio-standard
-label: OmniStudio Standard Datapacks
-description: Standard runtime OmniStudio datapacks
+label: OmniStudio Standard
+description: Standard runtime
 definitions:
-  OmniProcess: &omniProcessBase
+  OmniScript: &omniProcessBase
     objectType: OmniProcess
     name:
       - Name
@@ -10,7 +10,8 @@ definitions:
       - Type
       - SubType
       - Language
-      - VersionNumber
+    filter:
+      IsIntegrationProcedure: false
     fields:
       CustomJavaScript:
         fileName:
@@ -25,25 +26,25 @@ definitions:
       OmniProcessElement:
         objectType: OmniProcessElement
         filter:
-          OmniProcessId: "{OmniProcess:Id}"
+          OmniProcessId: '{OmniProcess:Id}'
         fileName:
           - _Element
           - Name
         expandArray: true
 
-  IntegrationProcedureOmniProcess:
+  IntegrationProcedure:
     <<: *omniProcessBase
+    filter:
+      IsIntegrationProcedure: true
     matchingKeyFields:
       - Type
       - SubType
-      - VersionNumber
 
-  OmniDataTransform: &omniDataTransform
+  DataRaptor: &omniDataTransform
     objectType: OmniDataTransform
     name:
       - Name
     matchingKeyFields:
-      - VersionNumber
       - Name
     fields:
       ExpectedInputJson:
@@ -65,11 +66,12 @@ definitions:
       OmniDataTransformItem:
         objectType: OmniDataTransformItem
         filter:
-          OmniDataTransformationId: "{OmniDataTransform:Id}"
+          OmniDataTransformationId: '{OmniDataTransform:Id}'
         fileName:
           - _Items
 
   OmniProcessElement:
+    dependent: true
     objectType: OmniProcessElement
     name:
       - Name
@@ -84,6 +86,7 @@ definitions:
           - _PropertySetConfig
 
   OmniDataTransformItem:
+    dependent: true
     objectType: OmniDataTransformItem
     name:
       - GlobalKey

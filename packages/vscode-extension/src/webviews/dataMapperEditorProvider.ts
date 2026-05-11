@@ -228,7 +228,7 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
                     if (!this.service.isInitialized) {
                         throw new Error('Select a Salesforce org to execute DataMapper preview queries.');
                     }
-                    const records = await this.service.salesforceService.query<Record<string, unknown>>(soql, false);
+                    const records = await this.service.salesforceService.query(soql);
                     debug.queries.push({
                         soql,
                         resultCount: records.length,

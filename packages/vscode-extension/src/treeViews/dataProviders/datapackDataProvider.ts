@@ -1,22 +1,28 @@
 import * as vscode from 'vscode';
-import * as constants from '../constants';
+import * as constants from '../../constants';
 import * as path from 'path';
 import { LogManager, injectable, container } from '@vlocode/core';
 import { DatapackTypeDefinition } from '@vlocode/vlocity';
 import { groupBy, lazy, pluralize, getErrorMessage } from '@vlocode/util';
 
 import { TreeItemCollapsibleState } from 'vscode';
-import { DatapackExportMode, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
-import BaseDataProvider from './baseDataProvider';
+import { DatapackExportMode, ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DescribeGlobalSObjectResult, QueryBuilder, SObjectRecord } from '@vlocode/salesforce';
 import { randomUUID } from 'crypto';
-import { DatapackDefinitionRegistry, DatapackDefinitionCollection } from '../lib/vlocity/datapackDefinitionRegistry';
-import { CustomExportDefinitionFiles } from '../lib/vlocodeConfiguration';
+import { DatapackDefinitionRegistry, DatapackDefinitionCollection } from '../../lib/vlocity/datapackDefinitionRegistry';
+import { CustomExportDefinitionFiles } from '../../lib/vlocodeConfiguration';
+import { TreeViewHost } from '../treeViewHost';
+import { TreeDataProvider } from '../treeDataProvider';
+import VlocodeService from '../../lib/vlocodeService';
 
 @injectable()
-export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
+export class DatapackDataProvider extends TreeDataProvider<DatapackNode> {
 
     private logger = lazy(() => LogManager.get(DatapackDataProvider));
+
+    constructor(service: VlocodeService) {
+        super(service);
+    }
 
     private get definitionRegistry(): DatapackDefinitionRegistry {
         return container.get(DatapackDefinitionRegistry);
@@ -36,7 +42,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
                     const record = node.records.slice(-1)[0];
                     return record && {
                         id: record.Id,
-                        datapackType: node.datapackDefinition.exportDefinition ?? node.datapackDefinition.datapackType,
+                        datapackType: node.datapackDefinition.datapackType,
                         sobjectType: record.attributes.type,
                         exportMode: node.exportMode,
                         exportDefinitionScope: node.exportDefinitionScope
@@ -148,7 +154,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
             id: node.getId(),
             label: typeof label === 'string' ? label : '<LABEL MISSING>',
             tooltip: typeof description === 'string' ? tooltip : undefined,
-            iconPath: this.getItemIconPath(node.icon),
+            iconPath: TreeViewHost.getItemIconPath(node.icon),
             description: typeof description === 'string' ? description : undefined,
             contextValue: `vlocode:datapack:${node.nodeType}`,
             collapsibleState: typeof node.collapsibleState === 'boolean'
@@ -382,14 +388,10 @@ class DatapackCategoryNode extends DatapackNode {
         return this.datapackDefinition.datapackType;
     }
 
-    public get exportDefinition() {
-        return this.datapackDefinition.exportDefinition ?? this.datapackType;
-    }
-
     public getId = () => `${this.nodeType}:${this.rootId}:${this.datapackType}:${this.sobjectType}`;
     public getItemLabel = () => this.datapackDefinition.typeLabel;
-    public getItemDescription = () => this.exportDefinition !== this.getItemLabel() ? this.exportDefinition : this.sobjectType;
-    public getItemTooltip = () => `View datapacks of type ${this.exportDefinition} (${this.sobjectType})`;
+    public getItemDescription = () => this.sobjectType;
+    public getItemTooltip = () => `View datapacks of type ${this.datapackDefinition.datapackType} (${this.sobjectType})`;
 }
 
 class DatapackObjectGroupNode extends DatapackNode {
@@ -467,7 +469,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public get datapackType(): string {
-        return this.datapackDefinition.exportDefinition ?? this.datapackDefinition.datapackType;
+        return this.datapackDefinition.datapackType;
     }
 
     public get exportMode(): DatapackExportMode | undefined {
@@ -479,7 +481,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public get id(): string {
-        return this.record.id;
+        return this.record.Id ?? this.record.id;
     }
 
     public get name(): string {

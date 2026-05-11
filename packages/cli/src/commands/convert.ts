@@ -25,7 +25,7 @@ export default class extends SalesforceCommand {
         ...SalesforceCommand.options,
     ];
 
-    constructor(private logger: Logger = LogManager.get('vlocode-cli')) {
+    constructor(private logger: Logger = LogManager.get('DatapackConvert')) {
         super();
     }
 

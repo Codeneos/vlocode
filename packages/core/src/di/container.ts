@@ -5,6 +5,7 @@ import { LogManager } from '../logging';
 import { createServiceProxy, serviceIsResolved, proxyTarget, isServiceProxy, ProxyTarget } from '../serviceProxy';
 import { randomUUID } from 'crypto';
 import * as symbols from './container.symbols';
+import type { InjectConstruction } from './inject.decorator';
 
 export type TypeConstructor<T = any> = { 
     new(...args: any[]): T;
@@ -385,11 +386,17 @@ export class Container {
     }
 
     /**
-     * Resolve injectable parameters for a service using this container.
-     * @param ctor Constructor function
-     * @param args arguments
-     * @param instanceGuid instance guid
-     * @returns
+     * Resolves constructor parameters for a type using this container.
+     *
+     * Explicit values in `args` are preserved. Missing values are resolved from
+     * the container, unless the parameter was decorated with `@inject.new(...)`;
+     * in that case the parameter type is created as a new instance with the
+     * recorded constructor arguments.
+     *
+     * @param ctor Constructor whose parameters should be resolved.
+     * @param args Existing constructor arguments to keep or complete.
+     * @param instanceGuid Optional service id used to track resolved dependencies.
+     * @returns The completed constructor argument list.
      */
     public resolveParameters<T extends new(...args: any[]) => any>(ctor: T, args: any[] = [], instanceGuid?: string) {
         if (ctor.length === 0) {
@@ -418,7 +425,10 @@ export class Container {
             const paramType = injectedType ?? paramTypes[i];
         
             if (paramType) {
-                args[i] = this.resolve(paramType, ctor);
+                const construction = this.getMetadata(symbols.InjectedConstruction, ctor, i.toString()) as InjectConstruction | undefined;
+                args[i] = construction && isConstructor(paramType)
+                    ? this.createInstance(paramType, construction.args)
+                    : this.resolve(paramType, ctor);
                 if (instanceGuid && args[i] !== undefined) {
                     this.trackServiceDependencies(instanceGuid, args[i]);
                 }
@@ -471,10 +481,17 @@ export class Container {
     }
 
     /**
-     * Resolve a single property on an instance
-     * @param instance The instance containing the property
-     * @param property The name of the property to resolve
-     * @returns The resolved property value
+     * Resolves a single injected property value for an instance.
+     *
+     * The property type comes from `@inject(Type)` metadata when present,
+     * otherwise from emitted design-time metadata. Properties decorated with
+     * `@inject.new(...)` are created as new instances with the recorded
+     * constructor arguments.
+     *
+     * @param instance Instance containing the injected property.
+     * @param property Name or symbol of the property to resolve.
+     * @param options Optional resolution behavior.
+     * @returns The resolved property value.
      */
     public resolveProperty(instance: object, property: string | symbol, options?: { trackAsDependency?: boolean }): any {
         // Check for named dependency first
@@ -482,6 +499,7 @@ export class Container {
         const injectedType = this.getInjectType(symbols.InjectedProperties, prototype, property);
         const reflectedType = getPropertyType(prototype, property);
         const propertyType = injectedType ?? reflectedType;
+        const construction = this.getMetadata(symbols.InjectedConstruction, prototype, property) as InjectConstruction | undefined;
 
         if (!propertyType) {
             throw new Error(
@@ -491,7 +509,9 @@ export class Container {
             );
         }
 
-        const resolvedPropertyValue = this.resolve(propertyType, prototype.constructor);
+        const resolvedPropertyValue = construction && isConstructor(propertyType)
+            ? this.createInstance(propertyType, construction.args)
+            : this.resolve(propertyType, prototype.constructor);
 
         if (options?.trackAsDependency && instance[symbols.ServiceGuid]) {
             this.trackServiceDependencies(instance[symbols.ServiceGuid], resolvedPropertyValue);

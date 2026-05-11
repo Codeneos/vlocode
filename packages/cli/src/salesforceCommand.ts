@@ -1,5 +1,5 @@
-import { CachedFileSystemAdapter, container, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider, SalesforceConnection, ReplayTransport, SessionDataStore, HttpTransport, TransportRecorder } from '@vlocode/salesforce';
+import { CachedFileSystemAdapter, container, NodeFileSystem } from '@vlocode/core';
+import { InteractiveConnectionProvider, SalesforceConnectionProvider, SfdxConnectionProvider, JsForceConnectionProvider, SalesforceConnection, ReplayTransport, SessionDataStore, HttpTransport, TransportRecorder } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { Command, Option } from './command';
 
@@ -30,18 +30,18 @@ export abstract class SalesforceCommand extends Command {
                 options.recordSession === true ? `vlocode-session-${Math.round(Date.now() / 1000)}.log` : options.recordSession);
         }
 
-        if (options.replaySession) {
-            this.container.add(new JsForceConnectionProvider(new SalesforceConnection({
+        const connectionProvider = options.replaySession
+            ? new JsForceConnectionProvider(new SalesforceConnection({
                 transport: new ReplayTransport(SessionDataStore.loadSession(options.replaySession))
-            })));
-        } else if (options.user) {
-            this.container.add(new SfdxConnectionProvider(options.user));
-        } else {
-            this.container.add(new InteractiveConnectionProvider(`https://${options.instance}`));
-        }
+            }))
+            : options.user
+                ? new SfdxConnectionProvider(options.user)
+                : new InteractiveConnectionProvider(`https://${options.instance}`);
+
+        this.container.add(connectionProvider, { provides: [ SalesforceConnectionProvider ] });
 
         // Setup Namespace replacer
-        this.container.add(await this.container.get(VlocityNamespaceService).initialize(this.container.get(SalesforceConnectionProvider)));
+        this.container.add(await this.container.get(VlocityNamespaceService).initialize(connectionProvider));
 
         // Setup a Cached file system for loading datapacks
         this.container.add(new CachedFileSystemAdapter(new NodeFileSystem()));

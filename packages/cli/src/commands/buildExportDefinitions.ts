@@ -30,7 +30,7 @@ export default class extends SalesforceCommand {
         new Option('-d, --output-dir <dir>', 'output directory for expanded mode').default('./datapack-export-definitions'),
     ];
 
-    constructor(private readonly logger: Logger = LogManager.get('generate-export-definitions')) {
+    constructor(private readonly logger: Logger = LogManager.get('ExportDefinitions')) {
         super();
     }
 

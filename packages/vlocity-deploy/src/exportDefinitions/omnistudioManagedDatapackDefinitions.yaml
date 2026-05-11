@@ -1,33 +1,32 @@
 id: omnistudio-managed
-label: OmniStudio Managed Datapacks
-description: Managed package OmniStudio datapacks
+label: OmniStudio Managed
+description: OmniStudio/Vlocity Managed package
 definitions:
   OmniScript: &managedOmniScriptBase
-    objectType: "%vlocity_namespace%__OmniScript__c"
+    objectType: '%vlocity_namespace%__OmniScript__c'
     name:
       - Name
     matchingKeyFields:
-      - "%vlocity_namespace%__Type__c"
-      - "%vlocity_namespace%__SubType__c"
-      - "%vlocity_namespace%__Language__c"
-      - "%vlocity_namespace%__Version__c"
+      - '%vlocity_namespace%__Type__c'
+      - '%vlocity_namespace%__SubType__c'
+      - '%vlocity_namespace%__Language__c'
     ignoreFields:
-      - "%vlocity_namespace%__IsActive__c"
+      - '%vlocity_namespace%__IsActive__c'
     fields:
-      "%vlocity_namespace%__CustomJavaScript__c":
+      '%vlocity_namespace%__CustomJavaScript__c':
         fileName:
           - _JavaScript
-      "%vlocity_namespace%__PropertySet__c":
+      '%vlocity_namespace%__PropertySet__c':
         fileName:
           - _PropertySet
-      "%vlocity_namespace%__TestHTMLTemplates__c":
+      '%vlocity_namespace%__TestHTMLTemplates__c':
         fileName:
           - _HTMLTemplates
     embeddedObjects:
-      "%vlocity_namespace%__Element__c":
-        objectType: "%vlocity_namespace%__Element__c"
+      '%vlocity_namespace%__Element__c':
+        objectType: '%vlocity_namespace%__Element__c'
         filter:
-          "%vlocity_namespace%__OmniScriptId__c": "{%vlocity_namespace%__OmniScript__c:Id}"
+          '%vlocity_namespace%__OmniScriptId__c': '{%vlocity_namespace%__OmniScript__c:Id}'
         limit: 5000
         fileName:
           - _Element
@@ -37,61 +36,63 @@ definitions:
   IntegrationProcedure:
     <<: *managedOmniScriptBase
     matchingKeyFields:
-      - "%vlocity_namespace%__Type__c"
-      - "%vlocity_namespace%__SubType__c"
-      - "%vlocity_namespace%__Version__c"
+      - '%vlocity_namespace%__Type__c'
+      - '%vlocity_namespace%__SubType__c'
+      - '%vlocity_namespace%__Version__c'
 
   DataRaptor: &managedDataRaptor
-    objectType: "%vlocity_namespace%__DRBundle__c"
+    objectType: '%vlocity_namespace%__DRBundle__c'
     name:
       - Name
     matchingKeyFields:
       - Name
     ignoreFields:
-      - "%vlocity_namespace%__FormulaConverted__c"
+      - '%vlocity_namespace%__FormulaConverted__c'
     fields:
-      "%vlocity_namespace%__InputJson__c":
+      '%vlocity_namespace%__InputJson__c':
         fileName:
           - _InputJson
-      "%vlocity_namespace%__SampleInputJSON__c":
+      '%vlocity_namespace%__SampleInputJSON__c':
         fileName:
           - _SampleInputJson
-      "%vlocity_namespace%__SampleInputXML__c":
+      '%vlocity_namespace%__SampleInputXML__c':
         fileName:
           - _SampleInputXML
-      "%vlocity_namespace%__TargetOutJson__c":
+      '%vlocity_namespace%__TargetOutJson__c':
         fileName:
           - _TargetOutJson
-      "%vlocity_namespace%__TargetOutXml__c":
+      '%vlocity_namespace%__TargetOutXml__c':
         fileName:
           - _TargetOutXml
     embeddedObjects:
-      "%vlocity_namespace%__DRMapItem__c":
-        objectType: "%vlocity_namespace%__DRMapItem__c"
+      '%vlocity_namespace%__DRMapItem__c':
+        objectType: '%vlocity_namespace%__DRMapItem__c'
         filter:
-          Name: "{%vlocity_namespace%__DRBundle__c:Name}"
+          Name: '{%vlocity_namespace%__DRBundle__c:Name}'
         fileName:
           - _Mappings
 
-  "%vlocity_namespace%__Element__c":
-    objectType: "%vlocity_namespace%__Element__c"
+  '%vlocity_namespace%__Element__c':
+    dependent: true
+    objectType: '%vlocity_namespace%__Element__c'
     name:
       - Name
     matchingKeyFields:
-      - "%vlocity_namespace%__OmniScriptId__c"
+      - '%vlocity_namespace%__OmniScriptId__c'
       - Name
     ignoreFields:
-      - "%vlocity_namespace%__OmniScriptVersion__c"
-      - "%vlocity_namespace%__Level__c"
+      - '%vlocity_namespace%__OmniScriptVersion__c'
+      - '%vlocity_namespace%__Level__c'
     fields:
-      "%vlocity_namespace%__PropertySet__c":
+      '%vlocity_namespace%__PropertySet__c':
         fileName:
           - _PropertySet
 
-  "%vlocity_namespace%__DRMapItem__c":
-    objectType: "%vlocity_namespace%__DRMapItem__c"
+  '%vlocity_namespace%__DRMapItem__c':
+    dependent: true
+    objectType: '%vlocity_namespace%__DRMapItem__c'
     name:
-      - "%vlocity_namespace%__MapId__c"
+      - '%vlocity_namespace%__MapId__c'
     matchingKeyFields:
-      - "%vlocity_namespace%__MapId__c"
+      - '%vlocity_namespace%__MapId__c'
       - Name

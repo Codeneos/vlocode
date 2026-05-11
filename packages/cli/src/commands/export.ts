@@ -1,17 +1,58 @@
 import { join } from 'path';
 import * as fs from 'fs-extra';
-import * as yaml from 'js-yaml';
 
 import { Logger, LogManager } from '@vlocode/core';
-import { DatapackExpander, DatapackExportDefinitionStore, DatapackExporter } from '@vlocode/vlocity-deploy';
+import { DatapackExpandResult, DatapackExportDefinitionStore, DatapackExporter } from '@vlocode/vlocity-deploy';
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
 import { SalesforceService } from '@vlocode/salesforce';
+import { getErrorMessage } from '@vlocode/util';
+import { DatapackExportFileLoader, type DatapackExportFile } from '../datapackExportFileLoader';
+
+type DatapackExportResult = Awaited<ReturnType<DatapackExporter['exportObject']>>[number];
+
+type ExportCommandOptions = {
+    exportDefinitions?: string;
+    expand?: boolean;
+    query?: string;
+    file?: string;
+    folder?: string;
+    depth?: number;
+    datapackType?: string;
+};
+
+type ExportDefaults = {
+    datapackType?: string;
+    expand: boolean;
+    folder: string;
+    maxDepth?: number;
+};
+
+type ExportRequest = ExportDefaults & {
+    ids: string[];
+};
+
+function existingFile(label: string): (value: string) => string {
+    return (value: string) => {
+        if (!fs.existsSync(value)) {
+            throw new Error(`Specified ${label} does not exist`);
+        }
+        return value;
+    };
+}
+
+function parseDepth(value: string): number {
+    const depth = Number(value);
+    if (!Number.isInteger(depth)) {
+        throw new Error('Depth must be an integer');
+    }
+    return depth;
+}
 
 export default class extends SalesforceCommand {
 
-    static description = 'Export an objecr as datapack from Salesforce';
+    static description = 'Export an object as datapack from Salesforce';
 
     static args = [
         new Argument('<ids...>', 'list of object IDs to export').argOptional()
@@ -22,67 +63,180 @@ export default class extends SalesforceCommand {
         new Option(
             '-d, --export-definitions <file>', 
             'path of the YAML or JSON file containing the export definitions that define how objects are exported'
-        ).argParser((value) => {
-            if (!fs.existsSync(value)) {
-                throw new Error('Specified definitions file does not exists');
-            }
-            return value;
-        }).makeOptionMandatory(),
+        ).argParser(existingFile('definitions file')),
+        new Option(
+            '-f, --file <file>',
+            'path to a YAML export file with datapack export queries'
+        ).argParser(existingFile('export file')).conflicts('query'),
         new Option(
             '-e, --expand',
             'expand the datapack once exported into separate files according to the export definitions'
-        ),
+        ).default(false),
         new Option(
             '-q, --query <query-string>',
             'specify the query to use to export the objects instead of using the object ID'
-        ).conflicts('ids')
+        ).conflicts('file'),
+        new Option(
+            '-t, --datapack-type <type>',
+            'datapack type to use when exporting IDs or a single query'
+        ),
+        new Option(
+            '--folder <folder>',
+            'folder where exported datapacks are written'
+        ).default('./'),
+        new Option(
+            '--depth <depth>',
+            'dependency export depth; use -1 to include all dependencies'
+        ).argParser(parseDepth)
     ];
 
-    constructor(private logger: Logger = LogManager.get('datapack-export')) {
+    private readonly exportFileLoader = new DatapackExportFileLoader();
+
+    constructor(private logger: Logger = LogManager.get('DatapackExport')) {
         super();
     }
 
-    public async run() {
-        const ids = await this.getIds();
-        const definitions = await this.loadDefinitions(this.options.exportDefinitions);
-        this.container.get(DatapackExportDefinitionStore).load(definitions);
+    public async run(ids?: string[]) {
+        const options = this.options as ExportCommandOptions;
+        const argIds = Array.isArray(ids) ? ids : [];
+        const exportFile = options.file ? await this.loadExportFile(options.file) : undefined;
 
+        await this.loadExportDefinitions(options.exportDefinitions ?? exportFile?.exportDefinitions);
+
+        const requests = exportFile
+            ? await this.getRequestsFromFile(exportFile, options, argIds)
+            : await this.getRequestsFromOptions(argIds, options);
+
+        const datapackCount = requests.reduce((count, request) => count + request.ids.length, 0);
+        if (datapackCount === 0) {
+            throw new Error('No datapacks matched the export input');
+        }
+
+        this.logger.info(
+            `Exporting ${datapackCount} datapack${datapackCount === 1 ? '' : 's'} ` +
+            `in ${requests.length} batch${requests.length === 1 ? '' : 'es'}`
+        );
         const exporter = this.container.new(DatapackExporter);
-        const expander = this.container.new(DatapackExpander);
 
-        for (const id of ids) {
-            const result = await exporter.exportObject(id);
-            if (this.options.expand) {
-                const expanded = expander.expandDatapack(result.datapack);
-                for (const [fileName, fileData] of Object.entries(expanded.files)) {
-                    await this.writeFile([expanded.folder, fileName], fileData);
-                }
-                if (result.parentKeys.length) {
-                    await this.writeFile(
-                        [expanded.folder, expanded.baseName +  '_ParentKeys.json'], 
-                        result.parentKeys.map(({ key }) => key)
-                    );
-                }
-            } else {
-                const baseName = result.datapack.name;
-                await this.writeFile(baseName + '_DataPack.json', result.datapack);
-                await this.writeFile(baseName + '_ParentKeys.json', result.parentKeys);
+        for (const request of requests) {
+            await this.exportRequest(exporter, request);
+        }
+
+        this.logger.info('Datapack export completed');
+    }
+
+    private async getRequestsFromFile(exportFile: DatapackExportFile, defaults: ExportCommandOptions, ids: string[]) {
+        if (ids.length || defaults.query || defaults.datapackType) {
+            throw new Error('Use either a YAML export file or object IDs/query/datapack type, not both');
+        }
+
+        const requestDefaults = this.getExportDefaults(defaults, exportFile);
+        const requests: ExportRequest[] = [];
+
+        for (const [datapackType, queries] of Object.entries(exportFile.export)) {
+            const ids = new Array<string>();
+            for (const query of queries) {
+                ids.push(...await this.getIdsFromQuery(query, datapackType));
             }
+            if (ids.length) {
+                requests.push({
+                    ...requestDefaults,
+                    ids,
+                    datapackType
+                });
+            }
+        }
+        return requests;
+    }
+
+    private async getRequestsFromOptions(ids: string[], options: ExportCommandOptions) {
+        if (ids.length && options.query) {
+            throw new Error('Use either object IDs or --query, not both');
+        }
+
+        if (options.query) {
+            ids = await this.getIdsFromQuery(options.query, options.datapackType);
+        }
+
+        if (!ids.length) {
+            throw new Error('No object IDs, export query, or YAML export file specified.');
+        }
+
+        const requestDefaults = this.getExportDefaults(options);
+
+        return [{
+            ...requestDefaults,
+            ids
+        }];
+    }
+
+    private async exportRequest(exporter: DatapackExporter, request: ExportRequest) {
+        const context = {
+            datapackType: request.datapackType,
+            maxDepth: request.maxDepth
+        };
+
+        if (request.expand) {
+            const results = await exporter.exportObjectAndExpand(request.ids, context);
+            for (const result of results) {
+                await this.writeExpandedDatapack(result, request.folder);
+            }
+            return;
+        }
+
+        const results = await exporter.exportObject(request.ids, context);
+        for (const result of results) {
+            await this.writeExportTree(result, request.folder);
         }
     }
 
-    private async getIds() {
-        if (this.options.query) {
-            const records = await this.container.get(SalesforceService).data.query(this.options.query);
-            if (records.length === 0) {
-                throw new Error(`No records found for the specified query: ${this.options.query}`);
-            }
-            return records.map(record => record.Id);
+    private getExportDefaults(options: ExportCommandOptions, overrides: Partial<ExportDefaults> = {}): ExportDefaults {
+        return {
+            datapackType: overrides.datapackType ?? options.datapackType,
+            expand: overrides.expand ?? Boolean(options.expand),
+            folder: overrides.folder ?? options.folder ?? './',
+            maxDepth: overrides.maxDepth ?? this.normalizeDepth(options.depth)
+        };
+    }
+
+    private async getIdsFromQuery(query: string, datapackType?: string) {
+        query = query.trim();
+        if (!query) {
+            throw new Error(`Empty export query${datapackType ? ` for ${datapackType}` : ''}`);
         }
-        if (!this.args.ids?.length) {
-            throw new Error('No object IDs or export query specified. Either specify object IDs or an export query.');
+
+        this.logger.verbose(`Running export query${datapackType ? ` for ${datapackType}` : ''}: ${query}`);
+        const records = await this.container.get(SalesforceService).data.query<{ Id?: string }>(query);
+        if (records.length === 0) {
+            this.logger.warn(`No records found${datapackType ? ` for ${datapackType}` : ''}`);
+            return [];
         }
-        return this.args.ids
+
+        const ids = records.map(record => record.Id).filter((id): id is string => typeof id === 'string' && id.length > 0);
+        if (ids.length !== records.length) {
+            throw new Error(`Export query${datapackType ? ` for ${datapackType}` : ''} must select the Id field`);
+        }
+
+        this.logger.info(`Matched ${ids.length} record${ids.length === 1 ? '' : 's'}${datapackType ? ` for ${datapackType}` : ''}`);
+        return ids;
+    }
+
+    private async writeExportTree(result: DatapackExportResult, folder: string) {
+        await this.writeConsolidatedDatapack(result, folder);
+
+        for (const related of result.relatedDatapacks ?? []) {
+            await this.writeExportTree(related, folder);
+        }
+    }
+
+    private async writeExpandedDatapack(result: DatapackExpandResult, folder: string) {
+        const filesWritten = await result.writeToFilesystem(folder);
+        this.logger.info(`Wrote ${filesWritten.length} file${filesWritten.length === 1 ? '' : 's'} for ${result.sourceKey}`);
+    }
+
+    private async writeConsolidatedDatapack(result: DatapackExportResult, folder: string) {
+        const baseName = result.datapack.name ?? result.datapack.Name ?? result.sourceKey.replace(/[/\\:]/g, '_');
+        await this.writeFile([folder, `${baseName}_DataPack.json`], result.datapack);
     }
 
     public async writeFile(fileName: string | string[], data: object | string | Buffer) {
@@ -98,22 +252,39 @@ export default class extends SalesforceCommand {
             await fs.outputFile(fileName, data);
             this.logger.info(`Output file: ${fileName}`);
         } catch (err) {
-            this.logger.warn(`Failed to write file ${fileName}: ${err.message}`);
+            this.logger.warn(`Failed to write file ${fileName}: ${getErrorMessage(err)}`);
         }
     }
 
-    public async loadDefinitions(filePath: string) {
-        this.logger.info(`Loading export definitions from ${filePath}`);
-        try {
-            if (/\.json$/i.test(filePath)) {
-                return fs.readJson(filePath, { encoding: 'utf-8' });
-            } else if (/\.ya?ml$/i.test(filePath)) {
-                return yaml.load(await fs.readFile(filePath, { encoding: 'utf-8' }));
-            } else {
-                throw new Error('Unsupported file format, expected a YAML or JSON file');
-            }
-        } catch (err) {
-            this.logger.error(`Failed to load export definitions from ${filePath}: ${err.message}`);
+    private async loadExportDefinitions(filePath?: string) {
+        if (!filePath) {
+            return;
         }
+
+        this.logger.info(`Loading export definitions from ${filePath}`);
+        const definitions = await this.exportFileLoader.loadDefinitions(filePath);
+        this.container.get(DatapackExportDefinitionStore).load(definitions);
+        this.logger.info(`Loaded ${Object.keys(definitions).length} export definition${Object.keys(definitions).length === 1 ? '' : 's'}`);
+    }
+
+    private async loadExportFile(filePath: string): Promise<DatapackExportFile> {
+        this.logger.info(`Loading export file from ${filePath}`);
+        return this.exportFileLoader.load(filePath);
+    }
+
+    private normalizeDepth(value?: unknown): number | undefined {
+        if (value === undefined) {
+            return undefined;
+        }
+
+        if (typeof value !== 'number' && typeof value !== 'string') {
+            throw new Error('Depth must be an integer');
+        }
+
+        const depth = Number(value);
+        if (!Number.isInteger(depth)) {
+            throw new Error('Depth must be an integer');
+        }
+        return depth < 0 ? Number.MAX_SAFE_INTEGER : depth;
     }
 }

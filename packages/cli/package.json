@@ -15,6 +15,7 @@
     "type": "module",
     "publishConfig": {
         "main": "dist/cli.mjs",
+        "exports": "./dist/cli.mjs",
         "access": "public"
     },
     "readme": "./README.md",
@@ -66,7 +67,8 @@
         "js-yaml": "^4.1.0",
         "log-symbols": "^4.0.0",
         "shx": "^0.3.4",
-        "ts-jest": "^29.4.9"
+        "ts-jest": "^29.4.9",
+        "typescript": "catalog:"
     },
     "publisher": "curlybracket"
 }

@@ -43,15 +43,18 @@ export class VlocodeDirectExport {
             }
 
             try {
-                const expanded = await this.exporter.exportObjectAndExpand(entry.id, {
-                    scope: entry.exportDefinitionScope ?? (entry.datapackType === 'SObject' ? undefined : entry.datapackType)
+                const expandedResults = await this.exporter.exportObjectAndExpand(entry.id, {
+                    scope: entry.exportDefinitionScope,
+                    datapackType: entry.datapackType
                 });
-                await expanded.writeToFilesystem(exportFolder);
-                results.add({
-                    key: expanded.sourceKey,
-                    label: entry.name ?? expanded.sourceKey,
-                    success: true
-                });
+                for (const expanded of expandedResults) {
+                    await expanded.writeToFilesystem(exportFolder);
+                    results.add({
+                        key: expanded.sourceKey,
+                        label: entry.name ?? expanded.sourceKey,
+                        success: true
+                    });
+                }
             } catch (error) {
                 results.add(this.createFailureResult(entry, getErrorMessage(error)));
             }

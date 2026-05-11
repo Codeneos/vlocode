@@ -229,7 +229,7 @@ export function makeRetryable<T extends (...args: Parameters<T>) => Promise<Awai
  * @remarks This decorator is not meant for methods that are called in parallel with different arguments.
  * @returns MethodDecorator
  */
-export function preventParallel<T extends (...args: TArgs[]) => Promise<TReturn>, TArgs = any, TReturn = any>(variableName?: string | symbol): MethodDecorator {
+export function singleFlight<T extends (...args: TArgs[]) => Promise<TReturn>, TArgs = any, TReturn = any>(variableName?: string | symbol): MethodDecorator {
     return function<K = T>(this: T, target: any, name: string | symbol, descriptor: TypedPropertyDescriptor<K>): TypedPropertyDescriptor<K> | void {
         const value = descriptor.value;
         if (typeof value !== 'function') {

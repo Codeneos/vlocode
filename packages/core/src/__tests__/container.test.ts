@@ -1,5 +1,5 @@
 import 'jest';
-import { Logger, container, Container, LifecyclePolicy, inject } from '../';
+import { Logger, container, Container, LifecyclePolicy, inject, injectable } from '../';
 import { ServiceImplCircular } from './container.circular';
 import { CircularRef } from './container.circular.ref';
 import { wrap } from '@vlocode/util';
@@ -331,6 +331,19 @@ describe('container', () => {
             constructor(@inject(Container) public container: Container) {}
         }
 
+        @injectable.transient()
+        class ServiceWithOptions {
+            constructor(public options: { enabled: boolean }) {}
+        }
+
+        class ServiceWithNewProperty {
+            @inject.new({ enabled: true }) public service: ServiceWithOptions;
+        }
+
+        class ServiceWithNewParameter {
+            constructor(@inject.new({ enabled: true }) public service: ServiceWithOptions) {}
+        }
+
         it('should inject the creating container for Container-typed properties', () => {
             // Arrange
             const rootContainer = new Container(Logger.null);
@@ -366,6 +379,30 @@ describe('container', () => {
 
             // Assert
             expect(injectedContainer).toBe(container);
+        });
+
+        it('should create injected properties with constructor args', () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+
+            // Act
+            const instance = testContainer.new(ServiceWithNewProperty);
+
+            // Assert
+            expect(instance.service).toBeInstanceOf(ServiceWithOptions);
+            expect(instance.service.options).toStrictEqual({ enabled: true });
+        });
+
+        it('should create injected constructor parameters with constructor args', () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+
+            // Act
+            const instance = testContainer.new(ServiceWithNewParameter);
+
+            // Assert
+            expect(instance.service).toBeInstanceOf(ServiceWithOptions);
+            expect(instance.service.options).toStrictEqual({ enabled: true });
         });
     });
 });

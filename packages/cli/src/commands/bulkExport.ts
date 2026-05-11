@@ -41,7 +41,7 @@ export default class extends SalesforceCommand {
         ).default(50000)
     ];
 
-    constructor(private logger: Logger = LogManager.get('bulk-export')) {
+    constructor(private logger: Logger = LogManager.get('DataExport')) {
         super();
     }
 

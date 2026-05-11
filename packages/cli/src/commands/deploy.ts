@@ -73,7 +73,7 @@ export default class extends SalesforceCommand {
         return LogManager.getGlobalLogLevel() <= LogLevel.verbose;
     }
 
-    constructor(private logger: Logger = LogManager.get('vlocity-deploy')) {
+    constructor(private logger: Logger = LogManager.get('DatapackDeploy')) {
         super();
     }
 

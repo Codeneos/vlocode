@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import chalk from 'chalk';
 
 import { Logger, injectable ,container, LifecyclePolicy, inject } from '@vlocode/core';
-import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel, clearCache } from '@vlocode/util';
+import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, singleFlight, clearCache } from '@vlocode/util';
 import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { DatapackMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 
@@ -141,7 +141,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }
     }
 
-    @preventParallel('initializePromise')
+    @singleFlight('initializePromise')
     public async initializeConnection() : Promise<void> {
         try {
             this.resetConnection();
@@ -465,7 +465,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return err?.name === 'invalid_grant' || err?.message === 'RefreshTokenAuthError';
     }
 
-    @preventParallel('refreshOAuthTokensPromise')
+    @singleFlight('refreshOAuthTokensPromise')
     private async handleAuthTokenExpiredError() {
         const refreshed = await this.promptRefreshOAuthToken();
 
@@ -529,7 +529,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return false;
     }
 
-    @preventParallel()
+    @singleFlight()
     public refreshOAuthTokens() : Promise<void> {
         return this.withActivity({
             progressTitle: `Refreshing ${this.sfdxUsername} org credentials...`,
@@ -610,8 +610,20 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         await this.initializeConnection();
     }
 
-    @preventParallel()
+    @singleFlight()
     public async validateSalesforceConnectivity() : Promise<string | undefined> {
+        if (!this.isInitialized) {
+            // Await service initialization
+            await vscode.window.withProgress({
+                title: 'Vlocode: Initializing...',
+                location: vscode.ProgressLocation.Window
+            }, () => this.initializeConnection());
+        }
+
+        if (!this.isInitialized) {
+            return 'Vlocode failed to initialize within the given time; check the debug console for possible errors';
+        }
+
         if (!this.sfdxUsername) {
             const message = 'Select a Salesforce instance for this workspace to use Vlocode';
             const selectedAction = await vscode.window.showInformationMessage(message, 'Connect to Salesforce');
@@ -623,18 +635,6 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             } else {
                 return message;
             }
-        }
-
-        if (!this.isInitialized) {
-            // Await service initialization
-            await vscode.window.withProgress({
-                title: 'Vlocode: Initializing...',
-                location: vscode.ProgressLocation.Window
-            }, () => this.initializeConnection());
-        }
-
-        if (!this.isInitialized) {
-            return 'Vlocode failed to initialize within the given time; check the debug console for possible errors';
         }
     }
 
