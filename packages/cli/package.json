@@ -15,6 +15,7 @@
     "type": "module",
     "publishConfig": {
         "main": "dist/cli.mjs",
+        "exports": "./dist/cli.mjs",
         "access": "public"
     },
     "readme": "./README.md",
