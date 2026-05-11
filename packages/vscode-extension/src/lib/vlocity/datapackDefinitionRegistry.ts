@@ -4,7 +4,7 @@ import * as yaml from 'js-yaml';
 import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
-import { deepClone, getErrorMessage, preventParallel as singleFlight } from '@vlocode/util';
+import { filterAsyncParallel, getErrorMessage, getObjectProperty, singleFlight } from '@vlocode/util';
 import { DatapackInfoService, DatapackTypeDefinition, DatapackTypeDefinitions } from '@vlocode/vlocity';
 import {
     DatapackExportDefinitionStore,
@@ -25,14 +25,12 @@ export interface DatapackDefinitionCollection {
     readonly definitions: readonly DatapackTypeDefinition[];
 }
 
-interface CustomDatapackDefinitionFile {
+interface ExportDefinitionFileInfo {
     readonly id: string;
     readonly label: string;
     readonly description: string;
     readonly file: string;
 }
-
-type ScopedDatapackTypeDefinition = DatapackTypeDefinition & { scope: string };
 
 @injectable()
 export class DatapackDefinitionRegistry {
@@ -88,11 +86,11 @@ export class DatapackDefinitionRegistry {
     }
 
     private loadOmniStudioDefinitions() {
-        return this.loadBundledDefinitions(datapackDefinitions.omniStudioManaged);
+        return this.loadDirectExportDefinitions(datapackDefinitions.omniStudioManaged);
     }
 
     private loadOmniStudioStandardDefinitions() {
-        return this.loadBundledDefinitions(datapackDefinitions.omniStudioStandard);
+        return this.loadDirectExportDefinitions(datapackDefinitions.omniStudioStandard);
     }
 
     private async loadIndustriesDefinitions() {
@@ -112,40 +110,31 @@ export class DatapackDefinitionRegistry {
         }
     }
 
-    private async loadBundledDefinitions(file: DatapackExportDefinitionFile) {
-        const definitions = await this.filterAvailableDatapacks(this.getDatapackTypeDefinitions(file));
-        if (!definitions.length) {
+    private async loadDirectExportDefinitions(file: DatapackExportDefinitionFile) {
+        const typeDefinitions = this.getDatapackTypeDefinitions(file.definitions);
+        const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
+        if (!availableDefinitions.length) {
             return;
         }
-
-        this.registerExportDefinitions(file.definitions, definitions);
+        this.definitions.load(file.definitions, { scope: file.id });
         this.entries.push({
             id: file.id,
             label: file.label,
             description: file.description,
-            definitions
+            definitions: availableDefinitions.map(definition => ({ ...definition, scope: file.id }))
         });
     }
 
-    private getDatapackTypeDefinitions(file: DatapackExportDefinitionFile): ScopedDatapackTypeDefinition[] {
-        return Object.values(DatapackTypeDefinitions)
-            .flat()
-            .flatMap(definition => {
-                const exportDefinition = this.getExportDefinitionName(definition);
-                if (!file.definitions[exportDefinition]) {
-                    return [];
-                }
-
-                return {
-                    ...definition,
-                    exportMode: 'direct' as const,
-                    scope: exportDefinition
-                };
+    private getDatapackTypeDefinitions(definitions: Record<string, DatapackExportDefinition>): DatapackTypeDefinition[] {
+        return Object.entries(definitions)
+            .filter(([, definition]) => !definition.dependent)
+            .map(([datapackType, definition]) => {
+                return this.toDatapackTypeDefinition(datapackType, definition);
             });
     }
 
     private async loadCustomDefinitions() {
-        for (const file of await this.getCustomDatapackDefinitionFiles()) {
+        for (const file of await this.readCustomExportDefinitionFiles()) {
             const definitions = await this.loadCustomDefinitionFile(file.file);
             if (definitions.length) {
                 this.entries.push({
@@ -158,16 +147,14 @@ export class DatapackDefinitionRegistry {
         }
     }
 
-    private async loadCustomDefinitionFile(file: string): Promise<ScopedDatapackTypeDefinition[]> {
+    private async loadCustomDefinitionFile(file: string): Promise<DatapackTypeDefinition[]> {
         try {
-            const parsed = yaml.load(await fs.readFile(file, 'utf8'), { filename: file });
-            const exportDefinitions = this.getExportDefinitions(parsed, file);
-            const definitions = Object.entries(exportDefinitions)
-                .map(([ datapackType, definition ]) => this.toCustomDatapackDefinition(datapackType, definition));
-            const availableDefinitions = await this.filterAvailableDatapacks(definitions);
+            const exportDefinitions = await this.readExportDefinitionsFromFile(file);
+            const typeDefinitions = this.getDatapackTypeDefinitions(exportDefinitions);
+            const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
 
             this.logger.info(`Loaded custom datapack definitions from ${file}`);
-            this.registerExportDefinitions(exportDefinitions, availableDefinitions);
+            this.definitions.load(exportDefinitions, { scope: file });
             return availableDefinitions;
         } catch (error) {
             this.logger.error(`Failed to load custom datapack definitions from ${file}: ${getErrorMessage(error)}`);
@@ -175,50 +162,23 @@ export class DatapackDefinitionRegistry {
         }
     }
 
-    private toCustomDatapackDefinition(datapackType: string, definition: DatapackExportDefinition): ScopedDatapackTypeDefinition {
-        const exportDefinition = this.toExportDefinition(definition);
+    private toDatapackTypeDefinition(datapackType: string, exportDefinition: DatapackExportDefinition): DatapackTypeDefinition {
         return {
             datapackType,
-            exportDefinition: datapackType !== exportDefinition.objectType ? datapackType : undefined,
             typeLabel: this.getDefinitionLabel(datapackType, exportDefinition),
             source: {
                 sobjectType: exportDefinition.objectType,
                 fieldList: this.getExplorerFieldList(exportDefinition),
-                orderBy: this.getExplorerOrderBy(exportDefinition)
+                orderBy: this.getOrderByFields(exportDefinition)
             },
-            displayName: this.getExplorerDisplayName(exportDefinition),
+            displayName: this.getDisplayNameFn(exportDefinition),
             exportMode: 'direct',
             scope: datapackType
         };
     }
 
-    private registerExportDefinitions(definitions: Readonly<Record<string, DatapackExportDefinition>>, datapackTypes: readonly ScopedDatapackTypeDefinition[]) {
-        const entries = Object.entries(definitions);
-
-        for (const { scope } of datapackTypes) {
-            // Load shared definitions first, then let the selected export definition win for duplicate object types.
-            for (const [ name, definition ] of entries) {
-                if (name !== scope) {
-                    this.addExportDefinition(definition, scope);
-                }
-            }
-            if (definitions[scope]) {
-                this.addExportDefinition(definitions[scope], scope);
-            }
-        }
-    }
-
-    private addExportDefinition(definition: DatapackExportDefinition, scope: string) {
-        const exportDefinition = this.toExportDefinition(definition);
-        this.definitions.add({ objectType: exportDefinition.objectType, scope }, exportDefinition);
-    }
-
-    private toExportDefinition(definition: DatapackExportDefinition) {
-        return this.vlocode.salesforceService.updateNamespace(deepClone(definition));
-    }
-
-    private async getCustomDatapackDefinitionFiles(): Promise<CustomDatapackDefinitionFile[]> {
-        const files: CustomDatapackDefinitionFile[] = [];
+    private async readCustomExportDefinitionFiles(): Promise<ExportDefinitionFileInfo[]> {
+        const files: ExportDefinitionFileInfo[] = [];
         const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
         const defaultFiles = workspaceFolders.length
             ? workspaceFolders.map(ws => path.join(ws.uri.fsPath, customDatapackDefinitionsFile))
@@ -252,7 +212,7 @@ export class DatapackDefinitionRegistry {
         }
     }
 
-    private async getCustomDefinitionFile(label: string, file: string): Promise<CustomDatapackDefinitionFile | undefined> {
+    private async getCustomDefinitionFile(label: string, file: string): Promise<ExportDefinitionFileInfo | undefined> {
         const resolved = path.resolve(file);
         if (!await fs.pathExists(resolved)) {
             return;
@@ -292,20 +252,16 @@ export class DatapackDefinitionRegistry {
         return label.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'definitions';
     }
 
-    private getExportDefinitions(input: unknown, file: string): Record<string, DatapackExportDefinition> {
-        const root = this.asRecord(input);
-        if (!root) {
+    private async readExportDefinitionsFromFile(file: string): Promise<Record<string, DatapackExportDefinition>> {
+        const definitionRoot = yaml.load(await fs.readFile(file, 'utf8'), { filename: file });
+        if (typeof definitionRoot !== 'object' || definitionRoot === null || Array.isArray(definitionRoot)) {
             throw new Error(`Custom datapack definition file ${file} must contain a YAML object`);
         }
 
-        const definitionRoot = this.asRecord(root.exportDefinitions)
-            ?? this.asRecord(root.definitions)
-            ?? root;
-
-        const definitions = Object.fromEntries(
+        const definitions = Object.fromEntries<DatapackExportDefinition>(
             Object.entries(definitionRoot)
                 .filter(([, value ]) => this.isExportDefinition(value))
-        ) as Record<string, DatapackExportDefinition>;
+        );
 
         if (!Object.keys(definitions).length) {
             throw new Error(`No export definitions found in ${file}`);
@@ -315,47 +271,51 @@ export class DatapackDefinitionRegistry {
     }
 
     private isExportDefinition(input: unknown): input is DatapackExportDefinition {
-        return !!this.asRecord(input)?.objectType;
-    }
-
-    private asRecord(value: unknown): Record<string, any> | undefined {
-        return value && typeof value === 'object' && !Array.isArray(value)
-            ? value as Record<string, any>
-            : undefined;
+        // Check input is an object and has a and object type and anme
+        return typeof input === 'object' && input !== null
+            && 'objectType' in input && typeof (input as any).objectType === 'string' && (input as any).objectType.trim()
+            && 'name' in input && (typeof (input as any).name === 'string' || Array.isArray((input as any).name));
     }
 
     private getDefinitionLabel(datapackType: string, definition: DatapackExportDefinition) {
-        const explicitLabel = (definition as Partial<DatapackTypeDefinition> & { label?: string }).typeLabel ?? (definition as { label?: string }).label;
-        if (explicitLabel) {
+        const explicitLabel = 'label' in definition ? definition.label 
+            : 'typeLabel' in definition ? definition.typeLabel 
+            : undefined;
+        if (typeof explicitLabel === 'string') {
             return explicitLabel;
         }
-
         const typeDefinition = DatapackTypeDefinitions[datapackType];
-        const existingDefinition = Array.isArray(typeDefinition) ? typeDefinition[0] : typeDefinition;
-        return existingDefinition?.typeLabel ?? datapackType;
-    }
-
-    private getExportDefinitionName(definition: DatapackTypeDefinition) {
-        return definition.exportDefinition ?? definition.datapackType;
+        const embeddedDefinition = Array.isArray(typeDefinition) ? typeDefinition[0] : typeDefinition;
+        return embeddedDefinition?.typeLabel ?? datapackType;
     }
 
     private getExplorerFieldList(definition: DatapackExportDefinition) {
         return [
             ...new Set([
                 'Id',
-                this.getExplorerDisplayName(definition),
                 ...this.getFieldReferences(definition.name),
                 ...(definition.matchingKeyFields ?? [])
             ])
         ];
     }
 
-    private getExplorerOrderBy(definition: DatapackExportDefinition) {
-        return [ this.getExplorerDisplayName(definition) ];
+    private getOrderByFields(definition: DatapackExportDefinition) {
+        return this.getFieldReferences(definition.name);
     }
 
-    private getExplorerDisplayName(definition: DatapackExportDefinition) {
-        return this.getFieldReferences(definition.name)[0] ?? 'Name';
+    private getDisplayNameFn(definition: DatapackExportDefinition): string | ((data: Record<string, any>) => string) {
+        if (typeof definition.name === 'string') {
+            return definition.name;
+        }
+        const parts = definition.name;
+        return (data: Record<string, any>) => {
+            return parts.map(part => {
+                if (part.startsWith('_')) {
+                    return part.substring(1);
+                }
+                return getObjectProperty(data, part.replace(':', '.'));
+            }).filter(Boolean).join(' ');
+        };
     }
 
     private getFieldReferences(value: string | string[] | undefined): string[] {
@@ -364,7 +324,6 @@ export class DatapackDefinitionRegistry {
             if (part.startsWith('_')) {
                 return [];
             }
-
             const matches = [ ...part.matchAll(/\{([^}]+)\}/g) ].map(match => match[1]);
             return matches.length
                 ? matches.map(match => this.getFieldReference(match))
@@ -376,16 +335,9 @@ export class DatapackDefinitionRegistry {
         return value.split(':').pop()?.trim() ?? value.trim();
     }
 
-    private async filterAvailableDatapacks<T extends DatapackTypeDefinition>(definitions: T[]) {
-        const availableObjects = new Set(
-            (await this.vlocode.salesforceService.schema.describeSObjects())
-                .map(describe => describe.name.toLowerCase())
-        );
-
-        return definitions.filter(definition =>
-            availableObjects.has(
-                this.vlocode.salesforceService.updateNamespace(definition.source.sobjectType).toLowerCase()
-            )
-        );
+    private filterAvailableDefinitions(definitions: DatapackTypeDefinition[]): Promise<DatapackTypeDefinition[]> {
+        return filterAsyncParallel(definitions, (definition) => {
+            return this.vlocode.salesforceService.schema.isSObjectAccessible(definition.source.sobjectType);
+        });
     }
 }

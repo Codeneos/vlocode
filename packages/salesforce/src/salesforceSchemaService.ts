@@ -87,7 +87,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
      * either mean that the SObject is not defined or that it's not accessible for the current user
      */
     public async isSObjectAccessible(type: string): Promise<boolean> {
-        return this.getObjectDescribe(type) !== undefined;
+        return await this.getObjectDescribe(type) !== undefined;
     }
 
     /**
@@ -177,6 +177,16 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         throw Error(`No object type found matching the key id specified: ${id}`);
     }
 
+    public async getSObjectTypeById(id: string) {
+        const objects = await this.describeSObjects();
+        const prefix = id.slice(0, 3);
+        const obj = objects.find(o => o.keyPrefix === prefix);
+        if (!obj) {
+            throw Error(`The specified ID prefix does not match any known object type: ${id}`);
+        }
+        return obj;
+    }
+
     @cache({ immutable: true })
     public async describeByPrefix(prefix: string) {
         for (const obj of await this.describeSObjects()) {
@@ -184,6 +194,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
                 return this.describeSObject(obj.name);
             }
         }
+        return undefined;
     }
 
     public async describePicklistValues(type: string, fieldName: string): Promise<PicklistEntry[]>;

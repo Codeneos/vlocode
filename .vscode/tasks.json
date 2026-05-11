@@ -49,8 +49,8 @@
                 },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": ".*",
-                    "endsPattern": ".*(Application bundle generation complete|Watch mode enabled).*"
+                    "beginsPattern": ".*((Building)|(Rebuilding))...",
+                    "endsPattern": ".*Application bundle generation complete.*"
                 }
             }
         },

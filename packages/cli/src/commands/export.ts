@@ -8,6 +8,7 @@ import { DatapackExpander, DatapackExportDefinitionStore, DatapackExporter } fro
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
 import { SalesforceService } from '@vlocode/salesforce';
+import { getErrorMessage } from '@vlocode/util';
 
 export default class extends SalesforceCommand {
 
@@ -98,7 +99,7 @@ export default class extends SalesforceCommand {
             await fs.outputFile(fileName, data);
             this.logger.info(`Output file: ${fileName}`);
         } catch (err) {
-            this.logger.warn(`Failed to write file ${fileName}: ${err.message}`);
+            this.logger.warn(`Failed to write file ${fileName}: ${getErrorMessage(err)}`);
         }
     }
 
@@ -113,7 +114,7 @@ export default class extends SalesforceCommand {
                 throw new Error('Unsupported file format, expected a YAML or JSON file');
             }
         } catch (err) {
-            this.logger.error(`Failed to load export definitions from ${filePath}: ${err.message}`);
+            this.logger.error(`Failed to load export definitions from ${filePath}: ${getErrorMessage(err)}`);
         }
     }
 }

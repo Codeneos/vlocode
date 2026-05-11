@@ -5,15 +5,15 @@ import * as jsforce from 'jsforce';
 import * as vscode from 'vscode';
 import vlocity from 'vlocity';
 
-import { Logger, injectable } from '@vlocode/core';
-import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, DatapackMatchingKeyService, getDatapackTypeDefinition } from '@vlocode/vlocity';
+import { Logger, container, injectable } from '@vlocode/core';
+import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, DatapackMatchingKeyService } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
 import { groupBy, mapAsync , getDocumentBodyAsString , getErrorMessage } from '@vlocode/util';
 import DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { SalesforceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { DatapackExportQueries } from './datapackExportQueries';
-import { DatapackExpander } from '@vlocode/vlocity-deploy';
+import { DatapackExpander, DatapackExportDefinitionStore } from '@vlocode/vlocity-deploy';
 
 export interface ManifestEntry {
     datapackType: string;
@@ -193,8 +193,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         private readonly salesforceService: SalesforceService,
         private readonly matchingKeyService: DatapackMatchingKeyService,
         private readonly loader: DatapackLoader,
-        private readonly exportQueries: DatapackExportQueries,
-        private readonly directExpander: DatapackExpander
+        private readonly exportQueries: DatapackExportQueries
     ) {
     }
 
@@ -355,19 +354,13 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private async expandDatapackDirect(datapack: VlocityDatapack, targetPath: string) {
-        const scope = this.getDirectExpansionScope(datapack);
-        const expanded = this.directExpander.expandDatapack(datapack.data as any, { scope });
+        const scope = container.get(DatapackExportDefinitionStore).getAvailableScopes(datapack)[0];
+        const expander = container.get(DatapackExpander);
+        const expanded = expander.expandDatapack(datapack.data as any, { datapackType: datapack.datapackType, scope });
         this.logger.verbose(`Expanding datapack ${expanded.sourceKey} with direct expander${scope ? ` (${scope})` : ''}`);
-        await expanded.writeToFilesystem(targetPath);
-
-        const headerFile = Object.keys(expanded.files).find(file => file.endsWith('DataPack.json'))
-            ?? `${expanded.baseName ? `${expanded.baseName}_` : ''}DataPack.json`;
-        return path.join(targetPath, expanded.folder, headerFile);
-    }
-
-    private getDirectExpansionScope(datapack: VlocityDatapack) {
-        const definition = getDatapackTypeDefinition(datapack);
-        return definition?.exportDefinition ?? (datapack.datapackType === 'SObject' ? undefined : datapack.datapackType);
+        const filesWritten = await expanded.writeToFilesystem(targetPath);
+        const headerFile = filesWritten.find(file => file.endsWith('DataPack.json'));
+        return path.join(targetPath, expanded.folder, headerFile!);
     }
 
     public getDatapackReferenceKey(datapack : VlocityDatapack) {

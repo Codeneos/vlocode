@@ -1678,6 +1678,7 @@
         "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
         "ts-jest": "^29.4.9",
+        "typescript": "catalog:",
         "tsx": "^4.19.4",
         "type-fest": "^2.12.2",
         "vlocity": "1.14.18",

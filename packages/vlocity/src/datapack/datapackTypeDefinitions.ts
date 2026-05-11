@@ -29,12 +29,6 @@ export interface DatapackTypeDefinition {
      */
     datapackType: string;
 
-    /**
-     * Name of the export definition used to export this datapack type.
-     * When omitted the datapack type is used as the export definition name.
-     */
-    exportDefinition?: string;
-
     /*
     * Human friendnamly of the datapack type
     */
@@ -138,7 +132,6 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         {
             typeLabel: "OmniScript (OmniProcess)",
             datapackType: "OmniScript",
-            exportDefinition: "OmniProcess",
             source: {
                 sobjectType: "OmniProcess",
                 fieldList: ["Id", "Name", "LastModifiedDate", "Type", "SubType", "Language", "VersionNumber", "IsActive"],
@@ -187,7 +180,6 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         {
             typeLabel: "Integration Procedure (OmniProcess)",
             datapackType: "IntegrationProcedure",
-            exportDefinition: "IntegrationProcedureOmniProcess",
             source: {
                 sobjectType: "OmniProcess",
                 fieldList: ["Id", "Name", "LastModifiedDate", "Type", "SubType", "VersionNumber", "IsActive"],
@@ -225,7 +217,6 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         },{
             typeLabel: "DataMapper (OmniDataTransform)",
             datapackType: "DataRaptor",
-            exportDefinition: "OmniDataTransform",
             source: {
                 sobjectType: "OmniDataTransform",
                 fieldList: ["Id", "Name"]

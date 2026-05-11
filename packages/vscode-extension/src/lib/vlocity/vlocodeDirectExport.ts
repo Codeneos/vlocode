@@ -44,7 +44,8 @@ export class VlocodeDirectExport {
 
             try {
                 const expanded = await this.exporter.exportObjectAndExpand(entry.id, {
-                    scope: entry.exportDefinitionScope ?? (entry.datapackType === 'SObject' ? undefined : entry.datapackType)
+                    scope: entry.exportDefinitionScope,
+                    datapackType: entry.datapackType
                 });
                 await expanded.writeToFilesystem(exportFolder);
                 results.add({

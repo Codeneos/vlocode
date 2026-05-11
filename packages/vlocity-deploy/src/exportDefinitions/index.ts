@@ -8,7 +8,9 @@ export interface DatapackExportDefinitionFile {
     readonly id: string;
     readonly label: string;
     readonly description?: string;
-    readonly definitions: Readonly<Record<string, DatapackExportDefinition>>;
+    readonly definitions: {
+        readonly [datapackType: string]: Readonly<DatapackExportDefinition>;
+    };
 }
 
 export const datapackDefinitions = {

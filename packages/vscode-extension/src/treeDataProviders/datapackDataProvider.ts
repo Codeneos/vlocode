@@ -36,7 +36,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
                     const record = node.records.slice(-1)[0];
                     return record && {
                         id: record.Id,
-                        datapackType: node.datapackDefinition.exportDefinition ?? node.datapackDefinition.datapackType,
+                        datapackType: node.datapackDefinition.datapackType,
                         sobjectType: record.attributes.type,
                         exportMode: node.exportMode,
                         exportDefinitionScope: node.exportDefinitionScope
@@ -382,14 +382,10 @@ class DatapackCategoryNode extends DatapackNode {
         return this.datapackDefinition.datapackType;
     }
 
-    public get exportDefinition() {
-        return this.datapackDefinition.exportDefinition ?? this.datapackType;
-    }
-
     public getId = () => `${this.nodeType}:${this.rootId}:${this.datapackType}:${this.sobjectType}`;
     public getItemLabel = () => this.datapackDefinition.typeLabel;
-    public getItemDescription = () => this.exportDefinition !== this.getItemLabel() ? this.exportDefinition : this.sobjectType;
-    public getItemTooltip = () => `View datapacks of type ${this.exportDefinition} (${this.sobjectType})`;
+    public getItemDescription = () => this.datapackDefinition.typeLabel !== this.getItemLabel() ? this.datapackDefinition.typeLabel : this.sobjectType;
+    public getItemTooltip = () => `View datapacks of type ${this.datapackDefinition.typeLabel} (${this.sobjectType})`;
 }
 
 class DatapackObjectGroupNode extends DatapackNode {
@@ -467,7 +463,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public get datapackType(): string {
-        return this.datapackDefinition.exportDefinition ?? this.datapackDefinition.datapackType;
+        return this.datapackDefinition.datapackType;
     }
 
     public get exportMode(): DatapackExportMode | undefined {

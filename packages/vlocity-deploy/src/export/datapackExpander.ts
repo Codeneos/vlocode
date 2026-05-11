@@ -6,8 +6,7 @@ import { formatString, normalizeName, substringAfter } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
 import * as fs from "fs-extra";
 
-import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
-import { ObjectRef } from "./datapackExporter";
+import { DatapackExportDefinitionStore, ObjectRef } from "./exportDefinitionStore";
 
 export interface DatapackExpandResult {
     baseName: string;
@@ -16,7 +15,7 @@ export interface DatapackExpandResult {
     sourceKey: string;
     parentKeys: string[];	
     files: Record<string, Buffer | string>;
-    writeToFilesystem(path: string, options?: WriteToFilesystemOptions): Promise<void>;
+    writeToFilesystem(path: string, options?: WriteToFilesystemOptions): Promise<string[]>;
 }
 
 export interface WriteToFilesystemOptions {
@@ -78,6 +77,7 @@ export class DatapackExpander {
     public expandDatapack(
         datapack: VlocityDatapackSObject,
         context?: {
+            datapackType?: string;
             scope?: string;
         }
     ): DatapackExpandResult {
@@ -85,16 +85,18 @@ export class DatapackExpander {
         
         const itemRef = {
             objectType: datapack.VlocityRecordSObjectType,
-            scope: context?.scope
+            scope: context?.scope,
+            datapackType: context?.datapackType
         };
 
         const baseSourceKey = substringAfter(datapack.VlocityRecordSourceKey, '/');
         const fileNameFormat = this.definitions.getFileName(itemRef) ?? baseSourceKey;
         const baseName = this.evalPathFormat(fileNameFormat, { context: datapack });
         
+        const datapackFolder = itemRef.datapackType === 'SObject' ? `SObject_${datapack.VlocityRecordSObjectType}` : (itemRef.datapackType ?? itemRef.objectType);
         const folderFormat = this.definitions.getName(itemRef) ?? baseSourceKey;
         const folder = path.join(
-            this.normalizeFileName(itemRef.scope ?? itemRef.objectType),
+            this.normalizeFileName(datapackFolder),
             this.evalPathFormat(folderFormat, { context: datapack })
         );
         
@@ -192,9 +194,10 @@ export class DatapackExpander {
         return normalized;
     }
 
-    private async writeToFilesystem(result: DatapackExpandResult, destinationPath: string, options?: WriteToFilesystemOptions) {
+    private async writeToFilesystem(result: DatapackExpandResult, destinationPath: string, options?: WriteToFilesystemOptions): Promise<string[]> {
         const outputFs = options?.fs ?? fs;
         const targetFolder = nativePath.join(destinationPath, result.folder);
+        const filesWritten : string[] = [];
 
         if (options?.prune) {
             if (!outputFs.remove) {
@@ -207,8 +210,10 @@ export class DatapackExpander {
             const outputFile = nativePath.join(targetFolder, fileName);
             await outputFs.outputFile(outputFile, fileData);
             this.logger.verbose(`Output file: ${outputFile}`);
+            filesWritten.push(outputFile);
         }
 
+        return filesWritten;
     }
 }
 

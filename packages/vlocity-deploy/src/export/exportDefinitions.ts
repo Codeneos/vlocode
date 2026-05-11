@@ -67,6 +67,12 @@ export interface DatapackExportDefinition extends ObjectFilter {
      * Optional object with specific export settings for fields in the object.
      */
     fields?: Record<string, ExportFieldDefinition>;
+    /**
+     * When true, the export of this object is dependent on the export of another object. 
+     * This means that this object is only exported when it is referenced by another exported object and is not exported as a top level object in the datapack.
+     * @default false
+     */
+    dependent?: boolean;
 }
 
 export interface ExportFieldDefinition extends ExpandFileDefinition {
