@@ -5,12 +5,14 @@ import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
 import { filterAsyncParallel, getErrorMessage, getObjectProperty, singleFlight } from '@vlocode/util';
+import { QueryConditionBuilder, QueryParser, type SalesforceQueryData } from '@vlocode/salesforce';
 import { DatapackInfoService, DatapackTypeDefinition, DatapackTypeDefinitions } from '@vlocode/vlocity';
 import {
     DatapackExportDefinitionStore,
     datapackDefinitions,
     type DatapackExportDefinition,
-    type DatapackExportDefinitionFile
+    type DatapackExportDefinitionFile,
+    type LookupFilter
 } from '@vlocode/vlocity-deploy';
 
 import VlocodeService from '../vlocodeService';
@@ -31,6 +33,8 @@ interface ExportDefinitionFileInfo {
     readonly description: string;
     readonly file: string;
 }
+
+type ExplorerWhereCondition = SalesforceQueryData['whereCondition'];
 
 @injectable()
 export class DatapackDefinitionRegistry {
@@ -169,7 +173,9 @@ export class DatapackDefinitionRegistry {
             source: {
                 sobjectType: exportDefinition.objectType,
                 fieldList: this.getExplorerFieldList(exportDefinition),
-                orderBy: this.getOrderByFields(exportDefinition)
+                orderBy: this.getOrderByFields(exportDefinition),
+                whereCondition: this.getExplorerWhereCondition(exportDefinition.filter),
+                limit: exportDefinition.limit
             },
             displayName: this.getDisplayNameFn(exportDefinition),
             exportMode: 'direct'
@@ -300,6 +306,59 @@ export class DatapackDefinitionRegistry {
 
     private getOrderByFields(definition: DatapackExportDefinition) {
         return this.getFieldReferences(definition.name);
+    }
+
+    private getExplorerWhereCondition(filter: LookupFilter | undefined): ExplorerWhereCondition {
+        if (filter == null) {
+            return undefined;
+        }
+        if (typeof filter === 'string') {
+            return this.getStringWhereCondition(filter);
+        }
+        if (Array.isArray(filter)) {
+            return this.joinWhereConditions(filter.map(item => this.getExplorerWhereCondition(item)), 'or');
+        }
+        const constants = Object.fromEntries(Object.entries(filter).filter(([, value]) => this.isConstant(value)));
+        const query: SalesforceQueryData = { sobjectType: '', fieldList: [] };
+        return new QueryConditionBuilder(query).fromObject(constants, { ignoreUndefined: true }).getCondition();
+    }
+
+    private getStringWhereCondition(condition: string): ExplorerWhereCondition {
+        const trimmed = condition.trim();
+        return trimmed ? this.filterInterpolated(QueryParser.parseQueryCondition(trimmed)) : undefined;
+    }
+
+    private filterInterpolated(condition: ExplorerWhereCondition): ExplorerWhereCondition {
+        if (!condition) {
+            return undefined;
+        }
+        if (typeof condition === 'string') {
+            return this.isConstant(condition) ? condition : undefined;
+        }
+        if ('left' in condition) {
+            return this.joinWhereConditions([
+                this.filterInterpolated(condition.left),
+                this.filterInterpolated(condition.right)
+            ], condition.operator);
+        }
+        const right = this.filterInterpolated(condition.right);
+        return right ? { ...condition, right } : undefined;
+    }
+
+    private joinWhereConditions(conditions: ExplorerWhereCondition[], operator: string): ExplorerWhereCondition {
+        return conditions
+            .filter((condition): condition is NonNullable<ExplorerWhereCondition> => !!condition)
+            .reduce<ExplorerWhereCondition>((left, right) => left ? { left, operator, right } : right, undefined);
+    }
+
+    private isConstant(value: unknown): boolean {
+        if (typeof value === 'string') {
+            return !/\{[^}]+\}/.test(value);
+        }
+        if (Array.isArray(value)) {
+            return value.every(item => this.isConstant(item));
+        }
+        return typeof value !== 'object' || value === null || !('value' in value) || this.isConstant(value.value);
     }
 
     private getDisplayNameFn(definition: DatapackExportDefinition): string | ((data: Record<string, any>) => string) {
