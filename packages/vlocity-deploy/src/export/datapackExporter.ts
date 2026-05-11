@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsyncParallel, removeNamespacePrefix, Timer } from "@vlocode/util";
+import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsync, mapAsyncParallel, removeNamespacePrefix, Timer } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -145,17 +145,17 @@ export class DatapackExporter {
         this.logger.verbose(`Export SObjects ${ids}`);
         const results: ExportResult[] = [];
 
-        for (const [id, data] of await this.lookupByIds(ids)) {
+        await forEachAsyncParallel(await this.lookupByIds(ids), async ([id, data]) => {
             if (!data) {
                 this.logger.warn(`No data found for id ${id}, skipping export`);
-                continue;
+                return;
             }
             const timer = new Timer();
             await this.buildDatapack(data, { ...context });
             const datapack = this.datapacks[id];
             this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
             results.push(this.asExportResult(datapack));
-        }
+        }, this.exportParallelism);
         
         return results;
     }
@@ -336,7 +336,7 @@ export class DatapackExporter {
                 await this.buildDatapack(relatedRecord, {
                     scope: context.scope,
                     maxDepth: (context.maxDepth ?? this.maxExportDepth) - 1,
-                    embedded: true,
+                    embedded: false,
                     parent: datapack
                 });
             } catch (e) {
@@ -353,10 +353,9 @@ export class DatapackExporter {
                 if (embeddedRecords.length === 0) {
                     continue;
                 }
-                datapack.data[embeddedObject.name] = await mapAsyncParallel(
+                datapack.data[embeddedObject.name] = await mapAsync(
                     embeddedRecords,
-                    record => this.buildEmbeddedSObject(datapack, record, context),
-                    this.exportParallelism
+                    record => this.buildEmbeddedSObject(datapack, record, context)
                 );
             } catch (e) {
                 this.logger.error(`Error exporting embedded object for ${datapack.objectType}:`, e);
