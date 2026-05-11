@@ -1,7 +1,54 @@
 import 'reflect-metadata';
 import { container, LazyObjectType, ObjectType } from './container';
 import * as symbols from './container.symbols';
-import { isConstructor } from '@vlocode/util';
+
+/**
+ * Constructor arguments recorded by {@link inject.new}.
+ *
+ * The container uses this metadata to create the injected dependency through
+ * the active container instead of resolving an existing registered instance.
+ */
+export interface InjectConstruction {
+    /**
+     * Positional constructor arguments passed to the injected type.
+     */
+    args: any[];
+}
+
+/**
+ * Decorator factory for container-managed constructor and property injection.
+ *
+ * Use `@inject(Type)` when a dependency should be resolved from the container.
+ * Use `@inject.new(...args)` when the dependency must be constructed as a new
+ * instance with explicit constructor arguments.
+ */
+export interface InjectDecorator {
+    /**
+     * Marks a property for lazy injection using the reflected property type.
+     *
+     * This overload is only valid for properties because constructor
+     * parameters require an explicit service type.
+     */
+    (): PropertyDecorator;
+
+    /**
+     * Marks a property or constructor parameter for injection using the given type.
+     *
+     * @param serviceType Type or lazy type resolver to resolve from the container.
+     */
+    (serviceType: ObjectType | LazyObjectType): (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => any;
+
+    /**
+     * Marks a property or constructor parameter to be created as a new instance.
+     *
+     * The target type is taken from emitted decorator metadata. The new instance
+     * is created by the active container, so its own dependencies still use the
+     * same container context.
+     *
+     * @param args Constructor arguments passed to the injected type.
+     */
+    'new'(...args: any[]): (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => any;
+}
 
 /**
  * Handles property injection by registering the property and storing service type metadata.
@@ -44,6 +91,19 @@ function injectParameter(target: object, parameterIndex: number, serviceType: Ob
 }
 
 /**
+ * Stores construction metadata for an injected property or constructor parameter.
+ */
+function injectNew(target: object, propertyKey: string | symbol | undefined, parameterIndex: number | undefined, construction: InjectConstruction) {
+    if (typeof parameterIndex === 'number') {
+        Reflect.defineMetadata(symbols.InjectedConstruction, construction, target, parameterIndex.toString());
+    } else if (typeof propertyKey === 'string' || typeof propertyKey === 'symbol') {
+        const descriptor = injectProperty(target, propertyKey);
+        Reflect.defineMetadata(symbols.InjectedConstruction, construction, target.constructor?.prototype ?? target, propertyKey);
+        return descriptor;
+    }
+}
+
+/**
  * Gets the type of a service for injection.
  * @param type The type to get
  * @returns The service type
@@ -74,12 +134,23 @@ function createInjectDecorator(serviceType?: ObjectType | LazyObjectType): Prope
 
 /**
  * Marks a property or constructor parameter as injectable.
- * Can be used as a property or parameter decorator.
- * Optional service type to inject (when used as parameter decorator)
- * @returns A property or parameter decorator
+ *
+ * Properties can use emitted metadata through `@inject()` or an explicit type
+ * through `@inject(Type)`. Constructor parameters must use `@inject(Type)`.
+ * Use `@inject.new(...args)` to construct a fresh dependency with explicit
+ * constructor arguments.
+ *
+ * @param serviceType Optional type or lazy type resolver to resolve.
+ * @returns Decorator for a property or constructor parameter.
  */
-export function inject(): PropertyDecorator;
-export function inject(serviceType: ObjectType | LazyObjectType): (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => any;
-export function inject(serviceType?: ObjectType | LazyObjectType) {
+const injectDecorator = function inject(serviceType?: ObjectType | LazyObjectType) {
     return createInjectDecorator(serviceType);
-}
+} as unknown as InjectDecorator;
+
+injectDecorator.new = function(...args: any[]) {
+    return (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => {
+        return injectNew(target, propertyKey, parameterIndex, { args });
+    };
+};
+
+export const inject = injectDecorator;

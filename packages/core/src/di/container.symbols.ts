@@ -23,4 +23,8 @@ export const ContainerRoot = Symbol('Container:IsRoot');
 export const InjectParameterPrefix = `di:parameters`;
 export const InjectedProperties = Symbol(`di:properties`);
 export const InjectedParameters = Symbol(`di:parameters`);
+/**
+ * Metadata key for constructor arguments supplied by `@inject.new(...)`.
+ */
+export const InjectedConstruction = Symbol(`di:construction`);
 export const InjectedPropertyKey = Symbol(`di:propertyKey`);

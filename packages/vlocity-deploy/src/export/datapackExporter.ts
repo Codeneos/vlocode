@@ -2,7 +2,7 @@ import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService 
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
 import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsyncParallel, removeNamespacePrefix, Timer } from "@vlocode/util";
-import { Logger, container, injectable } from "@vlocode/core";
+import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
 import { randomUUID } from "crypto";
@@ -95,8 +95,6 @@ export class DatapackExporter {
 
     private datapacks: Record<string, ExportDatapack> = {};
     private matchingKeys: Record<string, string> = {};
-    private data: SalesforceDataService;
-
     /**
      * Maximum depth to export objects, when the depth is reached the 
      * exporter will stop exporting the object and export a reference instead.
@@ -115,11 +113,12 @@ export class DatapackExporter {
         public readonly definitions: DatapackExportDefinitionStore,
         private readonly expander: DatapackExpander,
         private readonly salesforce: SalesforceService,
+        @inject.new({ type: 'data', queryCache: true }) 
+        private readonly data: SalesforceDataService,
         private readonly datapackMatchingKeys: DatapackMatchingKeyService,
         private readonly logger: Logger,
     ) {
         this.logger = logger.distinct();
-        this.data = container.new(SalesforceDataService, { type: 'data' });
     }
 
     /**
