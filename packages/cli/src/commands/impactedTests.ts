@@ -38,7 +38,7 @@ export default class extends Command {
 
     constructor(
         private fileSystem: FileSystem,
-        private logger: Logger = LogManager.get('vlocode-cli')
+        private logger: Logger = LogManager.get('ImpactedTests')
     ) {
         super();
     }

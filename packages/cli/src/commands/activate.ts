@@ -43,7 +43,7 @@ export default class extends SalesforceCommand {
             'Use this option while debugging to compare scripts activate with `--remote-activation` and local activation').default(false),
     ];
 
-    constructor(private logger: Logger = LogManager.get('vlocode-cli')) {
+    constructor(private logger: Logger = LogManager.get('Activator')) {
         super();
     }
 

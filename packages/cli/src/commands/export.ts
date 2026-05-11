@@ -92,7 +92,7 @@ export default class extends SalesforceCommand {
 
     private readonly exportFileLoader = new DatapackExportFileLoader();
 
-    constructor(private logger: Logger = LogManager.get('datapack-export')) {
+    constructor(private logger: Logger = LogManager.get('DatapackExport')) {
         super();
     }
 
