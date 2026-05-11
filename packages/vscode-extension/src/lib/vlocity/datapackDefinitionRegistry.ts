@@ -155,7 +155,7 @@ export class DatapackDefinitionRegistry {
 
             this.logger.info(`Loaded custom datapack definitions from ${file}`);
             this.definitions.load(exportDefinitions, { scope: file });
-            return availableDefinitions;
+            return availableDefinitions.map(definition => ({ ...definition, scope: file }));
         } catch (error) {
             this.logger.error(`Failed to load custom datapack definitions from ${file}: ${getErrorMessage(error)}`);
             return [];
