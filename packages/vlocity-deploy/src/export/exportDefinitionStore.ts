@@ -31,7 +31,9 @@ export class DatapackExportDefinitionStore {
      * Scoped configuration for specific contexts such as Datapack types or other custom scopes.
      * The first level key represents the scope name and the second level key the Datapack type.
      */
-    private config: Record<string | symbol, DatapackExportDefinitionMap> = {};
+    private config: Record<string | symbol, DatapackExportDefinitionMap> = {
+        [GLOBAL_SCOPE]: {}
+    };
 
     private matchingKeyFields: Record<string | symbol,  Record<string, string[]>> = {};
 
@@ -104,7 +106,7 @@ export class DatapackExportDefinitionStore {
      */
     public getDatapackTypes(context: { objectType: string, scope?: string }) : { datapackType: string, scope?: string }[] {
         const matchingTypes: { datapackType: string, scope?: string }[] = [];
-        const types = context.scope ? this.config[context.scope] ?? this.config : this.config;
+        const types = this.config[context.scope ?? GLOBAL_SCOPE];
         for (const [datapackType, config] of Object.entries(types)) {
             if (config.objectType === context.objectType) {
                 matchingTypes.push({ datapackType, scope: context.scope });

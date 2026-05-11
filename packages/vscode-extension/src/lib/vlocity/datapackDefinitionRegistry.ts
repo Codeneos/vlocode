@@ -172,8 +172,7 @@ export class DatapackDefinitionRegistry {
                 orderBy: this.getOrderByFields(exportDefinition)
             },
             displayName: this.getDisplayNameFn(exportDefinition),
-            exportMode: 'direct',
-            scope: datapackType
+            exportMode: 'direct'
         };
     }
 
