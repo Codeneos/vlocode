@@ -194,7 +194,7 @@ export class DatapackExporter {
         return collected;
     }
 
-    private expand(exportResults: ExportResult[], context?: DatapackExportOptions): DatapackExpandResult[] {
+    private expand(exportResults: ExportResult[] = [], context?: DatapackExportOptions): DatapackExpandResult[] {
         const expanded: DatapackExpandResult[] = [];
         for (const exportResult of exportResults) {
             expanded.push(
@@ -203,7 +203,7 @@ export class DatapackExporter {
                     datapackType: exportResult.datapackType,
                 })
             );
-            expanded.push(...this.expand(exportResult.relatedDatapacks, context));
+            expanded.push(...this.expand(exportResult.relatedDatapacks ?? [], context));
         }
         return expanded;
     }
@@ -972,7 +972,9 @@ export class DatapackExporter {
 
         if (missingIds.length > 0) {
             this.logger.debug(`Cache misses for ${missingIds.length} records: ${missingIds.join(', ')}`);
-            for (const [id, record] of await this.data.lookupById(missingIds)) {
+            const records = await this.data.lookupById(missingIds);
+            for (const id of missingIds) {
+                const record = records.get(id) ?? null;
                 this.lookupCache.set(id, record ?? null);
                 result.set(id, record ?? null);
             }

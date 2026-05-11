@@ -284,12 +284,12 @@ describe('DatapackExporter', () => {
             VlocityRecordSObjectType: 'OmniProcess',
             VlocityRecordSourceKey: 'OmniProcess/Test'
         };
-        exporter.exportObject = jest.fn(async () => ({
+        exporter.exportObject = jest.fn(async () => [{
             datapack,
             objectType: 'OmniProcess',
             parentKeys: [],
             sourceKey: 'OmniProcess/Test'
-        }));
+        }]);
 
         await exporter.exportObjectAndExpand('0jN000000000001AAA', { scope: 'OmniScript' });
 
@@ -325,14 +325,18 @@ describe('DatapackExporter', () => {
             isEmbeddedObject: jest.fn(() => false),
             isFieldIgnored: jest.fn(() => false)
         };
+        const recordsById = new Map([
+            [rootId, { Id: rootId, id: rootId, Name: 'Root', Lookup__c: relatedId }],
+            [relatedId, { Id: relatedId, id: relatedId, Name: 'Related' }]
+        ]);
         const salesforce = {
             data: {
                 cache: {
                     configure: jest.fn()
                 },
-                lookupById: jest.fn(async (id: string) => id === rootId
-                    ? { Id: rootId, id: rootId, Name: 'Root', Lookup__c: relatedId }
-                    : { Id: relatedId, id: relatedId, Name: 'Related' })
+                lookupById: jest.fn(async (ids: string | string[]) => Array.isArray(ids)
+                    ? new Map(ids.map(id => [id, recordsById.get(id)]))
+                    : recordsById.get(ids))
             },
             schema: {
                 describeSObjectById: jest.fn(async (id: string) => id === rootId ? rootDescribe : relatedDescribe),
@@ -397,8 +401,8 @@ describe('DatapackExporter', () => {
         await result[1].writeToFilesystem('/tmp/out');
         expect(expandedResults[0].writeToFilesystem).toHaveBeenCalledWith('/tmp/out');
         expect(expandedResults[1].writeToFilesystem).toHaveBeenCalledWith('/tmp/out');
-        expect(salesforce.data.lookupById).toHaveBeenCalledWith(rootId);
-        expect(salesforce.data.lookupById).toHaveBeenCalledWith(relatedId);
+        expect(salesforce.data.lookupById).toHaveBeenCalledWith([rootId]);
+        expect(salesforce.data.lookupById).toHaveBeenCalledWith([relatedId]);
     });
 
     it('builds embedded objects from the records returned by the embedded lookup even at root-only depth', async () => {
@@ -447,17 +451,20 @@ describe('DatapackExporter', () => {
             isEmbeddedObject: jest.fn(() => false),
             isFieldIgnored: jest.fn(() => false)
         };
+        const childRecord = {
+            Id: childId,
+            id: childId,
+            Name: 'Child'
+        };
         const salesforce = {
             data: {
                 cache: {
                     configure: jest.fn()
                 },
-                lookup: jest.fn(async () => [{
-                    Id: childId,
-                    id: childId,
-                    Name: 'Child'
-                }]),
-                lookupById: jest.fn()
+                lookup: jest.fn(async () => [childRecord]),
+                lookupById: jest.fn(async (ids: string | string[]) => Array.isArray(ids)
+                    ? new Map(ids.map(id => [id, id === childId ? childRecord : undefined]))
+                    : ids === childId ? childRecord : undefined)
             },
             schema: {
                 describeSObjectById: jest.fn(async () => childDescribe),
@@ -489,6 +496,7 @@ describe('DatapackExporter', () => {
 
         expect(salesforce.data.lookup).toHaveBeenCalledTimes(1);
         expect(salesforce.data.lookupById).not.toHaveBeenCalledWith(childId);
+        expect(salesforce.data.lookupById).toHaveBeenCalledWith([childId]);
         expect((parentDatapack.data as any).Child__c).toHaveLength(1);
         expect((parentDatapack.data as any).Child__c[0].VlocityDataPackType).toBe('SObject');
         expect((parentDatapack.data as any).Child__c[0].Name).toBe('Child');
