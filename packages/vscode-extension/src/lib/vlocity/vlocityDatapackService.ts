@@ -354,7 +354,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private async expandDatapackDirect(datapack: VlocityDatapack, targetPath: string) {
-        const scope = container.get(DatapackExportDefinitionStore).getAvailableScopes(datapack)[0];
+        const scope: string | undefined = container.get(DatapackExportDefinitionStore).getAvailableScopes(datapack)[0];
         const expander = container.get(DatapackExpander);
         const expanded = expander.expandDatapack(datapack.data as any, { datapackType: datapack.datapackType, scope });
         this.logger.verbose(`Expanding datapack ${expanded.sourceKey} with direct expander${scope ? ` (${scope})` : ''}`);

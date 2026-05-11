@@ -384,8 +384,8 @@ class DatapackCategoryNode extends DatapackNode {
 
     public getId = () => `${this.nodeType}:${this.rootId}:${this.datapackType}:${this.sobjectType}`;
     public getItemLabel = () => this.datapackDefinition.typeLabel;
-    public getItemDescription = () => this.datapackDefinition.typeLabel !== this.getItemLabel() ? this.datapackDefinition.typeLabel : this.sobjectType;
-    public getItemTooltip = () => `View datapacks of type ${this.datapackDefinition.typeLabel} (${this.sobjectType})`;
+    public getItemDescription = () => this.sobjectType;
+    public getItemTooltip = () => `View datapacks of type ${this.datapackDefinition.datapackType} (${this.sobjectType})`;
 }
 
 class DatapackObjectGroupNode extends DatapackNode {

@@ -271,7 +271,7 @@ export class DatapackDefinitionRegistry {
     }
 
     private isExportDefinition(input: unknown): input is DatapackExportDefinition {
-        // Check input is an object and has a and object type and anme
+        // Check input is an object and has a and object type and name
         return typeof input === 'object' && input !== null
             && 'objectType' in input && typeof (input as any).objectType === 'string' && (input as any).objectType.trim()
             && 'name' in input && (typeof (input as any).name === 'string' || Array.isArray((input as any).name));
