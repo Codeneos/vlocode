@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsync, mapAsyncParallel, removeNamespacePrefix, Timer } from "@vlocode/util";
+import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsync, removeNamespacePrefix, Timer } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -35,6 +35,12 @@ interface ExportDatapack {
      */
     sourceKeys: Record<string, string>;
     parent?: ExportDatapack;
+}
+
+interface DeferredLookup {
+    readonly datapack: ExportDatapack;
+    readonly id: string;
+    readonly objectType?: string;
 }
 
 /**
@@ -100,6 +106,8 @@ export class DatapackExporter {
     private lookupCache = new Map<string, Record<string, any> | null>();
     private datapacks: Record<string, ExportDatapack> = {};
     private matchingKeys: Record<string, string> = {};
+    private sourceKeyById = new Map<string, string>();
+    private deferredLookups = new Map<VlocityDatapackReference, DeferredLookup>();
     private exportQueue: ExportRequest[] = [];
 
     /**
@@ -149,12 +157,12 @@ export class DatapackExporter {
     public exportObject(id: string[] | string, context?: DatapackExportOptions): Promise<ExportResult[]> {
         const ids = Array.isArray(id) ? id : [id];
         this.logger.verbose(`Export SObjects ${ids}`);
-        this.enqueueExport(ids);
+        this.enqueueExport(ids, context);
         return this.processExportQueue();
     }
 
     private async processExportQueue() {
-        const results: ExportResult[] = [];
+        const results: ExportDatapack[] = [];
 
         while(this.exportQueue.length) {
             const requests = new Map(this.exportQueue.splice(0).map(request => [request.id, request]));
@@ -170,11 +178,12 @@ export class DatapackExporter {
                 await this.buildDatapack(data, { ...context });
                 const datapack = this.datapacks[id];
                 this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
-                results.push(this.asExportResult(datapack));
+                results.push(datapack);
             }, this.exportParallelism);
         };
 
-        return results;
+        await this.resolveDeferredLookups();
+        return results.map(datapack => this.asExportResult(datapack));
     }
 
     private enqueueExport(ids: string[] | string, context?: ExportContext) {
@@ -240,7 +249,7 @@ export class DatapackExporter {
 
         if (exportStack.includes(record.Id)) {
             this.logger.warn(`Internal reference detected for ${matchingKey}: ${exportStack.join(' -> ')}`);
-            return this.buildLookup(context.parent!, record.Id, 'VlocityMatchingKeyObject');
+            return this.buildLookup(context.parent!, record.Id, 'VlocityMatchingKeyObject', describe.name);
         }
 
         if (this.datapacks[record.Id]) {
@@ -318,7 +327,7 @@ export class DatapackExporter {
                 if (this.definitions.isEmbeddedObject(datapack, field.name)) {
                     value = await this.buildSObject(datapack, value, context);
                 } else {
-                    value = await this.buildLookup(datapack, value);
+                    value = await this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0]);
                 }
             } else if (typeof value === 'string') {
                 value = this.tryParseAsJson(value) ?? value;
@@ -435,18 +444,25 @@ export class DatapackExporter {
     private updateLookupReferences(datapack: ExportDatapack) {
         for (const reference of Object.values(datapack.references)) {
             const lookupKey = reference.VlocityLookupRecordSourceKey
-            if (lookupKey && lookupKey in datapack.sourceKeys) {
+            const sourceKey = lookupKey && (lookupKey in datapack.sourceKeys ? lookupKey : this.getSourceKeyById(datapack, lookupKey));
+            if (sourceKey) {
+                reference.VlocityLookupRecordSourceKey = sourceKey;
                 this.convertToMatchingObject(reference);
+                this.deferredLookups.delete(reference);
             }
         }
     }
 
     private updateForeignKeys(datapack: ExportDatapack) {
         for (const foreignKey of Object.keys(datapack.foreignKeys)) {
-            if (foreignKey in datapack.sourceKeys) {
+            if (foreignKey in datapack.sourceKeys || this.getSourceKeyById(datapack, foreignKey)) {
                 delete datapack.foreignKeys[foreignKey];
             }
         }
+    }
+
+    private getSourceKeyById(datapack: ExportDatapack, id: string) {
+        return Object.entries(datapack.sourceKeys).find(([, recordId]) => recordId === id)?.[0];
     }
 
     private convertToMatchingObject(ref: VlocityDatapackReference): VlocityDatapackMatchingReference {
@@ -496,11 +512,22 @@ export class DatapackExporter {
     private async buildLookup(
         datapack: ExportDatapack,
         id: string,
-        type: VlocityDatapackReferenceType = 'VlocityLookupMatchingKeyObject'
+        type: VlocityDatapackReferenceType = 'VlocityLookupMatchingKeyObject',
+        objectType?: string,
+        defer = true
     ) {
         const localReference = this.buildLocalReference(datapack, id, type);
         if (localReference) {
             return this.addReference(datapack, id, localReference);
+        }
+
+        if (defer) {
+            const deferredLookup = this.createDeferredLookup(datapack, id, type, objectType);
+            const reference = this.addReference(datapack, id, deferredLookup);
+            if (reference !== deferredLookup) {
+                this.deferredLookups.delete(deferredLookup);
+            }
+            return reference;
         }
 
         const data = await this.lookupById(id);
@@ -508,8 +535,23 @@ export class DatapackExporter {
             return null;
         }
 
-        const matchingKeyObject = await this.buildMatchingKeyObject(datapack, type, data);
+        const matchingKeyObject = await this.buildMatchingKeyObject(datapack, type, data, false);
         const reference = this.addReference(datapack, id, matchingKeyObject);
+        return reference;
+    }
+
+    private createDeferredLookup(
+        datapack: ExportDatapack,
+        id: string,
+        refType: VlocityDatapackReferenceType,
+        objectType?: string
+    ): VlocityDatapackReference {
+        const reference = {
+            VlocityDataPackType: refType,
+            VlocityRecordSObjectType: objectType ?? '',
+            [VlocityDatapackSourceKey[refType]]: id
+        } as VlocityDatapackReference;
+        this.deferredLookups.set(reference, { datapack, id, objectType });
         return reference;
     }
 
@@ -779,8 +821,8 @@ export class DatapackExporter {
 
     private async buildMatchingKeyObject(datapack: ExportDatapack, refType: 'VlocityMatchingKeyObject', data: Record<string, any>): Promise<VlocityDatapackMatchingReference>;
     private async buildMatchingKeyObject(datapack: ExportDatapack, refType: 'VlocityLookupMatchingKeyObject', data: Record<string, any>): Promise<VlocityDatapackLookupReference>;
-    private async buildMatchingKeyObject(datapack: ExportDatapack, refType: VlocityDatapackReferenceType, data: Record<string, any>): Promise<VlocityDatapackReference>;
-    private async buildMatchingKeyObject(datapack: ExportDatapack, refType: VlocityDatapackReferenceType, data: Record<string, any>): Promise<VlocityDatapackReference> {
+    private async buildMatchingKeyObject(datapack: ExportDatapack, refType: VlocityDatapackReferenceType, data: Record<string, any>, deferLookups?: boolean): Promise<VlocityDatapackReference>;
+    private async buildMatchingKeyObject(datapack: ExportDatapack, refType: VlocityDatapackReferenceType, data: Record<string, any>, deferLookups = true): Promise<VlocityDatapackReference> {
         if (!data.id) {
             throw new Error('Missing id field in data');
         }
@@ -794,7 +836,7 @@ export class DatapackExporter {
             const field = await this.salesforce.schema.describeSObjectField(describe.name, fieldName);
 
             if (field.referenceTo?.length && value) {
-                matchingKeyObject[field.name] = await this.buildLookup(datapack, value);
+                matchingKeyObject[field.name] = await this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0], deferLookups);
             } else {
                 matchingKeyObject[fieldName] = value;
             }
@@ -808,6 +850,65 @@ export class DatapackExporter {
             VlocityRecordSObjectType: describe.name,
             [VlocityDatapackSourceKey[refType]]: matchingKey
         } as VlocityDatapackReference;
+    }
+
+    private async resolveDeferredLookups() {
+        if (this.deferredLookups.size === 0) {
+            return;
+        }
+
+        // Deferred lookups are created with only the referenced Id. Resolve them in one
+        // batch after the export queue is drained so matching key lookups do not fan out
+        // into one describe/query cycle per field during the main export.
+        const deferredLookups = [...this.deferredLookups.entries()];
+        this.deferredLookups.clear();
+        const records = await this.lookupByIds(new Set(deferredLookups.map(([, lookup]) => lookup.id)));
+
+        await forEachAsyncParallel(deferredLookups, async ([reference, deferred]) => {
+            const record = records.get(deferred.id);
+            if (!record) {
+                this.logger.warn(`Unable to resolve matching key reference ${deferred.id}`);
+                return;
+            }
+
+            const refType = reference.VlocityDataPackType;
+            const matchingKeyObject = await this.buildMatchingKeyObject(deferred.datapack, refType, record, false);
+            const sourceKey = matchingKeyObject[VlocityDatapackSourceKey[refType]];
+            if (sourceKey) {
+                this.sourceKeyById.set(deferred.id, sourceKey);
+            }
+
+            // Preserve object identity because the placeholder object is already assigned
+            // into exported datapack fields and reference maps.
+            this.replaceReference(reference, matchingKeyObject);
+        }, this.exportParallelism);
+
+        this.normalizeForeignKeys();
+    }
+
+    private replaceReference(target: VlocityDatapackReference, source: VlocityDatapackReference) {
+        for (const key of Object.keys(target)) {
+            delete target[key];
+        }
+        Object.assign(target, source);
+    }
+
+    private normalizeForeignKeys() {
+        for (const datapack of Object.values(this.datapacks)) {
+            // Foreign keys are kept as sourceKey -> Id. Deferred lookup placeholders may
+            // temporarily add Id -> Id entries; convert those to source keys once known,
+            // and drop dependencies that resolve to source keys embedded in this datapack.
+            const foreignKeys = {};
+            for (const [foreignKey, id] of Object.entries(datapack.foreignKeys)) {
+                const sourceKey = this.datapacks[id]?.data.VlocityRecordSourceKey ?? this.sourceKeyById.get(id);
+                if (sourceKey && !(sourceKey in datapack.sourceKeys)) {
+                    foreignKeys[sourceKey] = id;
+                } else if (!sourceKey && !this.getSourceKeyById(datapack, id)) {
+                    foreignKeys[foreignKey] = id;
+                }
+            }
+            datapack.foreignKeys = foreignKeys;
+        }
     }
 
     private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string) {

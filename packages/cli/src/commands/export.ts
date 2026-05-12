@@ -33,6 +33,8 @@ type ExportRequest = ExportDefaults & {
     ids: string[];
 };
 
+type ExpandedOutputFiles = Map<string, string>;
+
 function existingFile(label: string): (value: string) => string {
     return (value: string) => {
         if (!fs.existsSync(value)) {
@@ -117,9 +119,10 @@ export default class extends SalesforceCommand {
             `in ${requests.length} batch${requests.length === 1 ? '' : 'es'}`
         );
         const exporter = this.container.new(DatapackExporter);
+        const expandedOutputFiles: ExpandedOutputFiles = new Map();
 
         for (const request of requests) {
-            await this.exportRequest(exporter, request);
+            await this.exportRequest(exporter, request, expandedOutputFiles);
         }
 
         this.logger.info('Datapack export completed');
@@ -170,7 +173,7 @@ export default class extends SalesforceCommand {
         }];
     }
 
-    private async exportRequest(exporter: DatapackExporter, request: ExportRequest) {
+    private async exportRequest(exporter: DatapackExporter, request: ExportRequest, expandedOutputFiles: ExpandedOutputFiles) {
         const context = {
             datapackType: request.datapackType,
             maxDepth: request.maxDepth
@@ -179,7 +182,7 @@ export default class extends SalesforceCommand {
         if (request.expand) {
             const results = await exporter.exportObjectAndExpand(request.ids, context);
             for (const result of results) {
-                await this.writeExpandedDatapack(result, request.folder);
+                await this.writeExpandedDatapack(result, request.folder, expandedOutputFiles);
             }
             return;
         }
@@ -229,9 +232,27 @@ export default class extends SalesforceCommand {
         }
     }
 
-    private async writeExpandedDatapack(result: DatapackExpandResult, folder: string) {
+    private async writeExpandedDatapack(result: DatapackExpandResult, folder: string, expandedOutputFiles: ExpandedOutputFiles) {
+        this.assertNoExpandedOutputCollision(result, folder, expandedOutputFiles);
         const filesWritten = await result.writeToFilesystem(folder);
+        for (const fileName of filesWritten) {
+            expandedOutputFiles.set(fileName, result.sourceKey);
+        }
         this.logger.info(`Wrote ${filesWritten.length} file${filesWritten.length === 1 ? '' : 's'} for ${result.sourceKey}`);
+    }
+
+    private assertNoExpandedOutputCollision(result: DatapackExpandResult, folder: string, expandedOutputFiles: ExpandedOutputFiles) {
+        for (const fileName of Object.keys(result.files)) {
+            const outputFile = join(folder, result.folder, fileName);
+            const existingSourceKey = expandedOutputFiles.get(outputFile);
+            if (existingSourceKey && existingSourceKey !== result.sourceKey) {
+                throw new Error(
+                    `Expanded export path collision: ${outputFile}\n` +
+                    `  existing: ${existingSourceKey}\n` +
+                    `  current:  ${result.sourceKey}`
+                );
+            }
+        }
     }
 
     private async writeConsolidatedDatapack(result: DatapackExportResult, folder: string) {
