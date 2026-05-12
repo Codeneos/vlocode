@@ -51,6 +51,10 @@ interface ExportContext extends DatapackExportOptions {
     embedded?: boolean;
 }
 
+interface ExportRequest extends ExportContext {
+    id: string;
+}
+
 interface ExportResult {
     parentKeys: {
         key: string;
@@ -96,6 +100,8 @@ export class DatapackExporter {
     private lookupCache = new Map<string, Record<string, any> | null>();
     private datapacks: Record<string, ExportDatapack> = {};
     private matchingKeys: Record<string, string> = {};
+    private exportQueue: ExportRequest[] = [];
+
     /**
      * Maximum depth to export objects, when the depth is reached the 
      * exporter will stop exporting the object and export a reference instead.
@@ -140,24 +146,41 @@ export class DatapackExporter {
      * exporting embedded objects if needed by calling {@link exportObject} with the parent object id.
      * @param id Id of the object to export
      */
-    public async exportObject(id: string[] | string, context?: DatapackExportOptions): Promise<ExportResult[]> {
+    public exportObject(id: string[] | string, context?: DatapackExportOptions): Promise<ExportResult[]> {
         const ids = Array.isArray(id) ? id : [id];
         this.logger.verbose(`Export SObjects ${ids}`);
+        this.enqueueExport(ids);
+        return this.processExportQueue();
+    }
+
+    private async processExportQueue() {
         const results: ExportResult[] = [];
 
-        await forEachAsyncParallel(await this.lookupByIds(ids), async ([id, data]) => {
-            if (!data) {
-                this.logger.warn(`No data found for id ${id}, skipping export`);
-                return;
-            }
-            const timer = new Timer();
-            await this.buildDatapack(data, { ...context });
-            const datapack = this.datapacks[id];
-            this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
-            results.push(this.asExportResult(datapack));
-        }, this.exportParallelism);
-        
+        while(this.exportQueue.length) {
+            const requests = new Map(this.exportQueue.splice(0).map(request => [request.id, request]));
+            const records = await this.lookupByIds(requests.keys());
+
+            await forEachAsyncParallel(records, async ([id, data]) => {
+                if (!data) {
+                    this.logger.warn(`No data found for id ${id}, skipping export`);
+                    return;
+                }
+                const context = requests.get(id);
+                const timer = new Timer();
+                await this.buildDatapack(data, { ...context });
+                const datapack = this.datapacks[id];
+                this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
+                results.push(this.asExportResult(datapack));
+            }, this.exportParallelism);
+        };
+
         return results;
+    }
+
+    private enqueueExport(ids: string[] | string, context?: ExportContext) {
+        for (const id of Array.isArray(ids) ? ids : [ids]) {
+            this.exportQueue.push({ id, ...context });
+        }
     }
 
     private inferDatapackType(objectType: string, scope?: string) {
@@ -172,7 +195,8 @@ export class DatapackExporter {
         return {
             parentKeys: Object.entries(datapack.foreignKeys).map(([key, id]) => ({ key, id })),
             datapack: datapack.data,
-            relatedDatapacks: [...this.collectRelatedDatapacks(datapack).values()].map(item => this.asExportResult(item)),
+            relatedDatapacks: [],
+            //relatedDatapacks: [...this.collectRelatedDatapacks(datapack).values()].map(item => this.asExportResult(item)),
             sourceKey: datapack.data.VlocityRecordSourceKey,
             datapackType: datapack.datapackType,
             objectType: datapack.objectType
@@ -327,22 +351,11 @@ export class DatapackExporter {
     }
 
     private async exportRelatedObjects(datapack: ExportDatapack, context: ExportContext) {
-        for (const [,id] of Object.entries(datapack.foreignKeys)) {
-            try {
-                const relatedRecord = await this.lookupById(id);
-                if (!relatedRecord) {
-                    continue;
-                }
-                await this.buildDatapack(relatedRecord, {
-                    scope: context.scope,
-                    maxDepth: (context.maxDepth ?? this.maxExportDepth) - 1,
-                    embedded: false,
-                    parent: datapack
-                });
-            } catch (e) {
-                this.logger.error(`Error exporting related object for ${datapack.objectType}:`, e);
-            }
-        }
+        this.enqueueExport(Object.values(datapack.foreignKeys), {
+            scope: context.scope,
+            maxDepth: (context.maxDepth ?? this.maxExportDepth) - 1,
+            embedded: false,
+        });
     }
 
     private async exportEmbeddedObjects(datapack: ExportDatapack, context: ExportContext) {
@@ -960,7 +973,7 @@ export class DatapackExporter {
         return [...matchedRecords.values()].filter(r => !!r);
     }
 
-    private async lookupByIds(ids: string[]): Promise<Map<string, Record<string, any> | null>> {
+    private async lookupByIds(ids: Iterable<string>): Promise<Map<string, Record<string, any> | null>> {
         const result = new Map<string, Record<string, any> | null>();
         const missingIds: string[] = [];
         
