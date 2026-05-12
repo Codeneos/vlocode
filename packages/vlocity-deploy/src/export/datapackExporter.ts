@@ -261,7 +261,7 @@ export class DatapackExporter {
         }
 
         const maxDepth = context.maxDepth ?? this.maxExportDepth;
-        if (maxDepth > 0) {
+        if (!context.embedded && maxDepth > 0) {
             await this.exportRelatedObjects(datapack, context);
         }
 
