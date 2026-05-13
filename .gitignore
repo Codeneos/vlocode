@@ -20,3 +20,4 @@ packages/*/out
 /packages/apex/src/grammar/*.interp
 /packages/apex/src/grammar/*.tokens
 /packages/vscode-extension/resources/datamapper-editor/
+/packages/vscode-extension/resources/datapack-editor/
