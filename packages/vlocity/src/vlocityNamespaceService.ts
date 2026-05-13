@@ -57,11 +57,14 @@ export class VlocityNamespaceService extends NamespaceService {
     private async getConnectionNamespace(connection: SalesforceConnection) {
         // Init namespace by query a Vlocity class similar as to what is done in the build tools
         const timer = new Timer();
-        const results = await connection.tooling.query<{ SubscriberPackage: { NamespacePrefix: string, Name: string } }>('SELECT SubscriberPackage.NamespacePrefix, SubscriberPackage.Name FROM InstalledSubscriberPackage');
-        
-        const packages = results.records.map(record => record.SubscriberPackage);
-        const vlocityNamespace = packages.find(pkg => /vlocity/ig.test(pkg.Name))?.NamespacePrefix ?? null;
-        const omnistudioNamespace = packages.find(pkg => /omnistudio/ig.test(pkg.Name))?.NamespacePrefix ?? null;
+        const results = await connection.query2<{ SubscriberPackage: { NamespacePrefix: string, Name: string } }>(
+            'SELECT SubscriberPackage.NamespacePrefix, SubscriberPackage.Name FROM InstalledSubscriberPackage', 
+            { type: 'tooling', queryMore: false }
+        );
+                
+        const packages = results.map(record => record.SubscriberPackage);
+        const vlocityNamespace = packages.find(pkg => pkg.NamespacePrefix && /vlocity/ig.test(pkg.Name))?.NamespacePrefix ?? null;
+        const omnistudioNamespace = packages.find(pkg => pkg.NamespacePrefix && /omnistudio/ig.test(pkg.Name))?.NamespacePrefix ?? null;
         const namespace = vlocityNamespace ?? omnistudioNamespace ?? null;
 
         if (!namespace) {
