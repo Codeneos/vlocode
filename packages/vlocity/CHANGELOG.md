@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.2](https://github.com/Codeneos/vlocode/compare/v2.0.1...v2.0.2) (2026-05-13)
+
+### Bug Fixes
+
+* when there are multiple Vlocity packages installed the code picked the first package even if that had no namespace. This fix changes the bevahior to only pickup packages that have a namespace (fixes [#449](https://github.com/Codeneos/vlocode/issues/449)) ([c9f2a1f](https://github.com/Codeneos/vlocode/commit/c9f2a1ff9f3cc0413f92a216c046e414bb4f98fb))
+
 ## [2.0.1](https://github.com/Codeneos/vlocode/compare/v2.0.0...v2.0.1) (2026-05-13)
 
 ### Bug Fixes
