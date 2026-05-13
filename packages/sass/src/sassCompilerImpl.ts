@@ -3,9 +3,14 @@ import { SassImporter } from './sassImporter';
 import { SassCompileOptions, SassCompiler, SassCompileResult } from './interface';
 import { injectable, LifecyclePolicy } from '@vlocode/core';
 
+interface SassLogger {
+    warn(...args: any[]): void;
+    debug?(...args: any[]): void;
+}
+
 @injectable({ provides: SassCompiler, lifecycle: LifecyclePolicy.singleton })
 export class SassCompilerImpl implements SassCompiler {
-    public constructor(private logger: sass.Logger) {
+    public constructor(private logger: SassLogger) {
     }
 
     public async compile(data: string, options?: SassCompileOptions): Promise<SassCompileResult> {
