@@ -5,7 +5,7 @@
     "tasks": [
         {
             "label": "build-extension",
-            "dependsOn": ["watch-extension", "watch-datamapper-editor"],
+            "dependsOn": ["watch-extension", "watch-vscode-webviews"],
             "dependsOrder": "parallel",
             "group": {
                 "kind": "build",
@@ -35,15 +35,15 @@
         },
         {
             "type": "shell",
-            "command": "pnpm --filter @vlocode/datamapper-editor watch",
+            "command": "pnpm --filter @vlocode/vscode-webviews watch",
             "isBackground": true,
-            "label": "watch-datamapper-editor",
+            "label": "watch-vscode-webviews",
             "presentation": {
                 "reveal": "always"
             },
             "problemMatcher": {
-                "owner": "watch-datamapper-editor",
-                "fileLocation": ["relative", "${workspaceFolder}/packages/datamapper-editor"],
+                "owner": "watch-vscode-webviews",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/vscode-webviews"],
                 "pattern": {
                     "regexp": "^$"
                 },
