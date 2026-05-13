@@ -1,6 +1,6 @@
 import { Logger, injectable } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
-import { cache } from '@vlocode/util';
+import { cache, getErrorMessage } from '@vlocode/util';
 
 /**
  * Partial record format for datapack configuration custom metadata records.
@@ -56,8 +56,7 @@ export class DatapackConfigAccess {
                 'all'
             );
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            this.logger.warn(`Unable to load DataPack configuration from Salesforce; using local definitions only: ${message}`);
+            this.logger.warn(`Unable to load DataPack configuration:`, getErrorMessage(error));
             return new Map<string, DatapackConfiguration>();
         }
 
