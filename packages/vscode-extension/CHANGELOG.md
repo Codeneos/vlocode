@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.1](https://github.com/codeneos/vlocode/compare/v2.0.0...v2.0.1) (2026-05-13)
+
+### Bug Fixes
+
+* update API version examples and default value in package.json ([c2f824b](https://github.com/codeneos/vlocode/commit/c2f824bd38782aa36ee65f9f70625fd361543ae9))
+
 # [2.0.0](https://github.com/codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
 
 ### Bug Fixes

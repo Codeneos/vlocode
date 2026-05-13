@@ -4,6 +4,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.1](https://github.com/codeneos/vlocode/compare/v2.0.0...v2.0.1) (2026-05-13)
+
+### Bug Fixes
+
+* improve argument parsing in FormulaParser to handle parentheses and commas correctly ([eda98fd](https://github.com/codeneos/vlocode/commit/eda98fd8f7cb9cc402ff7dd666f295af7fec829e))
+* prevent auto-generated matching keys from being processed in field matching ([9580201](https://github.com/codeneos/vlocode/commit/958020136e270af67d627e4a091068ac548ca241))
+* prevent exporting related objects before fully resolving the local tree to avoid double exports ([44c44f1](https://github.com/codeneos/vlocode/commit/44c44f1b2ab5447efc443758f9e3411ec17722af))
+* update API version examples and default value in package.json ([c2f824b](https://github.com/codeneos/vlocode/commit/c2f824bd38782aa36ee65f9f70625fd361543ae9))
+
+### Features
+
+* enhance export process by implementing export queue for async handling of object exports ([33fbdb4](https://github.com/codeneos/vlocode/commit/33fbdb4674f8c333cc11a4a3cda15b9c50065021))
+* implement deferred lookup matching key expansion and enhance foreign key normalization ([5e9a57d](https://github.com/codeneos/vlocode/commit/5e9a57dd787142568a2606d0ba65940dec4f4f63))
+
 # [2.0.0](https://github.com/codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
 
 ### Bug Fixes

@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.1](https://github.com/Codeneos/vlocode/compare/v2.0.0...v2.0.1) (2026-05-13)
+
+### Features
+
+* implement deferred lookup matching key expansion and enhance foreign key normalization ([5e9a57d](https://github.com/Codeneos/vlocode/commit/5e9a57dd787142568a2606d0ba65940dec4f4f63))
+
 # [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
 
 ### Bug Fixes
