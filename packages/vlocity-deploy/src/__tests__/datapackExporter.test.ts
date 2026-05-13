@@ -686,6 +686,71 @@ describe('DatapackExpander', () => {
         ]);
     });
 
+    it('sanitizes separators in configured folder and file names', () => {
+        const definitions = {
+            getFileName: jest.fn((_item, field) => field === undefined ? ['FolderName'] : undefined),
+            getName: jest.fn(() => ['FolderName']),
+            getFieldConfig: jest.fn()
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Product_Specification__c',
+            VlocityRecordSourceKey: 'Product_Specification__c/auto-generated/71044b66',
+            FolderName: 'auto-generated/71044b66'
+        }, { datapackType: 'SObject' });
+
+        expect(result.folder).toBe('SObject_Product_Specification_c/auto-generated_71044b66');
+        expect(Object.keys(result.files)).toStrictEqual([
+            'auto-generated_71044b66_DataPack.json'
+        ]);
+    });
+
+    it('falls back to the source key name when a configured folder field is empty', () => {
+        const definitions = {
+            getFileName: jest.fn((_item, field) => field === undefined ? ['FolderName'] : undefined),
+            getName: jest.fn(() => ['FolderName']),
+            getFieldConfig: jest.fn()
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Account',
+            VlocityRecordSourceKey: 'Account/Acme',
+            FolderName: null
+        });
+
+        expect(result.folder).toBe('Account/Acme');
+        expect(Object.keys(result.files)).toStrictEqual([
+            'Acme_DataPack.json'
+        ]);
+    });
+
+    it('keeps configured field file extensions and writes non-json strings raw', () => {
+        const definitions = {
+            getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : field === 'Code__c' ? ['_Script.js'] : undefined),
+            getName: jest.fn(() => ['Name']),
+            getFieldConfig: jest.fn()
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'CustomScript__c',
+            VlocityRecordSourceKey: 'CustomScript__c/Test',
+            Name: 'Test.v1',
+            Code__c: 'export default {};\n'
+        });
+
+        expect(Object.keys(result.files).sort()).toStrictEqual([
+            'Test-v1_DataPack.json',
+            'Test-v1_Script.js'
+        ]);
+        expect(result.files['Test-v1_Script.js'].toString()).toBe('export default {};\n');
+    });
+
     it('writes expanded files to the filesystem', async () => {
         const definitions = {
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : field === 'Children' ? ['_Child', 'Name'] : undefined),

@@ -14,8 +14,6 @@ interface ExportDatapack {
     readonly datapackType: string;
     readonly normalizedObjectType: string;
     readonly scope?: string;
-    //readonly dependencyDepth: number;
-    //readonly maxDepth: number;
     readonly schema: DescribeSObjectResult;
     data: VlocityDatapackSObject;
     references: Record<string, VlocityDatapackReference>;

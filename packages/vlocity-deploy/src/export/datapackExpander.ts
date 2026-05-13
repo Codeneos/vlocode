@@ -91,13 +91,13 @@ export class DatapackExpander {
 
         const baseSourceKey = substringAfter(datapack.VlocityRecordSourceKey, '/');
         const fileNameFormat = this.definitions.getFileName(itemRef) ?? baseSourceKey;
-        const baseName = this.evalPathFormat(fileNameFormat, { context: datapack });
+        const baseName = this.evalPathFormat(fileNameFormat, { context: datapack, fallback: baseSourceKey });
         
         const datapackFolder = itemRef.datapackType === 'SObject' ? `SObject_${datapack.VlocityRecordSObjectType}` : (itemRef.datapackType ?? itemRef.objectType);
         const folderFormat = this.definitions.getName(itemRef) ?? baseSourceKey;
         const folder = path.join(
             this.normalizeFileName(datapackFolder),
-            this.evalPathFormat(folderFormat, { context: datapack })
+            this.evalPathFormat(folderFormat, { context: datapack, fallback: baseSourceKey })
         );
         
         const data: Record<string, unknown> = {};
@@ -179,19 +179,28 @@ export class DatapackExpander {
         return false;
     }
 
-    private evalPathFormat(format: string | string[], options?: { context?: object; defaultExt?: string; }) {
+    private evalPathFormat(format: string | string[], options?: { context?: object; defaultExt?: string; fallback?: string; }) {
         const name = Array.isArray(format) 
             ? format.map(f => f.startsWith('_') ? f.substring(1) : options?.context?.[f] ?? '').join('_')
             : (options?.context ? formatString(format, options?.context) : format);
-        return this.normalizeFileName(name, options?.defaultExt);
+        const configuredExtension = this.getConfiguredExtension(format);
+        const extension = configuredExtension && name.endsWith(configuredExtension) ? configuredExtension : (options?.defaultExt ? `.${options.defaultExt}` : '');
+        const pathName = configuredExtension && name.endsWith(configuredExtension) ? name.slice(0, -configuredExtension.length) : name;
+        return this.normalizeFileName(pathName.replace(/[\\/]+/g, '_'), extension)
+            || (options?.fallback ? this.normalizeFileName(options.fallback.replace(/[\\/]+/g, '_'), extension) : '');
     }
 
-    private normalizeFileName(path: string, extension?: string) {
-        const normalized = normalizeName(path);
-        if (extension) {
-            return `${normalized}.${extension}`;
+    private getConfiguredExtension(format: string | string[]) {
+        const lastPart = Array.isArray(format) ? format.at(-1) : format;
+        return lastPart?.startsWith('_') ? path.extname(lastPart.substring(1)) || undefined : undefined;
+    }
+
+    private normalizeFileName(name: string, extension = '') {
+        const normalized = normalizeName(name);
+        if (!normalized) {
+            return '';
         }
-        return normalized;
+        return extension ? `${normalized}${extension}` : normalized;
     }
 
     private async writeToFilesystem(result: DatapackExpandResult, destinationPath: string, options?: WriteToFilesystemOptions): Promise<string[]> {
@@ -235,7 +244,7 @@ class DatapackFiles {
     ) { }
 
     public addFile(fileName: string, value: unknown) {
-        const data = this.getFileData(value);
+        const data = this.getFileData(fileName, value);
         this.logger.verbose(`Write ${fileName} (${data.length} bytes)`);
         this.files[fileName] = data;
         return this.getFileName(fileName, { withFolder: false });
@@ -254,9 +263,12 @@ class DatapackFiles {
         return options?.withFolder ? path.join(this.folder, fileName) : fileName;
     }
 
-    private getFileData(value: unknown): Buffer | string {
+    private getFileData(fileName: string, value: unknown): Buffer | string {
         if (Buffer.isBuffer(value)) {
             return value;
+        }
+        if (typeof value === 'string' && path.extname(fileName).toLowerCase() !== '.json') {
+            return Buffer.from(value);
         }
         return Buffer.from(JSON.stringify(value, null, 4));
     }
