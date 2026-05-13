@@ -612,18 +612,6 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
     @singleFlight()
     public async validateSalesforceConnectivity() : Promise<string | undefined> {
-        if (!this.isInitialized) {
-            // Await service initialization
-            await vscode.window.withProgress({
-                title: 'Vlocode: Initializing...',
-                location: vscode.ProgressLocation.Window
-            }, () => this.initializeConnection());
-        }
-
-        if (!this.isInitialized) {
-            return 'Vlocode failed to initialize within the given time; check the debug console for possible errors';
-        }
-
         if (!this.sfdxUsername) {
             const message = 'Select a Salesforce instance for this workspace to use Vlocode';
             const selectedAction = await vscode.window.showInformationMessage(message, 'Connect to Salesforce');
@@ -635,6 +623,18 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             } else {
                 return message;
             }
+        }
+
+        if (!this.isInitialized) {
+            // Await service initialization
+            await vscode.window.withProgress({
+                title: 'Vlocode: Initializing...',
+                location: vscode.ProgressLocation.Window
+            }, async () => this.initializeConnection());
+        }
+
+        if (!this.isInitialized) {
+            return 'Vlocode failed to initialize within the given time; check the debug console for possible errors';
         }
     }
 

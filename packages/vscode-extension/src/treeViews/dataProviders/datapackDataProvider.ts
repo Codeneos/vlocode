@@ -164,6 +164,10 @@ export class DatapackDataProvider extends TreeDataProvider<DatapackNode> {
     }
 
     public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
+        if (!this.vlocode.sfdxUsername) {
+            return [];
+        }
+
         try {
             await this.vlocode.validateAll(true);
             const nodeSorter = (a: DatapackNode, b: DatapackNode) => a.getItemLabel().localeCompare(b.getItemLabel());
