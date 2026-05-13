@@ -37,6 +37,7 @@ import { VirtualContentProvider } from './contentProviders/virtualApexContentPro
 
 import { SfdxConfigManager } from './lib/sfdxConfigManager';
 import { DataMapperEditorProvider } from './webviews/dataMapperEditorProvider';
+import { DatapackEditorProvider } from './webviews/datapackEditorProvider';
 import { VlocodeLogLinkProvider } from './lib/vlocodeLogLinkProvider';
 import { DatapackDefinitionRegistry } from './lib/vlocity/datapackDefinitionRegistry';
 
@@ -207,6 +208,7 @@ class Vlocode {
         this.configureLogLinkProvider();
         this.configureDatapackExportDefinitions();
         this.service.registerDisposable(DataMapperEditorProvider.register(context, this.service));
+        this.service.registerDisposable(DatapackEditorProvider.register(context, this.service));
 
         // Watch conditionalContextMenus for changes
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',

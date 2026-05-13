@@ -1,6 +1,7 @@
 import 'jest';
 
 import { DataMapperBuilder, DataMapperExecutor, DataMapperFormulaEvaluator, type DataMapperDefinition } from '../datamapper';
+import { getDataMapperPathValue } from '../datamapper/path';
 
 describe('DataMapperFormulaEvaluator', () => {
     it('evaluates operators, percent paths and common DataMapper functions', async () => {
@@ -29,6 +30,33 @@ describe('DataMapperFormulaEvaluator', () => {
             source: {},
             resolvePath: () => undefined
         })).toBe(true);
+    });
+
+    it('uses Salesforce one-based pipe indexes in DataMapper paths and formulas', async () => {
+        const evaluator = new DataMapperFormulaEvaluator();
+        const source = {
+            SBQQ__Quote__c: [{ Id: 'Q1' }],
+            currentAccount: [{ Id: 'A1' }, { Id: 'A2' }]
+        };
+        const context = {
+            source,
+            resolvePath: (path: string) => getDataMapperPathValue(source, path)
+        };
+
+        expect(getDataMapperPathValue(source, 'SBQQ__Quote__c|1:Id')).toBe('Q1');
+        expect(getDataMapperPathValue(source, 'SBQQ__Quote__c|2:Id')).toBeUndefined();
+        await expect(evaluator.evaluate(
+            'IF(LISTSIZE(SBQQ__Quote__c) == 1 && ISBLANK(SBQQ__Quote__c|1:Id), 0, LISTSIZE(currentAccount))',
+            context
+        )).resolves.toBe(2);
+    });
+
+    it('reports a missing function argument comma clearly', () => {
+        const evaluator = new DataMapperFormulaEvaluator();
+
+        expect(() => evaluator.parse(
+            'IF(LISTSIZE(SBQQ__Quote__c) == 1 && ISBLANK(SBQQ__Quote__c|1:Id), 0 LISTSIZE(currentAccount))'
+        )).toThrow('Expected comma or ) but found LISTSIZE');
     });
 
     it('evaluates documented string, list, JSON and date functions', async () => {

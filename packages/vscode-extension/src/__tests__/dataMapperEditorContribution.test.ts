@@ -6,6 +6,7 @@ import * as path from 'path';
 interface CustomEditorContribution {
     viewType?: string;
     selector?: Array<{ filenamePattern: string }>;
+    priority?: string;
 }
 
 interface MenuContribution {
@@ -34,12 +35,29 @@ describe('DataMapper editor contribution', () => {
         ]));
     });
 
+    it('gives the DataMapper editor precedence over the generic datapack editor', () => {
+        const dataMapperEditorIndex = packageJson.contributes.customEditors.findIndex(
+            editor => editor.viewType === 'vlocode.datamapperEditor'
+        );
+        const datapackEditorIndex = packageJson.contributes.customEditors.findIndex(
+            editor => editor.viewType === 'vlocode.datapackEditor'
+        );
+        const dataMapperEditor = packageJson.contributes.customEditors[dataMapperEditorIndex];
+
+        expect(dataMapperEditor?.priority).toBe('default');
+        expect(dataMapperEditorIndex).toBeGreaterThanOrEqual(0);
+        expect(datapackEditorIndex).toBeGreaterThan(dataMapperEditorIndex);
+    });
+
     it('shows the open editor command for OmniDataTransform datapack files', () => {
         const openEditorMenus = Object.values(packageJson.contributes.menus)
             .flat()
             .filter(menu => menu.command === 'vlocode.datamapper.openEditor');
 
         expect(openEditorMenus).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                when: expect.stringContaining('resourceScheme == file')
+            }),
             expect.objectContaining({
                 when: expect.stringContaining('(DataRaptor|OmniDataTransform)')
             })

@@ -1,0 +1,16 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./out-tsc/datamapper",
+        "composite": true
+    },
+    "files": ["src/datamapper-editor/main.ts"],
+    "include": [
+        "src/datamapper-editor/**/*.d.ts",
+        "src/datamapper-editor/**/*.ts",
+        "src/shared/**/*.ts",
+        "../vlocity/src/omnistudio/formula/languageService.ts",
+        "../vlocity/src/omnistudio/formula/registry.ts",
+        "../vlocity/src/omnistudio/formula/types.ts"
+    ]
+}

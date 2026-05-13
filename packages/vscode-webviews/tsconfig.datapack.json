@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./out-tsc/datapack",
+        "composite": true
+    },
+    "files": ["src/datapack-editor/main.ts"],
+    "include": ["src/datapack-editor/**/*.d.ts", "src/datapack-editor/**/*.ts", "src/shared/**/*.ts"]
+}

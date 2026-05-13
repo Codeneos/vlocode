@@ -78,6 +78,12 @@ export interface Disposable {
     dispose(): void;
 }
 
+export class EventEmitter<T = unknown> {
+    public readonly event = jest.fn();
+    public fire = jest.fn((value?: T) => { void value; });
+    public dispose = jest.fn();
+}
+
 export const workspace = {
     workspaceFolders: undefined as Array<{ uri: Uri }> | undefined,
     openTextDocument: jest.fn(),
@@ -92,14 +98,21 @@ export const window = {
         show: jest.fn(),
         dispose: jest.fn()
     }),
+    createStatusBarItem: jest.fn().mockReturnValue({
+        show: jest.fn(),
+        hide: jest.fn(),
+        dispose: jest.fn()
+    }),
     showTextDocument: jest.fn(),
+    showInformationMessage: jest.fn(),
     showWarningMessage: jest.fn()
 };
 
 export const commands = {
     registerCommand: jest.fn().mockReturnValue({
         dispose: jest.fn()
-    })
+    }),
+    executeCommand: jest.fn()
 };
 
 export const languages = {
@@ -110,4 +123,20 @@ export const languages = {
 
 export const TextEditorRevealType = {
     InCenterIfOutsideViewport: 0
+};
+
+export const StatusBarAlignment = {
+    Left: 1,
+    Right: 2
+};
+
+export const ProgressLocation = {
+    Notification: 15,
+    Window: 10
+};
+
+export const TreeItemCollapsibleState = {
+    None: 0,
+    Collapsed: 1,
+    Expanded: 2
 };

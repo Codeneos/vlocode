@@ -1,12 +1,16 @@
 {
-    "name": "@vlocode/datamapper-editor",
+    "name": "@vlocode/vscode-webviews",
     "version": "2.0.2",
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "ng build --configuration production",
-        "watch": "ng build --watch --configuration development",
-        "clean": "shx rm -rf ../vscode-extension/resources/datamapper-editor"
+        "build": "pnpm build:datapack && pnpm build:datamapper",
+        "build:datapack": "ng build datapack-editor --configuration production",
+        "build:datamapper": "ng build datamapper-editor --configuration production",
+        "watch": "pnpm --parallel --stream --no-bail watch:datapack watch:datamapper",
+        "watch:datapack": "ng build datapack-editor --watch --configuration development",
+        "watch:datamapper": "ng build datamapper-editor --watch --configuration development",
+        "clean": "shx rm -rf ../vscode-extension/resources/datapack-editor ../vscode-extension/resources/datamapper-editor"
     },
     "author": {
         "name": "Peter van Gulik",

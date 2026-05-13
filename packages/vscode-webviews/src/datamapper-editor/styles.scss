@@ -1,31 +1,4 @@
-$panel: var(--vscode-panel-border);
-$editor: var(--vscode-editor-background);
-$side: var(--vscode-sideBar-background);
-$focus: var(--vscode-focusBorder);
-$desc: var(--vscode-descriptionForeground);
-$disabled: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
-$input-border: var(--vscode-input-border);
-$quick: 120ms ease;
-
-@mixin heading { margin: 0; color: var(--vscode-foreground); font-size: 16px; font-weight: 600; letter-spacing: 0; }
-@mixin copy { margin: 4px 0 0; color: $desc; }
-@mixin ring($size: 1px, $mix: 55%) { box-shadow: 0 0 0 $size color-mix(in srgb, #{$focus} $mix, transparent); outline: none; }
-@mixin truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@mixin stack($gap: 12px) { display: grid; gap: $gap; }
-@mixin icon($size: 16px, $display: block) { display: $display; width: $size; height: $size; font-size: $size; line-height: 1; }
-@mixin control {
-    width: 100%; min-height: 30px; border: 1px solid $input-border; border-radius: 4px; padding: 4px 8px;
-    color: var(--vscode-input-foreground); background: var(--vscode-input-background);
-    &:focus { outline: 1px solid $focus; outline-offset: -1px; }
-}
-@mixin button {
-    appearance: none; border: 1px solid var(--vscode-button-border, #{$input-border}); border-radius: 4px;
-    color: var(--vscode-button-secondaryForeground); background: var(--vscode-button-secondaryBackground);
-    cursor: pointer; transition: background $quick, box-shadow $quick, color $quick;
-    &:hover, &:focus-visible { color: var(--vscode-button-secondaryForeground); background: var(--vscode-button-secondaryHoverBackground); @include ring; }
-    &:disabled { cursor: not-allowed; opacity: 0.6; &:hover, &:focus-visible { box-shadow: none; } }
-}
-@mixin disabled-bg($base: $editor, $mix: 88%) { color: $disabled; background: color-mix(in srgb, #{$base} $mix, #{$disabled}); }
+@use '../shared/styles/webview' as *;
 
 :root {
     color-scheme: light dark; font-family: var(--vscode-font-family); font-size: var(--vscode-font-size);
@@ -62,7 +35,7 @@ button, input, select, textarea { font: inherit; }
 
 .dm-header {
     display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px;
-    border-bottom: 1px solid $panel; background: $side;
+    border-bottom: 1px solid $panel; background: $surface-alt;
     &__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 }
 
@@ -74,7 +47,7 @@ button, input, select, textarea { font: inherit; }
     &__tab {
         appearance: none; min-width: 92px; border: 0; border-bottom: 2px solid transparent;
         color: var(--vscode-foreground); background: transparent; cursor: pointer;
-        &:hover { background: var(--vscode-toolbar-hoverBackground); }
+        &:hover { background: $surface-hover; }
         &--active { border-bottom-color: $focus; font-weight: 600; }
     }
 }
@@ -93,19 +66,16 @@ button, input, select, textarea { font: inherit; }
     &--compact { flex: 0 0 26px; width: 26px; height: 26px; min-width: 26px; min-height: 26px; }
 }
 .dm-button .codicon[class*='codicon-'], .dm-icon-button .codicon[class*='codicon-'], .dm-table__sort .codicon[class*='codicon-'] { @include icon; }
-.dm-icon-button--compact .codicon[class*='codicon-'] {
-    @include icon(14px);
-    &::before { display: block; font-size: inherit; line-height: 1; }
-}
+.dm-icon-button--compact .codicon[class*='codicon-'] { @include icon(14px); }
 
 .dm-flow {
     position: relative; width: min(960px, calc(100% - 40px)); margin: 36px auto; padding: 28px 0 60px;
 
-    &::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; transform: translateX(-50%); background: $panel; }
+    &::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%); background: $panel; }
     &__start, &__end, &__add {
         position: relative; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; margin: 0 auto; border-radius: 50%;
     }
-    &__start, &__end { border: 6px solid $panel; background: $editor; }
+    &__start, &__end { border: 4px solid $panel; background: $editor; }
     &__end { margin-top: 12px; }
     &__insert { position: relative; z-index: 2; display: grid; place-items: center; height: 56px; margin: 0; + .dm-card { margin-top: 0; } }
     &__add {
@@ -122,27 +92,27 @@ button, input, select, textarea { font: inherit; }
 }
 
 .dm-card {
-    position: relative; z-index: 1; margin: 28px auto 0; border: 1px solid $panel; border-radius: 4px;
-    background: $editor; box-shadow: 0 1px 2px color-mix(in srgb, var(--vscode-widget-shadow) 35%, transparent);
+    position: relative; z-index: 1; overflow: hidden; margin: 28px auto 0; border: 1px solid $panel; border-radius: $radius-surface;
+    background: $surface; box-shadow: $shadow-subtle;
 
     &__header {
-        display: flex; align-items: center; gap: 12px; padding: 18px; border-bottom: 1px solid $panel; background: $side;
+        display: flex; align-items: center; gap: 12px; padding: 18px; border-bottom: 1px solid $panel; background: $surface-alt;
         > div { min-width: 0; }
     }
     &__actions { display: flex; gap: 6px; margin-left: auto; }
-    &--extract &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 45%, #{$side}); }
-    &--formula &__header { background: color-mix(in srgb, var(--vscode-list-activeSelectionBackground) 14%, #{$side}); }
-    &--load &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 35%, #{$side}); }
+    &--extract &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 30%, #{$surface-alt}); }
+    &--formula &__header { background: color-mix(in srgb, var(--vscode-list-activeSelectionBackground) 10%, #{$surface-alt}); }
+    &--load &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 24%, #{$surface-alt}); }
 
     &--disabled {
         border-color: color-mix(in srgb, #{$disabled} 45%, transparent); @include disabled-bg($editor, 85%);
-        .dm-card__header { background: color-mix(in srgb, #{$side} 80%, #{$disabled}); }
+        .dm-card__header { background: color-mix(in srgb, #{$surface-alt} 82%, #{$disabled}); }
         .dm-card__icon { color: $disabled; background: color-mix(in srgb, var(--vscode-editor-foreground) 8%, transparent); }
         .dm-field > span, h2, p { color: $disabled; }
     }
 
     &__icon {
-        flex: 0 0 auto; width: 40px; height: 40px; border-radius: 5px; color: var(--vscode-button-foreground);
+        flex: 0 0 auto; width: 40px; height: 40px; border-radius: $radius-surface; color: var(--vscode-button-foreground);
         font-size: 22px; background: var(--vscode-button-background);
         &.codicon[class*='codicon-'] {
             display: inline-grid; place-items: center; font-size: 22px; line-height: 1;
@@ -163,7 +133,7 @@ button, input, select, textarea { font: inherit; }
 }
 .dm-filter { margin: 0; padding-top: 12px; border-top: 1px solid $panel; @include truncate; }
 .dm-code {
-    overflow: auto; min-height: 120px; margin: 0 0 14px; padding: 12px; border: 1px solid $input-border; border-radius: 2px;
+    overflow: auto; min-height: 120px; margin: 0 0 14px; padding: 12px; border: 1px solid $input-border; border-radius: $radius-control;
     color: var(--vscode-editor-foreground); background: var(--vscode-textCodeBlock-background); white-space: pre-wrap;
 }
 
@@ -186,7 +156,7 @@ button, input, select, textarea { font: inherit; }
 
 .dm-field dm-formula-editor {
     display: block; overflow: hidden; height: 160px; min-height: 120px;
-    border: 1px solid $input-border; border-radius: 3px; background: var(--vscode-editor-background);
+    border: 1px solid $input-border; border-radius: $radius-control; background: var(--vscode-editor-background);
 }
 
 .dm-field dm-formula-editor dm-monaco-editor,
@@ -224,8 +194,8 @@ dm-monaco-editor,
     position: relative;
     &__list {
         position: fixed; z-index: 1000; overflow: auto;
-        margin: 0; padding: 2px 0; border: 1px solid var(--vscode-widget-border, #{$input-border}); border-radius: 4px;
-        color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); box-shadow: 0 4px 12px var(--vscode-widget-shadow); list-style: none;
+        margin: 0; padding: 2px 0; border: 1px solid color-mix(in srgb, var(--vscode-widget-border, #{$input-border}) 70%, transparent); border-radius: $radius-control;
+        color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); box-shadow: $shadow-popover; list-style: none;
     }
     &__option {
         display: grid; width: 100%; border: 0; border-radius: 0; padding: 6px 10px; color: inherit; background: transparent; text-align: left;
@@ -237,14 +207,17 @@ dm-monaco-editor,
 
 .dm-table {
     width: 100%; border-collapse: collapse; table-layout: fixed;
-    &-wrap { overflow: auto; max-height: calc(100vh - 260px); border: 1px solid $panel; border-radius: 6px; }
+    &-wrap { overflow: auto; max-height: calc(100vh - 260px); border: 1px solid $panel; border-radius: $radius-surface; background: $surface; }
     th, td { overflow: hidden; border-bottom: 1px solid $panel; padding: 8px 12px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
-    th { color: var(--vscode-foreground); background: var(--vscode-editorGroupHeader-tabsBackground); font-weight: 600; }
+    th { color: var(--vscode-foreground); background: color-mix(in srgb, var(--vscode-editorGroupHeader-tabsBackground) 68%, #{$surface-alt}); font-weight: 600; }
+    th:has(.dm-table__sort) { padding: 0; }
     tbody tr:hover { background: var(--vscode-list-hoverBackground); }
     &__sort {
-        appearance: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
-        border: 0; padding: 0; color: inherit; background: transparent; cursor: pointer; font: inherit; font-weight: inherit; text-align: left;
-        &:hover, &:focus-visible { color: var(--vscode-foreground); background: var(--vscode-toolbar-hoverBackground); @include ring(1px, 45%); }
+        appearance: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 38px;
+        border: 0; border-radius: 0; padding: 8px 12px; color: inherit; background: transparent; cursor: pointer; font: inherit; font-weight: inherit; text-align: left;
+        span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        &:hover { color: var(--vscode-foreground); background: $surface-hover; }
+        &:focus-visible { color: var(--vscode-foreground); background: $surface-hover; outline: 1px solid $focus; outline-offset: -2px; box-shadow: none; }
     }
     &__row {
         &--editing, &--editing:hover { background: var(--vscode-list-inactiveSelectionBackground); }
@@ -284,7 +257,7 @@ dm-monaco-editor,
 
 .dm-dialog {
     position: fixed; z-index: 11; top: 50%; left: 50%; width: min(760px, calc(100% - 32px)); transform: translate(-50%, -50%);
-    border: 1px solid $panel; border-radius: 4px; background: $editor; box-shadow: 0 4px 18px var(--vscode-widget-shadow);
+    border: 1px solid $panel; border-radius: $radius-popover; background: $surface; box-shadow: $shadow-popover;
     &-backdrop { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, #{$editor} 60%, black); }
     &__close {
         @include button; position: absolute; top: -38px; right: 0; display: grid; place-items: center;
@@ -292,7 +265,7 @@ dm-monaco-editor,
     }
     &__header, &__footer { padding: 18px; border-bottom: 1px solid $panel; text-align: center; }
     &__body { display: grid; gap: 16px; padding: 22px 24px 26px; }
-    &__footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid $panel; border-bottom: 0; background: $side; }
+    &__footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid $panel; border-bottom: 0; background: $surface-alt; }
 }
 
 .dm-field {
@@ -306,7 +279,7 @@ dm-monaco-editor,
 }
 .dm-muted { margin: 0; color: $desc; }
 .dm-empty {
-    padding: 32px; border: 1px solid $panel; border-radius: 4px; background: $side; text-align: center;
+    padding: 32px; border: 1px solid $panel; border-radius: $radius-surface; background: $surface-alt; text-align: center;
     &--page { width: min(680px, calc(100% - 32px)); margin: 72px auto; }
 }
 
@@ -324,12 +297,12 @@ dm-monaco-editor,
     &__grid { display: grid; grid-template-columns: minmax(260px, 3fr) minmax(0, 7fr); gap: 12px; min-height: 0; }
     &__right { display: grid; grid-template-rows: minmax(280px, 1fr) minmax(170px, 0.42fr); gap: 12px; min-height: 0; }
     &__pane {
-        display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0;
-        border: 1px solid $panel; border-radius: 4px; background: $editor;
+        display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; min-height: 0;
+        border: 1px solid $panel; border-radius: $radius-surface; background: $surface;
     }
     &__pane-header {
         display: flex; align-items: center; justify-content: space-between; gap: 10px;
-        min-height: 40px; padding: 8px 10px; border-bottom: 1px solid $panel; background: $side;
+        min-height: 40px; padding: 8px 10px; border-bottom: 1px solid $panel; background: $surface-alt;
         h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; }
         span { color: $desc; font-size: 12px; }
     }
@@ -338,17 +311,17 @@ dm-monaco-editor,
         background: var(--vscode-editor-background);
     }
     &__message {
-        margin: 0; padding: 7px 10px; border-top: 1px solid $panel; color: var(--vscode-foreground); background: $side;
+        margin: 0; padding: 7px 10px; border-top: 1px solid $panel; color: var(--vscode-foreground); background: $surface-alt;
         &--error {
             color: var(--vscode-inputValidation-errorForeground, var(--vscode-errorForeground));
-            background: var(--vscode-inputValidation-errorBackground, #{$side});
+            background: var(--vscode-inputValidation-errorBackground, #{$surface-alt});
         }
     }
     &__debug-table-wrap { overflow: auto; min-height: 0; }
     &__debug-table {
         width: 100%; border-collapse: collapse; table-layout: fixed;
         th, td { border-bottom: 1px solid $panel; padding: 7px 10px; text-align: left; vertical-align: top; }
-        th { position: sticky; top: 0; z-index: 1; color: var(--vscode-foreground); background: var(--vscode-editorGroupHeader-tabsBackground); font-weight: 600; }
+        th { position: sticky; top: 0; z-index: 1; color: var(--vscode-foreground); background: color-mix(in srgb, var(--vscode-editorGroupHeader-tabsBackground) 68%, #{$surface-alt}); font-weight: 600; }
         th:nth-child(2), th:nth-child(3), td:nth-child(2), td:nth-child(3) { width: 82px; text-align: right; white-space: nowrap; }
         code {
             display: block; color: var(--vscode-editor-foreground);

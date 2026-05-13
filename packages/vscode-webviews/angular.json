@@ -1,0 +1,105 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "version": 1,
+    "newProjectRoot": "projects",
+    "projects": {
+        "datapack-editor": {
+            "projectType": "application",
+            "root": "src/datapack-editor",
+            "sourceRoot": "src/datapack-editor",
+            "prefix": "vlocode",
+            "architect": {
+                "build": {
+                    "builder": "@angular/build:application",
+                    "options": {
+                        "outputPath": {
+                            "base": "../vscode-extension/resources/datapack-editor",
+                            "browser": ""
+                        },
+                        "index": "src/datapack-editor/index.html",
+                        "browser": "src/datapack-editor/main.ts",
+                        "tsConfig": "tsconfig.datapack.json",
+                        "inlineStyleLanguage": "scss",
+                        "loader": {
+                            ".ttf": "dataurl"
+                        },
+                        "assets": [],
+                        "styles": [
+                            "node_modules/@vscode/codicons/dist/codicon.css",
+                            "src/datapack-editor/styles.scss"
+                        ],
+                        "scripts": []
+                    },
+                    "configurations": {
+                        "production": {
+                            "optimization": true,
+                            "outputHashing": "none",
+                            "sourceMap": false,
+                            "namedChunks": false,
+                            "extractLicenses": true
+                        },
+                        "development": {
+                            "optimization": false,
+                            "outputHashing": "none",
+                            "sourceMap": true,
+                            "namedChunks": true,
+                            "extractLicenses": false
+                        }
+                    },
+                    "defaultConfiguration": "production"
+                }
+            }
+        },
+        "datamapper-editor": {
+            "projectType": "application",
+            "root": "src/datamapper-editor",
+            "sourceRoot": "src/datamapper-editor",
+            "prefix": "vlocode",
+            "architect": {
+                "build": {
+                    "builder": "@angular/build:application",
+                    "options": {
+                        "outputPath": {
+                            "base": "../vscode-extension/resources/datamapper-editor",
+                            "browser": ""
+                        },
+                        "index": "src/datamapper-editor/index.html",
+                        "browser": "src/datamapper-editor/main.ts",
+                        "tsConfig": "tsconfig.datamapper.json",
+                        "inlineStyleLanguage": "scss",
+                        "loader": {
+                            ".ttf": "dataurl"
+                        },
+                        "assets": [],
+                        "styles": [
+                            "node_modules/@vscode/codicons/dist/codicon.css",
+                            "node_modules/monaco-editor/min/vs/editor/editor.main.css",
+                            "src/datamapper-editor/styles.scss"
+                        ],
+                        "scripts": []
+                    },
+                    "configurations": {
+                        "production": {
+                            "optimization": true,
+                            "outputHashing": "none",
+                            "sourceMap": false,
+                            "namedChunks": false,
+                            "extractLicenses": true
+                        },
+                        "development": {
+                            "optimization": false,
+                            "outputHashing": "none",
+                            "sourceMap": true,
+                            "namedChunks": true,
+                            "extractLicenses": false
+                        }
+                    },
+                    "defaultConfiguration": "production"
+                }
+            }
+        }
+    },
+    "cli": {
+        "analytics": false
+    }
+}

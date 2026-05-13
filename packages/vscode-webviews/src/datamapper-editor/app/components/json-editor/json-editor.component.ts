@@ -5,8 +5,6 @@ import { MonacoEditorComponent, type monaco } from '../monaco-editor/monaco-edit
 const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
     folding: true,
     foldingStrategy: 'auto',
-    lineDecorationsWidth: 24,
-    lineNumbersMinChars: 5,
     showFoldingControls: 'always'
 };
 

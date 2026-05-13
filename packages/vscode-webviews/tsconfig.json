@@ -11,11 +11,19 @@
             "@vlocode/vlocity/*": ["../vlocity/src/*"]
         }
     },
-    "include": ["src/**/*.ts"],
+    "include": [
+        "src/**/*.ts",
+        "../vlocity/src/omnistudio/formula/languageService.ts",
+        "../vlocity/src/omnistudio/formula/registry.ts",
+        "../vlocity/src/omnistudio/formula/types.ts"
+    ],
     "files": [],
     "references": [
         {
-            "path": "./tsconfig.app.json"
+            "path": "./tsconfig.datapack.json"
+        },
+        {
+            "path": "./tsconfig.datamapper.json"
         }
     ]
 }

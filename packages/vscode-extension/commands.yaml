@@ -428,8 +428,8 @@ vlocode.datamapper.openEditor:
   menus:
     - menu: editor/title/run
       when: &whenDataMapperFile
-        - resourcePath =~ /[\/\\]omniDataTransforms[\/\\].*\.rpt-meta\.xml$/
-        - resourcePath =~ /[\/\\](DataRaptor|OmniDataTransform)[\/\\].*_(DataPack|Items)\.json$/
+        - resourceScheme == file && resourcePath =~ /[\/\\]omniDataTransforms[\/\\].*\.rpt-meta\.xml$/
+        - resourceScheme == file && resourcePath =~ /[\/\\](DataRaptor|OmniDataTransform)[\/\\].*_(DataPack|Items)\.json$/
     - menu: editor/context
       when: *whenDataMapperFile
     - menu: explorer/context
@@ -450,6 +450,34 @@ vlocode.datamapper.viewSource:
         - webviewId == vlocode.datamapperEditor
     - menu: commandPalette
       when: *whenDataMapperEditor
+vlocode.datapackEditor.openEditor:
+  title: 'Datapack: Open Editor'
+  icon: $(preview)
+  when: activeCustomEditorId != vlocode.datapackEditor
+  menus:
+    - menu: editor/title/run
+      when: &whenDatapackFile
+        - resourceScheme == file && resourcePath =~ /[\/\\].*_DataPack\.json$/
+    - menu: editor/context
+      when: *whenDatapackFile
+    - menu: explorer/context
+      when: *whenDatapackFile
+    - menu: commandPalette
+      when: *whenDatapackFile
+vlocode.datapackEditor.viewSource:
+  title: 'Datapack: View Source'
+  icon: $(code)
+  menus:
+    - menu: editor/title/run
+      when: &whenDatapackEditor
+        - activeCustomEditorId == vlocode.datapackEditor
+    - menu: editor/context
+      when: *whenDatapackEditor
+    - menu: webview/context
+      when:
+        - webviewId == vlocode.datapackEditor
+    - menu: commandPalette
+      when: *whenDatapackEditor
 vlocode.openMetaXml:
   title: 'Salesforce: Open -meta.xml'
   icon: resources/{type}/meta-xml.svg

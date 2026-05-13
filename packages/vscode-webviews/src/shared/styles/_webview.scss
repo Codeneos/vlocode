@@ -1,0 +1,112 @@
+$panel: color-mix(in srgb, var(--vscode-panel-border) 58%, transparent);
+$editor: var(--vscode-editor-background);
+$side: var(--vscode-sideBar-background);
+$focus: var(--vscode-focusBorder);
+$desc: var(--vscode-descriptionForeground);
+$disabled: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
+$input-border: color-mix(in srgb, var(--vscode-input-border, var(--vscode-panel-border)) 68%, transparent);
+$surface: color-mix(in srgb, #{$editor} 88%, #{$side});
+$surface-alt: color-mix(in srgb, #{$side} 72%, #{$editor});
+$surface-hover: color-mix(in srgb, var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground)) 78%, transparent);
+$radius-control: 6px;
+$radius-surface: 8px;
+$radius-popover: 10px;
+$shadow-subtle: 0 1px 2px color-mix(in srgb, var(--vscode-widget-shadow, black) 16%, transparent);
+$shadow-popover: 0 8px 24px color-mix(in srgb, var(--vscode-widget-shadow, black) 45%, transparent);
+$quick: 120ms ease;
+
+@mixin heading {
+    margin: 0;
+    color: var(--vscode-foreground);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+@mixin copy {
+    margin: 4px 0 0;
+    color: $desc;
+}
+
+@mixin ring($size: 1px, $mix: 55%) {
+    box-shadow: 0 0 0 $size color-mix(in srgb, #{$focus} $mix, transparent);
+    outline: none;
+}
+
+@mixin truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@mixin stack($gap: 12px) {
+    display: grid;
+    gap: $gap;
+}
+
+@mixin icon($size: 16px, $display: inline-grid) {
+    display: $display;
+    place-items: center;
+    width: $size;
+    height: $size;
+    font-size: $size;
+    line-height: 1;
+
+    &::before {
+        display: block;
+        font-size: inherit;
+        line-height: 1;
+    }
+}
+
+@mixin centered-codicon($size: 16px) {
+    @include icon($size);
+}
+
+@mixin control {
+    width: 100%;
+    min-height: 30px;
+    border: 1px solid $input-border;
+    border-radius: $radius-control;
+    padding: 4px 8px;
+    color: var(--vscode-input-foreground);
+    background: var(--vscode-input-background);
+
+    &:focus {
+        outline: 1px solid $focus;
+        outline-offset: -1px;
+    }
+}
+
+@mixin button {
+    appearance: none;
+    border: 1px solid color-mix(in srgb, var(--vscode-button-border, #{$input-border}) 70%, transparent);
+    border-radius: $radius-control;
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    cursor: pointer;
+    transition: background $quick, box-shadow $quick, color $quick;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--vscode-button-secondaryForeground);
+        background: var(--vscode-button-secondaryHoverBackground);
+        @include ring;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+
+        &:hover,
+        &:focus-visible {
+            box-shadow: none;
+        }
+    }
+}
+
+@mixin disabled-bg($base: $editor, $mix: 88%) {
+    color: $disabled;
+    background: color-mix(in srgb, #{$base} $mix, #{$disabled});
+}
+
