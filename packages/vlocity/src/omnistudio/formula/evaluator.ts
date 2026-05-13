@@ -265,10 +265,15 @@ class FormulaParser {
             if (this.accept('paren', '(')) {
                 const args = new Array<OmniStudioFormulaNode>();
                 if (!this.accept('paren', ')')) {
-                    do {
+                    for (;;) {
                         args.push(this.parseExpression(0));
-                    } while (this.accept('comma'));
-                    this.expect('paren', ')');
+                        if (this.accept('paren', ')')) {
+                            break;
+                        }
+                        if (!this.accept('comma')) {
+                            throw new Error(`Expected comma or ) but found ${this.peek().value}`);
+                        }
+                    }
                 }
                 return { type: 'call', name: token.value, args };
             }

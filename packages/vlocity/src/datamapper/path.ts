@@ -119,13 +119,17 @@ function getValueByTokens(source: unknown, tokens: readonly DataMapperPathToken[
             if (!Array.isArray(value)) {
                 return undefined;
             }
-            value = value[token.index === 'n' ? context?.arrayIndex ?? 0 : token.index];
+            value = value[resolveDataMapperIndex(token.index, context)];
         }
         if (value === undefined || value === null) {
             return value;
         }
     }
     return value;
+}
+
+function resolveDataMapperIndex(index: number | 'n', context?: DataMapperPathContext) {
+    return index === 'n' ? context?.arrayIndex ?? 0 : index - 1;
 }
 
 function getObjectPathValue(source: unknown, path: string, separator: string, context?: DataMapperPathContext): unknown {
