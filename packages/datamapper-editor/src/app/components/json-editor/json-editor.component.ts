@@ -1,6 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-import { MonacoEditorComponent } from '../monaco-editor/monaco-editor.component';
+import { MonacoEditorComponent, type monaco } from '../monaco-editor/monaco-editor.component';
+
+const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
+    folding: true,
+    foldingStrategy: 'auto',
+    lineDecorationsWidth: 24,
+    lineNumbersMinChars: 5,
+    showFoldingControls: 'always'
+};
 
 @Component({
     selector: 'dm-json-editor',
@@ -13,11 +21,13 @@ import { MonacoEditorComponent } from '../monaco-editor/monaco-editor.component'
             [value]="value()"
             [readOnly]="readOnly()"
             [ariaLabel]="ariaLabel()"
+            [options]="jsonEditorOptions"
             markerOwner="dm-json-editor"
             (valueChange)="valueChange.emit($event)" />
     `
 })
 export class JsonEditorComponent {
+    protected readonly jsonEditorOptions = jsonEditorOptions;
     readonly value = input('');
     readonly readOnly = input(false);
     readonly ariaLabel = input('JSON editor');

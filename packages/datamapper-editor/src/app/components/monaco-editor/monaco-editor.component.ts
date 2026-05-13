@@ -1,5 +1,6 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, DestroyRef, ElementRef, effect, inject, input, output, viewChild } from '@angular/core';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
+import 'monaco-editor/esm/vs/editor/contrib/folding/browser/folding.js';
 import 'monaco-editor/esm/vs/editor/contrib/hover/browser/hoverContribution.js';
 import 'monaco-editor/esm/vs/editor/contrib/parameterHints/browser/parameterHints.js';
 import 'monaco-editor/esm/vs/editor/contrib/suggest/browser/suggestController.js';
