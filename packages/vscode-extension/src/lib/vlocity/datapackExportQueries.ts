@@ -39,7 +39,7 @@ export class DatapackExportQueries {
             }
         );
         const matchingDefinition = await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
-        const macthingKey = exportDefinition?.matchingKey ?? (matchingDefinition.fields.length ? matchingDefinition : { fields: [] as string[], returnField: undefined });
+        const macthingKey = matchingDefinition.fields.length ? matchingDefinition : (exportDefinition?.matchingKey ?? matchingDefinition);
         const nameField = await this.salesforce.schema.getNameField(datapack.sobjectType);
 
         if (!macthingKey.fields.length && nameField) {
