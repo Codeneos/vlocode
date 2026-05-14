@@ -1,8 +1,54 @@
 [![CI](https://github.com/Codeneos/vlocode/actions/workflows/ci.yml/badge.svg)](https://github.com/Codeneos/vlocode/actions/workflows/ci.yml)
-[![GitHub top language](https://img.shields.io/github/languages/top/codeneos/vlocode.svg?logo=github)](https://github.com/Codeneos/vlocode)
-[![Bugs](https://img.shields.io/sonar/https/sonarcloud.io/curlybracket.vlocode/bugs.svg?color=lightgray&label=bugs&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAolBMVEUAAAD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgCXdjhZAAAANXRSTlMA%2Bg335ykFAwnr7hDZON7Ie1ZDMfTUmIUUSSLPoVAa4r6K8rtyXD62gG2xpsKSjnZpYx6qTp5XIo8AAAOWSURBVFjD7VbZtqIwEGSVRXYQAVFBFvf16v%2F%2F2tgJKsYEvPM4Z%2FLiwV7SXV2phPu3lyB71fnserLwN9HD%2BGBL4u2%2BRMk%2BeMJvw887CH6uIKuGvwhXvIK%2FEYtf1sq38epRu1GWtFa%2FLH%2FPNxFFvq6q9aGQ8LeYC19hH2L30VFWm4p8Z4Tb2H%2BRYbBC%2B2urWfvfy1hHGZx%2BHNwFeBox4alMDfhfv%2FbFJxNUvvlpqVEGe9aTYAxe85pmihGWTne8bEGnJ7qx5KG5pDNBCZssBcZ8M7CeOkcILuKUCTAP6bvo5GuAE5P1ESAsyR0JKqhxzLYfACG3ZwY8dMDsoWcOKXDFZ9tNYFnYQeMNkPh09fzZgD5loMKWfYxrREOeF3VjU%2FqUHMn8bp8w5Elwl4tba2nbTwWRNSRPBUWeFHMjkgqirckMXuPDFx5hUtcSGU4b%2BemV3BHeSHpoUut2uirL8XYSwNfCJEDetjQyjFrtNyJmjE3cnBJ54b3dgmhVBgytfIRTpENChPQ8aYNSHxzy4DkoTrmMseju1XcRmg64L866eL0nj1ER4rkZ7oghQuScgadNWz5ijIVBzlkiRCDoQKOB25Dagqhw8ECGP%2FXGHwOEwKPvCj4184HMpk%2Fwo72IGpWfzEEjze8WGwqL%2BwrIMbNafrUO52LGefCb9RUwtFG82ybvBnaecsd%2BrQYEfgD0d6lZ4x6gFdGj3%2FLDV2H%2B0tr4FHVZcjaUllDnvppk8etrRqrxzAJUOQNIGLEEcHTpwAVpNIfSRCyFDcwOZu6ACbgC6o25Quj0VrAjhINAuWInuGAMUtiHyqMp333L1AFQmCuZbr7WSTHMoBVngpsd0UCCCetm50W88DihgB5c5mNjz0oQB3hnjNWOVoKpA8Amo4Dl4wwkBupFoR4AgGnIfq7M5ScYOq0JD9jO5wPmgwmDH%2B2Qpk0%2FKyjxa32lfsYjRZtcmo0kfJERE4vyoHnihgRT1TOK0J97ngLk92MOWk5XKKxZtiu0CvNTXNlReQmu2FzIbgLlKoJ8XuLtdQ0XUZxkAfzVyzSV8N02Vtvd6s2NN8%2FSMNzaEo%2B%2F525sPG5a%2BycM08xqLAtHfX8Kj26UlZmgRTzFYlTkbJK9RjrNHUSvYWmQFj2UKbQxQ6u1Fz8ay8ojuTMR24nTekAX0aQKd5am65KRHaZvo4vivDAkfaFZdnhOKOEt7ZR9XwYBJZeKLJf7LP4vYv0BK5jBy9A2z3IAAAAASUVORK5CYII%3D)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
-[![Vulnerabilities](https://img.shields.io/sonar/https/sonarcloud.io/curlybracket.vlocode/vulnerabilities.svg?label=vulnerabilities&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAolBMVEUAAAD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgCXdjhZAAAANXRSTlMA%2Bg335ykFAwnr7hDZON7Ie1ZDMfTUmIUUSSLPoVAa4r6K8rtyXD62gG2xpsKSjnZpYx6qTp5XIo8AAAOWSURBVFjD7VbZtqIwEGSVRXYQAVFBFvf16v%2F%2F2tgJKsYEvPM4Z%2FLiwV7SXV2phPu3lyB71fnserLwN9HD%2BGBL4u2%2BRMk%2BeMJvw887CH6uIKuGvwhXvIK%2FEYtf1sq38epRu1GWtFa%2FLH%2FPNxFFvq6q9aGQ8LeYC19hH2L30VFWm4p8Z4Tb2H%2BRYbBC%2B2urWfvfy1hHGZx%2BHNwFeBox4alMDfhfv%2FbFJxNUvvlpqVEGe9aTYAxe85pmihGWTne8bEGnJ7qx5KG5pDNBCZssBcZ8M7CeOkcILuKUCTAP6bvo5GuAE5P1ESAsyR0JKqhxzLYfACG3ZwY8dMDsoWcOKXDFZ9tNYFnYQeMNkPh09fzZgD5loMKWfYxrREOeF3VjU%2FqUHMn8bp8w5Elwl4tba2nbTwWRNSRPBUWeFHMjkgqirckMXuPDFx5hUtcSGU4b%2BemV3BHeSHpoUut2uirL8XYSwNfCJEDetjQyjFrtNyJmjE3cnBJ54b3dgmhVBgytfIRTpENChPQ8aYNSHxzy4DkoTrmMseju1XcRmg64L866eL0nj1ER4rkZ7oghQuScgadNWz5ijIVBzlkiRCDoQKOB25Dagqhw8ECGP%2FXGHwOEwKPvCj4184HMpk%2Fwo72IGpWfzEEjze8WGwqL%2BwrIMbNafrUO52LGefCb9RUwtFG82ybvBnaecsd%2BrQYEfgD0d6lZ4x6gFdGj3%2FLDV2H%2B0tr4FHVZcjaUllDnvppk8etrRqrxzAJUOQNIGLEEcHTpwAVpNIfSRCyFDcwOZu6ACbgC6o25Quj0VrAjhINAuWInuGAMUtiHyqMp333L1AFQmCuZbr7WSTHMoBVngpsd0UCCCetm50W88DihgB5c5mNjz0oQB3hnjNWOVoKpA8Amo4Dl4wwkBupFoR4AgGnIfq7M5ScYOq0JD9jO5wPmgwmDH%2B2Qpk0%2FKyjxa32lfsYjRZtcmo0kfJERE4vyoHnihgRT1TOK0J97ngLk92MOWk5XKKxZtiu0CvNTXNlReQmu2FzIbgLlKoJ8XuLtdQ0XUZxkAfzVyzSV8N02Vtvd6s2NN8%2FSMNzaEo%2B%2F525sPG5a%2BycM08xqLAtHfX8Kj26UlZmgRTzFYlTkbJK9RjrNHUSvYWmQFj2UKbQxQ6u1Fz8ay8ojuTMR24nTekAX0aQKd5am65KRHaZvo4vivDAkfaFZdnhOKOEt7ZR9XwYBJZeKLJf7LP4vYv0BK5jBy9A2z3IAAAAASUVORK5CYII%3D)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
+![NPM Version](https://img.shields.io/npm/v/%40vlocode%2Fomniscript)
 
-# **@vlocode/omniscript** Vlocode OmniScript Library
+# @vlocode/omniscript &mdash; fast OmniScript &rarr; LWC compiler
 
-A fast pure-JS library for generating **any** Vlocity OmniScript definitions and LWC components from a set of OmniScript JSON files. This library is built from scratch to provide a fast and reliable way to generate OmniScript definitions and LWC components not having to rely on APEX REST APIs and DataRaptors.
+A pure-JavaScript library that generates **Vlocity / OmniStudio OmniScript definitions and Lightning Web Components** straight from the OmniScript JSON source files. No APEX REST calls, no DataRaptors, no round-trip to the org.
+
+This is what powers the `OmniScript: Generate LWC` and `OmniScript: (Re-)Activate` commands in the [Vlocode VS Code extension](https://marketplace.visualstudio.com/items?itemName=curlybracket.vlocode) and the OmniScript activation step in [`@vlocode/cli`](../cli).
+
+## Features
+
+-   **Local script definition generation** &mdash; produce the activated `OmniScript` JSON locally, no anonymous APEX needed
+-   **LWC component generation** &mdash; emit a ready-to-deploy LWC bundle (`.html`, `.js`, `.js-meta.xml`, `.css`) for any OmniScript
+-   **Bulk activation** &mdash; activate many OmniScripts in parallel, dramatically faster than the standard activation flow
+-   **Namespace-aware** &mdash; works against both Vlocity (`vlocity_cmt__`) and standard OmniStudio (`omnistudio__`) orgs
+-   **No managed-package APEX dependency** &mdash; avoids SOQL governor limit failures on large scripts
+
+## Install
+
+```shell
+npm install @vlocode/omniscript @vlocode/salesforce @vlocode/core
+```
+
+## Example: generate an LWC from an OmniScript
+
+```ts
+import { OmniScriptLwcCompiler } from '@vlocode/omniscript';
+import { container } from '@vlocode/core';
+
+const compiler = container.get(OmniScriptLwcCompiler);
+const bundle = await compiler.compile({
+    type: 'Account',
+    subType: 'Onboarding',
+    language: 'English',
+    definition,   // OmniScript definition JSON
+});
+
+for (const file of bundle.files) {
+    console.log(file.path, file.content.length);
+}
+```
+
+## Example: activate scripts in a connected org
+
+```ts
+import { OmniScriptActivator } from '@vlocode/omniscript';
+
+const activator = container.get(OmniScriptActivator);
+await activator.activate({
+    connection,                          // @vlocode/salesforce connection
+    filter: 'Account/Onboarding/*',      // type/subType/language wildcard
+    parallel: 4,
+});
+```

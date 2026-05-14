@@ -1,52 +1,65 @@
-# **Vlocode**: Vlocity/Salesforce support libraries
+<img src="https://raw.githubusercontent.com/Codeneos/vlocode/main/packages/vscode-extension/resources/logo1.png" height="140">
 
-This is the monorepo root for all _@vlocode_ packages and the Vlocode VSCode extension. For information on the **Vlocode** VSCode extension [click here](packages/vscode-extension/README.md).
+# Vlocode &mdash; Salesforce Industries / OmniStudio (Vlocity) tooling
+
+This is the monorepo for the [**Vlocode** VS Code extension](packages/vscode-extension/README.md) and a set of reusable `@vlocode/*` libraries that power it. Together they provide a fast, modern toolchain for Salesforce Industries, OmniStudio and standard Salesforce metadata development &mdash; without depending on the Vlocity Build Tools.
+
+For the VS Code extension and end-user documentation see [`packages/vscode-extension`](packages/vscode-extension/README.md).
 
 ## Packages
 
--   [**@vlocode/util**](packages/util) - re-unable utility functions and classes
--   [**@vlocode/vlocity-deploy**](packages/vlocity-deploy) - high performance Vlocity DataPack deployment library
--   [**@vlocode/core**](packages/core) - IoC core and logging framework
--   [**@vlocode/salesforce**](packages/salesforce) - Salesforce specific classes and functions
--   [**Vlocode**](packages/vscode-extension) - Vlocode VSCode extension
--   [**@vlocode/cli**](packages/cli) - Vlocode Standalone DataPack deployment CLI
+| Package | Description |
+| --- | --- |
+| [**Vlocode**](packages/vscode-extension) | The VS Code extension for Salesforce Industries / OmniStudio and Salesforce metadata development. |
+| [**@vlocode/cli**](packages/cli) | Stand-alone command-line Datapack deployment tool, ideal for CI/CD pipelines. |
+| [**@vlocode/vlocity-deploy**](packages/vlocity-deploy) | High-performance Vlocity Datapack deployment library &mdash; the engine behind the extension and the CLI. |
+| [**@vlocode/omniscript**](packages/omniscript) | Pure-JS OmniScript &rarr; LWC compiler and definition generator. |
+| [**@vlocode/salesforce**](packages/salesforce) | Salesforce connectivity (REST, SOAP, Bulk, Metadata, Tooling) and high-level services. |
+| [**@vlocode/apex**](packages/apex) | ANTLR4-based APEX & SOQL parser. |
+| [**@vlocode/vlocity**](packages/vlocity) | Shared Vlocity domain types and matching-key logic. |
+| [**@vlocode/sass**](packages/sass) | Out-of-process SASS/SCSS transpiler used to compile Vlocity UI Templates. |
+| [**@vlocode/core**](packages/core) | IoC container, logging framework and filesystem abstraction. |
+| [**@vlocode/util**](packages/util) | General-purpose utilities (iterables, caching, async, XML, decorators, ...). |
+| [**@vlocode/vscode-webviews**](packages/vscode-webviews) | Angular webviews hosted by the VS Code extension. |
 
 ## Setup development environment
 
-Vlocode uses `pnpm` as package manager and lerna release manager. To setup a developer environment for Vlocode you should always use the latest LTS version of node with corepack. VScode is the preferred IDE for developing and debugging.
+Vlocode uses `pnpm` as package manager and `lerna-lite` for releases. Use the latest LTS version of Node with corepack. VS Code is the preferred IDE.
 
--   check out this repository
--   enable corepack and activate the `pnpm` package manager
+-   Check out this repository
+-   Enable corepack and activate the pinned `pnpm` version
 
-```shell
-$ corepack enable
-$ corepack prepare $(node -p "require('./package.json').packageManager") --activate
-```
+    ```shell
+    corepack enable
+    corepack prepare $(node -p "require('./package.json').packageManager") --activate
+    ```
 
--   install all dependencies using pnpm, this will install all dependencies for packages in the monorepo
+-   Install all dependencies (this links the workspace packages):
 
-```shell
-pnpm install
-```
+    ```shell
+    pnpm install
+    ```
 
--   open the folder in VSCode and start coding; the `launch.json` and `tasks.json` that are part of this repository should allow you to run both the Vlocode CLI as well as debug the Vlocode extension without requiring any configuration
+-   Open the folder in VS Code. The committed `launch.json` and `tasks.json` let you run the CLI and debug the extension without further configuration.
 
 ## Tests
 
-Each vlocode package comes with unit tests. To run all tests simply run `pnpm test` from the root folder which will run all package tests. P
+Each package ships with Jest unit tests. From the repo root:
 
-Vlocode uses jest as test runner and is pre-configured to generate a test converge report.
+```shell
+pnpm test
+```
 
-**Note** you should run `pnpm build` if you are not running a watcher to ensure that all packages are transpiled and linked under _node_modules_.
+Run `pnpm build` first if you are not running a watcher, so all packages are transpiled and linked under `node_modules`.
 
-## Beta (Prerelease) Versions
+## Beta (prerelease) versions
 
-You can cut and publish a beta (preview) version of all packages and the VSCode extension using the new `release-beta` script. Beta builds:
+You can cut and publish a beta of all packages and the extension with the `release-beta` script. Beta builds:
 
-- use semantic version prerelease identifiers (e.g. `1.34.0-beta.0`)
-- are published to GitHub Releases marked as *Pre-release*
-- are uploaded to the VSCode Marketplace as *Preview* (using `vsce --pre-release`)
-- can be iterated (`beta.1`, `beta.2`, ...); when you later publish a stable version (e.g. `1.34.0`) the preview flag is removed automatically by Marketplace
+-   use semantic-version prerelease identifiers (e.g. `1.34.0-beta.0`)
+-   are published to GitHub Releases marked as *Pre-release*
+-   are uploaded to the VS Code Marketplace as *Preview* (`vsce --pre-release`)
+-   can be iterated (`beta.1`, `beta.2`, ...) and are removed automatically when you later publish a stable version
 
 ### Creating a beta
 
@@ -56,9 +69,9 @@ pnpm release-beta
 
 This runs `lerna version prerelease --preid beta` which:
 
-1. Determines the next prerelease version for each changed package (conventional commits)
-2. Updates `lerna.json` + individual `package.json` versions (e.g. `1.34.0-beta.0`)
-3. Commits the changes and creates a git tag `v1.34.0-beta.0`
+1.  Determines the next prerelease version for each changed package (conventional commits)
+2.  Updates `lerna.json` and each `package.json` (e.g. `1.34.0-beta.0`)
+3.  Commits the changes and creates a git tag `v1.34.0-beta.0`
 
 Push the tag to trigger the GitHub Actions `Release` workflow:
 
@@ -68,30 +81,30 @@ git push origin HEAD --follow-tags
 
 ### Publishing flow (CI)
 
-The GitHub Actions release workflow detects prerelease versions (hyphen in the version) and automatically:
+The release workflow detects prerelease versions (hyphen in the version) and automatically:
 
-- passes `--pre-release` to the extension packaging & publish steps
-- marks the GitHub Release as pre-release when the version contains a hyphen
-- publishes all `@vlocode/*` npm packages with the `beta` dist-tag (so they don't overwrite `latest`)
+-   passes `--pre-release` to the extension packaging & publish steps
+-   marks the GitHub Release as pre-release
+-   publishes all `@vlocode/*` npm packages with the `beta` dist-tag (so they do not overwrite `latest`)
 
 ### Consuming beta npm packages
 
-Install a beta version by either specifying the full version or using the `beta` tag:
+Install a beta version by tag or explicit version:
 
 ```shell
 pnpm add @vlocode/core@beta
-pnpm add @vlocode/util@1.34.0-beta.0   # explicit version example
+pnpm add @vlocode/util@1.34.0-beta.0
 ```
 
-To upgrade back to the stable channel later:
+To go back to the stable channel later:
 
 ```shell
 pnpm up @vlocode/core@latest @vlocode/util@latest
 ```
 
-### Manually publishing the extension beta (optional)
+### Manually publishing the extension beta
 
-If you need to publish locally (e.g. testing credentials):
+Only needed when testing credentials locally:
 
 ```shell
 pnpm publish-extension-beta
@@ -104,8 +117,12 @@ This builds the extension and runs `vsce publish --pre-release` in the extension
 When ready for GA:
 
 ```shell
-pnpm release-minor   # or release-patch / manual lerna version command
+pnpm release-minor   # or release-patch / a manual lerna version command
 git push origin HEAD --follow-tags
 ```
 
-GitHub Actions will package without the prerelease flag and publish a normal release.
+GitHub Actions then packages without the prerelease flag and publishes a normal release.
+
+## License
+
+[MIT](LICENSE)
