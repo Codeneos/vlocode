@@ -82,11 +82,7 @@ export class DatapackConfigAccess {
                 this.logger.verbose(`Overriding standard DataPack configuration ${record.developerName} with custom configuration`);
             }
 
-            configs.set(name, {
-                ...record,
-                name: record.developerName,
-                isStandard
-            });
+            configs.set(name, Object.assign(record, { name: record.developerName, isStandard }));
         }
         
         return configs;
