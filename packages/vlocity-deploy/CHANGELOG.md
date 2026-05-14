@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.3](https://github.com/Codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
+
+### Bug Fixes
+
+* DataPack explorer incorrectly showed multiple root nodes with partially overlapping types this has been fixed ([5338f47](https://github.com/Codeneos/vlocode/commit/5338f475c4e0e9d25f2d76873545bd17f00dcabb))
+* honor extension of the file name when expanding ([00886dc](https://github.com/Codeneos/vlocode/commit/00886dc4f28ce16426d56d503b2a9b1f99853ed2))
+
 ## [2.0.2](https://github.com/Codeneos/vlocode/compare/v2.0.1...v2.0.2) (2026-05-13)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

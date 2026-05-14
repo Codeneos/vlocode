@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.3](https://github.com/Codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
+
+### Bug Fixes
+
+* DatapackConfigAccess doesn't preserve lookup proxy ([e0258b4](https://github.com/Codeneos/vlocode/commit/e0258b47fe0b20384a5615283a63b61dffe1c173))
+* improve error logging for DataPack configuration loading failure ([d7908ea](https://github.com/Codeneos/vlocode/commit/d7908eaaf8862e44ca4f29c548492299dfd27e21))
+* improve namespace initialization logic in VlocityNamespaceService to ensure proper handling of installed packages ([53a8455](https://github.com/Codeneos/vlocode/commit/53a845524fa153c693c1303012667dd935c90688))
+* missing replaceNamespace logic for Vlocity namespace ([bf381b5](https://github.com/Codeneos/vlocode/commit/bf381b59fcb03f8642e9b00ffeeb4bd24867833d))
+
+### Features
+
+* add new Datapack Webview editor that allows editing of Datapacks through a simple SF like experience ([daf2a51](https://github.com/Codeneos/vlocode/commit/daf2a5156ac18def396c7882ab7b9b7f3a2d836b))
+
 ## [2.0.2](https://github.com/Codeneos/vlocode/compare/v2.0.1...v2.0.2) (2026-05-13)
 
 ### Bug Fixes

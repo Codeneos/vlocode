@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.3](https://github.com/Codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
+
+### Bug Fixes
+
+* enhance package namespace retrieval to handle multiple matches and exclude unmanaged packages ([a55e719](https://github.com/Codeneos/vlocode/commit/a55e719fc2177641b352eeb5478981e6456f5894))
+
 # [2.0.0](https://github.com/Codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
 
 ### Bug Fixes
