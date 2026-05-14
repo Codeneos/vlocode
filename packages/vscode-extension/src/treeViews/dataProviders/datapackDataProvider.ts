@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import * as constants from '../../constants';
 import * as path from 'path';
 import { LogManager, injectable, container } from '@vlocode/core';
-import { DatapackTypeDefinition } from '@vlocode/vlocity';
-import { groupBy, lazy, pluralize, getErrorMessage } from '@vlocode/util';
+import { DatapackTypeDefinition, NAMESPACE_PLACEHOLDER_PATTERN } from '@vlocode/vlocity';
+import { groupBy, lazy, pluralize, getErrorMessage, removeNamespacePrefix } from '@vlocode/util';
 
 import { TreeItemCollapsibleState } from 'vscode';
 import { DatapackExportMode, ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
@@ -394,7 +394,7 @@ class DatapackCategoryNode extends DatapackNode {
 
     public getId = () => `${this.nodeType}:${this.rootId}:${this.datapackType}:${this.sobjectType}`;
     public getItemLabel = () => this.datapackDefinition.typeLabel;
-    public getItemDescription = () => this.sobjectType;
+    public getItemDescription = () => this.sobjectType.replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, 'vlocity');
     public getItemTooltip = () => `View datapacks of type ${this.datapackDefinition.datapackType} (${this.sobjectType})`;
 }
 

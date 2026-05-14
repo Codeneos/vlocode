@@ -101,7 +101,7 @@ export class DatapackDefinitionRegistry {
             this.entries.push({
                 id: 'datapacks',
                 label: 'Standard Datapacks',
-                description: `available ${availableDefinitions.length}`,
+                description: `Supported ${availableDefinitions.length}`,
                 definitions: availableDefinitions
             });
         }
