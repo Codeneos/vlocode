@@ -92,9 +92,10 @@ interface ExportResult {
 @injectable.transient()
 export class DatapackExporter {
 
-    private readonly unwriteableFields = [
+    public static readonly UNWRITABLE_FIELDS = [
         'Id', 'CreatedById', 'CreatedDate', 'LastModifiedById', 'LastModifiedDate', 'SystemModstamp',
-        'IsDeleted', 'LastReferencedDate', 'LastViewedDate', 'LastActivityDate', 'OwnerId'
+        'IsDeleted', 'LastReferencedDate', 'LastViewedDate', 'LastActivityDate', 'OwnerId', 'SetupOwnerId',
+        'IsCustomerPortal', 'IsPartner'
     ];
 
     private readonly autoMatchingKeyFields = [
@@ -977,7 +978,7 @@ export class DatapackExporter {
             return true;
         }
 
-        if (this.unwriteableFields.includes(field.name)) {
+        if (DatapackExporter.UNWRITABLE_FIELDS.includes(field.name)) {
             this.logger.debug(`Ignore field ${field.name} on ${type.name} as it is unwriteable`);
             return true;
         }

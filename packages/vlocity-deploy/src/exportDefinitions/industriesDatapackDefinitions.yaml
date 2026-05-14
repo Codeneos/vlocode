@@ -9,383 +9,294 @@ definitions:
     filter:
       - Id: '{Id}'
       - ParentId: '{Id}'
+    matchingKeyFields:
+      - ParentId
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
-
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   AttributeAssignmentRule:
     name:
       - Name
-    objectType: vlocity_cmt__AttributeAssignmentRule__c
+    objectType: '%vlocity_namespace%__AttributeAssignmentRule__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__AttributeCategoryId__c: '{Id}'
+      - '%vlocity_namespace%__AttributeCategoryId__c': '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
-
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   AttributeCategory:
     name:
       - Name
-    objectType: vlocity_cmt__AttributeCategory__c
+    objectType: '%vlocity_namespace%__AttributeCategory__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__QueryBuilderId__c: '{Id}'
+      - '%vlocity_namespace%__QueryBuilderId__c': '{Id}'
+    matchingKeyFields:
+      - Code__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__Attribute__c:
-        objectType: vlocity_cmt__Attribute__c
+      '%vlocity_namespace%__Attribute__c':
+        objectType: '%vlocity_namespace%__Attribute__c'
         filter:
-          vlocity_cmt__AttributeCategoryId__c: '{vlocity_cmt__AttributeCategory__c:Id}'
-
+          '%vlocity_namespace%__AttributeCategoryId__c': '{%vlocity_namespace%__AttributeCategory__c:Id}'
   CalculationMatrix:
     name:
       - Name
-    objectType: vlocity_cmt__CalculationMatrix__c
+    objectType: '%vlocity_namespace%__CalculationMatrix__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - vlocity_cmt__IsEnabled__c
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__IsEnabled__c'
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__CalculationMatrixDimension__c:
-        objectType: vlocity_cmt__CalculationMatrixDimension__c
+      '%vlocity_namespace%__CalculationMatrixDimension__c':
+        objectType: '%vlocity_namespace%__CalculationMatrixDimension__c'
         filter:
-          vlocity_cmt__CalculationMatrixId__c: '{vlocity_cmt__CalculationMatrix__c:Id}'
-      vlocity_cmt__CalculationMatrixVersion__c:
-        objectType: vlocity_cmt__CalculationMatrixVersion__c
+          '%vlocity_namespace%__CalculationMatrixId__c': '{%vlocity_namespace%__CalculationMatrix__c:Id}'
+      '%vlocity_namespace%__CalculationMatrixVersion__c':
+        objectType: '%vlocity_namespace%__CalculationMatrixVersion__c'
         filter:
-          - vlocity_cmt__CalculationMatrixId__c: '{vlocity_cmt__CalculationMatrix__c:Id}'
-            vlocity_cmt__MatrixRecordType__c: '{Grouped}'
-          - vlocity_cmt__CalculationMatrixId__c: '{vlocity_cmt__CalculationMatrix__c:Id}'
-            vlocity_cmt__MatrixRecordType__c: '{RowVersioned}'
-      vlocity_cmt__CalculationMatrixVersion__c:vlocity_cmt__CalculationMatrixRow__c:
-        objectType: vlocity_cmt__CalculationMatrixRow__c
+          - '%vlocity_namespace%__CalculationMatrixId__c': '{%vlocity_namespace%__CalculationMatrix__c:Id}'
+            '%vlocity_namespace%__CurrentStatus__c': Active
+            '%vlocity_namespace%__MatrixRecordType__c':
+              op: <>
+              value: RowVersioned
+          - '%vlocity_namespace%__CalculationMatrixId__c': '{%vlocity_namespace%__CalculationMatrix__c:Id}'
+            '%vlocity_namespace%__CurrentStatus__c': Pending
+            '%vlocity_namespace%__MatrixRecordType__c':
+              op: <>
+              value: RowVersioned
+          - '%vlocity_namespace%__CalculationMatrixId__c': '{%vlocity_namespace%__CalculationMatrix__c:Id}'
+            '%vlocity_namespace%__MatrixRecordType__c': Grouped
+          - '%vlocity_namespace%__CalculationMatrixId__c': '{%vlocity_namespace%__CalculationMatrix__c:Id}'
+            '%vlocity_namespace%__MatrixRecordType__c': RowVersioned
+        limit: 1
+  CalculationMatrixVersion:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__CalculationMatrixVersion__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__CalculationMatrixRow__c':
+        objectType: '%vlocity_namespace%__CalculationMatrixRow__c'
         filter:
-          vlocity_cmt__CalculationMatrixVersionId__c: '{vlocity_cmt__CalculationMatrix__c:vlocity_cmt__CalculationMatrixVersion__c:Id}'
+          '%vlocity_namespace%__CalculationMatrixVersionId__c': '{Id}'
   CalculationProcedure:
     name:
       - Name
-    objectType: vlocity_cmt__CalculationProcedure__c
+    objectType: '%vlocity_namespace%__CalculationProcedure__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__IsEnabled__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - '%vlocity_namespace%__IsEnabled__c'
     embeddedObjects:
-      vlocity_cmt__CalculationProcedureVersion__c:
-        objectType: vlocity_cmt__CalculationProcedureVersion__c
+      '%vlocity_namespace%__CalculationProcedureVersion__c':
+        objectType: '%vlocity_namespace%__CalculationProcedureVersion__c'
         filter:
-          vlocity_cmt__CalculationProcedureId__c:
-            exp: 'vlocity_cmt__CalculationProcedure__c:Id'
-            literal: 'Pending'
-            lookup:
-            operator: '='
-          vlocity_cmt__CurrentStatus__c: 'Pending'
-      vlocity_cmt__CalculationProcedureVersion__c:vlocity_cmt__CalculationProcedureStep__c:
-        objectType: vlocity_cmt__CalculationProcedureStep__c
+          - '%vlocity_namespace%__CalculationProcedureId__c': '{%vlocity_namespace%__CalculationProcedure__c:Id}'
+            '%vlocity_namespace%__CurrentStatus__c': Active
+          - '%vlocity_namespace%__CalculationProcedureId__c': '{%vlocity_namespace%__CalculationProcedure__c:Id}'
+            '%vlocity_namespace%__CurrentStatus__c': Pending
+        limit: 1
+  CalculationProcedureVersion:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__CalculationProcedureVersion__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__CalculationProcedureStep__c':
+        objectType: '%vlocity_namespace%__CalculationProcedureStep__c'
         filter:
-          vlocity_cmt__CalculationProcedureVersionId__c: '{vlocity_cmt__CalculationProcedure__c:vlocity_cmt__CalculationProcedureVersion__c:Id}'
-      vlocity_cmt__CalculationProcedureVersion__c:vlocity_cmt__CalculationProcedureVariable__c:
-        objectType: vlocity_cmt__CalculationProcedureVariable__c
+          '%vlocity_namespace%__CalculationProcedureVersionId__c': '{Id}'
+      '%vlocity_namespace%__CalculationProcedureVariable__c':
+        objectType: '%vlocity_namespace%__CalculationProcedureVariable__c'
         filter:
-          vlocity_cmt__CalculationProcedureVersionId__c: '{vlocity_cmt__CalculationProcedure__c:vlocity_cmt__CalculationProcedureVersion__c:Id}'
+          '%vlocity_namespace%__CalculationProcedureVersionId__c': '{Id}'
   Catalog:
     name:
       - Name
-    objectType: vlocity_cmt__Catalog__c
+    objectType: '%vlocity_namespace%__Catalog__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__CatalogRelationship__c:
-        objectType: vlocity_cmt__CatalogRelationship__c
+      '%vlocity_namespace%__CatalogRelationship__c':
+        objectType: '%vlocity_namespace%__CatalogRelationship__c'
         filter:
-          vlocity_cmt__ParentCatalogId__c: '{vlocity_cmt__Catalog__c:Id}'
-      vlocity_cmt__CatalogProductRelationship__c:
-        objectType: vlocity_cmt__CatalogProductRelationship__c
+          '%vlocity_namespace%__ParentCatalogId__c': '{%vlocity_namespace%__Catalog__c:Id}'
+      '%vlocity_namespace%__CatalogProductRelationship__c':
+        objectType: '%vlocity_namespace%__CatalogProductRelationship__c'
         filter:
-          vlocity_cmt__CatalogId__c: '{vlocity_cmt__Catalog__c:Id}'
+          '%vlocity_namespace%__CatalogId__c': '{%vlocity_namespace%__Catalog__c:Id}'
   ChargeMeasurement:
     name:
       - Name
-    objectType: vlocity_cmt__ChargeMeasurement__c
+    objectType: '%vlocity_namespace%__ChargeMeasurement__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - '%vlocity_namespace%__GlobalKey__c'
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   ContentVersion:
     name:
-      - Name
+      - Title
     objectType: ContentVersion
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
       - ContentModifiedById
       - FirstPublishLocationId
       - ContentDocumentId
       - ContentBodyId
-    embeddedObjects: {}
   ContextAction:
     name:
       - Name
-    objectType: vlocity_cmt__ContextAction__c
+    objectType: '%vlocity_namespace%__ContextAction__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   ContextDimension:
     name:
       - Name
-    objectType: vlocity_cmt__ContextDimension__c
+    objectType: '%vlocity_namespace%__ContextDimension__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__ContextMapping__c:
-        objectType: vlocity_cmt__ContextMapping__c
+      '%vlocity_namespace%__ContextMapping__c':
+        objectType: '%vlocity_namespace%__ContextMapping__c'
         filter:
-          vlocity_cmt__Dimension__c: '{vlocity_cmt__ContextDimension__c:Id}'
-      vlocity_cmt__ContextMapping__c:vlocity_cmt__ContextMappingArgument__c:
-        objectType: vlocity_cmt__ContextMappingArgument__c
+          '%vlocity_namespace%__Dimension__c': '{%vlocity_namespace%__ContextDimension__c:Id}'
+  ContextMapping:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__ContextMapping__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__ContextMappingArgument__c':
+        objectType: '%vlocity_namespace%__ContextMappingArgument__c'
         filter:
-          vlocity_cmt__ContextMappingId__c: '{vlocity_cmt__ContextDimension__c:vlocity_cmt__ContextMapping__c:Id}'
+          '%vlocity_namespace%__ContextMappingId__c': '{Id}'
   ContextScope:
     name:
       - Name
-    objectType: vlocity_cmt__ContextScope__c
+    objectType: '%vlocity_namespace%__ContextScope__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   ContractType:
     name:
       - Name
-    objectType: vlocity_cmt__ContractType__c
+    objectType: '%vlocity_namespace%__ContractType__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__ContractTypeSetting__c:
-        objectType: vlocity_cmt__ContractTypeSetting__c
-        filter: []
+      '%vlocity_namespace%__ContractTypeSetting__c':
+        objectType: '%vlocity_namespace%__ContractTypeSetting__c'
+        filter:
+          '%vlocity_namespace%__ContractTypeId__c': '{%vlocity_namespace%__ContractType__c:Id}'
   CpqConfigurationSetup:
     name:
       - Name
-    objectType: vlocity_cmt__CpqConfigurationSetup__c
+    objectType: '%vlocity_namespace%__CpqConfigurationSetup__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   DataRaptor:
     name:
       - Name
-    objectType: vlocity_cmt__DRBundle__c
+    objectType: '%vlocity_namespace%__DRBundle__c'
     filter:
       - Id: '{Id}'
       - Name: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__FormulaConverted__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - '%vlocity_namespace%__FormulaConverted__c'
     embeddedObjects:
-      vlocity_cmt__DRMapItem__c:
-        objectType: vlocity_cmt__DRMapItem__c
+      '%vlocity_namespace%__DRMapItem__c':
+        objectType: '%vlocity_namespace%__DRMapItem__c'
         filter:
-          Name: '{vlocity_cmt__DRBundle__c:Name}'
+          Name: '{%vlocity_namespace%__DRBundle__c:Name}'
   Document:
     name:
       - Name
@@ -393,532 +304,423 @@ definitions:
     filter:
       - DeveloperName: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - DeveloperName
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
       - FolderId
       - AuthorId
-    embeddedObjects: {}
   DocumentClause:
     name:
       - Name
-    objectType: vlocity_cmt__DocumentClause__c
+    objectType: '%vlocity_namespace%__DocumentClause__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   DocumentTemplate:
     name:
       - Name
-    objectType: vlocity_cmt__DocumentTemplate__c
-    filter: []
+    objectType: '%vlocity_namespace%__DocumentTemplate__c'
+    filter:
+      - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - vlocity_cmt__IsActive__c
-      - vlocity_cmt__Status__c
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - IsActive__c
+      - Status__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__DocumentTemplateSection__c:
-        objectType: vlocity_cmt__DocumentTemplateSection__c
-        filter: []
-      vlocity_cmt__DocumentTemplateSection__c:vlocity_cmt__DocumentTemplateSectionCondition__c:
-        objectType: vlocity_cmt__DocumentTemplateSectionCondition__c
-        filter: []
-      vlocity_cmt__DocumentToken__c:
-        objectType: vlocity_cmt__DocumentToken__c
-        filter: []
+      '%vlocity_namespace%__DocumentTemplateSection__c':
+        objectType: '%vlocity_namespace%__DocumentTemplateSection__c'
+        filter:
+          '%vlocity_namespace%__DocumentTemplateId__c': '{%vlocity_namespace%__DocumentTemplate__c:Id}'
+      '%vlocity_namespace%__DocumentToken__c':
+        objectType: '%vlocity_namespace%__DocumentToken__c'
+        filter:
+          '%vlocity_namespace%__DocumentTemplateId__c': '{%vlocity_namespace%__DocumentTemplate__c:Id}'
+  DocumentTemplateSection:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__DocumentTemplateSection__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__DocumentTemplateSectionCondition__c':
+        objectType: '%vlocity_namespace%__DocumentTemplateSectionCondition__c'
+        filter:
+          '%vlocity_namespace%__DocumentTemplateSectionId__c': '{Id}'
   EntityFilter:
     name:
       - Name
-    objectType: vlocity_cmt__EntityFilter__c
+    objectType: '%vlocity_namespace%__EntityFilter__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__EntityFilterCondition__c:
-        objectType: vlocity_cmt__EntityFilterCondition__c
+      '%vlocity_namespace%__EntityFilterCondition__c':
+        objectType: '%vlocity_namespace%__EntityFilterCondition__c'
         filter:
-          vlocity_cmt__EntityFilterId__c: '{vlocity_cmt__EntityFilter__c:Id}'
-      vlocity_cmt__EntityFilterMember__c:
-        objectType: vlocity_cmt__EntityFilterMember__c
+          '%vlocity_namespace%__EntityFilterId__c': '{%vlocity_namespace%__EntityFilter__c:Id}'
+      '%vlocity_namespace%__EntityFilterMember__c':
+        objectType: '%vlocity_namespace%__EntityFilterMember__c'
         filter:
-          vlocity_cmt__EntityFilterId__c: '{vlocity_cmt__EntityFilter__c:Id}'
-      vlocity_cmt__EntityFilterCondition__c:vlocity_cmt__EntityFilterConditionArgument__c:
-        objectType: vlocity_cmt__EntityFilterConditionArgument__c
+          '%vlocity_namespace%__EntityFilterId__c': '{%vlocity_namespace%__EntityFilter__c:Id}'
+  EntityFilterCondition:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__EntityFilterCondition__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__EntityFilterConditionArgument__c':
+        objectType: '%vlocity_namespace%__EntityFilterConditionArgument__c'
         filter:
-          vlocity_cmt__FilterConditionId__c: '{vlocity_cmt__EntityFilter__c:vlocity_cmt__EntityFilterCondition__c:Id}'
+          '%vlocity_namespace%__FilterConditionId__c': '{Id}'
   GeneralSettings:
     name:
       - Name
-    objectType: vlocity_cmt__GeneralSettings__c
+    objectType: '%vlocity_namespace%__GeneralSettings__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   IntegrationProcedure:
     name:
-      - Name
-    objectType: vlocity_cmt__OmniScript__c
+      - Type__c
+      - SubType__c
+    objectType: '%vlocity_namespace%__OmniScript__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__Type__c: '{Type}'
-        vlocity_cmt__SubType__c: '{Sub Type}'
-        vlocity_cmt__Language__c: '{Language}'
-        vlocity_cmt__IsActive__c: '{true}'
-      - vlocity_cmt__ProcedureKey__c: '{Id}'
-        vlocity_cmt__IsActive__c: '{true}'
+      - '%vlocity_namespace%__Type__c': '{Type}'
+        '%vlocity_namespace%__SubType__c': '{Sub Type}'
+        '%vlocity_namespace%__Language__c': '{Language}'
+        '%vlocity_namespace%__IsActive__c': true
+      - '%vlocity_namespace%__ProcedureKey__c': '{Id}'
+        '%vlocity_namespace%__IsActive__c': true
+    matchingKeyFields:
+      - Type__c
+      - SubType__c
+      - Language__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__IsActive__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - IsActive__c
+      - Version__c
+      - LwcId__c
     embeddedObjects:
-      vlocity_cmt__Element__c:
-        objectType: vlocity_cmt__Element__c
+      '%vlocity_namespace%__Element__c':
+        objectType: '%vlocity_namespace%__Element__c'
         filter:
-          vlocity_cmt__OmniScriptId__c: '{vlocity_cmt__OmniScript__c:Id}'
-        limit: '5000'
+          '%vlocity_namespace%__OmniScriptId__c': '{%vlocity_namespace%__OmniScript__c:Id}'
+        limit: 5000
   IntegrationRetryPolicy:
     name:
       - Name
-    objectType: vlocity_cmt__IntegrationRetryPolicy__c
+    objectType: '%vlocity_namespace%__IntegrationRetryPolicy__c'
     filter:
       - Id: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
-    embeddedObjects: {}
+    matchingKeyFields:
+      - GlobalKey__c
   InterfaceImplementation:
     name:
       - Name
-    objectType: vlocity_cmt__InterfaceImplementation__c
+    objectType: '%vlocity_namespace%__InterfaceImplementation__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - ImplementationClassName__c
     embeddedObjects:
-      vlocity_cmt__InterfaceImplementationDetail__c:
-        objectType: vlocity_cmt__InterfaceImplementationDetail__c
-        filter: []
+      '%vlocity_namespace%__InterfaceImplementationDetail__c':
+        objectType: '%vlocity_namespace%__InterfaceImplementationDetail__c'
+        filter:
+          '%vlocity_namespace%__InterfaceId__c': '{%vlocity_namespace%__InterfaceImplementation__c:Id}'
   ItemImplementation:
     name:
       - Name
-    objectType: vlocity_cmt__ItemImplementation__c
+    objectType: '%vlocity_namespace%__ItemImplementation__c'
     filter:
       - Id: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
-    embeddedObjects: {}
+    matchingKeyFields:
+      - Name
   ManualQueue:
     name:
       - Name
-    objectType: vlocity_cmt__ManualQueue__c
+    objectType: '%vlocity_namespace%__ManualQueue__c'
     filter:
       - Id: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
-    embeddedObjects: {}
+    matchingKeyFields:
+      - Name
   ObjectClass:
     name:
       - Name
-    objectType: vlocity_cmt__ObjectClass__c
+    objectType: '%vlocity_namespace%__ObjectClass__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__ObjectFieldAttribute__c:
-        objectType: vlocity_cmt__ObjectFieldAttribute__c
+      '%vlocity_namespace%__ObjectFieldAttribute__c':
+        objectType: '%vlocity_namespace%__ObjectFieldAttribute__c'
         filter:
-          - vlocity_cmt__ObjectClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-            vlocity_cmt__SubClassId__c: null
-          - vlocity_cmt__SubClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-      vlocity_cmt__AttributeBinding__c:
-        objectType: vlocity_cmt__AttributeBinding__c
+          - '%vlocity_namespace%__ObjectClassId__c': '{%vlocity_namespace%__ObjectClass__c:Id}'
+            '%vlocity_namespace%__SubClassId__c': null
+          - '%vlocity_namespace%__SubClassId__c': '{%vlocity_namespace%__ObjectClass__c:Id}'
+      '%vlocity_namespace%__AttributeBinding__c':
+        objectType: '%vlocity_namespace%__AttributeBinding__c'
         filter:
-          vlocity_cmt__ObjectClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-      vlocity_cmt__AttributeAssignment__c:
-        objectType: vlocity_cmt__AttributeAssignment__c
+          '%vlocity_namespace%__ObjectClassId__c': '{%vlocity_namespace%__ObjectClass__c:Id}'
+      '%vlocity_namespace%__AttributeAssignment__c':
+        objectType: '%vlocity_namespace%__AttributeAssignment__c'
         filter:
-          vlocity_cmt__ObjectId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-          vlocity_cmt__AttributeId__c:
+          '%vlocity_namespace%__ObjectId__c': '{%vlocity_namespace%__ObjectClass__c:Id}'
+          '%vlocity_namespace%__AttributeId__c':
             op: '!='
             value: null
   ObjectContextRule:
     name:
       - Name
-    objectType: vlocity_cmt__ObjectRuleAssignment__c
+    objectType: '%vlocity_namespace%__ObjectRuleAssignment__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   ObjectLayout:
     name:
       - Name
-    objectType: vlocity_cmt__ObjectLayout__c
+    objectType: '%vlocity_namespace%__ObjectLayout__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__ObjectClassId__c: '{Id}'
+      - '%vlocity_namespace%__ObjectClassId__c': '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__ObjectFacet__c:
-        objectType: vlocity_cmt__ObjectFacet__c
+      '%vlocity_namespace%__ObjectFacet__c':
+        objectType: '%vlocity_namespace%__ObjectFacet__c'
         filter:
-          vlocity_cmt__ObjectLayoutId__c: '{vlocity_cmt__ObjectLayout__c:Id}'
-      vlocity_cmt__ObjectFacet__c:vlocity_cmt__ObjectSection__c:
-        objectType: vlocity_cmt__ObjectSection__c
+          '%vlocity_namespace%__ObjectLayoutId__c': '{%vlocity_namespace%__ObjectLayout__c:Id}'
+  ObjectFacet:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__ObjectFacet__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__ObjectSection__c':
+        objectType: '%vlocity_namespace%__ObjectSection__c'
         filter:
-          vlocity_cmt__ObjectFacetId__c: '{vlocity_cmt__ObjectLayout__c:vlocity_cmt__ObjectFacet__c:Id}'
-      vlocity_cmt__ObjectFacet__c:vlocity_cmt__ObjectSection__c:vlocity_cmt__ObjectElement__c:
-        objectType: vlocity_cmt__ObjectElement__c
+          '%vlocity_namespace%__ObjectFacetId__c': '{Id}'
+  ObjectSection:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__ObjectSection__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__ObjectElement__c':
+        objectType: '%vlocity_namespace%__ObjectElement__c'
         filter:
-          vlocity_cmt__ObjectSectionId__c: '{vlocity_cmt__ObjectLayout__c:vlocity_cmt__ObjectFacet__c:vlocity_cmt__ObjectSection__c:Id}'
+          '%vlocity_namespace%__ObjectSectionId__c': '{Id}'
   OfferMigrationPlan:
     name:
       - Name
-    objectType: vlocity_cmt__OfferMigrationPlan__c
+    objectType: '%vlocity_namespace%__OfferMigrationPlan__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Code__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__OfferMigrationComponentMapping__c:
-        objectType: vlocity_cmt__OfferMigrationComponentMapping__c
+      '%vlocity_namespace%__OfferMigrationComponentMapping__c':
+        objectType: '%vlocity_namespace%__OfferMigrationComponentMapping__c'
         filter:
-          vlocity_cmt__OfferMigrationPlanId__c: '{vlocity_cmt__OfferMigrationPlan__c:Id}'
+          '%vlocity_namespace%__OfferMigrationPlanId__c': '{%vlocity_namespace%__OfferMigrationPlan__c:Id}'
   OfferingProcedure:
     name:
       - Name
-    objectType: vlocity_cmt__OfferingProcedure__c
+    objectType: '%vlocity_namespace%__OfferingProcedure__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   OmniScript:
     name:
-      - Name
-    objectType: vlocity_cmt__OmniScript__c
+      - Type__c
+      - SubType__c
+      - Language__c
+    objectType: '%vlocity_namespace%__OmniScript__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__Type__c: '{Type}'
-        vlocity_cmt__SubType__c: '{Sub Type}'
-        vlocity_cmt__Language__c: '{Language}'
-        vlocity_cmt__IsActive__c: '{true}'
-      - vlocity_cmt__ProcedureKey__c: '{Id}'
-        vlocity_cmt__IsActive__c: '{true}'
+      - '%vlocity_namespace%__Type__c': '{Type}'
+        '%vlocity_namespace%__SubType__c': '{Sub Type}'
+        '%vlocity_namespace%__Language__c': '{Language}'
+        '%vlocity_namespace%__IsActive__c': true
+      - '%vlocity_namespace%__ProcedureKey__c': '{Id}'
+        '%vlocity_namespace%__IsActive__c': true
+    matchingKeyFields:
+      - Type__c
+      - SubType__c
+      - Language__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__IsActive__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - IsActive__c
+      - Version__c
+      - LwcId__c
     embeddedObjects:
-      vlocity_cmt__Element__c:
-        objectType: vlocity_cmt__Element__c
+      '%vlocity_namespace%__Element__c':
+        objectType: '%vlocity_namespace%__Element__c'
         filter:
-          vlocity_cmt__OmniScriptId__c: '{vlocity_cmt__OmniScript__c:Id}'
-        limit: '5000'
+          '%vlocity_namespace%__OmniScriptId__c': '{%vlocity_namespace%__OmniScript__c:Id}'
+        limit: 5000
   OrchestrationDependencyDefinition:
     name:
       - Name
-    objectType: vlocity_cmt__OrchestrationDependencyDefinition__c
+    objectType: '%vlocity_namespace%__OrchestrationDependencyDefinition__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__OrchestrationItemDefinitionId__c: '{Id}'
+      - '%vlocity_namespace%__OrchestrationItemDefinitionId__c': '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
-    embeddedObjects: {}
+      - OrchestrationPlanDefinition__c
   OrchestrationItemDefinition:
     name:
       - Name
-    objectType: vlocity_cmt__OrchestrationItemDefinition__c
+    objectType: '%vlocity_namespace%__OrchestrationItemDefinition__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__OrchestrationPlanDefinitionId__c: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
+      - '%vlocity_namespace%__OrchestrationPlanDefinitionId__c': '{Id}'
+    matchingKeyFields:
+      - Name
+      - OrchestrationPlanDefinitionId__c
     embeddedObjects:
-      vlocity_cmt__OrchestrationItemDefinition__cvlocity_cmt__OrchestrationQueueAssignmentRule__c:
-        objectType: vlocity_cmt__OrchestrationQueueAssignmentRule__c
+      '%vlocity_namespace%__OrchestrationQueueAssignmentRule__c':
+        objectType: '%vlocity_namespace%__OrchestrationQueueAssignmentRule__c'
         filter:
-          vlocity_cmt__OrchestrationItemDefinitionId__c: '{vlocity_cmt__OrchestrationItemDefinition__c:Id}'
+          '%vlocity_namespace%__OrchestrationItemDefinitionId__c': '{%vlocity_namespace%__OrchestrationItemDefinition__c:Id}'
   OrchestrationPlanDefinition:
     name:
       - Name
-    objectType: vlocity_cmt__OrchestrationPlanDefinition__c
+    objectType: '%vlocity_namespace%__OrchestrationPlanDefinition__c'
     filter:
       - Id: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
+    matchingKeyFields:
+      - Name
     embeddedObjects:
-      vlocity_cmt__OrchestrationItemDefinition__c:
-        objectType: vlocity_cmt__OrchestrationItemDefinition__c
+      '%vlocity_namespace%__OrchestrationItemDefinition__c':
+        objectType: '%vlocity_namespace%__OrchestrationItemDefinition__c'
         filter:
-          vlocity_cmt__OrchestrationPlanDefinitionId__c: '{vlocity_cmt__OrchestrationPlanDefinition__c:Id}'
-      vlocity_cmt__OrchestrationDependencyDefinition__c:
-        objectType: vlocity_cmt__OrchestrationDependencyDefinition__c
+          '%vlocity_namespace%__OrchestrationPlanDefinitionId__c': '{%vlocity_namespace%__OrchestrationPlanDefinition__c:Id}'
+      '%vlocity_namespace%__OrchestrationDependencyDefinition__c':
+        objectType: '%vlocity_namespace%__OrchestrationDependencyDefinition__c'
         filter:
-          vlocity_cmt__DependencyItemDefinitionId__r.vlocity_cmt__OrchestrationPlanDefinitionId__c: '{vlocity_cmt__OrchestrationPlanDefinition__c:Id}'
+          '%vlocity_namespace%__DependencyItemDefinitionId__r.%vlocity_namespace%__OrchestrationPlanDefinitionId__c': '{%vlocity_namespace%__OrchestrationPlanDefinition__c:Id}'
   OrchestrationQueueAssignmentRule:
     name:
       - Name
-    objectType: vlocity_cmt__OrchestrationQueueAssignmentRule__c
+    objectType: '%vlocity_namespace%__OrchestrationQueueAssignmentRule__c'
     filter:
       - Id: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
-    embeddedObjects: {}
+    matchingKeyFields:
+      - '%vlocity_namespace%__GlobalKey__c'
   PriceList:
     name:
       - Name
-    objectType: vlocity_cmt__PriceList__c
+    objectType: '%vlocity_namespace%__PriceList__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Code__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__PricingElement__c:
-        objectType: vlocity_cmt__PricingElement__c
+      '%vlocity_namespace%__PricingElement__c':
+        objectType: '%vlocity_namespace%__PricingElement__c'
         filter:
-          vlocity_cmt__PriceListId__c: '{vlocity_cmt__PriceList__c:Id}'
-      vlocity_cmt__PriceListEntry__c:
-        objectType: vlocity_cmt__PriceListEntry__c
+          '%vlocity_namespace%__PriceListId__c': '{%vlocity_namespace%__PriceList__c:Id}'
+      '%vlocity_namespace%__PriceListEntry__c':
+        objectType: '%vlocity_namespace%__PriceListEntry__c'
         filter:
-          vlocity_cmt__PriceListId__c: '{vlocity_cmt__PriceList__c:Id}'
-          vlocity_cmt__PromotionItemId__c: null
-        limit: '500'
-      vlocity_cmt__PriceListEntry__c:vlocity_cmt__OverrideDefinition__c:
-        objectType: vlocity_cmt__OverrideDefinition__c
+          '%vlocity_namespace%__PriceListId__c': '{%vlocity_namespace%__PriceList__c:Id}'
+          '%vlocity_namespace%__PromotionItemId__c': null
+        limit: 500
+      '%vlocity_namespace%__RuleAssignment__c':
+        objectType: '%vlocity_namespace%__RuleAssignment__c'
         filter:
-          vlocity_cmt__OverridingPriceListEntryId__c: '{vlocity_cmt__PriceList__c:vlocity_cmt__PriceListEntry__c:Id}'
-      vlocity_cmt__RuleAssignment__c:
-        objectType: vlocity_cmt__RuleAssignment__c
+          '%vlocity_namespace%__ObjectId__c': '{%vlocity_namespace%__PriceList__c:Id}'
+  PriceListEntry:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__PriceListEntry__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__OverrideDefinition__c':
+        objectType: '%vlocity_namespace%__OverrideDefinition__c'
         filter:
-          vlocity_cmt__ObjectId__c: '{vlocity_cmt__PriceList__c:Id}'
+          '%vlocity_namespace%__OverridingPriceListEntryId__c': '{Id}'
   Pricebook2:
     name:
       - Name
@@ -926,879 +728,637 @@ definitions:
     filter:
       - Id: '{Id}'
       - Name: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
       PricebookEntry:
         objectType: PricebookEntry
         filter:
           Pricebook2Id: '{Pricebook2:Id}'
-        limit: '500'
+        limit: 500
   PricingPlan:
     name:
       - Name
-    objectType: vlocity_cmt__PricingPlan__c
+    objectType: '%vlocity_namespace%__PricingPlan__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__PricingPlanStep__c:
-        objectType: vlocity_cmt__PricingPlanStep__c
+      '%vlocity_namespace%__PricingPlanStep__c':
+        objectType: '%vlocity_namespace%__PricingPlanStep__c'
         filter:
-          vlocity_cmt__PricingPlanId__c: '{vlocity_cmt__PricingPlan__c:Id}'
+          '%vlocity_namespace%__PricingPlanId__c': '{%vlocity_namespace%__PricingPlan__c:Id}'
   PricingVariable:
     name:
       - Name
-    objectType: vlocity_cmt__PricingVariable__c
+    objectType: '%vlocity_namespace%__PricingVariable__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Code__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__PricingVariableBinding__c:
-        objectType: vlocity_cmt__PricingVariableBinding__c
+      '%vlocity_namespace%__PricingVariableBinding__c':
+        objectType: '%vlocity_namespace%__PricingVariableBinding__c'
         filter:
-          vlocity_cmt__PricingVariableId__c: '{vlocity_cmt__PricingVariable__c:Id}'
-      vlocity_cmt__PricingElement__c:
-        objectType: vlocity_cmt__PricingElement__c
+          '%vlocity_namespace%__PricingVariableId__c': '{%vlocity_namespace%__PricingVariable__c:Id}'
+      '%vlocity_namespace%__PricingElement__c':
+        objectType: '%vlocity_namespace%__PricingElement__c'
         filter:
-          vlocity_cmt__PricingVariableId__c: '{vlocity_cmt__PricingVariable__c:Id}'
-          vlocity_cmt__PriceListId__c: null
+          '%vlocity_namespace%__PricingVariableId__c': '{%vlocity_namespace%__PricingVariable__c:Id}'
+          '%vlocity_namespace%__PriceListId__c': null
   Product2:
     name:
       - Name
     objectType: Product2
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - vlocity_cmt__CompiledAttributeOverrideId__c
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__CompiledAttributeOverrideId__c'
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - CategoryData__c.id
+      - CategoryData__c.childCategories.id
+      - ImageId__c
+      - JSONAttribute__c
+      - AttributeMetadata__c.records.id
+      - AttributeMetadata__c.records.productAttributes.records.attributeId
     embeddedObjects:
       PricebookEntry:
         objectType: PricebookEntry
         filter:
           Product2Id: '{Product2:Id}'
-      vlocity_cmt__ProductChildItem__c:
-        objectType: vlocity_cmt__ProductChildItem__c
+          Pricebook2Id: $StandardPricebookId
+      '%vlocity_namespace%__ProductChildItem__c':
+        objectType: '%vlocity_namespace%__ProductChildItem__c'
         filter:
-          vlocity_cmt__ParentProductId__c: '{Product2:Id}'
-      vlocity_cmt__OverrideDefinition__c:
-        objectType: vlocity_cmt__OverrideDefinition__c
+          '%vlocity_namespace%__ParentProductId__c': '{Product2:Id}'
+      '%vlocity_namespace%__AttributeAssignment__c':
+        objectType: '%vlocity_namespace%__AttributeAssignment__c'
         filter:
-          vlocity_cmt__ProductId__c: '{Product2:Id}'
-          vlocity_cmt__PromotionId__c: null
-          vlocity_cmt__OverridingPriceListEntryId__c: null
-      vlocity_cmt__ProductConfigurationProcedure__c:
-        objectType: vlocity_cmt__ProductConfigurationProcedure__c
+          - '%vlocity_namespace%__ObjectId__c': '{Product2:Id}'
+            '%vlocity_namespace%__AttributeId__c':
+              op: '!='
+              value: null
+          - '%vlocity_namespace%__ObjectId__c': '{Product2:%vlocity_namespace%__ProductChildItem__c:Id}'
+            '%vlocity_namespace%__AttributeId__c':
+              op: '!='
+              value: null
+      '%vlocity_namespace%__OverrideDefinition__c':
+        objectType: '%vlocity_namespace%__OverrideDefinition__c'
         filter:
-          vlocity_cmt__ProductId__c: '{Product2:Id}'
-      vlocity_cmt__ProductRelationship__c:
-        objectType: vlocity_cmt__ProductRelationship__c
+          '%vlocity_namespace%__ProductId__c': '{Product2:Id}'
+          '%vlocity_namespace%__PromotionId__c': null
+          '%vlocity_namespace%__OverridingPriceListEntryId__c': null
+      '%vlocity_namespace%__ProductConfigurationProcedure__c':
+        objectType: '%vlocity_namespace%__ProductConfigurationProcedure__c'
         filter:
-          vlocity_cmt__Product2Id__c: '{Product2:Id}'
-      vlocity_cmt__ProductEligibility__c:
-        objectType: vlocity_cmt__ProductEligibility__c
+          '%vlocity_namespace%__ProductId__c': '{Product2:Id}'
+      '%vlocity_namespace%__ProductRelationship__c':
+        objectType: '%vlocity_namespace%__ProductRelationship__c'
         filter:
-          vlocity_cmt__Product2Id__c: '{Product2:Id}'
-      vlocity_cmt__ProductAvailability__c:
-        objectType: vlocity_cmt__ProductAvailability__c
+          '%vlocity_namespace%__Product2Id__c': '{Product2:Id}'
+      '%vlocity_namespace%__ProductEligibility__c':
+        objectType: '%vlocity_namespace%__ProductEligibility__c'
         filter:
-          vlocity_cmt__Product2Id__c: '{Product2:Id}'
-      vlocity_cmt__RuleAssignment__c:
-        objectType: vlocity_cmt__RuleAssignment__c
+          '%vlocity_namespace%__Product2Id__c': '{Product2:Id}'
+      '%vlocity_namespace%__ProductAvailability__c':
+        objectType: '%vlocity_namespace%__ProductAvailability__c'
         filter:
-          vlocity_cmt__ObjectId__c: '{Product2:Id}'
-      vlocity_cmt__ProductRequirement__c:
-        objectType: vlocity_cmt__ProductRequirement__c
+          '%vlocity_namespace%__Product2Id__c': '{Product2:Id}'
+      '%vlocity_namespace%__RuleAssignment__c':
+        objectType: '%vlocity_namespace%__RuleAssignment__c'
         filter:
-          vlocity_cmt__Product2Id__c: '{Product2:Id}'
-      vlocity_cmt__ObjectFieldAttribute__c:
-        objectType: vlocity_cmt__ObjectFieldAttribute__c
+          '%vlocity_namespace%__ObjectId__c': '{Product2:Id}'
+      '%vlocity_namespace%__ProductRequirement__c':
+        objectType: '%vlocity_namespace%__ProductRequirement__c'
         filter:
-          vlocity_cmt__SubClassId__c: '{Product2:Id}'
-      vlocity_cmt__DecompositionRelationship__c:
-        objectType: vlocity_cmt__DecompositionRelationship__c
+          '%vlocity_namespace%__Product2Id__c': '{Product2:Id}'
+      '%vlocity_namespace%__ObjectFieldAttribute__c':
+        objectType: '%vlocity_namespace%__ObjectFieldAttribute__c'
         filter:
-          vlocity_cmt__SourceProductId__c: '{Product2:Id}'
-      vlocity_cmt__OrchestrationScenario__c:
-        objectType: vlocity_cmt__OrchestrationScenario__c
+          '%vlocity_namespace%__SubClassId__c': '{Product2:Id}'
+      '%vlocity_namespace%__DecompositionRelationship__c':
+        objectType: '%vlocity_namespace%__DecompositionRelationship__c'
         filter:
-          vlocity_cmt__Product2Id__c: '{Product2:Id}'
+          '%vlocity_namespace%__SourceProductId__c': '{Product2:Id}'
+      '%vlocity_namespace%__OrchestrationScenario__c':
+        objectType: '%vlocity_namespace%__OrchestrationScenario__c'
+        filter:
+          '%vlocity_namespace%__Product2Id__c': '{Product2:Id}'
   Project:
     name:
       - Name
-    objectType: vlocity_cmt__Project__c
+    objectType: '%vlocity_namespace%__Project__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - '%vlocity_namespace%__GlobalKey__c'
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__ProjectItem__c:
-        objectType: vlocity_cmt__Project__c
-        filter: []
+      '%vlocity_namespace%__ProjectItem__c':
+        objectType: '%vlocity_namespace%__Project__c'
+        filter:
+          '%vlocity_namespace%__ProjectId__c': '{%vlocity_namespace%__Project__c:Id}'
   Promotion:
     name:
       - Name
-    objectType: vlocity_cmt__Promotion__c
+    objectType: '%vlocity_namespace%__Promotion__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - vlocity_cmt__CompiledAttributeOverrideId__c
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__CompiledAttributeOverrideId__c'
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__PromotionItem__c:
-        objectType: vlocity_cmt__PromotionItem__c
+      '%vlocity_namespace%__PromotionItem__c':
+        objectType: '%vlocity_namespace%__PromotionItem__c'
         filter:
-          vlocity_cmt__PromotionId__c: '{vlocity_cmt__Promotion__c:Id}'
-      vlocity_cmt__PriceListEntry__c:
-        objectType: vlocity_cmt__PriceListEntry__c
+          '%vlocity_namespace%__PromotionId__c': '{%vlocity_namespace%__Promotion__c:Id}'
+      '%vlocity_namespace%__PriceListEntry__c':
+        objectType: '%vlocity_namespace%__PriceListEntry__c'
         filter:
-          vlocity_cmt__PromotionId__c: '{vlocity_cmt__Promotion__c:Id}'
-      vlocity_cmt__RuleAssignment__c:
-        objectType: vlocity_cmt__RuleAssignment__c
+          '%vlocity_namespace%__PromotionId__c': '{%vlocity_namespace%__Promotion__c:Id}'
+      '%vlocity_namespace%__RuleAssignment__c':
+        objectType: '%vlocity_namespace%__RuleAssignment__c'
         filter:
-          vlocity_cmt__ObjectId__c: '{vlocity_cmt__Promotion__c:Id}'
-      vlocity_cmt__OverrideDefinition__c:
-        objectType: vlocity_cmt__OverrideDefinition__c
+          '%vlocity_namespace%__ObjectId__c': '{%vlocity_namespace%__Promotion__c:Id}'
+      '%vlocity_namespace%__OverrideDefinition__c':
+        objectType: '%vlocity_namespace%__OverrideDefinition__c'
         filter:
-          vlocity_cmt__PromotionId__c: '{vlocity_cmt__Promotion__c:Id}'
-  QueryBuilder:
-    name:
-      - Name
-    objectType: vlocity_cmt__QueryBuilder__c
-    filter:
-      - Id: '{Id}'
-      - vlocity_cmt__GlobalKey__c: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects:
-      vlocity_cmt__QueryBuilderDetail__c:
-        objectType: vlocity_cmt__QueryBuilderDetail__c
-        filter:
-          vlocity_cmt__QueryBuilderId__c: '{vlocity_cmt__QueryBuilder__c:Id}'
+          '%vlocity_namespace%__PromotionId__c': '{%vlocity_namespace%__Promotion__c:Id}'
   RelationshipGraph:
     name:
       - Name
-    objectType: vlocity_cmt__RelationshipGraph__c
+    objectType: '%vlocity_namespace%__RelationshipGraph__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - '%vlocity_namespace%__GlobalKey__c'
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__RelationshipGraphTraversal__c:
-        objectType: vlocity_cmt__RelationshipGraphTraversal__c
-        filter: []
-      vlocity_cmt__RelationshipGraphNodeType__c:
-        objectType: vlocity_cmt__RelationshipGraphNodeType__c
-        filter: []
+      '%vlocity_namespace%__RelationshipGraphTraversal__c':
+        objectType: '%vlocity_namespace%__RelationshipGraphTraversal__c'
+        filter:
+          '%vlocity_namespace%__GraphId__c': '{%vlocity_namespace%__RelationshipGraph__c:Id}'
+      '%vlocity_namespace%__RelationshipGraphNodeType__c':
+        objectType: '%vlocity_namespace%__RelationshipGraphNodeType__c'
+        filter:
+          '%vlocity_namespace%__GraphId__c': '{%vlocity_namespace%__RelationshipGraph__c:Id}'
   Rule:
     name:
       - Name
-    objectType: vlocity_cmt__Rule__c
+    objectType: '%vlocity_namespace%__Rule__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__RuleVariable__c:
-        objectType: vlocity_cmt__RuleVariable__c
+      '%vlocity_namespace%__RuleVariable__c':
+        objectType: '%vlocity_namespace%__RuleVariable__c'
         filter:
-          vlocity_cmt__RuleId__c: '{vlocity_cmt__Rule__c:Id}'
-      vlocity_cmt__RuleAction__c:
-        objectType: vlocity_cmt__RuleAction__c
+          '%vlocity_namespace%__RuleId__c': '{%vlocity_namespace%__Rule__c:Id}'
+      '%vlocity_namespace%__RuleAction__c':
+        objectType: '%vlocity_namespace%__RuleAction__c'
         filter:
-          vlocity_cmt__RuleId__c: '{vlocity_cmt__Rule__c:Id}'
-      vlocity_cmt__RuleFilter__c:
-        objectType: vlocity_cmt__RuleFilter__c
+          '%vlocity_namespace%__RuleId__c': '{%vlocity_namespace%__Rule__c:Id}'
+      '%vlocity_namespace%__RuleFilter__c':
+        objectType: '%vlocity_namespace%__RuleFilter__c'
         filter:
-          vlocity_cmt__RuleId__c: '{vlocity_cmt__Rule__c:Id}'
+          '%vlocity_namespace%__RuleId__c': '{%vlocity_namespace%__Rule__c:Id}'
   StoryObjectConfiguration:
     name:
       - Name
-    objectType: vlocity_cmt__StoryObjectConfiguration__c
+    objectType: '%vlocity_namespace%__StoryObjectConfiguration__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   String:
     name:
       - Name
-    objectType: vlocity_cmt__String__c
+    objectType: '%vlocity_namespace%__String__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__StringTranslation__c:
-        objectType: vlocity_cmt__StringTranslation__c
+      '%vlocity_namespace%__StringTranslation__c':
+        objectType: '%vlocity_namespace%__StringTranslation__c'
         filter:
-          vlocity_cmt__StringId__c: '{vlocity_cmt__String__c:Id}'
+          '%vlocity_namespace%__StringId__c': '{%vlocity_namespace%__String__c:Id}'
   System:
     name:
       - Name
-    objectType: vlocity_cmt__System__c
+    objectType: '%vlocity_namespace%__System__c'
     filter:
       - Id: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
+    matchingKeyFields:
+      - Name
     embeddedObjects:
-      vlocity_cmt__SystemInterface__c:
-        objectType: vlocity_cmt__SystemInterface__c
+      '%vlocity_namespace%__SystemInterface__c':
+        objectType: '%vlocity_namespace%__SystemInterface__c'
         filter:
-          vlocity_cmt__SystemId__c: '{vlocity_cmt__System__c:Id}'
+          '%vlocity_namespace%__SystemId__c': '{%vlocity_namespace%__System__c:Id}'
   ThorOrchestrationQueue:
     name:
       - Name
-    objectType: vlocity_cmt__ThorOrchestrationQueue__c
+    objectType: '%vlocity_namespace%__ThorOrchestrationQueue__c'
     filter:
       - Id: '{Id}'
-    ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - LastModifiedById
-      - SystemModstamp
-    embeddedObjects: {}
+    matchingKeyFields:
+      - GlobalKey__c
   TimePlan:
     name:
       - Name
-    objectType: vlocity_cmt__TimePlan__c
+    objectType: '%vlocity_namespace%__TimePlan__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   TimePolicy:
     name:
       - Name
-    objectType: vlocity_cmt__TimePolicy__c
+    objectType: '%vlocity_namespace%__TimePolicy__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   UIFacet:
     name:
       - Name
-    objectType: vlocity_cmt__UIFacet__c
+    objectType: '%vlocity_namespace%__UIFacet__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   UISection:
     name:
       - Name
-    objectType: vlocity_cmt__UISection__c
+    objectType: '%vlocity_namespace%__UISection__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   VlocityAction:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityAction__c
+    objectType: '%vlocity_namespace%__VlocityAction__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
-      - vlocity_cmt__QueryBuilderId__c: '{Id}'
-      - vlocity_cmt__VlocityStateModelVersionId__c: '{Id}'
+      - '%vlocity_namespace%__QueryBuilderId__c': '{Id}'
+      - '%vlocity_namespace%__VlocityStateModelVersionId__c': '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__IsActive__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - IsActive__c
   VlocityAttachment:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityAttachment__c
+    objectType: '%vlocity_namespace%__VlocityAttachment__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__ObjectId__c: '{Id}'
+      - '%vlocity_namespace%__ObjectId__c': '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__AttachmentId__c
-      - vlocity_cmt__UrlLong__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - '%vlocity_namespace%__AttachmentId__c'
+      - '%vlocity_namespace%__UrlLong__c'
   VlocityCard:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityCard__c
+    objectType: '%vlocity_namespace%__VlocityCard__c'
     filter:
       - Name: '{Id}'
-        vlocity_cmt__Active__c: '{true}'
+        '%vlocity_namespace%__Active__c': true
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - vlocity_cmt__Active__c
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - Active__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   VlocityDataStore:
     name:
       - Name
-    objectType: vlocity_cmt__Datastore__c
+    objectType: '%vlocity_namespace%__Datastore__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields: []
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   VlocityFunction:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityFunction__c
+    objectType: '%vlocity_namespace%__VlocityFunction__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__VlocityFunctionArgument__c:
-        objectType: vlocity_cmt__VlocityFunctionArgument__c
+      '%vlocity_namespace%__VlocityFunctionArgument__c':
+        objectType: '%vlocity_namespace%__VlocityFunctionArgument__c'
         filter:
-          vlocity_cmt__VlocityFunctionId__c: '{vlocity_cmt__VlocityFunction__c:Id}'
+          '%vlocity_namespace%__VlocityFunctionId__c': '{%vlocity_namespace%__VlocityFunction__c:Id}'
   VlocityPicklist:
     name:
       - Name
-    objectType: vlocity_cmt__Picklist__c
+    objectType: '%vlocity_namespace%__Picklist__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - GlobalKey__c
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__PicklistValue__c:
-        objectType: vlocity_cmt__PicklistValue__c
+      '%vlocity_namespace%__PicklistValue__c':
+        objectType: '%vlocity_namespace%__PicklistValue__c'
         filter:
-          vlocity_cmt__PicklistId__c: '{vlocity_cmt__Picklist__c:Id}'
+          '%vlocity_namespace%__PicklistId__c': '{%vlocity_namespace%__Picklist__c:Id}'
   VlocityScheduledJob:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityScheduledJob__c
+    objectType: '%vlocity_namespace%__VlocityScheduledJob__c'
     filter:
       - Id: '{Id}'
-      - vlocity_cmt__GlobalKey__c: '{Id}'
+      - '%vlocity_namespace%__GlobalKey__c': '{Id}'
+    matchingKeyFields:
+      - '%vlocity_namespace%__GlobalKey__c'
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__AsyncApexJobId__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - '%vlocity_namespace%__AsyncApexJobId__c'
   VlocitySearchWidgetSetup:
     name:
       - Name
-    objectType: vlocity_cmt__VlocitySearchWidgetSetup__c
+    objectType: '%vlocity_namespace%__VlocitySearchWidgetSetup__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__IsActive__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - '%vlocity_namespace%__IsActive__c'
     embeddedObjects:
-      vlocity_cmt__VlocitySearchWidgetActionsSetup__c:
-        objectType: vlocity_cmt__VlocitySearchWidgetActionsSetup__c
-        filter: []
+      '%vlocity_namespace%__VlocitySearchWidgetActionsSetup__c':
+        objectType: '%vlocity_namespace%__VlocitySearchWidgetActionsSetup__c'
+        filter:
+          '%vlocity_namespace%__VlocitySearchWidgetSetupId__c': '{%vlocity_namespace%__VlocitySearchWidgetSetup__c:Id}'
   VlocityStateModel:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityStateModel__c
+    objectType: '%vlocity_namespace%__VlocityStateModel__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - ObjectAPIName__c
+      - FieldAPIName__c
+      - TypeFieldName__c
+      - TypeFieldValue__c
     ignoreFields:
-      - vlocity_cmt__IsEnabled__c
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__IsEnabled__c'
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__VlocityStateModelVersion__c:
-        objectType: vlocity_cmt__VlocityStateModelVersion__c
+      '%vlocity_namespace%__VlocityStateModelVersion__c':
+        objectType: '%vlocity_namespace%__VlocityStateModelVersion__c'
         filter:
-          vlocity_cmt__StateModelId__c: '{vlocity_cmt__VlocityStateModel__c:Id}'
-          vlocity_cmt__CurrentStatus__c: '{Pending}'
-      vlocity_cmt__VlocityState__c:
-        objectType: vlocity_cmt__VlocityState__c
+          - '%vlocity_namespace%__StateModelId__c': '{%vlocity_namespace%__VlocityStateModel__c:Id}'
+            '%vlocity_namespace%__CurrentStatus__c': Active
+          - '%vlocity_namespace%__StateModelId__c': '{%vlocity_namespace%__VlocityStateModel__c:Id}'
+            '%vlocity_namespace%__CurrentStatus__c': Pending
+        limit: 1
+      '%vlocity_namespace%__VlocityState__c':
+        objectType: '%vlocity_namespace%__VlocityState__c'
         filter:
-          vlocity_cmt__StateModelId__c: '{vlocity_cmt__VlocityStateModel__c:Id}'
-      vlocity_cmt__VlocityStateModelVersion__c:vlocity_cmt__VlocityStateTransition__c:
-        objectType: vlocity_cmt__VlocityStateTransition__c
+          '%vlocity_namespace%__StateModelId__c': '{%vlocity_namespace%__VlocityStateModel__c:Id}'
+  VlocityStateModelVersion:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__VlocityStateModelVersion__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__VlocityStateTransition__c':
+        objectType: '%vlocity_namespace%__VlocityStateTransition__c'
         filter:
-          vlocity_cmt__StateModelVersionId__c: '{vlocity_cmt__VlocityStateModel__c:vlocity_cmt__VlocityStateModelVersion__c:Id}'
-      vlocity_cmt__VlocityStateModelVersion__c:vlocity_cmt__VlocityStateTransition__c:vlocity_cmt__VlocityStateTransitionRule__c:
-        objectType: vlocity_cmt__VlocityStateTransitionRule__c
+          '%vlocity_namespace%__StateModelVersionId__c': '{Id}'
+  VlocityStateTransition:
+    name:
+      - Name
+    objectType: '%vlocity_namespace%__VlocityStateTransition__c'
+    filter:
+      - Id: '{Id}'
+    embeddedObjects:
+      '%vlocity_namespace%__VlocityStateTransitionRule__c':
+        objectType: '%vlocity_namespace%__VlocityStateTransitionRule__c'
         filter:
-          vlocity_cmt__StateTransitionId__c: '{vlocity_cmt__VlocityStateModel__c:vlocity_cmt__VlocityStateModelVersion__c:vlocity_cmt__VlocityStateTransition__c:Id}'
+          '%vlocity_namespace%__StateTransitionId__c': '{Id}'
   VlocityTrackingGroup:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityTrackingGroup__c
+    objectType: '%vlocity_namespace%__VlocityTrackingGroup__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - '%vlocity_namespace%__GlobalKey__c'
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
   VlocityUILayout:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityUILayout__c
+    objectType: '%vlocity_namespace%__VlocityUILayout__c'
     filter:
       - Name: '{Id}'
-        vlocity_cmt__Active__c: '{true}'
+        '%vlocity_namespace%__Active__c': true
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__Active__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - Active__c
   VlocityUITemplate:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityUITemplate__c
+    objectType: '%vlocity_namespace%__VlocityUITemplate__c'
     filter:
       - Name: '{Id}'
-        vlocity_cmt__Active__c: '{true}'
+        '%vlocity_namespace%__Active__c': true
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__Active__c
-    embeddedObjects: {}
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - Active__c
   VlocityWebTrackingConfiguration:
     name:
       - Name
-    objectType: vlocity_cmt__VlocityWebTrackingConfiguration__c
+    objectType: '%vlocity_namespace%__VlocityWebTrackingConfiguration__c'
     filter:
       - Id: '{Id}'
+    matchingKeyFields:
+      - '%vlocity_namespace%__GlobalKey__c'
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
     embeddedObjects:
-      vlocity_cmt__VlocityWebTrackingEventType__c:
-        objectType: vlocity_cmt__VlocityWebTrackingEventType__c
-        filter: []
+      '%vlocity_namespace%__VlocityWebTrackingEventType__c':
+        objectType: '%vlocity_namespace%__VlocityWebTrackingEventType__c'
+        filter:
+          '%vlocity_namespace%__VlocityWebTrackingConfigurationId__c': '{%vlocity_namespace%__VlocityWebTrackingConfiguration__c:Id}'
   VqMachine:
     name:
       - Name
-    objectType: vlocity_cmt__VqMachine__c
+    objectType: '%vlocity_namespace%__VqMachine__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - Config__c.Id
     embeddedObjects:
-      vlocity_cmt__VqMachineResource__c:
-        objectType: vlocity_cmt__VqMachineResource__c
+      '%vlocity_namespace%__VqMachineResource__c':
+        objectType: '%vlocity_namespace%__VqMachineResource__c'
         filter:
-          vlocity_cmt__VqMachineId__c: '{vlocity_cmt__VqMachine__c:Id}'
-          vlocity_cmt__VqResourceId__c:
+          '%vlocity_namespace%__VqMachineId__c': '{%vlocity_namespace%__VqMachine__c:Id}'
+          '%vlocity_namespace%__VqResourceId__c':
             op: '!='
             value: null
   VqResource:
     name:
       - Name
-    objectType: vlocity_cmt__VqResource__c
+    objectType: '%vlocity_namespace%__VqResource__c'
     filter:
       - Name: '{Id}'
       - Id: '{Id}'
+    matchingKeyFields:
+      - Name
     ignoreFields:
-      - OwnerId
-      - IsDeleted
-      - CreatedDate
-      - CreatedById
-      - LastModifiedDate
-      - SystemModstamp
-      - IsCustomerPortal
-      - IsPartner
-      - LastModifiedById
-      - SetupOwnerId
-      - vlocity_cmt__DRBundleName__c
-      - vlocity_cmt__DRProgressData__c
-      - vlocity_cmt__DRError__c
-      - vlocity_cmt__DRStatus__c
-      - vlocity_cmt__ActivityData__c
+      - '%vlocity_namespace%__DRBundleName__c'
+      - '%vlocity_namespace%__DRProgressData__c'
+      - '%vlocity_namespace%__DRError__c'
+      - '%vlocity_namespace%__DRStatus__c'
+      - '%vlocity_namespace%__ActivityData__c'
     embeddedObjects:
       Attachment:
         objectType: Attachment
         filter:
-          ParentId: '{vlocity_cmt__VqResource__c:Id}'
-      vlocity_cmt__AttributeAssignment__c:
-        objectType: vlocity_cmt__AttributeAssignment__c
+          ParentId: '{%vlocity_namespace%__VqResource__c:Id}'
+      '%vlocity_namespace%__AttributeAssignment__c':
+        objectType: '%vlocity_namespace%__AttributeAssignment__c'
         filter:
-          vlocity_cmt__ObjectId__c: '{vlocity_cmt__VqResource__c:Id}'
+          '%vlocity_namespace%__ObjectId__c': '{%vlocity_namespace%__VqResource__c:Id}'

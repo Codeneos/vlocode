@@ -13,8 +13,23 @@ export interface DatapackExportDefinitionFile {
     };
 }
 
-export const datapackDefinitions = {
+export interface TypedDatapackExportDefinition extends DatapackExportDefinition {
+    /**
+     * The type of datapack to export, this is used to determine the export definition to use and is also used as the folder name of the exported datapack.
+     */
+    datapackType: string;
+}
+
+/**
+ * Export definitions for Vlocity DataPacks, including predefined definitions for OmniStudio and Industries DataPacks.
+ */
+export const DatapackExportDefinitions = {
     industries: industriesDefinitions as unknown as DatapackExportDefinitionFile,
     omniStudioManaged: omniStudioManagedDefinitions as unknown as DatapackExportDefinitionFile,
-    omniStudioStandard: omniStudioStandardDefinitions as unknown as DatapackExportDefinitionFile
+    omniStudioStandard: omniStudioStandardDefinitions as unknown as DatapackExportDefinitionFile,
+    all: [
+        ...Object.entries(omniStudioManagedDefinitions.definitions).map(([key, definition]) => Object.assign (definition, { datapackType: key })),
+        ...Object.entries(omniStudioStandardDefinitions.definitions).map(([key, definition]) => Object.assign (definition, { datapackType: key })),
+        ...Object.entries(industriesDefinitions.definitions).map(([key, definition]) => Object.assign (definition, { datapackType: key })),
+    ] as TypedDatapackExportDefinition[]
 } as const;

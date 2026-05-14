@@ -9,7 +9,7 @@ import { QueryConditionBuilder, QueryParser, type SalesforceQueryData } from '@v
 import { DatapackInfoService, DatapackTypeDefinition, DatapackTypeDefinitions } from '@vlocode/vlocity';
 import {
     DatapackExportDefinitionStore,
-    datapackDefinitions,
+    DatapackExportDefinitions,
     type DatapackExportDefinition,
     type DatapackExportDefinitionFile,
     type LookupFilter
@@ -77,57 +77,61 @@ export class DatapackDefinitionRegistry {
             return;
         }
 
-        if (this.vlocode.isOmniStudioAvailable) {
-            await this.loadOmniStudioDefinitions();
-            await this.loadOmniStudioStandardDefinitions();
-        }
-
-        if (this.vlocode.isVlocityAvailable) {
-            await this.loadIndustriesDefinitions();
-        }
-
+        await this.loadDatapackDefinitions();
         await this.loadCustomDefinitions();
     }
 
-    private loadOmniStudioDefinitions() {
-        return this.loadDirectExportDefinitions(datapackDefinitions.omniStudioManaged);
-    }
-
-    private loadOmniStudioStandardDefinitions() {
-        return this.loadDirectExportDefinitions(datapackDefinitions.omniStudioStandard);
-    }
-
-    private async loadIndustriesDefinitions() {
+    private async loadDatapackDefinitions() {
         const definitions = (await this.datapackInfo.getDatapackDefinitions())
-            .map(definition => ({
-                ...definition,
-                exportMode: 'tools' as const
-            }));
+            .map(definition => {
+                const exportDefinition = this.getDirectExportDefinition(definition);
+                const exportMode = this.vlocode.isVlocityAvailable ? 'tools' as const : exportDefinition ? 'direct' as const : undefined;
+                return { ...definition, exportMode, exportDefinition, scope: 'std' as const };
+            })
+            .filter(definition => !!definition.exportMode);
+        const availableDefinitions = await this.filterAvailableDefinitions(definitions);
 
-        if (definitions.length) {
+        for (const definition of availableDefinitions) {
+            if (definition.exportDefinition) {
+                this.definitions.add(definition.exportDefinition, definition);
+            }
+        }
+
+        if (availableDefinitions.length) {
             this.entries.push({
-                id: 'industries',
-                label: 'Industries Datapacks',
-                description: 'Vlocity',
-                definitions
+                id: 'datapacks',
+                label: 'Standard Datapacks',
+                description: `available ${availableDefinitions.length}`,
+                definitions: availableDefinitions
             });
         }
     }
 
-    private async loadDirectExportDefinitions(file: DatapackExportDefinitionFile) {
-        const typeDefinitions = this.getDatapackTypeDefinitions(file.definitions);
-        const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
-        if (!availableDefinitions.length) {
-            return;
+    private getDirectExportDefinition(definition: DatapackTypeDefinition) {
+        const matchingDefinitions = DatapackExportDefinitions.all.filter(exportDefinition =>
+            definition.datapackType === exportDefinition.datapackType && 
+            definition.source.sobjectType === exportDefinition.objectType
+        );
+        if (matchingDefinitions.length > 1) {
+            this.logger.debug(`Multiple export definitions found for datapack type ${definition.datapackType} and sobject ${definition.source.sobjectType}, using the first match`);
         }
-        this.definitions.load(file.definitions, { scope: file.id });
-        this.entries.push({
-            id: file.id,
-            label: file.label,
-            description: file.description,
-            definitions: availableDefinitions.map(definition => ({ ...definition, scope: file.id }))
-        });
+        return matchingDefinitions[0];
     }
+
+    // private async loadDirectExportDefinitions(file: DatapackExportDefinitionFile) {
+    //     const typeDefinitions = this.getDatapackTypeDefinitions(file.definitions);
+    //     const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
+    //     if (!availableDefinitions.length) {
+    //         return;
+    //     }
+    //     this.definitions.load(file.definitions, { scope: file.id });
+    //     this.entries.push({
+    //         id: file.id,
+    //         label: file.label,
+    //         description: file.description,
+    //         definitions: availableDefinitions.map(definition => ({ ...definition, scope: file.id }))
+    //     });
+    // }
 
     private getDatapackTypeDefinitions(definitions: Record<string, DatapackExportDefinition>): DatapackTypeDefinition[] {
         return Object.entries(definitions)
@@ -393,7 +397,7 @@ export class DatapackDefinitionRegistry {
         return value.split(':').pop()?.trim() ?? value.trim();
     }
 
-    private filterAvailableDefinitions(definitions: DatapackTypeDefinition[]): Promise<DatapackTypeDefinition[]> {
+    private filterAvailableDefinitions<T extends DatapackTypeDefinition>(definitions: T[]): Promise<T[]> {
         return filterAsyncParallel(definitions, (definition) => {
             return this.vlocode.salesforceService.schema.isSObjectAccessible(definition.source.sobjectType);
         });

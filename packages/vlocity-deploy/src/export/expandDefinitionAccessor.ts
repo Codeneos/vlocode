@@ -1,6 +1,5 @@
 import { cache, clearCache, deepClone, removeNamespacePrefix, visitObject } from '@vlocode/util';
 import type { DatapacksExpandDefinition, SObjectDefinition, SObjectFieldDefinition } from './datapacksExpandDefinition';
-import { NAMESPACE_PLACEHOLDER_PATTERN } from '../constants';
 
 export class DatapacksExpandDefinitionAccessor {
 
