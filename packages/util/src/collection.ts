@@ -450,9 +450,13 @@ export function last<T>(array: ReadonlyArray<T>): T | undefined {
  * @param source source array
  * @param target Target array
  */
-export function intersect<T>(source: ReadonlyArray<T>, target: ReadonlyArray<T>): Array<T> {
+export function intersect<T>(source: Iterable<T>, target: ReadonlyArray<T>): Array<T> {
     const intersected = new Array<T>();
-    source.forEach(element => target.indexOf(element) != -1 && intersected.push(element));
+    for (const element of source) {
+        if (target.indexOf(element) != -1) {
+            intersected.push(element);
+        }
+    }
     return intersected;
 }
 
@@ -461,9 +465,13 @@ export function intersect<T>(source: ReadonlyArray<T>, target: ReadonlyArray<T>)
  * @param target Target array
  * @param source source array
  */
-export function except<T>(source: ReadonlyArray<T>, target: ReadonlyArray<T>): Array<T> {
+export function except<T>(source: Iterable<T>, target: ReadonlyArray<T>): Array<T> {
     const excepted = new Array<T>();
-    source.forEach(element => target.indexOf(element) == -1 && excepted.push(element));
+    for (const element of source) {
+        if (target.indexOf(element) == -1) {
+            excepted.push(element);
+        }
+    }
     return excepted;
 }
 
