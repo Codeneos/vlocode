@@ -53,23 +53,23 @@ export class VlocityNamespaceService extends NamespaceService {
      */
     public async initialize(connectionProvider: SalesforceConnectionProvider): Promise<this> {
         const connection = await connectionProvider.getJsForceConnection();
-        const cachedVersion = this.vlocityNamespaceCache.get(connection.instanceUrl);
         this.vlocityNamespace = await mapGetOrCreate(this.vlocityNamespaceCache, connection.instanceUrl, () => this.getConnectionNamespace(connection));
+        this.isInitialized = true;
         return this;
     }
 
     private async getConnectionNamespace(connection: SalesforceConnection) {
         // Init namespace by query a Vlocity class similar as to what is done in the build tools
         const timer = new Timer();
-        const results = await connection.query2<{ SubscriberPackage: { NamespacePrefix: string, Name: string } }>(
+        const installedPackages = await connection.query2<{ SubscriberPackage: { NamespacePrefix: string, Name: string } }>(
             'SELECT SubscriberPackage.NamespacePrefix, SubscriberPackage.Name FROM InstalledSubscriberPackage', 
             { type: 'tooling', queryMore: false }
         );
                 
-        const packages = results.map(record => record.SubscriberPackage);
+        const packages = installedPackages.map(record => record.SubscriberPackage);
         const vlocityNamespace = packages.find(pkg => pkg.NamespacePrefix && /vlocity/ig.test(pkg.Name))?.NamespacePrefix ?? null;
         const omnistudioNamespace = packages.find(pkg => pkg.NamespacePrefix && /omnistudio/ig.test(pkg.Name))?.NamespacePrefix ?? null;
-        const namespace = vlocityNamespace ?? omnistudioNamespace ?? null;
+        const namespace = vlocityNamespace ?? omnistudioNamespace ?? await this.getApexClassNamespace(connection);
 
         if (!namespace) {
             // This usually happens when there is no Vlocity package installed
@@ -78,8 +78,15 @@ export class VlocityNamespaceService extends NamespaceService {
             this.logger.info(`Initialized Omnistudio namespace to ${chalk.bold(namespace)} [${timer.stop()}]`);
         }
 
-        this.isInitialized = true;
         return namespace;
+    }
+
+    private async getApexClassNamespace(connection: SalesforceConnection) {
+        const results = await connection.query2<{ NamespacePrefix?: string | null }>(
+            "SELECT NamespacePrefix FROM ApexClass WHERE Name = 'DRDataPackService' LIMIT 1",
+            { queryMore: false }
+        );
+        return results.find(record => record.NamespacePrefix)?.NamespacePrefix ?? null;
     }
 
     private checkInitialized() {
