@@ -29,7 +29,11 @@ export class VlocityNamespaceService extends NamespaceService {
      */
     public replaceNamespace(name: string) {
         this.checkInitialized();
-        return name;
+        if (!this.vlocityNamespace) {
+            return name;
+        }
+        const namespacePattern = new RegExp(`${this.escapeRegExp(this.vlocityNamespace)}__`, 'g');
+        return name.replace(namespacePattern, `${constants.NAMESPACE_PLACEHOLDER}__`);
     }
 
     /**
@@ -82,5 +86,9 @@ export class VlocityNamespaceService extends NamespaceService {
         if (!this.isInitialized) {
             this.logger.warn('VlocityNamespaceService is not initialized yet, using default namespace placeholder');
         }
+    }
+
+    private escapeRegExp(value: string) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 }

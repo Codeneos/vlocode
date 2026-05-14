@@ -34,6 +34,7 @@ export class DatapackMatchingKeyService {
     public async initialize() {
         // Init matching keys
         await this.matchingKeys;
+        return this;
     }
 
     /**
