@@ -124,20 +124,32 @@ export class SalesforceService implements SalesforceConnectionProvider {
 
     @cache()
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
-        const installedPackage = await this.getInstalledPackageDetails(packageName);
-        if (!installedPackage) {
+        const installedPackages = await this.getInstalledPackages();
+        const matchingPackages = installedPackages.filter(packageInfo => 
+            packageInfo.namespace?.length && 
+            (typeof packageName === 'string' 
+                ? packageName === packageInfo.name 
+                : packageName.test(packageInfo.name))
+        );
+        if (matchingPackages.length > 1) {
+            this.logger.warn(`Multiple packages found matching ${typeof packageName === 'string' ? packageName : packageName.toString()}: ${matchingPackages.map(p => p.name).join(', ')}; using the first one found (${matchingPackages[0].name})`);
+        } else if (matchingPackages.length === 0) {
             throw new Error(`Package with name ${packageName} is not installed on your Salesforce organization`);
         }
-        return installedPackage.namespace ?? '';
+        return matchingPackages[0].namespace!;
     }
 
     @cache()
-    public async getInstalledPackageDetails(packageName: string | RegExp) {
+    public async getInstalledPackageDetails(packageName: string | RegExp, options?: { excludeUnmanaged?: boolean }) {
         const results = await this.getInstalledPackages();
-        return results.find(packageInfo => typeof packageName === 'string' 
-            ? packageName === packageInfo.name 
-            : packageName.test(packageInfo.name)
-        );
+        return results.find(packageInfo => {
+            if (options?.excludeUnmanaged && !packageInfo.namespace?.length) {
+                return false;
+            }
+            return typeof packageName === 'string' 
+                ? packageName === packageInfo.name 
+                : packageName.test(packageInfo.name);
+        });
     }
 
     @cache()
