@@ -1,20 +1,24 @@
 import type { SalesforceService } from "@vlocode/salesforce";
-import type { DatapackInfoService } from "@vlocode/vlocity";
+import { VlocityNamespaceService, type DatapackInfoService, type DatapackMatchingKeyService } from "@vlocode/vlocity";
 import { MigrationDataMapperFields, type MigrationDataMapperItemRecord } from "./migrationDataMapper.types";
-import { groupBy, removeNamespacePrefix, sortBy, stringEqualsIgnoreCase, substringAfter } from "@vlocode/util";
-import type { DatapackExportDefinition, ExportFieldDefinition, LookupFilter, ObjectFilter } from "../exportDefinitions";
+import { except, groupBy, intersect, iterateObject, removeNamespacePrefix, sortBy, stringEqualsIgnoreCase, substringAfter } from "@vlocode/util";
+import type { DatapackExportDefinition, ExportFieldDefinition, LookupFilerPrimitive, LookupFilter, ObjectFilter } from "../exportDefinitions";
 import { LogManager } from "@vlocode/core";
 import type { DatapacksExpandDefinitionAccessor } from "../expandDefinitionAccessor";
+import { DatapackExporter } from "../datapackExporter";
 
 export class MigrationDataMapperConverter {
 
     private migrationRecordObject = '%vlocity_namespace%__DRMapItem__c';
     private migrationRecordFields = [ ...MigrationDataMapperFields ];
+    //private matchingKeyRecordObject = '%vlocity_namespace%__DRMatchingKey__mdt';
+    //private matchingKeyRecordFields = [ 'QualifiedApiName', 'NamespacePrefix', '%vlocity_namespace%__MatchingKeyObject__c', '%vlocity_namespace%__MatchingKeyFields__c' ];
     private logger = LogManager.get('MigrationDataMapperConverter');
 
     constructor(
         private readonly salesforce: SalesforceService,
         private readonly datapackInfo: DatapackInfoService,
+        private readonly matchingKeys: DatapackMatchingKeyService,
         private readonly expandDefinitions?: DatapacksExpandDefinitionAccessor
     ) {
     }
@@ -59,6 +63,9 @@ export class MigrationDataMapperConverter {
         );
 
         const embeddedObjectGroups = Object.values(recordsByLookupOrder).map(group => this.convertLookupGroup(group));
+        if (!embeddedObjectGroups.length) {
+            throw new Error(`No valid lookup groups found in migration dataraptor ${exportDataraptor}`);
+        }
         //const embeddedObjectsByOutputNode = mapBy(embeddedObjects.slice(1), group => group.outputNode);
         const primaryObject = embeddedObjectGroups[0];
         const primaryObjectType = primaryObject.objectType!;
@@ -67,6 +74,7 @@ export class MigrationDataMapperConverter {
         // Access expand definition for this datapack type and primary object type to get additional details for the export definition such as file names and source key fields
         const sourceKeyDefinition = this.expandDefinitions?.getValue(datapackName, primaryObjectType, 'SourceKeyDefinition');
         const sourceKeyFields = await this.resolveFields(primaryObjectType, (sourceKeyDefinition ?? []).filter(f => !f.startsWith('_')));
+        const matchingKeysFields = (await this.matchingKeys.getMatchingKeyDefinition(primaryObjectType)).fields;
         const folderName = this.expandDefinitions?.getValue(datapackName, primaryObjectType, 'FolderName');
         const fileName = this.expandDefinitions?.getValue(datapackName, primaryObjectType, 'FileName');
 
@@ -113,20 +121,40 @@ export class MigrationDataMapperConverter {
                 fields[outputNode] = { ...fields[outputNode], sortFields };
             }
 
-            embeddedObjects[outputNode] = embeddedObjectFilter;
+            const existing = embeddedObjects[outputNode];
+            if (existing && typeof existing !== 'string') {
+                const existingFilter = Array.isArray(existing.filter)
+                    ? existing.filter
+                    : existing.filter ? [existing.filter] : [];
+
+                const nextFilter = Array.isArray(embeddedObjectFilter.filter)
+                    ? embeddedObjectFilter.filter
+                    : embeddedObjectFilter.filter ? [embeddedObjectFilter.filter] : [];
+
+                embeddedObjects[outputNode] = {
+                    ...existing,
+                    filter: [...existingFilter, ...nextFilter] as LookupFilter,
+                    limit: existing.limit ?? embeddedObjectFilter.limit
+                };
+            } else {
+                embeddedObjects[outputNode] = embeddedObjectFilter;
+            }
         }
 
+        const nameField = await this.salesforce.schema.getNameField(primaryObjectType);
+        const ignoreFields = except(ignoredFields.values(), DatapackExporter.UNWRITABLE_FIELDS);
+
         const exportDef: DatapackExportDefinition = {
-            name: fileName ?? folderName ?? sourceKeyFields ?? [ 'Name' ],
+            name: fileName ?? folderName ?? (sourceKeyFields.length ? sourceKeyFields : nameField ? [ nameField ] : matchingKeysFields),
             objectType: primaryObjectType,
             filter: primaryObject.filters,
-            matchingKeyFields: await sourceKeyFields,
-            ignoreFields: [...ignoredFields.values()],
-            embeddedObjects,
-            fields,
+            matchingKeyFields: sourceKeyFields.length ? sourceKeyFields : matchingKeysFields,
+            ignoreFields: ignoreFields.length ? ignoreFields : undefined,
+            embeddedObjects: Object.keys(embeddedObjects).length ? embeddedObjects : undefined,
+            fields: fields.length ? fields : undefined,
         };
 
-        return exportDef;
+        return this.normalizeNamespacePlaceholders(exportDef);
     }
 
     private async resolveFields(sobjectType: string, fieldList: string[], options?: { ignoreMissingFields?: boolean }) {
@@ -153,7 +181,7 @@ export class MigrationDataMapperConverter {
             throw new Error(`No interface Object Name found for lookup group with output node ${outputNode}`);
         }
 
-        const lookupGroups = groupBy(records.filter(f => !!f.filterGroup), record => record.filterGroup);
+        const lookupGroups = groupBy(records, record => record.filterGroup ?? 1);
         const filters: Array<unknown>  = [];
 
         for (const group of Object.values(lookupGroups)) {
@@ -186,9 +214,9 @@ export class MigrationDataMapperConverter {
         };
     }
 
-    private normalizeFilterValue(value: string | undefined) {
-        // Single quote values are constants, otherers are JSON path references
-        // Strip quotes from literals and return references wrapped withi {} to match the format used in export definitions
+    private normalizeFilterValue(value: string | undefined): LookupFilerPrimitive | undefined {
+        // Single-quoted values are constants; known input fields and nested paths are references.
+        // Strip quotes from literals and return references wrapped with {} to match the export definition format.
         if (!value) {
             return value;
         }
@@ -198,17 +226,27 @@ export class MigrationDataMapperConverter {
             value = value.slice(1, -1);
         }
 
-        if (stringEqualsIgnoreCase(value, '$Vlocity.NULL')) {
+        value = this.normalizeNamespace(value);
+
+        if (stringEqualsIgnoreCase(value, '$Vlocity.NULL') || stringEqualsIgnoreCase(value, 'null')) {
             return null;
-        } else if (stringEqualsIgnoreCase(value, '$Vlocity.false')) {
+        } else if (stringEqualsIgnoreCase(value, '$Vlocity.false') || stringEqualsIgnoreCase(value, 'false')) {
             return false;
-        } else if (stringEqualsIgnoreCase(value, '$Vlocity.true')) {
+        } else if (stringEqualsIgnoreCase(value, '$Vlocity.true') || stringEqualsIgnoreCase(value, 'true')) {
             return true;
         } else if (stringEqualsIgnoreCase(value, '$Vlocity.StandardPricebookId')) {
             return '$StandardPricebookId'
-        } 
+        }
+
+        if (/^-?\d+(\.\d+)?$/.test(value)) {
+            return Number(value);
+        }
+
+        if (isLiteral) {
+            return value;
+        }
         
-        return isLiteral ? value : `{${value}}`;
+        return `{${value}}`;
     }
 
     private async getDRMigrationRecords(name: string): Promise<MigrationDataMapperItemRecord[]> {
@@ -217,5 +255,39 @@ export class MigrationDataMapperConverter {
             { name }, 
             this.migrationRecordFields as any
         );
+    }
+
+    private async getDRMatchingKeys(name: string): Promise<MigrationDataMapperItemRecord[]> {
+        return this.salesforce.data.lookup<MigrationDataMapperItemRecord>(
+            this.migrationRecordObject, 
+            { name }, 
+            this.migrationRecordFields as any
+        );
+    }
+
+    private normalizeNamespacePlaceholders<T>(value: T): T {
+        if (typeof value === 'string') {
+            return this.normalizeNamespace(value) as T;
+        } 
+        
+        if (typeof value === 'object' && value !== null) {
+            iterateObject(value, (prop, val, target) => {
+                const normalizedProp = this.normalizeNamespace(prop);
+                const normalizedVal = typeof val === 'string' 
+                    ? this.normalizeNamespacePlaceholders(val) 
+                    : this.normalizeNamespacePlaceholders(val);
+                if (prop !== normalizedProp) {
+                    delete target[prop];
+                    prop = normalizedProp;
+                }
+                target[prop] = normalizedVal;
+            });
+        }
+
+        return value;
+    }
+
+    private normalizeNamespace(value: string) {
+        return this.salesforce.replaceNamespace(value);
     }
 }
