@@ -1,157 +1,232 @@
 [![CI](https://github.com/Codeneos/vlocode/actions/workflows/ci.yml/badge.svg)](https://github.com/Codeneos/vlocode/actions/workflows/ci.yml)
-[![GitHub top language](https://img.shields.io/github/languages/top/codeneos/vlocode.svg?logo=github)](https://github.com/Codeneos/vlocode)
-[![Bugs](https://img.shields.io/sonar/https/sonarcloud.io/curlybracket.vlocode/bugs.svg?color=lightgray&label=bugs&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAolBMVEUAAAD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgCXdjhZAAAANXRSTlMA%2Bg335ykFAwnr7hDZON7Ie1ZDMfTUmIUUSSLPoVAa4r6K8rtyXD62gG2xpsKSjnZpYx6qTp5XIo8AAAOWSURBVFjD7VbZtqIwEGSVRXYQAVFBFvf16v%2F%2F2tgJKsYEvPM4Z%2FLiwV7SXV2phPu3lyB71fnserLwN9HD%2BGBL4u2%2BRMk%2BeMJvw887CH6uIKuGvwhXvIK%2FEYtf1sq38epRu1GWtFa%2FLH%2FPNxFFvq6q9aGQ8LeYC19hH2L30VFWm4p8Z4Tb2H%2BRYbBC%2B2urWfvfy1hHGZx%2BHNwFeBox4alMDfhfv%2FbFJxNUvvlpqVEGe9aTYAxe85pmihGWTne8bEGnJ7qx5KG5pDNBCZssBcZ8M7CeOkcILuKUCTAP6bvo5GuAE5P1ESAsyR0JKqhxzLYfACG3ZwY8dMDsoWcOKXDFZ9tNYFnYQeMNkPh09fzZgD5loMKWfYxrREOeF3VjU%2FqUHMn8bp8w5Elwl4tba2nbTwWRNSRPBUWeFHMjkgqirckMXuPDFx5hUtcSGU4b%2BemV3BHeSHpoUut2uirL8XYSwNfCJEDetjQyjFrtNyJmjE3cnBJ54b3dgmhVBgytfIRTpENChPQ8aYNSHxzy4DkoTrmMseju1XcRmg64L866eL0nj1ER4rkZ7oghQuScgadNWz5ijIVBzlkiRCDoQKOB25Dagqhw8ECGP%2FXGHwOEwKPvCj4184HMpk%2Fwo72IGpWfzEEjze8WGwqL%2BwrIMbNafrUO52LGefCb9RUwtFG82ybvBnaecsd%2BrQYEfgD0d6lZ4x6gFdGj3%2FLDV2H%2B0tr4FHVZcjaUllDnvppk8etrRqrxzAJUOQNIGLEEcHTpwAVpNIfSRCyFDcwOZu6ACbgC6o25Quj0VrAjhINAuWInuGAMUtiHyqMp333L1AFQmCuZbr7WSTHMoBVngpsd0UCCCetm50W88DihgB5c5mNjz0oQB3hnjNWOVoKpA8Amo4Dl4wwkBupFoR4AgGnIfq7M5ScYOq0JD9jO5wPmgwmDH%2B2Qpk0%2FKyjxa32lfsYjRZtcmo0kfJERE4vyoHnihgRT1TOK0J97ngLk92MOWk5XKKxZtiu0CvNTXNlReQmu2FzIbgLlKoJ8XuLtdQ0XUZxkAfzVyzSV8N02Vtvd6s2NN8%2FSMNzaEo%2B%2F525sPG5a%2BycM08xqLAtHfX8Kj26UlZmgRTzFYlTkbJK9RjrNHUSvYWmQFj2UKbQxQ6u1Fz8ay8ojuTMR24nTekAX0aQKd5am65KRHaZvo4vivDAkfaFZdnhOKOEt7ZR9XwYBJZeKLJf7LP4vYv0BK5jBy9A2z3IAAAAASUVORK5CYII%3D)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
-[![Vulnerabilities](https://img.shields.io/sonar/https/sonarcloud.io/curlybracket.vlocode/vulnerabilities.svg?label=vulnerabilities&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAolBMVEUAAAD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgD%2FZgCXdjhZAAAANXRSTlMA%2Bg335ykFAwnr7hDZON7Ie1ZDMfTUmIUUSSLPoVAa4r6K8rtyXD62gG2xpsKSjnZpYx6qTp5XIo8AAAOWSURBVFjD7VbZtqIwEGSVRXYQAVFBFvf16v%2F%2F2tgJKsYEvPM4Z%2FLiwV7SXV2phPu3lyB71fnserLwN9HD%2BGBL4u2%2BRMk%2BeMJvw887CH6uIKuGvwhXvIK%2FEYtf1sq38epRu1GWtFa%2FLH%2FPNxFFvq6q9aGQ8LeYC19hH2L30VFWm4p8Z4Tb2H%2BRYbBC%2B2urWfvfy1hHGZx%2BHNwFeBox4alMDfhfv%2FbFJxNUvvlpqVEGe9aTYAxe85pmihGWTne8bEGnJ7qx5KG5pDNBCZssBcZ8M7CeOkcILuKUCTAP6bvo5GuAE5P1ESAsyR0JKqhxzLYfACG3ZwY8dMDsoWcOKXDFZ9tNYFnYQeMNkPh09fzZgD5loMKWfYxrREOeF3VjU%2FqUHMn8bp8w5Elwl4tba2nbTwWRNSRPBUWeFHMjkgqirckMXuPDFx5hUtcSGU4b%2BemV3BHeSHpoUut2uirL8XYSwNfCJEDetjQyjFrtNyJmjE3cnBJ54b3dgmhVBgytfIRTpENChPQ8aYNSHxzy4DkoTrmMseju1XcRmg64L866eL0nj1ER4rkZ7oghQuScgadNWz5ijIVBzlkiRCDoQKOB25Dagqhw8ECGP%2FXGHwOEwKPvCj4184HMpk%2Fwo72IGpWfzEEjze8WGwqL%2BwrIMbNafrUO52LGefCb9RUwtFG82ybvBnaecsd%2BrQYEfgD0d6lZ4x6gFdGj3%2FLDV2H%2B0tr4FHVZcjaUllDnvppk8etrRqrxzAJUOQNIGLEEcHTpwAVpNIfSRCyFDcwOZu6ACbgC6o25Quj0VrAjhINAuWInuGAMUtiHyqMp333L1AFQmCuZbr7WSTHMoBVngpsd0UCCCetm50W88DihgB5c5mNjz0oQB3hnjNWOVoKpA8Amo4Dl4wwkBupFoR4AgGnIfq7M5ScYOq0JD9jO5wPmgwmDH%2B2Qpk0%2FKyjxa32lfsYjRZtcmo0kfJERE4vyoHnihgRT1TOK0J97ngLk92MOWk5XKKxZtiu0CvNTXNlReQmu2FzIbgLlKoJ8XuLtdQ0XUZxkAfzVyzSV8N02Vtvd6s2NN8%2FSMNzaEo%2B%2F525sPG5a%2BycM08xqLAtHfX8Kj26UlZmgRTzFYlTkbJK9RjrNHUSvYWmQFj2UKbQxQ6u1Fz8ay8ojuTMR24nTekAX0aQKd5am65KRHaZvo4vivDAkfaFZdnhOKOEt7ZR9XwYBJZeKLJf7LP4vYv0BK5jBy9A2z3IAAAAASUVORK5CYII%3D)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
+![NPM Version](https://img.shields.io/npm/v/%40vlocode%2Fcli)
 
-# **vlocode-cli** a hyper fast :rocket: Vlocity Datapack deployment CLI
+# vlocode-cli &mdash; a hyper-fast :rocket: Vlocity Datapack deployment CLI
 
-Provides a fast Salesforce native tool for deploying **any** Vlocity Datapack JSON to any Salesforce org.
+A stand-alone command-line tool for deploying, exporting, activating and converting **Vlocity / OmniStudio Datapacks** and related metadata against any Salesforce org. Built as a thin front-end around [`@vlocode/vlocity-deploy`](../vlocity-deploy), [`@vlocode/omniscript`](../omniscript) and [`@vlocode/salesforce`](../salesforce) &mdash; no dependency on the Vlocity Build Tools.
 
-This CLI is built as showcase for the _[@vlocode/vlocity-deploy](https://www.npmjs.com/package/@vlocode/vlocity-deploy)_ NPM library, and does not use the Vlocity build tools NPM library.The CLI exposes a single command `deploy` which leverages _@vlocode/vlocity-deploy_.
+## Why use it?
 
-## Key differences with **[vlocityinc/vlocity_build](https://github.com/vlocityinc/vlocity_build)** and **Vlocity DX**
+-   :rocket: **10&ndash;20&times; faster** than the Vlocity Build Tools / DX on typical projects
+-   :computer: Dependency resolution and record conversion happen **client-side**
+-   :rainbow: **True delta** &mdash; compares source against the org and only deploys what actually changed
+-   :package: Single self-contained binary &mdash; trivial to drop into CI/CD
+-   :lock: Reproducible builds &mdash; all dependencies are bundled and pinned
 
--   :rocket: Vlocode is **significantly faster** up to 10x-20x compared to Vlocity DX depending on the use case
--   :computer: Vlocode does all the heavy lifting, dependency resolution, converting of datapacks **client side**
--   :rainbow: Vlocode supports **true delta** check that is both fast and **reliable** as it can detect changes made in your org and restore them without relying on git
+## What it does *not* do
 
-## What does it **not** do...
+-   It does not generate FlexCard LWC components (planned)
+-   It is a CLI; for a UI use the [Vlocode VS Code extension](https://marketplace.visualstudio.com/items?itemName=curlybracket.vlocode)
 
--   Vlocode deployment CLI is meant for deploying datapacks **not** for exporting/extracting them from an org
--   Activate LWC OmniScripts and flex cards; for that use the client side LWC compiler of Vlocode (integration planed for future version)
--   Provide you with a UI
-
-## How to install
-
-The Vlocode CLI is packaged as a dependency-free CLI with a bundled output build, making it _very_ fast to install. This also allows Vlocode CLI to be easily integrated in any CI/CD setup and helps guarantee consistent behavior as all dependencies (and their dependencies) are pinned.
-
-> **Note**
-> You should not depend on this package if you intend to use it as library, instead depend on **@vlocode/vlocity-deploy** which is the underlying library that implements all deployment logic.
+## Install
 
 ```shell
-$ npm i @vlocode/cli -g
+npm i -g @vlocode/cli
 ```
+
+> If you intend to script against the deployment logic from your own Node project, depend on [`@vlocode/vlocity-deploy`](../vlocity-deploy) directly &mdash; this CLI is bundled and not meant to be imported as a library.
+
+## Quick start
+
+Deploy a folder of Datapacks via interactive OAuth (production orgs need `--instance login.salesforce.com`):
+
+```shell
+vlocode deploy ./path/to/datapacks
+```
+
+Deploy using an existing SFDX alias or username:
+
+```shell
+vlocode deploy ./path/to/datapacks -u my-sandbox
+```
+
+Export a single Datapack from the org:
+
+```shell
+vlocode export 01t000000000001 -t Product2 -u my-sandbox
+```
+
+Re-activate every OmniScript whose type starts with `MACD/`:
+
+```shell
+vlocode activate "MACD/*" -u my-sandbox
+```
+
+## Global options
+
+Every command supports the following options on top of its own:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-v, --verbose` | `false` | Enable more detailed verbose logging. |
+| `--debug` | `false` | Print the call stack when an unhandled error occurs. |
+| `-h, --help` | &mdash; | Show help for the command. |
+
+Commands that talk to Salesforce additionally support the connection options below (any command marked *(Salesforce)*).
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-u, --user <username>` | &mdash; | Salesforce username or alias to authenticate with. When omitted, an interactive OAuth flow opens in the browser. |
+| `-i, --instance <url>` | `test.salesforce.com` | Login host for the interactive OAuth flow. Use `login.salesforce.com` for production orgs. |
+| `--record-session [file]` | &mdash; | Record the interaction with Salesforce to a session log so it can be replayed later. Conflicts with `--replay-session`. |
+| `--replay-session <file>` | &mdash; | Replay a previously recorded session log instead of hitting Salesforce. Conflicts with `--record-session`. |
 
 ## Commands
 
-List all commands available using the `--help` command. To get help on a specific command use the following command `vlocode <command> --help`.
+Run `vlocode --help` for the full list, or `vlocode <command> --help` for details.
 
-### `vlocode deploy`
+### `vlocode deploy` &mdash; deploy Datapacks *(Salesforce)*
 
-```shell
-Usage: vlocode deploy [options] <folder>
+```text
+Usage: vlocode deploy [options] <paths..>
 
 Deploy datapacks to Salesforce
 
 Arguments:
-  folder                      path to a folder containing the datapacks to be deployed
-
-Options:
-  -v, --verbose               enable verbose logging (default: false)
-  --debug                     print call stack when an unhandled error occurs (default: false)
-  -u, --user <username>       Salesforce username or alias of the org to deploy the datapacks to
-  -i, --instance <url>        the URL instance (default: "test.salesforce.com")
-  --purge-dependencies        delete embedded dependencies with matching keys after the primary datapack record is
-                              deployed. By default Vlocode will only delete child records that do not have a
-                              matching key configuration, with this flag Vlocode will delete all child records that
-                              have a lookup relationships to the primary datapack record. For example; when
-                              deploying a Product2 datapack this flag will delete all child item records found in
-                              the targer org with a lookup to the Product2 datapack that is deployed. (default:
-                              false)
-  --lookup-failed             lookup the Ids of records that failed to deploy but are dependencies for other parts
-                              of the deployment (default: false)
-  --retry-count <count>       the number of times a record deployment is retried before failing it (default: 1)
-  --bulk-api                  use the Salesforce bulk API to update and insert records (default: false)
-  --delta                     check for changes between the source data packs and source org and only deploy the
-                              datapacks that are changed (default: false)
-  --strict-dependencies       enforce datapacks with dependencies on records inside other datapacks are fully
-                              deployed. By default Vlocode determines deployment order based on record level
-                              dependencies, this allows for more optimal chunking improving the overall speed of
-                              the deployment. If you are running into deployment errors and think that Vlocode does
-                              not follow the correct deployment order try enabling this setting. (default: false)
-  --skip-lwc                  skip LWC activation for LWC enabled OmniScripts (default: false)
-  --use-metadata-api          deploy LWC components using the Metadata API (slower) instead of the Tooling API
-                              (default: false)
-  --remote-script-activation  use anonymous apex to activate OmniScripts.By default Vlocode will generate script
-                              definitions locally which is faster and more reliable than remote activation. Enable
-                              this when you experience issues or inconsistencies in scripts deployed through
-                              Vlocode. (default: false)
-  -h, --help                  display help for command
+  paths   one or more folders or files containing the datapacks to deploy
 ```
 
-### `vlocode activate`
+| Option | Default | Description |
+| --- | --- | --- |
+| `--purge-dependencies` | `false` | After deploying a primary record, also delete dependent child records linked through lookup relationships (in addition to those without a matching key). Example: when deploying a `Product2` datapack this removes child item records in the target org that look up to it. |
+| `--lookup-failed` | `false` | If a dependency record fails to deploy, look up an existing record in the org that matches the lookup requirements. |
+| `--allow-unresolved` | `false` | Continue deploying a datapack when a dependency cannot be resolved. The field carrying the missing dependency is set to `null`. Can cause inconsistent data &mdash; use only to unblock deployments. |
+| `--retry-count <count>` | `1` | Number of times each record deployment is retried before being marked failed. |
+| `--bulk-api` | `false` | Use the Salesforce Bulk API for inserts and updates. Significantly slower than the standard API; mostly useful to reduce callouts. |
+| `--delta` | `false` | Compare the source datapacks against the org and only deploy the ones that changed. |
+| `--strict-order` | `false` | Enforce strict Datapack-level ordering instead of record-level. Slower but improves compatibility when you hit ordering issues. |
+| `--skip-lwc` | `false` | Skip LWC activation for LWC-enabled OmniScripts. |
+| `--use-metadata-api` | `false` | Deploy LWC components via the Metadata API (slower) instead of the Tooling API. |
+| `--remote-script-activation` | `false` | Activate OmniScripts via anonymous APEX on the server. By default Vlocode generates definitions locally, which is faster and more reliable. |
+| `-y, --continue-on-error` | `false` | Continue deploying when one of the datapacks fails to load. By default any load/convert error aborts the deployment before changes are made. |
 
-```shell
+### `vlocode activate` &mdash; activate OmniScripts *(Salesforce)*
+
+```text
 Usage: vlocode activate [options] [scriptFilter]
 
 Activate OmniScripts in Salesforce and deploy associated LWC components
 
 Arguments:
-  scriptFilter            Salesforce ID <type>/<subType>(/<language>) filter of the scripts to activate. Supports
-                          wildcard characters, i.e: "MACD/" to activate multiple scripts
-
-Options:
-  -v, --verbose           enable verbose logging (default: false)
-  --debug                 print call stack when an unhandled error occurs (default: false)
-  -u, --user <username>   Salesforce username or alias of the org to deploy the datapacks to
-  -i, --instance <url>    Salesforce instance URL; for example: test.salesforce.com (default: "test.salesforce.com")
-  --parallel-activations  determines the amount of parallel activations to run
-  --skip-lwc              skip LWC activation for LWC enabled OmniScripts (default: false)
-  --use-metadata-api      deploy LWC components using the Metadata API (slower) instead of the Tooling API (default:
-                          false)
-  --remote-activation     use anonymous apex to activate OmniScripts.By default Vlocode will generate script
-                          definitions locally which is faster and more reliable than remote activation. Enable this
-                          when you experience issues or inconsistencies in scripts deployed through Vlocode. (default:
-                          false)
-  -h, --help              display help for command
+  scriptFilter   Salesforce Id, or a "<type>/<subType>(/<language>)" filter. Supports
+                 wildcards (e.g. "MACD/*") to activate multiple scripts.
 ```
 
-## How to deploy using Vlocode CLI
+| Option | Default | Description |
+| --- | --- | --- |
+| `--parallel-activations` | `4` | Number of activations to run in parallel. |
+| `--skip-lwc` | `false` | Skip LWC activation for LWC-enabled OmniScripts. |
+| `--use-metadata-api` | `false` | Deploy LWC components via the Metadata API instead of the (faster) Tooling API. |
+| `--skip-reactivate-dependencies` | `false` | Skip re-activating parent scripts that embed the script being activated. By default, parents that embed a reusable script are re-activated automatically. |
+| `--remote-activation` | `false` | Activate OmniScripts via anonymous APEX. By default Vlocode generates definitions locally. |
+| `--debug-activation` | `false` | Save the generated script definitions as a JSON file. Useful for comparing local vs. remote activation output. |
 
-You can use any existing SFDX credentials or OAuth2 to login into tge target org. If you do not provided an SFDX username or alias you will automatically get an OAuth popup.
+### `vlocode export` &mdash; export Datapacks *(Salesforce)*
 
-To deploy and login using OAuth2 (for production orgs pass `--instance login.salesforce.com`) use the following basic command, where the last argument is the path (relative or full) to the folder containing the \*\_DataPack.json files to deploy. Vlocode will recursively scan the specified folder and deploy all datapacks found.
+```text
+Usage: vlocode export [options] [ids...]
 
-```shell
-vlocode deploy ./path-to-datapack-json-files
+Export an object as datapack from Salesforce
+
+Arguments:
+  ids   one or more Salesforce record IDs to export
 ```
 
-To use an existing SFDX credential or alias use:
+| Option | Default | Description |
+| --- | --- | --- |
+| `-d, --export-definitions <file>` | &mdash; | YAML or JSON file with export definitions describing how objects expand into datapacks. |
+| `-f, --file <file>` | &mdash; | YAML export file with one or more datapack queries. Conflicts with `--query`. |
+| `-e, --expand` | `false` | After exporting, expand each datapack into separate files following the export definitions. |
+| `-q, --query <query-string>` | &mdash; | SOQL query to use instead of record IDs. Conflicts with `--file`. |
+| `-t, --datapack-type <type>` | &mdash; | Datapack type when exporting by ID or a single query. |
+| `--folder <folder>` | `./` | Folder where exported datapacks are written. |
+| `--depth <depth>` | &mdash; | Dependency export depth. Use `-1` to include all transitive dependencies. |
 
-```shell
-vlocode deploy ./path-to-datapack-json-files -u <SFDX alias/username>
+### `vlocode bulk-export` &mdash; Bulk API v2 data export *(Salesforce)*
+
+```text
+Usage: vlocode bulk-export [options] [sobject]
+
+Export data from Salesforce using the Bulk API v2 and output as NDJSON
+
+Arguments:
+  sobject   SObject name to query (used only when neither --query nor --file is given)
 ```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-o, --output <file>` | **required** | Path to the output NDJSON file. |
+| `-q, --query <query>` | &mdash; | SOQL query string to execute. Conflicts with `--file`. |
+| `-f, --file <file>` | &mdash; | Path to a file containing a SOQL query. Conflicts with `--query`. |
+| `-l, --limit <number>` | &mdash; | Limit the number of records to export. Only applies when an SObject name is provided. |
+| `--include-deleted` | `false` | Include deleted records in the query (uses `queryAll`). |
+| `--chunk-size <size>` | `50000` | Number of records to retrieve per API call. |
+
+### `vlocode convert` &mdash; convert legacy Datapacks to OmniStudio *(Salesforce)*
+
+```text
+Usage: vlocode convert [options] <paths..>
+
+Convert Managed runtime OmniScript datapacks to native OmniProcess datapacks
+
+Arguments:
+  paths   one or more folders or files containing the datapacks to convert
+```
+
+Converts Vlocity (`vlocity_cmt__`) OmniScript datapacks into native OmniStudio (`OmniProcess`) datapacks. Uses only the global and Salesforce connection options listed above.
+
+### `vlocode build-export-definitions` &mdash; generate export YAML *(Salesforce)*
+
+```text
+Usage: vlocode build-export-definitions [options]
+
+Generate DatapackExportDefinition YAML from DRMapItem migration records
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-e, --expand-definition <file>` | &mdash; | Optional path to a `DatapacksExpandDefinition` YAML file that controls how datapacks are split into files. |
+| `-x, --expanded` | `false` | Write one YAML file per datapack definition instead of a single combined file. |
+| `-o, --output <file>` | `./export-definitions.yaml` | Output YAML path used when `--expanded` is *not* set. |
+| `-d, --output-dir <dir>` | `./datapack-export-definitions` | Output directory used when `--expanded` is set. |
+
+### `vlocode impacted-tests` &mdash; find impacted APEX tests
+
+```text
+Usage: vlocode impacted-tests [options] <folders...>
+
+Find impacted unit tests for a given set of APEX classes
+
+Arguments:
+  folders   one or more folders containing the APEX classes and triggers to parse
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--classes <classes...>` | &mdash; | Classes to look up impacted tests for. If omitted, the impact map is built for every class found. |
+| `--output <file>` | `impactedTests.json` | Path to the JSON file containing the impacted-tests map. |
+
+This command parses APEX source locally and does not need a Salesforce connection.
 
 ## FAQ
 
-**Q: Does vlocode deploy the LWC enabled OmniScripts?**
+**Q: Does Vlocode deploy LWC-enabled OmniScripts?**
+A: Yes. Vlocode deploys the OmniScript, compiles the LWC locally and deploys it via the Tooling API (default) or the Metadata API. The Tooling API can run in parallel to an ongoing metadata deployment.
 
-**A:** Yes, vlocode will deploy the OmniScript and compile the LWC component and deploy it using either the Metadata API or the Tooling API. By default the tooling API is used as it can run in parallel to an ongoing metadata deployment.
+**Q: Does Vlocode honour custom Datapack fields that are not part of the standard definition?**
+A: Yes. Vlocode loads the Datapack, matches its fields against the SObject schema in the target org, deploys the ones that exist, and reports errors for the ones that do not.
 
-**Q: Does vlocode deploy custom datapack properties that are not part of the standard datapack definition?**
+**Q: Vlocode does not delete Product Child Items (PCI) that I removed from the Datapack &mdash; why?**
+A: Vlocode is safe-by-default and does not delete records unless asked to. The recommended approach for the product hierarchy is to **disable** a PCI rather than delete it, because deletions have cascading effects on cached content and existing Assets. For non-production orgs you can pass `--purge-dependencies` to delete embedded records before re-deploying.
 
-**A:** Yes, vlocode will load the datapack and match the fields in the datapack against the fields available in the target org. Matching fields are deployed, for any field that is specified in the datapack but not available an error is generated which can be reviewed at the end of the deployment.
+**Q: Should I prefer `--bulk-api` for production deployments?**
+A: No. The Bulk API runs at lower priority and depends on available org resources, so its performance is more variable than the standard Collections API. Use it to save API limits, not to go faster.
 
-**Q: Vlocode does not delete Product Child Item's (PCI) that I have removed from the datapack, why is that?**
+**Q: When I activate my OmniScript from the UI it looks different from the one deployed by Vlocode &mdash; why?**
+A: By default Vlocode generates the script definition locally instead of calling Vlocity's remote APEX activation. The implementation is well-tested but the OmniStudio managed package keeps evolving, so mismatches are possible. If you hit one, fall back to `--remote-script-activation` and please open a bug so we can update the local generator.
 
-**A:** Vlocode will is designed to be safe to run on production orgs and does not delete records unless explicitly requested. When removing child items from the product hierarchy it is recommended to set the state to disabled instead of deleting the PCI as deleting the PCI will have side effects on cached content and Assets already created based on the old definition.
+**Q: Does Vlocode compile FlexCards into LWC components?**
+A: Not yet. The activation logic is significantly more involved than OmniScript and is still being ported. The VS Code extension can activate FlexCards via the standard Vlocity flow in the meantime.
 
-For none production orgs you can enable the `--purge-dependencies` option which will first delete all embedded records and only then deploy the new ones.
-
-**Q: Should I prefer the `--bulk-api` option for production deployments?**
-
-**A:** No, the performance of the bulk API is worse as it is dependent on the available resources on Salesforce and runs at a lower priority compared to regular database API operations. You will see inconsistent performance when using the `--bulk-api` and should only prefer it if you want to reduce API usage consumption when deploying.
-
-**Q: When I actictae my OmniScript from the UI it looks different then the one deployed by Vlocode**
-
-**A:** By default vlocode-cli will use a feature of the Vlocode deployment library called _local script definition generation_. This means that script definitions are generated by Vlocode instead of running a Vlocity remote APEX function. Although this feature has been extensively tested there is a possibility of mismatches which can either be due to bugs in the local script definition generation feature or in the APEX code running on Salesforce.
-
-if you encounter such discrepancy you can disable _local script definition generation_ by passing `--remote-script-activation` to the deployment. Also raise a bug on Github so that the _local script definition generation_ can be updated to handle your specific use case.
-
-**Q: Does vlocode compile FlexCards into LWC components?**
-
-**A:** No, at this moment Vlocode does not generate the LWC components for Flexcards. This is planned but due to the complexity and effort involved in porting the flex-card activation code to Javascript it will a bit more time for this to become available in vlocode as stable feature.
-
-**Q: We want to use Vlocode to improve our deployment, can you help us?**
-
-**A:** Yes, support for project implementations can be provided on request.
+**Q: We want help adopting Vlocode on a project &mdash; can you support us?**
+A: Yes, support engagements are available on request.
