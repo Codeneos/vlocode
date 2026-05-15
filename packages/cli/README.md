@@ -3,7 +3,7 @@
 
 # vlocode-cli &mdash; a hyper-fast :rocket: Vlocity Datapack deployment CLI
 
-A stand-alone command-line tool for deploying **any** Vlocity / OmniStudio Datapack JSON to any Salesforce org. Built as a thin front-end around [`@vlocode/vlocity-deploy`](../vlocity-deploy) &mdash; no dependency on the Vlocity Build Tools.
+A stand-alone command-line tool for deploying, exporting, activating and converting **Vlocity / OmniStudio Datapacks** and related metadata against any Salesforce org. Built as a thin front-end around [`@vlocode/vlocity-deploy`](../vlocity-deploy), [`@vlocode/omniscript`](../omniscript) and [`@vlocode/salesforce`](../salesforce) &mdash; no dependency on the Vlocity Build Tools.
 
 ## Why use it?
 
@@ -15,7 +15,6 @@ A stand-alone command-line tool for deploying **any** Vlocity / OmniStudio Datap
 
 ## What it does *not* do
 
--   It deploys; it does not export/retrieve Datapacks
 -   It does not generate FlexCard LWC components (planned)
 -   It is a CLI; for a UI use the [Vlocode VS Code extension](https://marketplace.visualstudio.com/items?itemName=curlybracket.vlocode)
 
@@ -41,71 +40,173 @@ Deploy using an existing SFDX alias or username:
 vlocode deploy ./path/to/datapacks -u my-sandbox
 ```
 
-Run only the OmniScript activation step on the connected org:
+Export a single Datapack from the org:
+
+```shell
+vlocode export 01t000000000001 -t Product2 -u my-sandbox
+```
+
+Re-activate every OmniScript whose type starts with `MACD/`:
 
 ```shell
 vlocode activate "MACD/*" -u my-sandbox
 ```
 
+## Global options
+
+Every command supports the following options on top of its own:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-v, --verbose` | `false` | Enable more detailed verbose logging. |
+| `--debug` | `false` | Print the call stack when an unhandled error occurs. |
+| `-h, --help` | &mdash; | Show help for the command. |
+
+Commands that talk to Salesforce additionally support the connection options below (any command marked *(Salesforce)*).
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-u, --user <username>` | &mdash; | Salesforce username or alias to authenticate with. When omitted, an interactive OAuth flow opens in the browser. |
+| `-i, --instance <url>` | `test.salesforce.com` | Login host for the interactive OAuth flow. Use `login.salesforce.com` for production orgs. |
+| `--record-session [file]` | &mdash; | Record the interaction with Salesforce to a session log so it can be replayed later. Conflicts with `--replay-session`. |
+| `--replay-session <file>` | &mdash; | Replay a previously recorded session log instead of hitting Salesforce. Conflicts with `--record-session`. |
+
 ## Commands
 
 Run `vlocode --help` for the full list, or `vlocode <command> --help` for details.
 
-### `vlocode deploy`
+### `vlocode deploy` &mdash; deploy Datapacks *(Salesforce)*
 
 ```text
-Usage: vlocode deploy [options] <folder>
+Usage: vlocode deploy [options] <paths..>
 
 Deploy datapacks to Salesforce
 
-Options:
-  -v, --verbose               enable verbose logging (default: false)
-  --debug                     print call stack when an unhandled error occurs (default: false)
-  -u, --user <username>       Salesforce username or alias of the org to deploy to
-  -i, --instance <url>        instance URL (default: "test.salesforce.com")
-  --purge-dependencies        delete embedded dependencies with matching keys after the primary datapack record is
-                              deployed. By default Vlocode only deletes child records without a matching-key
-                              configuration; with this flag it also deletes child records that have lookup
-                              relationships to the primary datapack record. (default: false)
-  --lookup-failed             look up the Ids of records that failed to deploy but are dependencies for other parts
-                              of the deployment (default: false)
-  --retry-count <count>       number of times a record deployment is retried before failing it (default: 1)
-  --bulk-api                  use the Salesforce Bulk API to update and insert records (default: false)
-  --delta                     compare source datapacks against the org and only deploy what changed (default: false)
-  --strict-dependencies       enforce datapacks with dependencies on records inside other datapacks are fully
-                              deployed before dependents start. Slower but safer if you hit ordering issues.
-                              (default: false)
-  --skip-lwc                  skip LWC activation for LWC-enabled OmniScripts (default: false)
-  --use-metadata-api          deploy LWC components via the Metadata API (slower) instead of the Tooling API
-                              (default: false)
-  --remote-script-activation  activate OmniScripts via anonymous APEX on the server. By default Vlocode generates
-                              the script definition locally, which is faster and more reliable. Enable this if you
-                              hit discrepancies between locally and server-activated scripts. (default: false)
-  -h, --help                  display help for command
+Arguments:
+  paths   one or more folders or files containing the datapacks to deploy
 ```
 
-### `vlocode activate`
+| Option | Default | Description |
+| --- | --- | --- |
+| `--purge-dependencies` | `false` | After deploying a primary record, also delete dependent child records linked through lookup relationships (in addition to those without a matching key). Example: when deploying a `Product2` datapack this removes child item records in the target org that look up to it. |
+| `--lookup-failed` | `false` | If a dependency record fails to deploy, look up an existing record in the org that matches the lookup requirements. |
+| `--allow-unresolved` | `false` | Continue deploying a datapack when a dependency cannot be resolved. The field carrying the missing dependency is set to `null`. Can cause inconsistent data &mdash; use only to unblock deployments. |
+| `--retry-count <count>` | `1` | Number of times each record deployment is retried before being marked failed. |
+| `--bulk-api` | `false` | Use the Salesforce Bulk API for inserts and updates. Significantly slower than the standard API; mostly useful to reduce callouts. |
+| `--delta` | `false` | Compare the source datapacks against the org and only deploy the ones that changed. |
+| `--strict-order` | `false` | Enforce strict Datapack-level ordering instead of record-level. Slower but improves compatibility when you hit ordering issues. |
+| `--skip-lwc` | `false` | Skip LWC activation for LWC-enabled OmniScripts. |
+| `--use-metadata-api` | `false` | Deploy LWC components via the Metadata API (slower) instead of the Tooling API. |
+| `--remote-script-activation` | `false` | Activate OmniScripts via anonymous APEX on the server. By default Vlocode generates definitions locally, which is faster and more reliable. |
+| `-y, --continue-on-error` | `false` | Continue deploying when one of the datapacks fails to load. By default any load/convert error aborts the deployment before changes are made. |
+
+### `vlocode activate` &mdash; activate OmniScripts *(Salesforce)*
 
 ```text
 Usage: vlocode activate [options] [scriptFilter]
 
-Activate OmniScripts in Salesforce and deploy their LWC components
+Activate OmniScripts in Salesforce and deploy associated LWC components
 
 Arguments:
-  scriptFilter            Salesforce <type>/<subType>(/<language>) filter of the scripts to activate. Supports
-                          wildcards, e.g. "MACD/*" to activate multiple scripts.
-
-Options:
-  -v, --verbose           enable verbose logging (default: false)
-  --debug                 print call stack when an unhandled error occurs (default: false)
-  -u, --user <username>   Salesforce username or alias of the org
-  -i, --instance <url>    Salesforce instance URL (default: "test.salesforce.com")
-  --parallel-activations  number of activations to run in parallel
-  --skip-lwc              skip LWC activation for LWC-enabled OmniScripts (default: false)
-  --use-metadata-api      deploy LWC components via the Metadata API (slower) instead of the Tooling API
-  --remote-activation     activate OmniScripts via anonymous APEX (see notes on the deploy command)
-  -h, --help              display help for command
+  scriptFilter   Salesforce Id, or a "<type>/<subType>(/<language>)" filter. Supports
+                 wildcards (e.g. "MACD/*") to activate multiple scripts.
 ```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--parallel-activations` | `4` | Number of activations to run in parallel. |
+| `--skip-lwc` | `false` | Skip LWC activation for LWC-enabled OmniScripts. |
+| `--use-metadata-api` | `false` | Deploy LWC components via the Metadata API instead of the (faster) Tooling API. |
+| `--skip-reactivate-dependencies` | `false` | Skip re-activating parent scripts that embed the script being activated. By default, parents that embed a reusable script are re-activated automatically. |
+| `--remote-activation` | `false` | Activate OmniScripts via anonymous APEX. By default Vlocode generates definitions locally. |
+| `--debug-activation` | `false` | Save the generated script definitions as a JSON file. Useful for comparing local vs. remote activation output. |
+
+### `vlocode export` &mdash; export Datapacks *(Salesforce)*
+
+```text
+Usage: vlocode export [options] [ids...]
+
+Export an object as datapack from Salesforce
+
+Arguments:
+  ids   one or more Salesforce record IDs to export
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-d, --export-definitions <file>` | &mdash; | YAML or JSON file with export definitions describing how objects expand into datapacks. |
+| `-f, --file <file>` | &mdash; | YAML export file with one or more datapack queries. Conflicts with `--query`. |
+| `-e, --expand` | `false` | After exporting, expand each datapack into separate files following the export definitions. |
+| `-q, --query <query-string>` | &mdash; | SOQL query to use instead of record IDs. Conflicts with `--file`. |
+| `-t, --datapack-type <type>` | &mdash; | Datapack type when exporting by ID or a single query. |
+| `--folder <folder>` | `./` | Folder where exported datapacks are written. |
+| `--depth <depth>` | &mdash; | Dependency export depth. Use `-1` to include all transitive dependencies. |
+
+### `vlocode bulk-export` &mdash; Bulk API v2 data export *(Salesforce)*
+
+```text
+Usage: vlocode bulk-export [options] [sobject]
+
+Export data from Salesforce using the Bulk API v2 and output as NDJSON
+
+Arguments:
+  sobject   SObject name to query (used only when neither --query nor --file is given)
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-o, --output <file>` | **required** | Path to the output NDJSON file. |
+| `-q, --query <query>` | &mdash; | SOQL query string to execute. Conflicts with `--file`. |
+| `-f, --file <file>` | &mdash; | Path to a file containing a SOQL query. Conflicts with `--query`. |
+| `-l, --limit <number>` | &mdash; | Limit the number of records to export. Only applies when an SObject name is provided. |
+| `--include-deleted` | `false` | Include deleted records in the query (uses `queryAll`). |
+| `--chunk-size <size>` | `50000` | Number of records to retrieve per API call. |
+
+### `vlocode convert` &mdash; convert legacy Datapacks to OmniStudio *(Salesforce)*
+
+```text
+Usage: vlocode convert [options] <paths..>
+
+Convert Managed runtime OmniScript datapacks to native OmniProcess datapacks
+
+Arguments:
+  paths   one or more folders or files containing the datapacks to convert
+```
+
+Converts Vlocity (`vlocity_cmt__`) OmniScript datapacks into native OmniStudio (`OmniProcess`) datapacks. Uses only the global and Salesforce connection options listed above.
+
+### `vlocode build-export-definitions` &mdash; generate export YAML *(Salesforce)*
+
+```text
+Usage: vlocode build-export-definitions [options]
+
+Generate DatapackExportDefinition YAML from DRMapItem migration records
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `-e, --expand-definition <file>` | &mdash; | Optional path to a `DatapacksExpandDefinition` YAML file that controls how datapacks are split into files. |
+| `-x, --expanded` | `false` | Write one YAML file per datapack definition instead of a single combined file. |
+| `-o, --output <file>` | `./export-definitions.yaml` | Output YAML path used when `--expanded` is *not* set. |
+| `-d, --output-dir <dir>` | `./datapack-export-definitions` | Output directory used when `--expanded` is set. |
+
+### `vlocode impacted-tests` &mdash; find impacted APEX tests
+
+```text
+Usage: vlocode impacted-tests [options] <folders...>
+
+Find impacted unit tests for a given set of APEX classes
+
+Arguments:
+  folders   one or more folders containing the APEX classes and triggers to parse
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--classes <classes...>` | &mdash; | Classes to look up impacted tests for. If omitted, the impact map is built for every class found. |
+| `--output <file>` | `impactedTests.json` | Path to the JSON file containing the impacted-tests map. |
+
+This command parses APEX source locally and does not need a Salesforce connection.
 
 ## FAQ
 
