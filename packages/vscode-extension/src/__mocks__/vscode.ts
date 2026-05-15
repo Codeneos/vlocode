@@ -84,6 +84,19 @@ export class EventEmitter<T = unknown> {
     public dispose = jest.fn();
 }
 
+export class CancellationTokenSource {
+    public readonly token = {
+        isCancellationRequested: false,
+        onCancellationRequested: jest.fn()
+    };
+
+    public cancel = jest.fn(() => {
+        this.token.isCancellationRequested = true;
+    });
+
+    public dispose = jest.fn();
+}
+
 export const workspace = {
     workspaceFolders: undefined as Array<{ uri: Uri }> | undefined,
     openTextDocument: jest.fn(),
@@ -103,6 +116,12 @@ export const window = {
         hide: jest.fn(),
         dispose: jest.fn()
     }),
+    withProgress: jest.fn(async (_options, task) => task({
+        report: jest.fn()
+    }, {
+        isCancellationRequested: false,
+        onCancellationRequested: jest.fn()
+    })),
     showTextDocument: jest.fn(),
     showInformationMessage: jest.fn(),
     showWarningMessage: jest.fn()

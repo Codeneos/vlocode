@@ -358,22 +358,24 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                     let relativeIncrement: number | undefined = undefined;
 
                     if ('progress' in state && state.progress !== undefined) {
-                        const lastRelativeProgress = activityRecord.progess / activityRecord.total;
                         const currentRelativeProgress = state.progress / total;
 
-                        relativeIncrement = Math.floor((currentRelativeProgress - lastRelativeProgress) * 100);
+                        const normalizedProgress = Math.max(0, Math.min(100, Math.floor(currentRelativeProgress * 100)));
+                        relativeIncrement = normalizedProgress - activityRecord.normalizedProgress;
                         if (relativeIncrement < 0) {
                             vscodeProgress.report( { increment: -activityRecord.normalizedProgress } );
                             activityRecord.normalizedProgress = 0;
-                            relativeIncrement = Math.floor(currentRelativeProgress * 100);
+                            relativeIncrement = normalizedProgress;
                         }
 
                         activityRecord.progess = state.progress;
                         activityRecord.total = total;
                     } else if ('increment' in state && state.increment !== undefined) {
-                        relativeIncrement = Math.floor((state.increment / total) * 100);
                         activityRecord.progess += state.increment;
                         activityRecord.total = total;
+                        const currentRelativeProgress = activityRecord.progess / total;
+                        const normalizedProgress = Math.max(0, Math.min(100, Math.floor(currentRelativeProgress * 100)));
+                        relativeIncrement = normalizedProgress - activityRecord.normalizedProgress;
                     }
 
                     vscodeProgress.report( { message: state.message, increment: relativeIncrement } );
