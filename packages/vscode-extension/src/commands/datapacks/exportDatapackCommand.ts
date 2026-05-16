@@ -2,14 +2,15 @@ import * as vscode from 'vscode';
 import * as constants from '../../constants';
 
 import { groupBy, pluralize } from '@vlocode/util';
-
 import { DatapackCommand } from './datapackCommand';
 import { QueryBuilder, SObjectRecord } from '@vlocode/salesforce';
+import { container } from '@vlocode/core';
+import { DatapackTypeDefinitions, DatapackTypeDefinition } from '@vlocode/vlocity';
+
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackResultCollection, ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
-import { DatapackTypeDefinitions, DatapackTypeDefinition } from '@vlocode/vlocity';
-import { container } from '@vlocode/core';
 import { VlocodeDirectExport } from '../../lib/vlocity/vlocodeDirectExport';
+
 @vscodeCommand(constants.VlocodeCommand.exportDatapack, { focusLog: true  })
 export default class ExportDatapackCommand extends DatapackCommand {
 

@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsync, removeNamespacePrefix, Timer } from "@vlocode/util";
+import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsync, removeNamespacePrefix, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -41,22 +41,52 @@ interface DeferredLookup {
     readonly objectType?: string;
 }
 
+export interface DatapackExportProgress {
+    readonly id: string;
+    readonly sourceKey?: string;
+    readonly status: 'completed' | 'failed';
+    readonly progress: number;
+    readonly total: number;
+}
+
+export interface ExportProcessOptions {
+    /**
+     * When set to true the export process will throw an error when an object cannot be exported instead of 
+     * just logging a warning and skipping the object. This can be used to fail fast when required objects 
+     * are missing or cannot be exported for some reason. When set to false the exporter will try to continue 
+     * exporting other objects even when some objects fail to export.
+     */
+    failOnError?: boolean;
+    /**
+     * Callback that is called when the export process makes progress exporting objects. This can be 
+     * used to report progress back to the caller.
+     * @param progress Progress information about the current export progress including a message, the number of objects exported and the total number of objects to export.
+     */
+    onProgress?: (progress: DatapackExportProgress) => any;
+    /**
+     * Cancellation token that can be used to cancel the export process. 
+     * When the token is cancelled the export process will stop exporting new objects 
+     * and throw a {@link CancellationError} to indicate that the process was cancelled.
+     */
+    cancellationToken?: CancellationToken;
+}
+
 /**
  * Options for exporting datapacks.
  */
-type DatapackExportOptions = {
+export interface DatapackExportOptions extends ExportProcessOptions {
     scope?: string;
     datapackType?: string;
     maxDepth?: number;
 }
 
+export interface ExportRequest extends DatapackExportOptions {
+    id: string;
+}
+
 interface ExportContext extends DatapackExportOptions {
     parent?: ExportDatapack;
     embedded?: boolean;
-}
-
-interface ExportRequest extends ExportContext {
-    id: string;
 }
 
 interface ExportResult {
@@ -142,8 +172,8 @@ export class DatapackExporter {
      * @param context Optional export context.
      * @returns A promise that resolves to the expanded datapack result.
      */
-    public async exportObjectAndExpand(id: string[] | string, context?: DatapackExportOptions): Promise<DatapackExpandResult[]> {
-        const result = await this.exportObject(id, context);
+    public async exportObjectAndExpand(input: string[] | string | ExportRequest | ExportRequest[], context?: DatapackExportOptions): Promise<DatapackExpandResult[]> {
+        const result = await this.exportObject(input, context);
         return this.expand(result, context);
     }
 
@@ -153,31 +183,51 @@ export class DatapackExporter {
      * exporting embedded objects if needed by calling {@link exportObject} with the parent object id.
      * @param id Id of the object to export
      */
-    public exportObject(id: string[] | string, context?: DatapackExportOptions): Promise<ExportResult[]> {
-        const ids = Array.isArray(id) ? id : [id];
-        this.logger.verbose(`Export SObjects ${ids}`);
-        this.enqueueExport(ids, context);
-        return this.processExportQueue();
+    public exportObject(input: string[] | string | ExportRequest | ExportRequest[], context?: DatapackExportOptions): Promise<ExportResult[]> {
+        this.logger.verbose(`Export SObjects ${input}`);
+        this.enqueueExport(input, context);
+        return this.processExportQueue(context);
     }
 
-    private async processExportQueue() {
+    private async processExportQueue(options?: ExportProcessOptions): Promise<ExportResult[]> {
         const results: ExportDatapack[] = [];
+        let progressTotal = 0, progressCount = 0;
 
         while(this.exportQueue.length) {
             const requests = new Map(this.exportQueue.splice(0).map(request => [request.id, request]));
             const records = await this.lookupByIds(requests.keys());
+            progressTotal += records.size;
 
             await forEachAsyncParallel(records, async ([id, data]) => {
+                if (options?.cancellationToken?.isCancellationRequested) {
+                    return;
+                }
+
                 if (!data) {
                     this.logger.warn(`No data found for id ${id}, skipping export`);
                     return;
                 }
-                const context = requests.get(id);
-                const timer = new Timer();
-                await this.buildDatapack(data, { ...context });
+
+                try {
+                    const context = requests.get(id);
+                    await this.buildDatapack(data, context ?? {});
+                } catch (error) {
+                    if (options?.failOnError) {
+                        throw error;
+                    }
+                    this.logger.error(`Error exporting ${id}:`, error);
+                }
+                
                 const datapack = this.datapacks[id];
-                this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
-                results.push(datapack);
+                datapack && results.push(datapack);
+
+                options?.onProgress?.({
+                    id,
+                    status: datapack ? 'completed' : 'failed',
+                    sourceKey: datapack?.data?.VlocityRecordSourceKey,
+                    progress: ++progressCount,
+                    total: progressTotal
+                });
             }, this.exportParallelism);
         };
 
@@ -185,10 +235,17 @@ export class DatapackExporter {
         return results.map(datapack => this.asExportResult(datapack));
     }
 
-    private enqueueExport(ids: string[] | string, context?: ExportContext) {
-        for (const id of Array.isArray(ids) ? ids : [ids]) {
-            this.exportQueue.push({ id, ...context });
-        }
+    private enqueueExport(input: string[] | string | ExportRequest | ExportRequest[], context?: ExportContext) {
+        this.exportQueue.push(...this.asExportRequests(input, context));
+    }
+
+    private asExportRequests(input: string[] | string | ExportRequest | ExportRequest[], context?: ExportContext): ExportRequest[] {
+        if (typeof input === 'string') { 
+            return [ { id: input, ...context } ];
+        } else if (Array.isArray(input)) { 
+            return input.map((req: ExportRequest | string) => typeof req === 'string' ? { id: req, ...context } : { ...context, ...req } );
+        } 
+        return [ { ...context, ...input } ];
     }
 
     private inferDatapackType(objectType: string, scope?: string) {
