@@ -116,11 +116,15 @@ export class DatapackDeployer {
      * @param newTriggerState true to enable all Vlocity Triggers; false to disabled all Vlocity triggers
      */
     private async setVlocityTriggerState(newTriggerState: boolean) {
-        const timer = new Timer();
-        const connection = await this.connectionProvider.getJsForceConnection();
-        const triggerSetupObject = await this.salesforce.schema.describeSObject(`${NAMESPACE_PLACEHOLDER}__TriggerSetup__c`);
+        const triggerSetupObject = await this.salesforce.schema.describeSObject(`${NAMESPACE_PLACEHOLDER}__TriggerSetup__c`, false);
+        if (!triggerSetupObject) {
+            // Not deploying to a Vlocity org, no need to set trigger state
+            return;
+        }
         const triggerOnField = await this.salesforce.schema.describeSObjectField(triggerSetupObject.name, 'IsTriggerOn__c');
 
+        const timer = new Timer();
+        const connection = await this.connectionProvider.getJsForceConnection();
         const allTriggersName = 'AllTriggers';
         const allTriggerSetup = await this.salesforce.data.lookupSingle(triggerSetupObject.name, { Name: allTriggersName }, [ 'Id', 'Name', triggerOnField.name ]);
 
