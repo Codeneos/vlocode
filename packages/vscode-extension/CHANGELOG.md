@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.1.0](https://github.com/codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
+
+### Bug Fixes
+
+* vscode activity progress bar never exceeds 0 when total number of items exceeds 100 ([9e14664](https://github.com/codeneos/vlocode/commit/9e14664b0fd64bede989e86ec42ece9020be8ed8))
+
+### Features
+
+* add Integration Procedure editor for IPs and review styling for other editors allinging the integrated editor styles ([8aa6aec](https://github.com/codeneos/vlocode/commit/8aa6aec4a3b75d4bcb72249650ff2e692b53b63b))
+* add support for displaying active flags for Flex Cards and Vlocity Card datapacks in the datapack explorer ([9132457](https://github.com/codeneos/vlocode/commit/91324571a0fe590d28b007e032f22b7d3ab68a8d))
+* improve export performance when exporting multiple datapacks in direct export mode ([e0bb38f](https://github.com/codeneos/vlocode/commit/e0bb38fda0e7a01a64307cfd3e6e16b9195d1bde))
+
 ## [2.0.3](https://github.com/codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
 
 ### Bug Fixes

@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.1.0](https://github.com/Codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
+
+### Bug Fixes
+
+* packages on NPM for version 2 of vlocode are incorrectly packaged ([52395a4](https://github.com/Codeneos/vlocode/commit/52395a4791aa2c73aed9ec95942fb98bbe62ff2f))
+
 ## [2.0.3](https://github.com/Codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
 
 **Note:** Version bump only for package @vlocode/util

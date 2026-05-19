@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.1.0](https://github.com/Codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
+
+### Bug Fixes
+
+* correct parameter order in constructor and normalize filter values ([658e58c](https://github.com/Codeneos/vlocode/commit/658e58ceda0368c33df5fd57160f5faa9498834b))
+* **vlocity-deploy:** preserve per-request scope during datapack expansion ([7c71c8e](https://github.com/Codeneos/vlocode/commit/7c71c8e69543dda046e22ac07044d9c6af55df68))
+
+### Features
+
+* improve export performance when exporting multiple datapacks in direct export mode ([e0bb38f](https://github.com/Codeneos/vlocode/commit/e0bb38fda0e7a01a64307cfd3e6e16b9195d1bde))
+* improve Migration DataRaptor to export definition conversion logic ([14baae5](https://github.com/Codeneos/vlocode/commit/14baae5b52d95972e1d970db605cdb90ceb099ba))
+
 ## [2.0.3](https://github.com/Codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
 
 ### Bug Fixes

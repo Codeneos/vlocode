@@ -4,6 +4,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.1.0](https://github.com/codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
+
+### Bug Fixes
+
+* correct parameter order in constructor and normalize filter values ([658e58c](https://github.com/codeneos/vlocode/commit/658e58ceda0368c33df5fd57160f5faa9498834b))
+* docs command fails in ci builds due to generate-export-definitions not running ([11f00ca](https://github.com/codeneos/vlocode/commit/11f00cae1ccae1e5a4a0b92cbdf2bf56cefaec57))
+* JSDOM errors due bundling no including required changes ([6fb4104](https://github.com/codeneos/vlocode/commit/6fb41047272b71506933f6a8cf3d7e6af83beab1))
+* packages on NPM for version 2 of vlocode are incorrectly packaged ([52395a4](https://github.com/codeneos/vlocode/commit/52395a4791aa2c73aed9ec95942fb98bbe62ff2f))
+* **vlocity-deploy:** preserve per-request scope during datapack expansion ([7c71c8e](https://github.com/codeneos/vlocode/commit/7c71c8e69543dda046e22ac07044d9c6af55df68))
+* **vlocityNamespaceService:** ensure initialization check is performed in constructor and updateNamespace method ([af20f6c](https://github.com/codeneos/vlocode/commit/af20f6c36587b3d19983dbce752465903bc3f971))
+* vscode activity progress bar never exceeds 0 when total number of items exceeds 100 ([9e14664](https://github.com/codeneos/vlocode/commit/9e14664b0fd64bede989e86ec42ece9020be8ed8))
+
+### Features
+
+* add Integration Procedure editor for IPs and review styling for other editors allinging the integrated editor styles ([8aa6aec](https://github.com/codeneos/vlocode/commit/8aa6aec4a3b75d4bcb72249650ff2e692b53b63b))
+* add support for displaying active flags for Flex Cards and Vlocity Card datapacks in the datapack explorer ([9132457](https://github.com/codeneos/vlocode/commit/91324571a0fe590d28b007e032f22b7d3ab68a8d))
+* improve export performance when exporting multiple datapacks in direct export mode ([e0bb38f](https://github.com/codeneos/vlocode/commit/e0bb38fda0e7a01a64307cfd3e6e16b9195d1bde))
+* improve Migration DataRaptor to export definition conversion logic ([14baae5](https://github.com/codeneos/vlocode/commit/14baae5b52d95972e1d970db605cdb90ceb099ba))
+* update Node.js version to 24 in documentation workflow ([716e103](https://github.com/codeneos/vlocode/commit/716e103c3f6ad02123b5c3e920a7ae60229ad51a))
+
 ## [2.0.3](https://github.com/codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
 
 ### Bug Fixes
