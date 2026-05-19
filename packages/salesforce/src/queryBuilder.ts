@@ -152,7 +152,7 @@ export class QueryConditionBuilder extends QueryBuilderData {
     }
 
     public fromObject(values: QueryFilterCondition, options?: { ignoreUndefined?: boolean }) : QueryConditionBuilder {
-        for (const [field, value] of Object.entries(flattenObject(values, obj => typeof obj?.op !== 'string'))) {
+        for (const [field, value] of Object.entries(flattenObject(values, obj => typeof obj?.op === 'string'))) {
             const operator = value?.op ?? (Array.isArray(value) ? 'in' : '=');
             const cmpValue = value?.op ? value.value : value;
             if (cmpValue === undefined && options?.ignoreUndefined) {
