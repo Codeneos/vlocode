@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.1](https://github.com/codeneos/vlocode/compare/v2.1.0...v2.1.1) (2026-05-19)
+
+### Bug Fixes
+
+* **datapackDeployer:** check for Vlocity org before setting trigger state ([b82b195](https://github.com/codeneos/vlocode/commit/b82b195f406a74d9263d6e0bba997167081024bf))
+* enhance message handling and add saved state in data mapper editor ([51c2eb3](https://github.com/codeneos/vlocode/commit/51c2eb3601fd028e44fb2d1e1ef77d0a9ef74788))
+
 # [2.1.0](https://github.com/codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
 
 ### Bug Fixes
