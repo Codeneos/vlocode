@@ -2,10 +2,10 @@ import 'jest';
 
 import { XML } from '@vlocode/util';
 import { DataMapperExecutor, VlocityDatapack } from '@vlocode/vlocity';
-import { MetadataDatapackConverter } from '../convert';
+import { MetadataConverter } from '../convert';
 
-describe('metadataDatapackConverter', () => {
-    const converter = new MetadataDatapackConverter();
+describe('metadataConverter', () => {
+    const converter = new MetadataConverter();
 
     it('should round-trip OmniDataTransform metadata XML through a datapack', () => {
         // arrange
@@ -130,5 +130,51 @@ describe('metadataDatapackConverter', () => {
         expect(converted.name).toBe('Event_Assignment_English');
         expect(converted.omniProcessElements[0].name).toBe('Step1');
         expect(converted.omniProcessElements[0].childElements[0].name).toBe('Text1');
+    });
+
+    it('should round-trip OmniIntegrationProcedure metadata XML through an IntegrationProcedure datapack', () => {
+        // arrange
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<OmniIntegrationProcedure xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>TMF_GetCustomer_English</name>
+    <type>TMF</type>
+    <subType>GetCustomer</subType>
+    <language>English</language>
+    <isIntegrationProcedure>true</isIntegrationProcedure>
+    <omniProcessType>Integration Procedure</omniProcessType>
+    <propertySetConfig>{"trackingCustomData":{}}</propertySetConfig>
+    <versionNumber>2</versionNumber>
+    <omniProcessElements>
+        <name>GetCustomerIds</name>
+        <type>Remote Action</type>
+        <propertySetConfig>{"remoteClass":"CustomerController","remoteMethod":"getIds"}</propertySetConfig>
+        <childElements>
+            <name>SetResponse</name>
+            <type>Set Values</type>
+            <propertySetConfig>{"elementValueMap":{"data":"%GetCustomerIds%"}}</propertySetConfig>
+        </childElements>
+    </omniProcessElements>
+</OmniIntegrationProcedure>`;
+
+        // test
+        const datapack = converter.metadataXmlToDatapack('/metadata/TMF_GetCustomer.ip-meta.xml', xml);
+        const convertedXml = converter.datapackToMetadataXml(datapack);
+        const converted = XML.parse<Record<string, any>>(convertedXml, {
+            arrayMode: path => path.endsWith('omniProcessElements') || path.endsWith('childElements')
+        }).OmniIntegrationProcedure;
+
+        // assert
+        expect(datapack.datapackType).toBe('IntegrationProcedure');
+        expect(datapack.sobjectType).toBe('OmniProcess');
+        expect(datapack.IsIntegrationProcedure).toBe(true);
+        expect(datapack.OmniProcessElement).toHaveLength(2);
+        expect(datapack.OmniProcessElement[1].ParentElementId.VlocityMatchingRecordSourceKey)
+            .toBe(datapack.OmniProcessElement[0].VlocityRecordSourceKey);
+        expect(converted.name).toBe('TMF_GetCustomer_English');
+        expect(converted.omniProcessType).toBe('Integration Procedure');
+        expect(converted.omniProcessElements[0].childElements[0].name).toBe('SetResponse');
+        expect(convertedXml).not.toContain('&quot;');
+        expect(convertedXml).toContain('"remoteClass": "CustomerController"');
+        expect(convertedXml).toContain('"elementValueMap": {');
     });
 });

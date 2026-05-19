@@ -1,2 +1,2 @@
 export * from './omniStudioConverter';
-export * from './metadataDatapackConverter';
+export * from './metadataConverter';
