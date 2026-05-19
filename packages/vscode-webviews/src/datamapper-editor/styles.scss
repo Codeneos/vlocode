@@ -34,13 +34,22 @@ button, input, select, textarea { font: inherit; }
 .dm-topbar { position: sticky; top: 0; z-index: 8; width: 100%; border-bottom: 1px solid $panel; background: $editor; }
 
 .dm-header {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px;
-    border-bottom: 1px solid $panel; background: $surface-alt;
-    &__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    @include editor-topbar;
+
+    &__identity { @include editor-header-identity; }
+    &__icon.codicon[class*='codicon-'] { @include editor-header-icon; }
+    &__title { @include editor-header-copy; }
+    &__actions {
+        @include editor-header-actions;
+
+        .dm-button { min-height: 28px; padding: 3px 9px; }
+    }
 }
 
 .dm-header h1, .dm-panel h2, .dm-card h2, .dm-dialog h2, .dm-empty h1, .dm-empty h2 { @include heading; }
 .dm-header p, .dm-panel p, .dm-card p, .dm-empty p { @include copy; }
+.dm-header h1 { @include editor-header-title; }
+.dm-header p { @include editor-header-subtitle; }
 
 .dm-tabs {
     display: flex; height: 42px; background: $editor;
@@ -58,7 +67,7 @@ button, input, select, textarea { font: inherit; }
     &--compact { min-height: 26px; padding: 2px 8px; }
     &--primary {
         color: var(--vscode-button-foreground); background: var(--vscode-button-background);
-        &:hover, &:focus-visible { color: var(--vscode-button-foreground); background: var(--vscode-button-hoverBackground); @include ring; }
+        &:hover, &:focus-visible { color: var(--vscode-button-foreground); background: var(--vscode-button-hoverBackground); }
     }
 }
 .dm-icon-button {
@@ -71,11 +80,11 @@ button, input, select, textarea { font: inherit; }
 .dm-flow {
     position: relative; width: min(960px, calc(100% - 40px)); margin: 36px auto; padding: 28px 0 60px;
 
-    &::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%); background: $panel; }
+    &::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%); background: $panel-strong; }
     &__start, &__end, &__add {
         position: relative; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; margin: 0 auto; border-radius: 50%;
     }
-    &__start, &__end { border: 4px solid $panel; background: $editor; }
+    &__start, &__end { border: 4px solid $panel-strong; background: $surface; box-shadow: $shadow-subtle; }
     &__end { margin-top: 12px; }
     &__insert { position: relative; z-index: 2; display: grid; place-items: center; height: 56px; margin: 0; + .dm-card { margin-top: 0; } }
     &__add {
@@ -86,7 +95,10 @@ button, input, select, textarea { font: inherit; }
             background: currentColor; transform: translate(-50%, -50%);
         }
         &::after { transform: translate(-50%, -50%) rotate(90deg); }
-        &:hover, &:focus-visible { background: var(--vscode-button-hoverBackground); transform: scale(1.08); @include ring(2px); }
+        &:hover, &:focus-visible {
+            background: var(--vscode-button-hoverBackground); transform: scale(1.08);
+            outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px;
+        }
         &--insert { margin-top: 0; opacity: 1; transform: scale(1); }
     }
 }

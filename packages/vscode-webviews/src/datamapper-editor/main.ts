@@ -32,6 +32,7 @@ type ExtensionToWebviewMessage =
 
 type WebviewToExtensionMessage =
     | { type: 'ready' }
+    | { type: 'change'; model: DataMapperModel }
     | { type: 'save'; model: DataMapperModel }
     | { type: 'deploy'; model: DataMapperModel }
     | { type: 'openSalesforce' }
@@ -252,7 +253,7 @@ export class AppComponent {
         const index = this.model().items.findIndex(candidate => isSameItem(candidate, item));
         const items = [...this.model().items];
         items.splice(index >= 0 ? index + 1 : items.length, 0, mappingItem);
-        this.model.update(model => ({ ...model, items }));
+        this.updateModel(model => ({ ...model, items }));
     }
 
     protected createFormula(afterItem?: DataMapperItem) {
@@ -271,7 +272,7 @@ export class AppComponent {
             VlocityDataPackType: 'SObject',
             VlocityRecordSObjectType: 'OmniDataTransformItem'
         };
-        this.model.update(model => ({ ...model, items: normalizeFormulaSequences([...model.items, item]) }));
+        this.updateModel(model => ({ ...model, items: normalizeFormulaSequences([...model.items, item]) }));
     }
 
     protected createExtraction(afterGroup?: ExtractGroup) {
@@ -286,7 +287,7 @@ export class AppComponent {
             VlocityDataPackType: 'SObject',
             VlocityRecordSObjectType: 'OmniDataTransformItem'
         };
-        this.model.update(model => ({ ...model, items: normalizeExtractSequences([...model.items, item]) }));
+        this.updateModel(model => ({ ...model, items: normalizeExtractSequences([...model.items, item]) }));
     }
 
     protected createLoadObject() {
@@ -308,19 +309,19 @@ export class AppComponent {
             VlocityDataPackType: 'SObject',
             VlocityRecordSObjectType: 'OmniDataTransformItem'
         };
-        this.model.update(model => ({ ...model, items: normalizeLoadSequences([...model.items, item]) }));
+        this.updateModel(model => ({ ...model, items: normalizeLoadSequences([...model.items, item]) }));
     }
 
     protected updateExtractionGroup(group: ExtractGroup) {
         const items = this.model().items.filter(item => !isExtractionItem(item) || extractGroupId(item) !== group.id);
         items.push(...group.items);
-        this.model.update(model => ({ ...model, items: normalizeExtractSequences(items) }));
+        this.updateModel(model => ({ ...model, items: normalizeExtractSequences(items) }));
     }
 
     protected deleteExtractionGroup(group: ExtractGroup) {
         const existingKeys = new Set(group.items.map(item => item.GlobalKey).filter(Boolean));
         const items = this.model().items.filter(item => item.GlobalKey ? !existingKeys.has(item.GlobalKey) : extractGroupId(item) !== group.id);
-        this.model.update(model => ({ ...model, items: normalizeExtractSequences(items) }));
+        this.updateModel(model => ({ ...model, items: normalizeExtractSequences(items) }));
     }
 
     protected moveExtractionGroup(group: ExtractGroup, direction: -1 | 1) {
@@ -337,7 +338,7 @@ export class AppComponent {
                 sequenceByKey.set(String(item.GlobalKey ?? extractGroupId(item)), groupIndex + 1);
             }
         });
-        this.model.update(model => ({
+        this.updateModel(model => ({
             ...model,
             items: model.items.map(item => isExtractionItem(item)
                 ? { ...item, InputObjectQuerySequence: sequenceByKey.get(String(item.GlobalKey ?? extractGroupId(item))) ?? item.InputObjectQuerySequence }
@@ -349,14 +350,14 @@ export class AppComponent {
         const rows = [...group.items, ...group.links];
         const items = this.model().items.filter(item => !isLoadItem(item) || loadObjectGroupId(item) !== group.id);
         items.push(...rows);
-        this.model.update(model => ({ ...model, items: normalizeLoadSequences(items) }));
+        this.updateModel(model => ({ ...model, items: normalizeLoadSequences(items) }));
     }
 
     protected deleteLoadObjectGroup(group: LoadObjectGroup) {
         const rows = [...group.items, ...group.links];
         const existingKeys = new Set(rows.map(item => item.GlobalKey).filter(Boolean));
         const items = this.model().items.filter(item => item.GlobalKey ? !existingKeys.has(item.GlobalKey) : loadObjectGroupId(item) !== group.id);
-        this.model.update(model => ({ ...model, items: normalizeLoadSequences(items) }));
+        this.updateModel(model => ({ ...model, items: normalizeLoadSequences(items) }));
     }
 
     protected moveLoadObjectGroup(group: LoadObjectGroup, direction: -1 | 1) {
@@ -373,7 +374,7 @@ export class AppComponent {
                 sequenceByKey.set(String(item.GlobalKey ?? loadObjectGroupId(item)), groupIndex + 1);
             }
         });
-        this.model.update(model => ({
+        this.updateModel(model => ({
             ...model,
             items: model.items.map(item => isLoadItem(item)
                 ? { ...item, OutputCreationSequence: sequenceByKey.get(String(item.GlobalKey ?? loadObjectGroupId(item))) ?? item.OutputCreationSequence }
@@ -387,7 +388,7 @@ export class AppComponent {
     }
 
     protected deleteMapping(item: DataMapperItem) {
-        this.model.update(model => ({ ...model, items: model.items.filter(candidate => !isSameItem(candidate, item)) }));
+        this.updateModel(model => ({ ...model, items: model.items.filter(candidate => !isSameItem(candidate, item)) }));
     }
 
     protected updateEditing(item: DataMapperItem) {
@@ -431,7 +432,7 @@ export class AppComponent {
         } else {
             items.push(item);
         }
-        this.model.update(model => ({ ...model, items }));
+        this.updateModel(model => ({ ...model, items }));
     }
 
     protected updateFormula(item: DataMapperItem, updatedItem = item) {
@@ -444,7 +445,7 @@ export class AppComponent {
             VlocityDataPackType: updatedItem.VlocityDataPackType ?? 'SObject',
             VlocityRecordSObjectType: updatedItem.VlocityRecordSObjectType ?? 'OmniDataTransformItem'
         };
-        this.model.update(model => ({
+        this.updateModel(model => ({
             ...model,
             items: model.items.map(candidate => isSameItem(candidate, item) ? formulaItem : candidate)
         }));
@@ -460,7 +461,7 @@ export class AppComponent {
         [formulas[index], formulas[target]] = [formulas[target], formulas[index]];
         const sequenceByKey = new Map<string, number>();
         formulas.forEach((formula, formulaIndex) => sequenceByKey.set(formulaKey(formula), formulaIndex + 1));
-        this.model.update(model => ({
+        this.updateModel(model => ({
             ...model,
             items: model.items.map(candidate => isFormulaItem(candidate)
                 ? { ...candidate, FormulaSequence: sequenceByKey.get(formulaKey(candidate)) ?? candidate.FormulaSequence }
@@ -469,7 +470,7 @@ export class AppComponent {
     }
 
     protected deleteFormula(item: DataMapperItem) {
-        this.model.update(model => ({ ...model, items: model.items.filter(candidate => !isSameItem(candidate, item)) }));
+        this.updateModel(model => ({ ...model, items: model.items.filter(candidate => !isSameItem(candidate, item)) }));
     }
 
     protected insertFormulaAfter(item: DataMapperItem) {
@@ -500,6 +501,9 @@ export class AppComponent {
     }
 
     private handleMessage(message: ExtensionToWebviewMessage) {
+        if ((message as { target?: string }).target && (message as { target?: string }).target !== 'datamapper') {
+            return;
+        }
         switch (message.type) {
             case 'previewResult':
                 this.previewOutputJson.set(stringifyJson(message.result.output));
@@ -554,6 +558,15 @@ export class AppComponent {
         if (!visibleTabs.includes(this.activeTab())) {
             this.activeTab.set(firstTab(getDataMapperKind(state.model)));
         }
+    }
+
+    private setModel(model: DataMapperModel) {
+        this.model.set(model);
+        this.vscode?.postMessage({ type: 'change', model });
+    }
+
+    private updateModel(updater: (model: DataMapperModel) => DataMapperModel) {
+        this.setModel(updater(this.model()));
     }
 
     private fieldObjectNamesForModel(model: DataMapperModel, objectSuggestions: FieldSuggestion[]) {
@@ -619,6 +632,12 @@ function getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
 }
 
-bootstrapApplication(AppComponent, {
-    providers: [provideZonelessChangeDetection()]
-}).catch(error => console.error(error));
+export function bootstrapDataMapperEditor() {
+    return bootstrapApplication(AppComponent, {
+        providers: [provideZonelessChangeDetection()]
+    });
+}
+
+if (!(globalThis as { __VLOCODE_WEBVIEW_PREVIEW__?: boolean }).__VLOCODE_WEBVIEW_PREVIEW__) {
+    bootstrapDataMapperEditor().catch(error => console.error(error));
+}

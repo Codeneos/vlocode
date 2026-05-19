@@ -6,9 +6,12 @@
     <main class="dm-shell">
         <div class="dm-topbar">
             <header class="dm-header">
-                <div>
-                    <h1>{{ model().title }}</h1>
-                    <p>{{ mapperSubtitle() }}</p>
+                <div class="dm-header__identity">
+                    <span class="codicon codicon-type-hierarchy-sub dm-header__icon" aria-hidden="true"></span>
+                    <div class="dm-header__title">
+                        <h1>{{ model().title }}</h1>
+                        <p>{{ mapperSubtitle() }}</p>
+                    </div>
                 </div>
                 <div class="dm-header__actions">
                     <button type="button" class="dm-button" [disabled]="refreshing()" (click)="refresh()">

@@ -8,11 +8,11 @@ This package owns multiple webview build targets so shared styling and reusable 
 
 ```bash
 pnpm --filter @vlocode/vscode-webviews build
-pnpm --filter @vlocode/vscode-webviews build:datapack
-pnpm --filter @vlocode/vscode-webviews build:datamapper
+pnpm --filter @vlocode/vscode-webviews watch
 ```
 
 Build outputs are written to:
 
 - `packages/vscode-extension/resources/datapack-editor`
 - `packages/vscode-extension/resources/datamapper-editor`
+- `packages/vscode-extension/resources/integration-procedure-editor`

@@ -97,6 +97,53 @@
                     "defaultConfiguration": "production"
                 }
             }
+        },
+        "integration-procedure-editor": {
+            "projectType": "application",
+            "root": "src/integration-procedure-editor",
+            "sourceRoot": "src/integration-procedure-editor",
+            "prefix": "vlocode",
+            "architect": {
+                "build": {
+                    "builder": "@angular/build:application",
+                    "options": {
+                        "outputPath": {
+                            "base": "../vscode-extension/resources/integration-procedure-editor",
+                            "browser": ""
+                        },
+                        "index": "src/integration-procedure-editor/index.html",
+                        "browser": "src/integration-procedure-editor/main.ts",
+                        "tsConfig": "tsconfig.integration-procedure.json",
+                        "inlineStyleLanguage": "scss",
+                        "loader": {
+                            ".ttf": "dataurl"
+                        },
+                        "assets": [],
+                        "styles": [
+                            "node_modules/@vscode/codicons/dist/codicon.css",
+                            "src/integration-procedure-editor/styles.scss"
+                        ],
+                        "scripts": []
+                    },
+                    "configurations": {
+                        "production": {
+                            "optimization": true,
+                            "outputHashing": "none",
+                            "sourceMap": false,
+                            "namedChunks": false,
+                            "extractLicenses": true
+                        },
+                        "development": {
+                            "optimization": false,
+                            "outputHashing": "none",
+                            "sourceMap": true,
+                            "namedChunks": true,
+                            "extractLicenses": false
+                        }
+                    },
+                    "defaultConfiguration": "production"
+                }
+            }
         }
     },
     "cli": {

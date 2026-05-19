@@ -1,18 +1,78 @@
-$panel: color-mix(in srgb, var(--vscode-panel-border) 58%, transparent);
+:root {
+    --vlocode-surface: var(--vscode-sideBar-background, var(--vscode-editorWidget-background, var(--vscode-editor-background)));
+    --vlocode-surface-alt: var(--vscode-editorGroupHeader-tabsBackground, var(--vscode-sideBar-background, var(--vscode-editor-background)));
+    --vlocode-surface-hover: var(--vscode-list-hoverBackground, var(--vscode-toolbar-hoverBackground, color-mix(in srgb, var(--vscode-foreground) 8%, transparent)));
+    --vlocode-descriptionForeground: var(--vscode-descriptionForeground);
+    --vlocode-border-subtle: var(--vscode-panel-border, var(--vscode-input-border, color-mix(in srgb, var(--vscode-foreground) 22%, transparent)));
+    --vlocode-border: var(--vscode-input-border, var(--vscode-panel-border, color-mix(in srgb, var(--vscode-foreground) 34%, transparent)));
+    --vlocode-control-border: var(--vscode-input-border, var(--vscode-panel-border, color-mix(in srgb, var(--vscode-input-foreground) 36%, transparent)));
+    --vlocode-button-border: var(--vscode-button-border, var(--vscode-contrastBorder, var(--vscode-panel-border, color-mix(in srgb, var(--vscode-button-secondaryForeground) 34%, transparent))));
+    --vlocode-link-foreground: var(--vscode-textLink-foreground);
+    --vlocode-link-activeForeground: var(--vscode-textLink-activeForeground);
+    --vlocode-shadow-subtle: 0 1px 2px color-mix(in srgb, var(--vscode-widget-shadow, black) 16%, transparent);
+    --vlocode-shadow-popover: 0 8px 24px color-mix(in srgb, var(--vscode-widget-shadow, black) 45%, transparent);
+    --vlocode-control-shadow: inset 0 1px 0 color-mix(in srgb, var(--vscode-foreground) 5%, transparent);
+    --vlocode-button-shadow: none;
+}
+
+body.vscode-dark,
+body[data-vscode-theme-kind='vscode-dark'] {
+    --vlocode-surface: var(--vscode-sideBar-background, color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-foreground)));
+    --vlocode-surface-alt: var(--vscode-editorGroupHeader-tabsBackground, color-mix(in srgb, var(--vscode-sideBar-background, var(--vscode-editor-background)) 88%, var(--vscode-foreground)));
+    --vlocode-surface-hover: var(--vscode-list-hoverBackground, var(--vscode-toolbar-hoverBackground, color-mix(in srgb, var(--vscode-foreground) 12%, transparent)));
+    --vlocode-descriptionForeground: color-mix(in srgb, var(--vscode-descriptionForeground) 76%, var(--vscode-foreground));
+    --vlocode-border-subtle: var(--vscode-panel-border, var(--vscode-input-border, color-mix(in srgb, var(--vscode-foreground) 22%, transparent)));
+    --vlocode-border: var(--vscode-input-border, var(--vscode-panel-border, color-mix(in srgb, var(--vscode-foreground) 34%, transparent)));
+    --vlocode-control-border: var(--vscode-input-border, var(--vscode-panel-border, color-mix(in srgb, var(--vscode-input-foreground) 36%, transparent)));
+    --vlocode-button-border: var(--vscode-button-border, var(--vscode-contrastBorder, var(--vscode-panel-border, color-mix(in srgb, var(--vscode-button-secondaryForeground) 34%, transparent))));
+    --vlocode-link-foreground: color-mix(in srgb, var(--vscode-textLink-foreground) 82%, var(--vscode-foreground));
+    --vlocode-link-activeForeground: color-mix(in srgb, var(--vscode-textLink-activeForeground) 84%, var(--vscode-foreground));
+    --vlocode-shadow-subtle:
+        0 1px 0 color-mix(in srgb, var(--vscode-foreground) 5%, transparent),
+        0 8px 18px color-mix(in srgb, var(--vscode-widget-shadow, black) 28%, transparent);
+    --vlocode-shadow-popover:
+        0 1px 0 color-mix(in srgb, var(--vscode-foreground) 6%, transparent),
+        0 14px 32px color-mix(in srgb, var(--vscode-widget-shadow, black) 55%, transparent);
+    --vlocode-control-shadow: inset 0 1px 0 color-mix(in srgb, var(--vscode-input-foreground) 6%, transparent);
+    --vlocode-button-shadow: none;
+}
+
+body.vscode-high-contrast,
+body.vscode-high-contrast-light,
+body[data-vscode-theme-kind='vscode-high-contrast'],
+body[data-vscode-theme-kind='vscode-high-contrast-light'] {
+    --vlocode-surface: var(--vscode-editor-background);
+    --vlocode-surface-alt: var(--vscode-editor-background);
+    --vlocode-surface-hover: var(--vscode-list-hoverBackground, transparent);
+    --vlocode-descriptionForeground: var(--vscode-foreground);
+    --vlocode-border-subtle: var(--vscode-contrastBorder, var(--vscode-focusBorder));
+    --vlocode-border: var(--vscode-contrastBorder, var(--vscode-focusBorder));
+    --vlocode-control-border: var(--vscode-contrastBorder, var(--vscode-focusBorder));
+    --vlocode-button-border: var(--vscode-contrastBorder, var(--vscode-focusBorder));
+    --vlocode-link-foreground: var(--vscode-textLink-foreground);
+    --vlocode-link-activeForeground: var(--vscode-textLink-activeForeground);
+    --vlocode-shadow-subtle: none;
+    --vlocode-shadow-popover: none;
+    --vlocode-control-shadow: none;
+    --vlocode-button-shadow: none;
+}
+
+$panel: var(--vlocode-border-subtle);
+$panel-strong: var(--vlocode-border);
 $editor: var(--vscode-editor-background);
 $side: var(--vscode-sideBar-background);
 $focus: var(--vscode-focusBorder);
-$desc: var(--vscode-descriptionForeground);
+$desc: var(--vlocode-descriptionForeground);
 $disabled: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
-$input-border: color-mix(in srgb, var(--vscode-input-border, var(--vscode-panel-border)) 68%, transparent);
-$surface: color-mix(in srgb, #{$editor} 88%, #{$side});
-$surface-alt: color-mix(in srgb, #{$side} 72%, #{$editor});
-$surface-hover: color-mix(in srgb, var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground)) 78%, transparent);
+$input-border: var(--vlocode-control-border);
+$surface: var(--vlocode-surface);
+$surface-alt: var(--vlocode-surface-alt);
+$surface-hover: var(--vlocode-surface-hover);
 $radius-control: 6px;
 $radius-surface: 8px;
 $radius-popover: 10px;
-$shadow-subtle: 0 1px 2px color-mix(in srgb, var(--vscode-widget-shadow, black) 16%, transparent);
-$shadow-popover: 0 8px 24px color-mix(in srgb, var(--vscode-widget-shadow, black) 45%, transparent);
+$shadow-subtle: var(--vlocode-shadow-subtle);
+$shadow-popover: var(--vlocode-shadow-popover);
 $quick: 120ms ease;
 
 @mixin heading {
@@ -71,6 +131,7 @@ $quick: 120ms ease;
     padding: 4px 8px;
     color: var(--vscode-input-foreground);
     background: var(--vscode-input-background);
+    box-shadow: var(--vlocode-control-shadow);
 
     &:focus {
         outline: 1px solid $focus;
@@ -80,18 +141,21 @@ $quick: 120ms ease;
 
 @mixin button {
     appearance: none;
-    border: 1px solid color-mix(in srgb, var(--vscode-button-border, #{$input-border}) 70%, transparent);
+    border: 1px solid var(--vlocode-button-border);
     border-radius: $radius-control;
     color: var(--vscode-button-secondaryForeground);
     background: var(--vscode-button-secondaryBackground);
+    box-shadow: none;
     cursor: pointer;
-    transition: background $quick, box-shadow $quick, color $quick;
+    transition: background $quick, border-color $quick, color $quick, outline-color $quick;
 
     &:hover,
     &:focus-visible {
         color: var(--vscode-button-secondaryForeground);
         background: var(--vscode-button-secondaryHoverBackground);
-        @include ring;
+        border-color: color-mix(in srgb, var(--vlocode-button-border) 72%, var(--vscode-focusBorder));
+        outline: 1px solid var(--vscode-focusBorder);
+        outline-offset: -1px;
     }
 
     &:disabled {
@@ -105,8 +169,121 @@ $quick: 120ms ease;
     }
 }
 
+@mixin editor-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 54px;
+    padding: 6px 12px;
+    border-bottom: 1px solid $panel;
+    background: color-mix(in srgb, #{$surface-alt} 64%, #{$editor});
+}
+
+@mixin editor-header-identity {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 10px;
+}
+
+@mixin editor-header-icon-tile {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: $radius-surface;
+    outline: none;
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    box-shadow: none;
+
+    &:hover,
+    &:focus-visible {
+        border: 0;
+        outline: none;
+        color: var(--vscode-button-foreground);
+        background: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+        box-shadow: none;
+    }
+}
+
+@mixin editor-header-icon {
+    @include editor-header-icon-tile;
+    font-size: 16px;
+    line-height: 1;
+
+    &::before {
+        display: block;
+        font-size: inherit;
+        line-height: 1;
+    }
+}
+
+@mixin editor-header-icon-glyph {
+    @include centered-codicon(16px);
+}
+
+@mixin editor-header-copy {
+    display: grid;
+    align-content: center;
+    min-width: 0;
+    gap: 4px;
+}
+
+@mixin editor-header-title {
+    @include truncate;
+    margin: 0;
+    color: var(--vscode-foreground);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0;
+}
+
+@mixin editor-header-subtitle {
+    @include truncate;
+    margin: 0;
+    color: $desc;
+    font-size: 12px;
+    line-height: 18px;
+}
+
+@mixin editor-header-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-width: 0;
+    color: $desc;
+    font-size: 12px;
+    line-height: 18px;
+}
+
+@mixin editor-header-chip {
+    @include truncate;
+    display: inline-flex;
+    align-items: center;
+    min-height: 18px;
+    max-width: 220px;
+    border: 1px solid color-mix(in srgb, #{$panel} 72%, transparent);
+    border-radius: 999px;
+    padding: 0 7px;
+    background: color-mix(in srgb, #{$surface} 68%, transparent);
+}
+
+@mixin editor-header-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 7px;
+}
+
 @mixin disabled-bg($base: $editor, $mix: 88%) {
     color: $disabled;
     background: color-mix(in srgb, #{$base} $mix, #{$disabled});
 }
-

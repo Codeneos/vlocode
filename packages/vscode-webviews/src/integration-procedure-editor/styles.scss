@@ -1,0 +1,1449 @@
+@use '../shared/styles/webview' as *;
+
+:root {
+    color-scheme: light dark;
+    color: var(--vscode-foreground);
+    background: $editor;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    line-height: 1.35;
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; margin: 0; padding: 0; }
+body { min-width: 360px; overflow: hidden; }
+button, input, select, textarea { font: inherit; }
+.codicon[class*='codicon-'] { @include centered-codicon; }
+
+.ip-shell {
+    width: 100vw;
+    height: 100vh;
+    margin-inline: calc(50% - 50vw);
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    overflow: hidden;
+    background: $editor;
+
+    &--center {
+        display: grid;
+        place-items: center;
+        padding: 24px;
+    }
+}
+
+.ip-topbar {
+    @include editor-topbar;
+}
+
+.ip-title {
+    @include editor-header-identity;
+
+    &__icon {
+        @include button;
+        @include editor-header-icon-tile;
+
+        .codicon[class*='codicon-'] {
+            @include editor-header-icon-glyph;
+        }
+    }
+
+    &__copy {
+        @include editor-header-copy;
+    }
+
+    h1 {
+        @include editor-header-title;
+    }
+
+    &__meta {
+        @include editor-header-meta;
+
+        span {
+            @include editor-header-chip;
+        }
+
+        &-warning {
+            color: var(--vscode-editorWarning-foreground);
+            border-color: color-mix(in srgb, var(--vscode-editorWarning-foreground) 44%, transparent) !important;
+            background: color-mix(in srgb, var(--vscode-editorWarning-background, transparent) 42%, #{$surface}) !important;
+        }
+    }
+}
+
+.ip-actions {
+    @include editor-header-actions;
+}
+
+.ip-button,
+.ip-icon-button {
+    @include button;
+}
+
+.ip-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 3px 9px;
+    white-space: nowrap;
+
+    &--compact {
+        min-height: 26px;
+        padding: 2px 8px;
+    }
+
+    &--primary {
+        color: var(--vscode-button-foreground);
+        background: var(--vscode-button-background);
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-button-foreground);
+            background: var(--vscode-button-hoverBackground);
+        }
+    }
+
+    &--danger {
+        color: var(--vscode-button-foreground);
+        border-color: color-mix(in srgb, var(--vscode-errorForeground) 42%, var(--vlocode-button-border));
+        background: color-mix(in srgb, var(--vscode-errorForeground) 36%, var(--vscode-button-background));
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-button-foreground);
+            background: color-mix(in srgb, var(--vscode-errorForeground) 52%, var(--vscode-button-hoverBackground));
+        }
+    }
+}
+
+.ip-icon-button {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+
+    &--danger:hover,
+    &--danger:focus-visible {
+        color: var(--vscode-errorForeground);
+    }
+}
+
+.ip-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 7px 14px;
+    border-bottom: 1px solid color-mix(in srgb, var(--vscode-errorForeground) 34%, transparent);
+    color: var(--vscode-errorForeground);
+    background: color-mix(in srgb, var(--vscode-inputValidation-errorBackground) 36%, #{$editor});
+}
+
+.ip-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: color-mix(in srgb, #{$editor} 22%, transparent);
+    backdrop-filter: blur(7px) saturate(0.82);
+}
+
+.ip-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 21;
+    display: grid;
+    gap: 18px;
+    width: min(420px, calc(100vw - 32px));
+    border: 1px solid $panel-strong;
+    border-radius: $radius-surface;
+    padding: 18px;
+    background: $surface;
+    box-shadow: $shadow-popover;
+    transform: translate(-50%, -50%);
+
+    header {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        align-items: start;
+        gap: 12px;
+    }
+
+    h2,
+    p {
+        margin: 0;
+    }
+
+    h2 {
+        @include truncate;
+        font-size: 15px;
+        letter-spacing: 0;
+    }
+
+    p {
+        margin-top: 5px;
+        color: $desc;
+    }
+
+    footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    &__icon {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid color-mix(in srgb, var(--vscode-errorForeground) 48%, transparent);
+        border-radius: $radius-control;
+        color: var(--vscode-errorForeground);
+        background: color-mix(in srgb, var(--vscode-inputValidation-errorBackground) 36%, #{$surface});
+    }
+}
+
+.ip-workbench {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(236px, 278px) minmax(420px, 1fr) minmax(342px, 408px);
+    overflow: hidden;
+}
+
+.ip-rail,
+.ip-inspector {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-color: $panel;
+    background: $surface;
+}
+
+.ip-rail {
+    --ip-rail-gutter: 9px;
+    grid-template-rows: auto minmax(0, 1fr);
+    border-right: 1px solid $panel;
+    box-shadow: inset -12px 0 18px -20px color-mix(in srgb, var(--vscode-widget-shadow, black) 48%, transparent);
+}
+
+.ip-inspector {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    border-left: 1px solid $panel;
+    box-shadow: inset 12px 0 18px -20px color-mix(in srgb, var(--vscode-widget-shadow, black) 48%, transparent);
+}
+
+.ip-segments,
+.ip-tabs {
+    gap: 0;
+    border-bottom: 1px solid $panel;
+    background: color-mix(in srgb, #{$surface-alt} 56%, #{$editor});
+}
+
+.ip-segments {
+    display: grid;
+    grid-template-columns: minmax(58px, 0.82fr) minmax(62px, 0.82fr) minmax(90px, 1.36fr);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 5px;
+    background: color-mix(in srgb, #{$surface-alt} 56%, #{$editor});
+}
+
+.ip-segments__item,
+.ip-tabs__tab {
+    appearance: none;
+    min-height: 32px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 4px 9px;
+    color: $desc;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+
+    &:hover,
+    &:focus-visible {
+        background: var(--vscode-toolbar-hoverBackground, #{$surface-hover});
+        outline: none;
+    }
+
+    &--active {
+        border-bottom-color: $focus;
+        color: var(--vscode-tab-activeForeground, var(--vscode-foreground));
+        background: transparent;
+    }
+}
+
+.ip-segments__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    gap: 4px;
+    border-radius: 0;
+    padding-inline: 6px;
+    font-size: 12px;
+
+    .codicon {
+        flex: 0 0 auto;
+    }
+}
+
+.ip-count,
+.ip-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 16px;
+    border: 1px solid $panel;
+    border-radius: 999px;
+    padding: 0 5px;
+    color: var(--vscode-badge-foreground);
+    background: var(--vscode-badge-background);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.ip-badge {
+    color: $desc;
+    background: transparent;
+
+    &--group {
+        color: var(--vscode-button-foreground);
+        background: var(--vscode-button-background);
+    }
+}
+
+.ip-rail__content {
+    display: grid;
+    align-content: start;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden auto;
+    padding-inline: var(--ip-rail-gutter);
+}
+
+.ip-search {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    min-width: 0;
+
+    .codicon {
+        position: absolute;
+        top: 50%;
+        left: 8px;
+        transform: translateY(-50%);
+        color: $desc;
+        pointer-events: none;
+    }
+
+    input {
+        @include control;
+        padding-left: 30px;
+
+        &::placeholder {
+            color: color-mix(in srgb, #{$desc} 76%, transparent);
+        }
+    }
+}
+
+.ip-outline,
+.ip-palette,
+.ip-problems {
+    display: grid;
+    align-content: start;
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 0 16px;
+}
+
+.ip-outline__row,
+.ip-palette__item,
+.ip-problem {
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid transparent;
+    border-radius: $radius-control;
+    color: var(--vscode-foreground);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover,
+    &:focus-visible {
+        border-color: $panel;
+        background: $surface-hover;
+        outline: none;
+    }
+}
+
+.ip-outline__row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto 18px;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 8px;
+
+    span:nth-child(2) {
+        @include truncate;
+    }
+
+    small {
+        color: $desc;
+        font-size: 11px;
+    }
+
+    &[draggable='true'] {
+        cursor: grab;
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    &--active {
+        color: var(--vscode-list-activeSelectionForeground);
+        border-color: color-mix(in srgb, #{$focus} 44%, transparent);
+        background: color-mix(in srgb, var(--vscode-list-activeSelectionBackground) 70%, transparent);
+        opacity: 1;
+        box-shadow: inset 2px 0 0 color-mix(in srgb, #{$focus} 72%, transparent);
+    }
+
+    &--dragging {
+        opacity: 0.44;
+    }
+
+    &--active#{&}--dragging {
+        opacity: 0.44;
+    }
+
+    &--drop-before::before,
+    &--drop-after::after {
+        content: "";
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        z-index: 1;
+        height: 2px;
+        border-radius: 999px;
+        background: $focus;
+        box-shadow: 0 0 0 3px color-mix(in srgb, #{$focus} 18%, transparent);
+    }
+
+    &--drop-before::before {
+        top: -3px;
+    }
+
+    &--drop-after::after {
+        bottom: -3px;
+    }
+}
+
+.ip-outline__grip {
+    color: $desc;
+    opacity: 0;
+    transition: opacity $quick;
+}
+
+.ip-outline__row:hover .ip-outline__grip,
+.ip-outline__row:focus-visible .ip-outline__grip,
+.ip-outline__row--dragging .ip-outline__grip {
+    opacity: 1;
+}
+
+.ip-palette__group {
+    display: grid;
+    gap: 5px;
+    padding-top: 8px;
+
+    h2 {
+        margin: 9px 2px 4px;
+        color: $desc;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+}
+
+.ip-palette__item {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 9px;
+    padding: 8px;
+
+    strong,
+    small {
+        display: block;
+        @include truncate;
+    }
+
+    small {
+        margin-top: 2px;
+        color: $desc;
+        font-size: 11px;
+    }
+}
+
+.ip-problem {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+
+    .codicon {
+        color: var(--vscode-errorForeground);
+    }
+
+    &--warning .codicon {
+        color: var(--vscode-editorWarning-foreground);
+    }
+}
+
+.ip-canvas {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    background:
+        linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--vscode-widget-shadow, black) 14%, transparent) 0,
+            color-mix(in srgb, var(--vscode-widget-shadow, black) 7%, transparent) 12px,
+            transparent 38px,
+            transparent calc(100% - 38px),
+            color-mix(in srgb, var(--vscode-widget-shadow, black) 7%, transparent) calc(100% - 12px),
+            color-mix(in srgb, var(--vscode-widget-shadow, black) 14%, transparent) 100%
+        ),
+        linear-gradient(
+            90deg,
+            transparent 0%,
+            color-mix(in srgb, #{$surface} 7%, transparent) 42%,
+            color-mix(in srgb, #{$surface} 10%, transparent) 50%,
+            color-mix(in srgb, #{$surface} 7%, transparent) 58%,
+            transparent 100%
+        ),
+        linear-gradient(color-mix(in srgb, #{$panel} 13%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, #{$panel} 13%, transparent) 1px, transparent 1px),
+        color-mix(in srgb, #{$editor} 96%, #{$surface});
+    background-size: auto, auto, 24px 24px, 24px 24px, auto;
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--vscode-foreground) 3%, transparent),
+        inset 30px 0 32px -26px color-mix(in srgb, var(--vscode-widget-shadow, black) 36%, transparent),
+        inset -30px 0 32px -26px color-mix(in srgb, var(--vscode-widget-shadow, black) 36%, transparent);
+}
+
+body.vscode-high-contrast .ip-rail,
+body.vscode-high-contrast-light .ip-rail,
+body[data-vscode-theme-kind='vscode-high-contrast'] .ip-rail,
+body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-rail,
+body.vscode-high-contrast .ip-inspector,
+body.vscode-high-contrast-light .ip-inspector,
+body[data-vscode-theme-kind='vscode-high-contrast'] .ip-inspector,
+body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-inspector {
+    box-shadow: none;
+}
+
+body.vscode-high-contrast .ip-canvas,
+body.vscode-high-contrast-light .ip-canvas,
+body[data-vscode-theme-kind='vscode-high-contrast'] .ip-canvas,
+body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
+    background:
+        linear-gradient(color-mix(in srgb, #{$panel} 18%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, #{$panel} 18%, transparent) 1px, transparent 1px),
+        $editor;
+    background-size: 24px 24px, 24px 24px, auto;
+    box-shadow: none;
+}
+
+.ip-flow {
+    position: relative;
+    width: min(780px, calc(100% - 56px));
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 28px 0 60px;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 46px;
+        bottom: 48px;
+        left: 50%;
+        width: 2px;
+        transform: translateX(-50%);
+        background: linear-gradient(
+            color-mix(in srgb, #{$focus} 34%, #{$panel}),
+            color-mix(in srgb, #{$panel} 64%, transparent)
+        );
+    }
+
+    &__terminal,
+    &__end {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        margin-inline: auto;
+        border: 1px solid $panel;
+        border-radius: $radius-surface;
+        color: $desc;
+        background: $surface;
+        box-shadow: $shadow-subtle;
+    }
+
+    &__terminal {
+        @include button;
+        padding: 0;
+        color: var(--vscode-button-foreground);
+        background: var(--vscode-button-background);
+    }
+
+    &__end {
+        margin-top: 10px;
+    }
+}
+
+.ip-node {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 2px 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: min(680px, 100%);
+    min-height: 58px;
+    margin: 11px auto 0;
+    border: 1px solid $panel;
+    border-radius: $radius-surface;
+    overflow: visible;
+    background: color-mix(in srgb, #{$surface} 90%, var(--vscode-editor-background));
+    box-shadow: $shadow-subtle;
+    cursor: pointer;
+    transition: border-color $quick, box-shadow $quick, opacity $quick, outline-color $quick, transform $quick, background $quick;
+
+    &:hover:not(.ip-node--active) {
+        border-color: color-mix(in srgb, #{$focus} 34%, #{$panel});
+        background: color-mix(in srgb, #{$surface-hover} 26%, #{$surface});
+    }
+
+    &[draggable='true'] {
+        cursor: grab;
+    }
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    &--active {
+        border-color: transparent;
+        outline: 1px solid color-mix(in srgb, #{$focus} 72%, transparent);
+        outline-offset: -1px;
+        opacity: 1;
+        box-shadow:
+            0 0 18px color-mix(in srgb, #{$focus} 18%, transparent),
+            0 10px 26px color-mix(in srgb, var(--vscode-widget-shadow, black) 16%, transparent),
+            $shadow-subtle;
+    }
+
+    &--disabled {
+        opacity: 0.62;
+    }
+
+    &--dragging {
+        opacity: 0.44;
+    }
+
+    &--active#{&}--dragging {
+        opacity: 0.44;
+    }
+
+    &--drop-before::before {
+        content: "";
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        z-index: 2;
+        height: 2px;
+        border-radius: 999px;
+        background: $focus;
+        box-shadow: 0 0 0 3px color-mix(in srgb, #{$focus} 18%, transparent);
+    }
+
+    &--drop-before::before {
+        top: -7px;
+    }
+
+    &__stripe {
+        align-self: stretch;
+        border-radius: 0;
+        background: var(--vscode-button-background);
+    }
+
+    &__icon {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: $radius-control;
+        color: var(--vscode-button-foreground);
+        background: color-mix(in srgb, var(--vscode-button-background) 74%, #{$editor});
+    }
+
+    &__main {
+        min-width: 0;
+        padding: 8px 0;
+
+        p,
+        code {
+            @include truncate;
+            display: block;
+            margin: 2px 0 0;
+        }
+
+        p {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: $desc;
+            font-size: 12px;
+
+            span + span {
+                color: color-mix(in srgb, #{$desc} 72%, transparent);
+            }
+        }
+
+        code {
+            width: fit-content;
+            max-width: 100%;
+            border-radius: 4px;
+            padding: 1px 6px;
+            color: var(--vscode-textPreformat-foreground, var(--vscode-foreground));
+            background: color-mix(in srgb, #{$editor} 70%, transparent);
+            font-family: var(--vscode-editor-font-family);
+            font-size: 12px;
+        }
+    }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 7px;
+
+        strong {
+            @include truncate;
+            font-weight: 700;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding-right: 11px;
+        opacity: 0;
+        transition: opacity $quick;
+    }
+
+    &:hover &__actions,
+    &--active &__actions {
+        opacity: 1;
+    }
+}
+
+.ip-drag-handle {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 26px;
+    color: $desc;
+    cursor: grab;
+}
+
+.ip-insert {
+    display: grid;
+    place-items: center;
+    position: relative;
+    z-index: 2;
+    width: min(680px, 100%);
+    height: 54px;
+    margin: 0 auto;
+
+    & + .ip-node {
+        margin-top: 0;
+    }
+
+    &--drop-target::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        z-index: 0;
+        width: min(560px, 100%);
+        height: 2px;
+        border-radius: 999px;
+        background: $focus;
+        box-shadow: 0 0 0 4px color-mix(in srgb, #{$focus} 18%, transparent);
+        transform: translate(-50%, -50%);
+    }
+
+    > button {
+        @include button;
+        display: grid;
+        place-items: center;
+        position: relative;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 0;
+        padding: 0;
+        color: var(--vscode-button-foreground);
+        background: color-mix(in srgb, var(--vscode-button-background) 86%, #{$surface});
+        opacity: 1;
+        transition: background $quick, box-shadow $quick, transform $quick;
+
+        &::before,
+        &::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 14px;
+            height: 2px;
+            border-radius: 999px;
+            background: currentColor;
+            transform: translate(-50%, -50%);
+        }
+
+        &::after {
+            transform: translate(-50%, -50%) rotate(90deg);
+        }
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-button-foreground);
+            background: var(--vscode-button-hoverBackground);
+            transform: scale(1.08);
+            outline: 1px solid var(--vscode-focusBorder);
+            outline-offset: 2px;
+        }
+    }
+
+    &--drop-target > button {
+        background: var(--vscode-button-hoverBackground);
+        transform: scale(1.12);
+        outline: 1px solid var(--vscode-focusBorder);
+        outline-offset: 2px;
+    }
+
+    &--menu-open {
+        z-index: 80;
+    }
+}
+
+.ip-insert-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 100;
+    width: min(348px, calc(100vw - 48px));
+    max-height: min(280px, calc(100vh - 160px));
+    overflow: hidden;
+    border: 1px solid $panel-strong;
+    border-radius: $radius-surface;
+    padding: 8px;
+    background: $surface;
+    box-shadow: $shadow-popover;
+    transform: translateX(-50%);
+
+    header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 2px 2px 8px;
+        border-bottom: 1px solid $panel;
+
+        .ip-icon-button {
+            flex: 0 0 28px;
+            width: 28px;
+            height: 28px;
+        }
+    }
+
+    &__search {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+
+        .codicon {
+            position: absolute;
+            top: 50%;
+            left: 8px;
+            color: $desc;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        input {
+            @include control;
+            min-height: 28px;
+            padding-left: 30px;
+        }
+    }
+
+    &__list {
+        max-height: 208px;
+        overflow: auto;
+        padding-top: 2px;
+    }
+
+    &__group {
+        display: grid;
+        gap: 3px;
+        padding-top: 8px;
+
+        h3 {
+            margin: 0 4px 3px;
+            color: $desc;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+    }
+
+    &__item {
+        appearance: none;
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 28px;
+        border: 1px solid transparent;
+        border-radius: $radius-control;
+        padding: 4px 7px;
+        color: var(--vscode-foreground);
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+
+        span:last-child {
+            @include truncate;
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: $panel;
+            background: $surface-hover;
+            outline: none;
+        }
+    }
+}
+
+.ip-node > .ip-insert-menu {
+    top: calc(100% + 6px);
+    right: 8px;
+    left: auto;
+    transform: none;
+}
+
+.ip-node--menu-open {
+    z-index: 80;
+}
+
+.ip-child-frame {
+    position: relative;
+    z-index: 1;
+    width: min(760px, 100%);
+    margin: 22px auto 0;
+    border: 2px solid color-mix(in srgb, #{$panel-strong} 76%, transparent);
+    border-radius: 14px;
+    padding: 30px 28px 14px;
+    background: color-mix(in srgb, #{$editor} 54%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--vscode-foreground) 6%, transparent);
+    cursor: pointer;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        z-index: 0;
+        width: 2px;
+        background: color-mix(in srgb, #{$panel-strong} 82%, transparent);
+        transform: translateX(-50%);
+    }
+
+    &--active {
+        border-color: transparent;
+        outline: 1px solid color-mix(in srgb, #{$focus} 72%, transparent);
+        outline-offset: -1px;
+        opacity: 1;
+        box-shadow:
+            0 0 18px color-mix(in srgb, #{$focus} 18%, transparent),
+            0 12px 28px color-mix(in srgb, var(--vscode-widget-shadow, black) 15%, transparent),
+            inset 0 1px 0 color-mix(in srgb, var(--vscode-foreground) 6%, transparent);
+    }
+
+    &--dragging {
+        opacity: 0.44;
+    }
+
+    &--active#{&}--dragging {
+        opacity: 0.44;
+    }
+
+    &--menu-open {
+        z-index: 80;
+    }
+
+    &--drop-before::after {
+        content: "";
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        z-index: 3;
+        height: 2px;
+        border-radius: 999px;
+        background: $focus;
+        box-shadow: 0 0 0 3px color-mix(in srgb, #{$focus} 18%, transparent);
+    }
+
+    &--drop-before::after {
+        top: -7px;
+    }
+
+    > .ip-node,
+    > .ip-insert,
+    > .ip-child-frame,
+    > .ip-child-frame__empty {
+        position: relative;
+        z-index: 1;
+    }
+
+    > .ip-node {
+        width: min(640px, 100%);
+    }
+
+    > .ip-insert {
+        width: min(640px, 100%);
+    }
+
+    > .ip-child-frame {
+        width: min(680px, 100%);
+    }
+
+    > .ip-child-frame__empty {
+        width: min(640px, 100%);
+    }
+
+    > .ip-insert-menu {
+        top: 26px;
+        right: 12px;
+        left: auto;
+        transform: none;
+    }
+
+    &__label {
+        position: absolute;
+        top: -18px;
+        left: 50%;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        max-width: min(360px, calc(100% - 48px));
+        border: 1px solid $panel-strong;
+        border-radius: 999px;
+        padding: 5px 10px 5px 9px;
+        color: var(--vscode-foreground);
+        background: $surface;
+        box-shadow: $shadow-subtle;
+        transform: translateX(-50%);
+        cursor: grab;
+
+        &:active {
+            cursor: grabbing;
+        }
+
+        strong,
+        small {
+            @include truncate;
+        }
+
+        strong {
+            min-width: 0;
+            font-size: 12px;
+        }
+
+        small {
+            flex: 0 0 auto;
+            color: $desc;
+            font-size: 11px;
+        }
+
+        .codicon:last-child {
+            color: $desc;
+        }
+    }
+
+    &__actions {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 2;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity $quick;
+    }
+
+    &:hover &__actions,
+    &--active &__actions {
+        opacity: 1;
+    }
+
+    &__empty {
+        display: grid;
+        place-items: center;
+        min-height: 92px;
+        margin: 2px auto 0;
+        border: 1px dashed color-mix(in srgb, #{$panel-strong} 70%, transparent);
+        border-radius: $radius-surface;
+        background: color-mix(in srgb, #{$surface} 18%, transparent);
+        transition: border-color $quick, background $quick, box-shadow $quick;
+
+        &--drop-target {
+            border-color: $focus;
+            background: color-mix(in srgb, #{$focus} 10%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, #{$focus} 34%, transparent);
+        }
+
+        > button {
+            @include button;
+            display: grid;
+            place-items: center;
+            position: relative;
+            width: 30px;
+            height: 30px;
+            border: 0;
+            border-radius: 50%;
+            padding: 0;
+            color: var(--vscode-button-foreground);
+            background: var(--vscode-button-background);
+
+            &::before,
+            &::after {
+                content: "";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 14px;
+                height: 2px;
+                border-radius: 999px;
+                background: currentColor;
+                transform: translate(-50%, -50%);
+            }
+
+            &::after {
+                transform: translate(-50%, -50%) rotate(90deg);
+            }
+        }
+    }
+}
+
+.ip-inspector__header {
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 58px;
+    padding: 10px 14px;
+    border-bottom: 1px solid $panel;
+    background: color-mix(in srgb, #{$surface-alt} 82%, #{$editor});
+
+    .ip-inspector__heading { min-width: 0; }
+
+    h2,
+    p {
+        margin: 0;
+    }
+
+    h2 {
+        @include truncate;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0;
+    }
+
+    p {
+        @include truncate;
+        margin-top: 3px;
+        color: $desc;
+    }
+}
+
+.ip-inspector__heading {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+}
+
+.ip-inspector__glyph {
+    @include editor-header-icon-tile;
+
+    .codicon[class*='codicon-'] {
+        @include editor-header-icon-glyph;
+    }
+}
+
+.ip-inspector__actions {
+    display: flex;
+    gap: 4px;
+}
+
+.ip-tabs {
+    display: grid;
+    grid-template-columns:
+        minmax(56px, 0.84fr)
+        minmax(68px, 1fr)
+        minmax(96px, 1.28fr)
+        minmax(58px, 0.84fr)
+        minmax(48px, 0.7fr);
+    z-index: 2;
+    overflow: hidden;
+
+    &__tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-width: 0;
+        @include truncate;
+    }
+}
+
+.ip-inspector__body {
+    display: grid;
+    align-content: start;
+    min-height: 0;
+    overflow: auto;
+    gap: 12px;
+    padding: 12px 14px 14px;
+}
+
+.ip-field,
+.ip-switch {
+    display: grid;
+    gap: 5px;
+
+    > span {
+        color: $desc;
+        font-size: 12px;
+        font-weight: 600;
+    }
+}
+
+.ip-field input,
+.ip-field select,
+.ip-field textarea,
+.ip-map input,
+.ip-code-input {
+    @include control;
+}
+
+.ip-readonly-value {
+    min-height: 30px;
+    border: 1px solid color-mix(in srgb, #{$panel} 78%, transparent);
+    border-radius: $radius-control;
+    padding: 5px 8px;
+    color: var(--vscode-input-foreground);
+    background: color-mix(in srgb, #{$editor} 76%, #{$surface});
+}
+
+.ip-code-input {
+    min-height: 110px;
+    resize: vertical;
+    font-family: var(--vscode-editor-font-family);
+    line-height: 1.45;
+}
+
+.ip-switch {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    color: var(--vscode-foreground);
+
+    input {
+        margin: 0;
+    }
+}
+
+.ip-field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.ip-map {
+    display: grid;
+    gap: 8px;
+    padding: 9px;
+    border: 1px solid $panel;
+    border-radius: $radius-control;
+    background: color-mix(in srgb, #{$editor} 78%, #{$surface});
+
+    header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    h3 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0;
+    }
+
+    &__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 30px;
+        align-items: stretch;
+        gap: 6px;
+
+        .ip-icon-button {
+            width: 30px;
+            height: 30px;
+            flex-basis: 30px;
+        }
+    }
+}
+
+.ip-json {
+    display: grid;
+    gap: 10px;
+
+    p {
+        margin: 0;
+        color: $desc;
+    }
+}
+
+.ip-muted {
+    margin: 0;
+    color: $desc;
+}
+
+.ip-inline-error {
+    border: 1px solid color-mix(in srgb, var(--vscode-errorForeground) 42%, transparent);
+    border-radius: $radius-control;
+    padding: 8px;
+    color: var(--vscode-errorForeground);
+    background: color-mix(in srgb, var(--vscode-inputValidation-errorBackground) 34%, #{$editor});
+}
+
+.ip-empty {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    max-width: min(440px, 100%);
+    padding: 24px;
+    text-align: center;
+
+    h1,
+    h2,
+    p {
+        margin: 0;
+    }
+
+    h1,
+    h2 {
+        font-size: 16px;
+        letter-spacing: 0;
+    }
+
+    p {
+        color: $desc;
+    }
+
+    &__icon,
+    > .codicon {
+        font-size: 26px;
+        color: $desc;
+    }
+
+    &--compact {
+        padding: 18px 8px;
+    }
+
+    &--canvas {
+        position: relative;
+        z-index: 1;
+        margin: 42px auto;
+        border: 1px solid $panel;
+        border-radius: $radius-surface;
+        background: $surface;
+    }
+}
+
+@media (max-width: 1040px) {
+    body {
+        overflow: auto;
+    }
+
+    .ip-shell {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+
+    .ip-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .ip-actions {
+        justify-content: flex-start;
+    }
+
+    .ip-workbench {
+        grid-template-columns: 1fr;
+        overflow: visible;
+    }
+
+    .ip-rail,
+    .ip-inspector,
+    .ip-canvas {
+        max-height: none;
+        overflow: visible;
+        border: 0;
+        border-bottom: 1px solid $panel;
+    }
+
+    .ip-canvas {
+        min-height: 520px;
+    }
+}

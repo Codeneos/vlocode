@@ -58,59 +58,47 @@ textarea {
 }
 
 .dp-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 12px 18px;
-    border-bottom: 1px solid $panel;
-    background: $surface-alt;
+    @include editor-topbar;
 
     &__identity {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        gap: 12px;
+        @include editor-header-identity;
     }
 
     &__icon.codicon[class*='codicon-'] {
-        @include centered-codicon(22px);
-        flex: 0 0 38px;
-        width: 38px;
-        height: 38px;
-        border-radius: $radius-surface;
-        color: var(--vscode-button-foreground);
-        background: var(--vscode-button-background);
+        @include editor-header-icon;
     }
 
     &__title {
-        min-width: 0;
+        @include editor-header-copy;
     }
 
     p,
     h1 {
-        @include truncate;
-        margin: 0;
+        min-width: 0;
     }
 
     p {
-        color: $desc;
-        font-size: 13px;
+        @include editor-header-subtitle;
     }
 
     h1 {
-        color: var(--vscode-foreground);
-        font-size: 18px;
-        font-weight: 700;
-        letter-spacing: 0;
+        @include editor-header-title;
     }
 
     &__actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 8px;
+        @include editor-header-actions;
+
+        .dp-button {
+            min-height: 28px;
+            padding: 3px 9px;
+        }
     }
+}
+
+.dp-change-count {
+    color: $desc;
+    font-size: 12px;
+    white-space: nowrap;
 }
 
 .dp-breadcrumbs {
@@ -130,7 +118,7 @@ textarea {
         border: 0;
         border-radius: $radius-control;
         padding: 3px 7px;
-        color: var(--vscode-textLink-foreground);
+        color: var(--vlocode-link-foreground);
         background: transparent;
         cursor: pointer;
         @include truncate;
@@ -138,7 +126,20 @@ textarea {
         &:hover,
         &:focus-visible {
             background: $surface-hover;
-            @include ring;
+            outline: 1px solid var(--vscode-focusBorder);
+            outline-offset: -1px;
+        }
+
+        &--static {
+            color: $desc;
+            cursor: default;
+
+            &:hover,
+            &:focus-visible {
+                background: transparent;
+                box-shadow: none;
+                outline: none;
+            }
         }
 
         &--active {
@@ -181,7 +182,6 @@ textarea {
         &:focus-visible {
             color: var(--vscode-button-foreground);
             background: var(--vscode-button-hoverBackground);
-            @include ring;
         }
     }
 }
@@ -218,7 +218,7 @@ textarea {
     overflow: hidden;
     border: 0;
     padding: 0;
-    color: var(--vscode-textLink-foreground);
+    color: var(--vlocode-link-foreground);
     background: transparent;
     cursor: pointer;
     text-align: left;
@@ -228,10 +228,11 @@ textarea {
 
     &:hover,
     &:focus-visible {
-        color: var(--vscode-textLink-activeForeground);
+        color: var(--vlocode-link-activeForeground);
         border-radius: $radius-control;
         background: $surface-hover;
-        @include ring;
+        outline: 1px solid var(--vscode-focusBorder);
+        outline-offset: -1px;
     }
 
     .codicon {
@@ -396,18 +397,26 @@ textarea {
         white-space: normal;
     }
 
+    &--dirty {
+        background: color-mix(in srgb, var(--vscode-editorGutter-modifiedBackground, #{$focus}) 5%, transparent);
+
+        .dp-field__label span::before {
+            content: "";
+            display: inline-block;
+            width: 3px;
+            height: 13px;
+            margin-right: 7px;
+            border-radius: 999px;
+            background: var(--vscode-editorGutter-modifiedBackground, #{$focus});
+            vertical-align: -2px;
+        }
+    }
+
     &__action {
         display: flex;
         align-self: center;
         justify-content: flex-end;
         min-height: 30px;
-    }
-
-    &__edit-actions {
-        display: inline-flex;
-        justify-content: flex-end;
-        gap: 6px;
-        vertical-align: top;
     }
 }
 
@@ -450,13 +459,41 @@ select.dp-input[multiple] {
     gap: 8px;
 
     input {
+        appearance: none;
+        position: relative;
         width: 15px;
         height: 15px;
         margin: 0;
-        accent-color: var(--vscode-checkbox-selectBackground, var(--vscode-button-background));
+        border: 1px solid var(--vscode-checkbox-border, #{$input-border});
+        border-radius: 3px;
+        color: var(--vscode-checkbox-selectForeground, var(--vscode-button-foreground));
+        background: var(--vscode-checkbox-background, var(--vscode-input-background));
+
+        &:checked {
+            border-color: var(--vscode-checkbox-selectBackground, var(--vscode-button-background));
+            background: var(--vscode-checkbox-selectBackground, var(--vscode-button-background));
+        }
+
+        &:checked::after {
+            content: "";
+            position: absolute;
+            top: 1px;
+            left: 4px;
+            width: 4px;
+            height: 8px;
+            border: solid currentColor;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        &:focus-visible {
+            outline: 1px solid $focus;
+            outline-offset: 2px;
+        }
     }
 
     &--readonly input {
+        opacity: 0.78;
         pointer-events: none;
     }
 }
@@ -564,6 +601,11 @@ select.dp-input[multiple] {
         text-overflow: clip;
         white-space: nowrap;
     }
+
+    &__cell--dirty {
+        box-shadow: inset 2px 0 0 var(--vscode-editorGutter-modifiedBackground, #{$focus});
+        background: color-mix(in srgb, var(--vscode-editorGutter-modifiedBackground, #{$focus}) 6%, transparent);
+    }
 }
 
 .dp-table .dp-link-button {
@@ -639,11 +681,23 @@ select.dp-input[multiple] {
         overflow-wrap: anywhere;
     }
 
-    &__editor {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) max-content;
-        align-items: start;
-        gap: 8px;
+    &--dirty {
+        box-shadow: inset 2px 0 0 var(--vscode-editorGutter-modifiedBackground, #{$focus});
+        background: color-mix(in srgb, var(--vscode-editorGutter-modifiedBackground, #{$focus}) 5%, #{$surface});
+    }
+
+    &--dirty &__header h2::before {
+        content: "";
+        display: inline-block;
+        width: 3px;
+        height: 13px;
+        margin-right: 7px;
+        border-radius: 999px;
+        background: var(--vscode-editorGutter-modifiedBackground, #{$focus});
+        vertical-align: -2px;
+    }
+
+    &__edit-body {
         padding: 14px;
     }
 }

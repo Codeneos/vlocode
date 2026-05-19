@@ -24,6 +24,9 @@
         },
         {
             "path": "./tsconfig.datamapper.json"
+        },
+        {
+            "path": "./tsconfig.integration-procedure.json"
         }
     ]
 }

@@ -450,6 +450,35 @@ vlocode.datamapper.viewSource:
         - webviewId == vlocode.datamapperEditor
     - menu: commandPalette
       when: *whenDataMapperEditor
+vlocode.integrationProcedure.openEditor:
+  title: 'Integration Procedure: Open Editor'
+  icon: $(preview)
+  when: activeCustomEditorId != vlocode.integrationProcedureEditor
+  menus:
+    - menu: editor/title/run
+      when: &whenIntegrationProcedureFile
+        - resourceScheme == file && resourcePath =~ /[\/\\]IntegrationProcedure[\/\\].*_(DataPack|Element.*)\.json$/
+        - resourceScheme == file && resourcePath =~ /[\/\\]omniIntegrationProcedures[\/\\].*-meta\.xml$/
+    - menu: editor/context
+      when: *whenIntegrationProcedureFile
+    - menu: explorer/context
+      when: *whenIntegrationProcedureFile
+    - menu: commandPalette
+      when: *whenIntegrationProcedureFile
+vlocode.integrationProcedure.viewSource:
+  title: 'Integration Procedure: View Source'
+  icon: $(code)
+  menus:
+    - menu: editor/title/run
+      when: &whenIntegrationProcedureEditor
+        - activeCustomEditorId == vlocode.integrationProcedureEditor
+    - menu: editor/context
+      when: *whenIntegrationProcedureEditor
+    - menu: webview/context
+      when:
+        - webviewId == vlocode.integrationProcedureEditor
+    - menu: commandPalette
+      when: *whenIntegrationProcedureEditor
 vlocode.datapackEditor.openEditor:
   title: 'Datapack: Open Editor'
   icon: $(preview)

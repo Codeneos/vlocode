@@ -1,0 +1,13 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./out-tsc/integration-procedure",
+        "composite": true
+    },
+    "files": ["src/integration-procedure-editor/main.ts"],
+    "include": [
+        "src/integration-procedure-editor/**/*.d.ts",
+        "src/integration-procedure-editor/**/*.ts",
+        "src/shared/**/*.ts"
+    ]
+}

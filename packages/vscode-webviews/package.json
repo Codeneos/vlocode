@@ -4,13 +4,17 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "pnpm build:datapack && pnpm build:datamapper",
+        "build": "pnpm build:datapack && pnpm build:datamapper && pnpm build:integration-procedure",
         "build:datapack": "ng build datapack-editor --configuration production",
         "build:datamapper": "ng build datamapper-editor --configuration production",
-        "watch": "pnpm --parallel --stream --no-bail watch:datapack watch:datamapper",
+        "build:integration-procedure": "ng build integration-procedure-editor --configuration production",
+        "build:preview": "ng build editor-preview --configuration development",
+        "preview": "ng serve editor-preview --configuration development --port 4200",
+        "watch": "pnpm run --parallel --stream --no-bail \"/^watch:/\"",
         "watch:datapack": "ng build datapack-editor --watch --configuration development",
         "watch:datamapper": "ng build datamapper-editor --watch --configuration development",
-        "clean": "shx rm -rf ../vscode-extension/resources/datapack-editor ../vscode-extension/resources/datamapper-editor"
+        "watch:integration-procedure": "ng build integration-procedure-editor --watch --configuration development",
+        "clean": "shx rm -rf ../vscode-extension/resources/datapack-editor ../vscode-extension/resources/datamapper-editor ../vscode-extension/resources/integration-procedure-editor"
     },
     "author": {
         "name": "Peter van Gulik",

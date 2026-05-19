@@ -21,3 +21,4 @@ packages/*/out
 /packages/apex/src/grammar/*.tokens
 /packages/vscode-extension/resources/datamapper-editor/
 /packages/vscode-extension/resources/datapack-editor/
+/packages/vscode-extension/resources/integration-procedure-editor/

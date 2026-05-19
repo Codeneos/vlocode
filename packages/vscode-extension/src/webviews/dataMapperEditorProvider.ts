@@ -6,7 +6,8 @@ import { VlocodeCommand } from '../constants';
 import { getErrorMessage } from '@vlocode/util';
 import { container } from '@vlocode/core';
 import { DataMapperExecutor, DatapackFileWriter, DatapackLoader, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition } from '@vlocode/vlocity';
-import { MetadataDatapackConverter } from '@vlocode/vlocity-deploy';
+import { MetadataConverter } from '@vlocode/vlocity-deploy';
+import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
 
 interface DataMapperModel {
     header: Record<string, unknown>;
@@ -74,7 +75,7 @@ interface LoadedDocument {
     uri: vscode.Uri;
 }
 
-export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider {
+export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapperModel, EditorState, LoadedDocument> {
     public static readonly viewType = 'vlocode.datamapperEditor';
 
     public static register(context: vscode.ExtensionContext, service: VlocodeService) {
@@ -90,109 +91,53 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
     }
 
     private constructor(
-        private readonly context: vscode.ExtensionContext,
-        private readonly service: VlocodeService
+        context: vscode.ExtensionContext,
+        service: VlocodeService
     ) {
+        super(context, service);
     }
 
-    private readonly metadataConverter = container.get(MetadataDatapackConverter);
+    private readonly metadataConverter = container.get(MetadataConverter);
     private sObjectSuggestions?: Promise<FieldSuggestion[]>;
+    protected readonly view = {
+        resourceRoot: 'resources/datamapper-editor',
+        savedMessage: 'DataMapper saved',
+        tagName: 'vlocode-datamapper-editor',
+        title: 'DataMapper Editor'
+    };
 
-    public async resolveCustomTextEditor(
-        document: vscode.TextDocument,
-        webviewPanel: vscode.WebviewPanel,
-        token: vscode.CancellationToken
-    ): Promise<void> {
-        webviewPanel.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [
-                vscode.Uri.file(this.context.asAbsolutePath('resources/datamapper-editor'))
-            ]
-        };
-        webviewPanel.webview.html = this.getHtml(webviewPanel.webview);
-
-        let loaded = await this.loadDocument(document.uri, document.getText());
-        const postState = async () => {
-            if (token.isCancellationRequested) {
-                return;
+    protected override async handleEditorMessage({ document, panel, message }: EditorMessageContext<DataMapperModel, LoadedDocument>): Promise<boolean> {
+        switch (message.type) {
+            case 'refreshFields': {
+                const state = await this.createEditorState(message.model ?? document.data.model, stringArray(message.objects));
+                panel.webview.postMessage({
+                    type: 'fields',
+                    objectSuggestions: state.objectSuggestions,
+                    sourceFields: state.sourceFields,
+                    outputFields: state.outputFields,
+                    error: state.error
+                });
+                return true;
             }
-            webviewPanel.webview.postMessage({ type: 'load', state: await this.createEditorState(loaded.model) });
-        };
-
-        const documentSubscription = vscode.workspace.onDidChangeTextDocument(async event => {
-            if (event.document.uri.toString() !== document.uri.toString()) {
-                return;
-            }
-            try {
-                loaded = await this.loadDocument(document.uri, event.document.getText());
-                await postState();
-            } catch (error) {
-                webviewPanel.webview.postMessage({ type: 'error', message: getErrorMessage(error) });
-            }
-        });
-
-        webviewPanel.onDidDispose(() => documentSubscription.dispose());
-        webviewPanel.webview.onDidReceiveMessage(async message => {
-            const requestType = message.type;
-            try {
-                switch (message.type) {
-                    case 'ready':
-                        await postState();
-                        break;
-                    case 'save':
-                        this.applyModelToDatapack(loaded, message.model);
-                        await this.saveDocument(loaded);
-                        void vscode.window.setStatusBarMessage('DataMapper saved', 2500);
-                        break;
-                    case 'deploy':
-                        this.applyModelToDatapack(loaded, message.model);
-                        await this.saveDocument(loaded);
-                        await this.service.commands.execute(this.getDeployCommand(loaded), [document.uri]);
-                        break;
-                    case 'openSalesforce':
-                        await this.service.commands.execute(this.getOpenSalesforceCommand(loaded), [document.uri]);
-                        break;
-                    case 'refresh':
-                        await this.service.commands.execute(this.getRefreshCommand(loaded), [document.uri]);
-                        loaded = await this.loadDocument(document.uri, document.getText());
-                        await postState();
-                        break;
-                    case 'refreshFields':
-                        {
-                            const state = await this.createEditorState(message.model ?? loaded.model, message.objects);
-                            webviewPanel.webview.postMessage({
-                                type: 'fields',
-                                objectSuggestions: state.objectSuggestions,
-                                sourceFields: state.sourceFields,
-                                outputFields: state.outputFields,
-                                error: state.error
-                            });
-                        }
-                        break;
-                    case 'preview':
-                        {
-                            const debug: DataMapperPreviewDebug = { queries: [], totalDurationMs: 0 };
-                            const start = Date.now();
-                            try {
-                                const output = await this.executePreview(message.model ?? loaded.model, message.input, debug);
-                                debug.totalDurationMs = Date.now() - start;
-                                webviewPanel.webview.postMessage({ type: 'previewResult', result: { output, debug } });
-                            } catch (error) {
-                                debug.totalDurationMs = Date.now() - start;
-                                webviewPanel.webview.postMessage({ type: 'previewError', message: getErrorMessage(error), debug });
-                            }
-                        }
-                        break;
+            case 'preview': {
+                const debug: DataMapperPreviewDebug = { queries: [], totalDurationMs: 0 };
+                const start = Date.now();
+                try {
+                    const output = await this.executePreview(message.model ?? document.data.model, message.input, debug);
+                    debug.totalDurationMs = Date.now() - start;
+                    panel.webview.postMessage({ type: 'previewResult', result: { output, debug } });
+                } catch (error) {
+                    debug.totalDurationMs = Date.now() - start;
+                    panel.webview.postMessage({ type: 'previewError', message: getErrorMessage(error), debug });
                 }
-            } catch (error) {
-                const message = getErrorMessage(error);
-                webviewPanel.webview.postMessage({ type: requestType === 'preview' ? 'previewError' : 'error', message });
-                vscode.window.showErrorMessage(message);
+                return true;
             }
-        });
+            default:
+                return false;
+        }
     }
 
-    private async createEditorState(model: DataMapperModel, requestedObjects?: string[]): Promise<EditorState> {
+    protected override async createEditorState(model: DataMapperModel, requestedObjects?: string[]): Promise<EditorState> {
         const objectSuggestions = await this.getSObjectSuggestions();
         const knownObjects = new Set(objectSuggestions.map(suggestion => suggestion.path.toLowerCase()));
         const isKnownObject = (objectName: string) => !knownObjects.size || knownObjects.has(objectName.toLowerCase());
@@ -260,45 +205,24 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
         return 'extract';
     }
 
-    private getDeployCommand(document: LoadedDocument) {
+    protected override getDeployCommand(document: LoadedDocument) {
         return document.sourceFormat === 'xml' ? VlocodeCommand.deployMetadata : VlocodeCommand.deployDatapack;
     }
 
-    private getRefreshCommand(document: LoadedDocument) {
+    protected override getRefreshCommand(document: LoadedDocument) {
         return document.sourceFormat === 'xml' ? VlocodeCommand.refreshMetadata : VlocodeCommand.refreshDatapack;
     }
 
-    private getOpenSalesforceCommand(document: LoadedDocument) {
+    protected override getOpenSalesforceCommand(document: LoadedDocument) {
         return document.sourceFormat === 'xml' ? VlocodeCommand.viewInSalesforce : VlocodeCommand.openInSalesforce;
     }
 
     private async openEditorView(uri?: vscode.Uri) {
-        const documentUri = this.resolveCommandUri(uri);
-        if (!documentUri) {
-            void vscode.window.showErrorMessage('No DataMapper file is active.');
-            return;
-        }
-        await vscode.commands.executeCommand('vscode.openWith', documentUri, DataMapperEditorProvider.viewType);
+        await this.openEditorWith(DataMapperEditorProvider.viewType, 'No DataMapper file is active.', uri);
     }
 
     private async openSourceView(uri?: vscode.Uri) {
-        const documentUri = this.resolveCommandUri(uri);
-        if (!documentUri) {
-            void vscode.window.showErrorMessage('No DataMapper file is active.');
-            return;
-        }
-        await vscode.commands.executeCommand('vscode.openWith', documentUri, 'default');
-    }
-
-    private resolveCommandUri(uri?: vscode.Uri): vscode.Uri | undefined {
-        if (uri instanceof vscode.Uri) {
-            return uri;
-        }
-        const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
-        if (input instanceof vscode.TabInputText || input instanceof vscode.TabInputCustom) {
-            return input.uri;
-        }
-        return vscode.window.activeTextEditor?.document.uri;
+        await this.openSourceWith('No DataMapper file is active.', uri);
     }
 
     private async getSourceFields(objects: string[]): Promise<FieldSuggestion[]> {
@@ -403,7 +327,7 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
         });
     }
 
-    private async loadDocument(uri: vscode.Uri, text: string): Promise<LoadedDocument> {
+    protected override async loadDocument(uri: vscode.Uri, text: string): Promise<LoadedDocument> {
         if (uri.fsPath.endsWith('.rpt-meta.xml')) {
             return this.loadXmlDocument(uri, text);
         }
@@ -431,13 +355,17 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
         };
     }
 
-    private async saveDocument(document: LoadedDocument): Promise<void> {
+    protected override async saveDocument(document: LoadedDocument, destination?: vscode.Uri): Promise<void> {
         if (document.sourceFormat === 'xml') {
             const xml = this.metadataConverter.datapackToMetadataXml(document.datapack);
-            await vscode.workspace.fs.writeFile(document.uri, Buffer.from(xml, 'utf8'));
+            await vscode.workspace.fs.writeFile(destination ?? document.uri, Buffer.from(xml, 'utf8'));
             return;
         }
 
+        if (destination) {
+            await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
+            return;
+        }
         await container.get(DatapackFileWriter).saveDatapack(document.datapack);
     }
 
@@ -452,7 +380,7 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
         };
     }
 
-    private applyModelToDatapack(document: LoadedDocument, model: DataMapperModel): void {
+    protected override applyModel(document: LoadedDocument, model: DataMapperModel): void {
         const data = document.datapack.data;
         for (const key of Object.keys(data)) {
             if (key !== 'OmniDataTransformItem' && !(key in model.header)) {
@@ -483,27 +411,6 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
         return vscode.Uri.file(headers[0]);
     }
 
-    private getHtml(webview: vscode.Webview): string {
-        const assetRoot = this.context.asAbsolutePath('resources/datamapper-editor');
-        const mainScript = webview.asWebviewUri(vscode.Uri.file(path.join(assetRoot, 'main.js')));
-        const styles = webview.asWebviewUri(vscode.Uri.file(path.join(assetRoot, 'styles.css')));
-        const nonce = getNonce();
-
-        return `<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' ${webview.cspSource}; worker-src ${webview.cspSource} blob:; font-src ${webview.cspSource} data:; img-src ${webview.cspSource} data:;">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="${styles}">
-    <title>DataMapper Editor</title>
-</head>
-<body>
-    <vlocode-datamapper-editor></vlocode-datamapper-editor>
-    <script nonce="${nonce}" src="${mainScript}" type="module"></script>
-</body>
-</html>`;
-    }
 }
 
 function toArray<T>(value: T | T[] | undefined): T[] {
@@ -513,11 +420,6 @@ function toArray<T>(value: T | T[] | undefined): T[] {
     return Array.isArray(value) ? value : [value];
 }
 
-function getNonce() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let text = '';
-    for (let i = 0; i < 32; i++) {
-        text += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return text;
+function stringArray(value: unknown): string[] | undefined {
+    return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : undefined;
 }

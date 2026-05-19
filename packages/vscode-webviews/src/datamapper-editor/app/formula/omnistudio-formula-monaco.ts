@@ -6,7 +6,7 @@ import type { monaco } from '../components/monaco-editor/monaco-editor.component
 export const OMNISTUDIO_FORMULA_LANGUAGE_ID = 'omnistudio-formula';
 
 const languageService = new OmniStudioFormulaLanguageService();
-let registered = false;
+let registered = false; 
 const formulaCompletionTriggers = [
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$_'
 ];

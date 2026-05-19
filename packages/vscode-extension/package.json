@@ -30,6 +30,7 @@
         "dist/**/*.{mjs,js}",
         "resources/datapack-editor/**/*",
         "resources/datamapper-editor/**/*",
+        "resources/integration-procedure-editor/**/*",
         "resources/**/*.{png,gif,svg}",
         "syntax/**/*.json",
         "README.md",
@@ -124,6 +125,22 @@
                     },
                     {
                         "filenamePattern": "**/OmniDataTransform/**/*_Items.json"
+                    }
+                ],
+                "priority": "default"
+            },
+            {
+                "viewType": "vlocode.integrationProcedureEditor",
+                "displayName": "Integration Procedure Editor",
+                "selector": [
+                    {
+                        "filenamePattern": "**/IntegrationProcedure/**/*_DataPack.json"
+                    },
+                    {
+                        "filenamePattern": "**/IntegrationProcedure/**/*_Element*.json"
+                    },
+                    {
+                        "filenamePattern": "**/omniIntegrationProcedures/*-meta.xml"
                     }
                 ],
                 "priority": "default"
@@ -439,6 +456,16 @@
             {
                 "command": "vlocode.datamapper.viewSource",
                 "title": "DataMapper: View Source",
+                "icon": "$(code)"
+            },
+            {
+                "command": "vlocode.integrationProcedure.openEditor",
+                "title": "Integration Procedure: Open Editor",
+                "icon": "$(preview)"
+            },
+            {
+                "command": "vlocode.integrationProcedure.viewSource",
+                "title": "Integration Procedure: View Source",
                 "icon": "$(code)"
             },
             {
@@ -768,6 +795,18 @@
                     "when": "activeCustomEditorId == vlocode.datamapperEditor"
                 },
                 {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]IntegrationProcedure[\\/\\\\].*_(DataPack|Element.*)\\.json$/"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]omniIntegrationProcedures[\\/\\\\].*-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.viewSource",
+                    "when": "activeCustomEditorId == vlocode.integrationProcedureEditor"
+                },
+                {
                     "command": "vlocode.datapackEditor.openEditor",
                     "when": "activeCustomEditorId != vlocode.datapackEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\].*_DataPack\\.json$/"
                 },
@@ -916,6 +955,14 @@
                     "when": "activeCustomEditorId != vlocode.datamapperEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\](DataRaptor|OmniDataTransform)[\\/\\\\].*_(DataPack|Items)\\.json$/"
                 },
                 {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]IntegrationProcedure[\\/\\\\].*_(DataPack|Element.*)\\.json$/"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]omniIntegrationProcedures[\\/\\\\].*-meta\\.xml$/"
+                },
+                {
                     "command": "vlocode.datapackEditor.openEditor",
                     "when": "activeCustomEditorId != vlocode.datapackEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\].*_DataPack\\.json$/"
                 }
@@ -1027,6 +1074,18 @@
                 {
                     "command": "vlocode.datamapper.viewSource",
                     "when": "activeCustomEditorId == vlocode.datamapperEditor"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]IntegrationProcedure[\\/\\\\].*_(DataPack|Element.*)\\.json$/"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]omniIntegrationProcedures[\\/\\\\].*-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.viewSource",
+                    "when": "activeCustomEditorId == vlocode.integrationProcedureEditor"
                 },
                 {
                     "command": "vlocode.datapackEditor.openEditor",
@@ -1160,6 +1219,18 @@
                     "when": "activeCustomEditorId == vlocode.datamapperEditor"
                 },
                 {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]IntegrationProcedure[\\/\\\\].*_(DataPack|Element.*)\\.json$/"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.openEditor",
+                    "when": "activeCustomEditorId != vlocode.integrationProcedureEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\]omniIntegrationProcedures[\\/\\\\].*-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.viewSource",
+                    "when": "activeCustomEditorId == vlocode.integrationProcedureEditor"
+                },
+                {
                     "command": "vlocode.datapackEditor.openEditor",
                     "when": "activeCustomEditorId != vlocode.datapackEditor && resourceScheme == file && resourcePath =~ /[\\/\\\\].*_DataPack\\.json$/"
                 },
@@ -1180,6 +1251,10 @@
                 {
                     "command": "vlocode.datamapper.viewSource",
                     "when": "webviewId == vlocode.datamapperEditor"
+                },
+                {
+                    "command": "vlocode.integrationProcedure.viewSource",
+                    "when": "webviewId == vlocode.integrationProcedureEditor"
                 },
                 {
                     "command": "vlocode.datapackEditor.viewSource",

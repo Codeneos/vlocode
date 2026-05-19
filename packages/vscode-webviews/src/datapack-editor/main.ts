@@ -70,6 +70,7 @@ type ExtensionToWebviewMessage =
 
 type WebviewToExtensionMessage =
     | { type: 'ready' }
+    | { type: 'change'; model: DatapackEditorModel }
     | { type: 'save'; model: DatapackEditorModel }
     | { type: 'deploy'; model: DatapackEditorModel }
     | { type: 'refresh' }
@@ -79,6 +80,7 @@ type WebviewToExtensionMessage =
     | { type: 'exportReference'; reference: DatapackReference };
 
 interface Breadcrumb {
+    clickable: boolean;
     label: string;
     path: PathSegment[];
     pathKey: string;
@@ -122,11 +124,6 @@ interface RelatedRow {
     label: string;
     path: PathSegment[];
     pathKey: string;
-}
-
-interface EditingField {
-    field: DetailField;
-    draft: unknown;
 }
 
 const RESERVED_FIELDS = new Set([
@@ -218,31 +215,36 @@ const SUMMARY_FIELD_PRIORITY = [
                                 @if (filteredDetailFields().length) {
                                     <div class="dp-field-grid">
                                         @for (field of filteredDetailFields(); track pathKey(field.path)) {
-                                            <article class="dp-field" [class.dp-field--editing]="isEditing(field)" [class.dp-field--editable]="field.editable && !isEditing(field)" (dblclick)="startEdit(field)">
+                                            <article
+                                                class="dp-field"
+                                                [class.dp-field--editing]="isRecordEditing() && field.editable"
+                                                [class.dp-field--dirty]="isDirtyField(field)"
+                                                [class.dp-field--editable]="field.editable && !isRecordEditing()"
+                                                (dblclick)="startEdit(field)">
                                                 <div class="dp-field__label">
                                                     <span>{{ field.label }}</span>
                                                     <small>{{ field.apiName }}</small>
                                                 </div>
                                                 <div class="dp-field__value">
-                                                    @if (isEditing(field)) {
+                                                    @if (isRecordEditing() && field.editable) {
                                                         @switch (controlKind(field)) {
                                                             @case ('checkbox') {
                                                                 <label class="dp-checkbox">
-                                                                    <input type="checkbox" [checked]="editChecked()" (change)="updateEditDraft($event)" />
-                                                                    <span>{{ editChecked() ? 'True' : 'False' }}</span>
+                                                                    <input type="checkbox" [checked]="editChecked(field)" (change)="updateEditDraft(field, $event)" />
+                                                                    <span>{{ editChecked(field) ? 'True' : 'False' }}</span>
                                                                 </label>
                                                             }
                                                             @case ('number') {
-                                                                <input class="dp-input" type="number" [value]="editText()" (input)="updateEditDraft($event)" (keydown.enter)="applyEdit()" />
+                                                                <input class="dp-input" type="number" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
                                                             }
                                                             @case ('date') {
-                                                                <input class="dp-input" type="date" [value]="editText()" (input)="updateEditDraft($event)" (keydown.enter)="applyEdit()" />
+                                                                <input class="dp-input" type="date" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
                                                             }
                                                             @case ('datetime') {
-                                                                <input class="dp-input" type="datetime-local" [value]="editText()" (input)="updateEditDraft($event)" (keydown.enter)="applyEdit()" />
+                                                                <input class="dp-input" type="datetime-local" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
                                                             }
                                                             @case ('picklist') {
-                                                                <select class="dp-input" [multiple]="isMultiPicklist(field)" (change)="updateEditDraft($event)">
+                                                                <select class="dp-input" [multiple]="isMultiPicklist(field)" (change)="updateEditDraft(field, $event)">
                                                                     @if (field.metadata?.nillable && !isMultiPicklist(field)) {
                                                                         <option value="">--None--</option>
                                                                     }
@@ -254,10 +256,10 @@ const SUMMARY_FIELD_PRIORITY = [
                                                                 </select>
                                                             }
                                                             @case ('textarea') {
-                                                                <textarea class="dp-input dp-input--textarea" [value]="editText()" (input)="updateEditDraft($event)"></textarea>
+                                                                <textarea class="dp-input dp-input--textarea" [value]="editText(field)" (input)="updateEditDraft(field, $event)"></textarea>
                                                             }
                                                             @default {
-                                                                <input class="dp-input" type="text" [value]="editText()" (input)="updateEditDraft($event)" (keydown.enter)="applyEdit()" />
+                                                                <input class="dp-input" type="text" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
                                                             }
                                                         }
                                                     } @else if (field.kind === 'reference' && field.reference) {
@@ -281,16 +283,7 @@ const SUMMARY_FIELD_PRIORITY = [
                                                     }
                                                 </div>
                                                 <div class="dp-field__action">
-                                                    @if (isEditing(field)) {
-                                                        <span class="dp-field__edit-actions">
-                                                            <button type="button" class="dp-icon-button" title="Save field" (click)="applyEdit()">
-                                                                <span class="codicon codicon-check" aria-hidden="true"></span>
-                                                            </button>
-                                                            <button type="button" class="dp-icon-button" title="Cancel edit" (click)="cancelEdit()">
-                                                                <span class="codicon codicon-close" aria-hidden="true"></span>
-                                                            </button>
-                                                        </span>
-                                                    } @else if (field.editable) {
+                                                    @if (field.editable && !isRecordEditing()) {
                                                         <button type="button" class="dp-icon-button dp-icon-button--bare" title="Edit {{ field.label }}" (click)="startEdit(field)">
                                                             <span class="codicon codicon-edit" aria-hidden="true"></span>
                                                         </button>
@@ -335,7 +328,7 @@ const SUMMARY_FIELD_PRIORITY = [
                                                             @for (row of list.rows; track row.pathKey) {
                                                                 <tr>
                                                                     @for (column of list.columns; track column.key) {
-                                                                        <td>
+                                                                        <td [class.dp-table__cell--dirty]="row.cells[column.key] && isDirtyCell(row.cells[column.key])">
                                                                             @if (row.cells[column.key]; as cell) {
                                                                                 @if (cell.kind === 'reference' && cell.reference) {
                                                                                     <button type="button" class="dp-link-button" (click)="openReference(cell.reference)">
@@ -382,29 +375,21 @@ const SUMMARY_FIELD_PRIORITY = [
                             <section class="dp-content" aria-label="Content">
                                 @if (filteredContentFields().length) {
                                     @for (field of filteredContentFields(); track pathKey(field.path)) {
-                                        <article class="dp-content-card" [class.dp-content-card--editing]="isEditing(field)">
+                                        <article class="dp-content-card" [class.dp-content-card--editing]="isRecordEditing() && field.editable" [class.dp-content-card--dirty]="isDirtyField(field)">
                                             <header class="dp-content-card__header">
                                                 <div>
                                                     <h2>{{ field.label }}</h2>
                                                     <p>{{ field.apiName }}</p>
                                                 </div>
-                                                @if (field.editable && !isEditing(field)) {
+                                                @if (field.editable && !isRecordEditing()) {
                                                     <button type="button" class="dp-icon-button dp-icon-button--bare" title="Edit {{ field.label }}" (click)="startEdit(field)">
                                                         <span class="codicon codicon-edit" aria-hidden="true"></span>
                                                     </button>
                                                 }
                                             </header>
-                                            @if (isEditing(field)) {
-                                                <div class="dp-content-card__editor">
-                                                    <textarea class="dp-input dp-input--content" [value]="editText()" (input)="updateEditDraft($event)"></textarea>
-                                                    <span class="dp-field__edit-actions">
-                                                        <button type="button" class="dp-icon-button" title="Save field" (click)="applyEdit()">
-                                                            <span class="codicon codicon-check" aria-hidden="true"></span>
-                                                        </button>
-                                                        <button type="button" class="dp-icon-button" title="Cancel edit" (click)="cancelEdit()">
-                                                            <span class="codicon codicon-close" aria-hidden="true"></span>
-                                                        </button>
-                                                    </span>
+                                            @if (isRecordEditing() && field.editable) {
+                                                <div class="dp-content-card__edit-body">
+                                                    <textarea class="dp-input dp-input--content" [value]="editText(field)" (input)="updateEditDraft(field, $event)"></textarea>
                                                 </div>
                                             } @else {
                                                 <pre class="dp-content-card__body" [class.dp-muted]="isEmptyValue(field.value)">{{ displayValue(field.value, field.metadata) }}</pre>
@@ -441,34 +426,58 @@ const SUMMARY_FIELD_PRIORITY = [
                     <div class="dp-header__identity">
                         <span class="codicon codicon-symbol-object dp-header__icon" aria-hidden="true"></span>
                         <div class="dp-header__title">
-                            <p>{{ currentObjectLabel() }}</p>
                             <h1>{{ currentTitle() }}</h1>
+                            <p>{{ currentObjectLabel() }}</p>
                         </div>
                     </div>
                     <div class="dp-header__actions">
-                        <button type="button" class="dp-button" [disabled]="refreshing()" (click)="refresh()">
-                            <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
-                            @if (refreshing()) { Refreshing } @else { Refresh }
-                        </button>
-                        <button type="button" class="dp-button" [disabled]="deploying()" (click)="deploy()">
-                            <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
-                            @if (deploying()) { Deploying } @else { Deploy }
-                        </button>
-                        <button type="button" class="dp-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
-                            <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                            @if (openingSalesforce()) { Opening } @else { Open in Salesforce }
-                        </button>
-                        <button type="button" class="dp-button" (click)="viewSource()">
-                            <span class="codicon codicon-code" aria-hidden="true"></span>
-                            Source
-                        </button>
+                        @if (isRecordEditing()) {
+                            <span class="dp-change-count" aria-live="polite">{{ changeCountLabel() }}</span>
+                            <button type="button" class="dp-button" [disabled]="saving()" (click)="cancelEdit()">
+                                <span class="codicon codicon-close" aria-hidden="true"></span>
+                                Cancel
+                            </button>
+                            <button type="button" class="dp-button dp-button--primary" [disabled]="saving() || !hasChanges()" (click)="saveEdit()">
+                                <span class="codicon" [class.codicon-loading]="saving()" [class.codicon-modifier-spin]="saving()" [class.codicon-save]="!saving()" aria-hidden="true"></span>
+                                @if (saving()) { Saving } @else { Save }
+                            </button>
+                        } @else {
+                            @if (hasEditableFields()) {
+                                <button type="button" class="dp-button" (click)="startRecordEdit()">
+                                    <span class="codicon codicon-edit" aria-hidden="true"></span>
+                                    Edit
+                                </button>
+                            }
+                            <button type="button" class="dp-button" [disabled]="refreshing()" (click)="refresh()">
+                                <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
+                                @if (refreshing()) { Refreshing } @else { Refresh }
+                            </button>
+                            <button type="button" class="dp-button" [disabled]="deploying()" (click)="deploy()">
+                                <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
+                                @if (deploying()) { Deploying } @else { Deploy }
+                            </button>
+                            <button type="button" class="dp-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
+                                <span class="codicon codicon-link-external" aria-hidden="true"></span>
+                                @if (openingSalesforce()) { Opening } @else { Open in Salesforce }
+                            </button>
+                            <button type="button" class="dp-button" (click)="viewSource()">
+                                <span class="codicon codicon-code" aria-hidden="true"></span>
+                                Source
+                            </button>
+                        }
                     </div>
                 </header>
                 <nav class="dp-breadcrumbs" aria-label="Datapack structure">
                     @for (crumb of breadcrumbs(); track crumb.pathKey) {
-                        <button type="button" class="dp-breadcrumbs__item" [class.dp-breadcrumbs__item--active]="pathKey(crumb.path) === pathKey(path())" (click)="navigateTo(crumb.path)">
-                            {{ crumb.label }}
-                        </button>
+                        @if (crumb.clickable) {
+                            <button type="button" class="dp-breadcrumbs__item" [class.dp-breadcrumbs__item--active]="pathKey(crumb.path) === pathKey(path())" (click)="navigateTo(crumb.path)">
+                                {{ crumb.label }}
+                            </button>
+                        } @else {
+                            <span class="dp-breadcrumbs__item dp-breadcrumbs__item--static" [class.dp-breadcrumbs__item--active]="pathKey(crumb.path) === pathKey(path())">
+                                {{ crumb.label }}
+                            </span>
+                        }
                         @if (!$last) {
                             <span class="codicon codicon-chevron-right dp-breadcrumbs__sep" aria-hidden="true"></span>
                         }
@@ -480,7 +489,6 @@ const SUMMARY_FIELD_PRIORITY = [
 })
 export class AppComponent {
     protected readonly activeTab = signal<TabId>('details');
-    protected readonly edit = signal<EditingField | undefined>(undefined);
     protected readonly error = signal<string | undefined>(undefined);
     protected readonly filter = signal('');
     protected readonly hasLoaded = signal(false);
@@ -493,10 +501,13 @@ export class AppComponent {
     protected readonly refreshing = signal(false);
     protected readonly saving = signal(false);
     protected readonly deploying = signal(false);
+    protected readonly draftData = signal<Record<string, unknown> | undefined>(undefined);
+    protected readonly editRootPath = signal<PathSegment[] | undefined>(undefined);
 
     private readonly vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
 
-    protected readonly currentNode = computed<unknown>(() => getValueAtPath(this.model()?.data, this.path()));
+    protected readonly data = computed(() => this.draftData() ?? this.model()?.data);
+    protected readonly currentNode = computed<unknown>(() => getValueAtPath(this.data(), this.path()));
     protected readonly currentObject = computed<Record<string, unknown> | undefined>(() => {
         const node = this.currentNode();
         if (isRecord(node)) {
@@ -508,7 +519,7 @@ export class AppComponent {
                 return owner;
             }
         }
-        return this.model()?.data;
+        return this.data();
     });
     protected readonly currentSObjectType = computed(() => stringValue(this.currentObject()?.VlocityRecordSObjectType ?? this.model()?.sobjectType));
 
@@ -522,15 +533,25 @@ export class AppComponent {
         return object ? this.recordTitle(object, this.model()?.title ?? 'Record') : this.model()?.title ?? 'Datapack';
     });
 
+    protected readonly currentRecordPath = computed(() => {
+        if (isRecord(this.currentNode())) {
+            return this.path();
+        }
+        const ownerPath = this.path().slice(0, -1);
+        return isRecord(getValueAtPath(this.data(), ownerPath)) ? ownerPath : [];
+    });
+
     protected readonly breadcrumbs = computed(() => {
-        const crumbs: Breadcrumb[] = [{ label: this.model()?.title ?? 'Datapack', path: [], pathKey: '' }];
+        const crumbs: Breadcrumb[] = [{ clickable: true, label: this.model()?.title ?? 'Datapack', path: [], pathKey: '' }];
         let current: unknown = this.model()?.data;
         const currentPath: PathSegment[] = [];
         for (const segment of this.path()) {
             const parent = current;
             currentPath.push(segment);
             current = isRecord(current) || Array.isArray(current) ? current[segment as keyof typeof current] : undefined;
+            const isArrayStep = Array.isArray(parent) || Array.isArray(current);
             crumbs.push({
+                clickable: isRecord(current) && !isArrayStep,
                 label: typeof segment === 'number'
                     ? isRecord(current) ? this.recordTitle(current, `Row ${segment + 1}`) : `Row ${segment + 1}`
                     : isRecord(parent) ? this.fieldLabel(parent, segment) : humanizeFieldName(segment),
@@ -616,6 +637,43 @@ export class AppComponent {
             tabs.push('content');
         }
         return tabs;
+    });
+
+    protected readonly isRecordEditing = computed(() => {
+        const editPath = this.editRootPath();
+        return !!editPath && this.pathKeyValue(editPath) === this.pathKeyValue(this.currentRecordPath());
+    });
+
+    protected readonly dirtyFieldPaths = computed(() => {
+        const editPath = this.editRootPath();
+        const model = this.model();
+        const draft = this.draftData();
+        if (!editPath || !model || !draft) {
+            return new Set<string>();
+        }
+        const originalRecord = getValueAtPath(model.data, editPath);
+        const draftRecord = getValueAtPath(draft, editPath);
+        if (!isRecord(originalRecord) || !isRecord(draftRecord)) {
+            return new Set<string>();
+        }
+        const dirtyPaths = new Set<string>();
+        const keys = new Set([...Object.keys(originalRecord), ...Object.keys(draftRecord)]);
+        for (const key of keys) {
+            if (RESERVED_FIELDS.has(key) || Array.isArray(draftRecord[key]) || Array.isArray(originalRecord[key])) {
+                continue;
+            }
+            if (!jsonEqual(originalRecord[key], draftRecord[key])) {
+                dirtyPaths.add(this.pathKeyValue([...editPath, key]));
+            }
+        }
+        return dirtyPaths;
+    });
+
+    protected readonly hasChanges = computed(() => this.dirtyFieldPaths().size > 0);
+    protected readonly hasEditableFields = computed(() => this.allFields().some(field => field.editable));
+    protected readonly changeCountLabel = computed(() => {
+        const count = this.dirtyFieldPaths().size;
+        return count === 1 ? '1 change' : `${count} changes`;
     });
 
     protected readonly activeVisibleTab = computed(() => {
@@ -707,10 +765,13 @@ export class AppComponent {
     }
 
     protected navigateTo(path: PathSegment[]) {
+        if (!this.confirmDiscardChanges()) {
+            return;
+        }
         this.path.set([...path]);
         this.activeTab.set(this.tabForPath(path));
         this.notFound.set(undefined);
-        this.edit.set(undefined);
+        this.cancelEdit();
     }
 
     protected clearMissingReference() {
@@ -730,6 +791,10 @@ export class AppComponent {
                 return;
             }
         }
+        if (!this.confirmDiscardChanges()) {
+            return;
+        }
+        this.cancelEdit();
         this.vscode?.postMessage({ type: 'navigateReference', reference });
     }
 
@@ -737,30 +802,43 @@ export class AppComponent {
         if (!field.editable) {
             return;
         }
-        this.edit.set({ field, draft: field.value ?? '' });
+        this.startRecordEdit(field.path.slice(0, -1));
+    }
+
+    protected startRecordEdit(path = this.currentRecordPath()) {
+        const model = this.model();
+        if (!model || !isRecord(getValueAtPath(model.data, path))) {
+            return;
+        }
+        if (this.draftData() && !this.isEditingPath(path) && !this.confirmDiscardChanges()) {
+            return;
+        }
+        if (!this.draftData()) {
+            this.draftData.set(cloneJson(model.data));
+        }
+        this.editRootPath.set([...path]);
     }
 
     protected cancelEdit() {
-        this.edit.set(undefined);
+        this.draftData.set(undefined);
+        this.editRootPath.set(undefined);
     }
 
-    protected applyEdit() {
-        const edit = this.edit();
+    protected saveEdit() {
+        const draftData = this.draftData();
         const model = this.model();
-        if (!edit || !model) {
+        if (!draftData || !model) {
             return;
         }
-
-        const data = cloneJson(model.data);
-        setValueAtPath(data, edit.field.path, this.coerceDraft(edit));
-        this.model.set({ ...model, data });
-        this.edit.set(undefined);
+        this.setModel({ ...model, data: draftData });
+        this.draftData.set(undefined);
+        this.editRootPath.set(undefined);
         this.save();
     }
 
-    protected updateEditDraft(event: Event) {
-        const edit = this.edit();
-        if (!edit) {
+    protected updateEditDraft(field: DetailField, event: Event) {
+        const draftData = this.draftData();
+        if (!draftData) {
             return;
         }
         const target = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
@@ -769,22 +847,26 @@ export class AppComponent {
             : target instanceof HTMLSelectElement && target.multiple
                 ? Array.from(target.selectedOptions).map(option => option.value).join(';')
                 : target.value;
-        this.edit.set({ ...edit, draft });
+        const data = cloneJson(draftData);
+        setValueAtPath(data, field.path, this.coerceDraft(field, draft));
+        this.draftData.set(data);
     }
 
-    protected isEditing(field: DetailField) {
-        const edit = this.edit();
-        return edit ? this.pathKey(edit.field.path) === this.pathKey(field.path) : false;
+    protected isDirtyField(field: DetailField) {
+        return this.dirtyFieldPaths().has(this.pathKey(field.path));
     }
 
-    protected editText() {
-        const edit = this.edit();
-        const draft = edit?.draft;
-        return draft === null || draft === undefined ? '' : String(draft);
+    protected isDirtyCell(cell: RelatedCell) {
+        return this.dirtyFieldPaths().has(this.pathKey(cell.path));
     }
 
-    protected editChecked() {
-        return Boolean(this.edit()?.draft);
+    protected editText(field: DetailField) {
+        const value = field.value;
+        return value === null || value === undefined ? '' : String(value);
+    }
+
+    protected editChecked(field: DetailField) {
+        return Boolean(field.value);
     }
 
     protected controlKind(field: DetailField): FieldControlKind {
@@ -896,6 +978,9 @@ export class AppComponent {
     }
 
     private handleMessage(message: ExtensionToWebviewMessage) {
+        if ((message as { target?: string }).target && (message as { target?: string }).target !== 'datapack') {
+            return;
+        }
         switch (message.type) {
             case 'load':
                 this.model.set(message.state.model);
@@ -903,6 +988,7 @@ export class AppComponent {
                 this.error.set(message.state.error);
                 this.path.set([]);
                 this.notFound.set(undefined);
+                this.cancelEdit();
                 this.hasLoaded.set(true);
                 this.loading.set(false);
                 this.refreshing.set(false);
@@ -913,7 +999,7 @@ export class AppComponent {
                 this.saving.set(false);
                 return;
             case 'notFound':
-                this.edit.set(undefined);
+                this.cancelEdit();
                 this.notFound.set({
                     reference: message.reference,
                     title: 'Datapack not found',
@@ -931,6 +1017,11 @@ export class AppComponent {
         }
     }
 
+    private setModel(model: DatapackEditorModel) {
+        this.model.set(model);
+        this.vscode?.postMessage({ type: 'change', model });
+    }
+
     private createDetailField(key: string, value: unknown): DetailField {
         const object = this.currentObject();
         const path = [...this.path(), key];
@@ -939,7 +1030,7 @@ export class AppComponent {
         const isObject = isRecord(value);
         return {
             apiName: key,
-            editable: !reference && !isObject,
+            editable: !reference && !isObject && metadata?.updateable !== false,
             kind: reference ? 'reference' : isObject ? 'object' : 'primitive',
             label: metadata?.label ?? humanizeFieldName(key),
             metadata,
@@ -1088,8 +1179,7 @@ export class AppComponent {
     }
 
     private picklistSelectedValues(field: DetailField) {
-        const edit = this.edit();
-        const value = edit && this.pathKey(edit.field.path) === this.pathKey(field.path) ? edit.draft : field.value;
+        const value = field.value;
         if (value === undefined || value === null || value === '') {
             return [];
         }
@@ -1135,9 +1225,19 @@ export class AppComponent {
         return path.map(segment => typeof segment === 'number' ? `[${segment}]` : segment).join('.');
     }
 
-    private coerceDraft(edit: EditingField) {
-        const field = edit.field;
-        const draft = edit.draft;
+    private confirmDiscardChanges() {
+        if (!this.hasChanges()) {
+            return true;
+        }
+        return window.confirm('Discard unsaved datapack changes?');
+    }
+
+    private isEditingPath(path: PathSegment[]) {
+        const editPath = this.editRootPath();
+        return !!editPath && this.pathKeyValue(editPath) === this.pathKeyValue(path);
+    }
+
+    private coerceDraft(field: DetailField, draft: unknown) {
         const controlKind = this.controlKind(field);
         if (controlKind === 'checkbox') {
             return Boolean(draft);
@@ -1234,6 +1334,10 @@ function cloneJson<T>(value: T): T {
         : JSON.parse(JSON.stringify(value)) as T;
 }
 
+function jsonEqual(a: unknown, b: unknown) {
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
 function humanizeFieldName(name: string) {
     return name
         .replace(/^SBQQ__/, '')
@@ -1256,6 +1360,12 @@ function isNumericFieldType(type: string | undefined) {
     return type === 'currency' || type === 'double' || type === 'int' || type === 'percent';
 }
 
-bootstrapApplication(AppComponent, {
-    providers: [provideZonelessChangeDetection()]
-}).catch(error => console.error(error));
+export function bootstrapDatapackEditor() {
+    return bootstrapApplication(AppComponent, {
+        providers: [provideZonelessChangeDetection()]
+    });
+}
+
+if (!(globalThis as { __VLOCODE_WEBVIEW_PREVIEW__?: boolean }).__VLOCODE_WEBVIEW_PREVIEW__) {
+    bootstrapDatapackEditor().catch(error => console.error(error));
+}
