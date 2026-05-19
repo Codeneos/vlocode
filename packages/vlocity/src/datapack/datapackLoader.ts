@@ -64,6 +64,10 @@ export class DatapackLoader {
                 throw new Error(`No such file: ${datapackHeader}`);
             }
 
+            if (typeof datapackJson !== 'object' || Array.isArray(datapackJson)) {
+                throw new Error(`Invalid datapack JSON in file ${datapackHeader}: expected an object at the root`);
+            }
+
             if (typeof datapackJson['VlocityDataPackType'] !== 'string') {
                 throw new Error(`Missing "VlocityDataPackType" property in JSON`);
             }
@@ -111,24 +115,34 @@ export class DatapackLoader {
         return filterUndefined(datapacks);
     }
 
-    protected async loadJson(fileName : string, external = false) : Promise<any> {
+    private async loadJson(fileName : string, external = false) : Promise<any> {
         if (!await this.fileExists(fileName)) {
             return undefined;
         }
 
         const datapackJson = await this.fileSystem.readFile(fileName);
         const baseDir = directoryName(fileName);
-        const datapack = setDatapackSource(JSON.parse(datapackJson.toString()), { fileName, external });
+        const datapack = setDatapackSource(await this.parseJson(datapackJson), { fileName, external });
 
-        for (const [key, value] of Object.entries(datapack)) {
-            try {
-                datapack[key] = await this.resolveValue(baseDir, value, datapack, key);
-            } catch(err) {
-                this.logger.error(`Failed to load datapack property ${key}: ${err}`);
+        if (datapack && typeof datapack === 'object') {
+            // It can happen that the JSON file contains a primitive in which case we should not attempt to resolve references
+            for (const [key, value] of Object.entries(datapack)) {
+                try {
+                    datapack[key] = await this.resolveValue(baseDir, value, datapack, key);
+                } catch(err) {
+                    this.logger.error(`Failed to load datapack property ${key}: ${err}`);
+                }
             }
         }
 
         return datapack;
+    }
+
+    private async parseJson(data: Buffer | string) : Promise<any> {
+        if (typeof data === 'string') {
+            return JSON.parse(data);
+        }
+        return JSON.parse(data.toString());
     }
 
     private async loadText(fileName: string) : Promise<any> {
