@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.2](https://github.com/codeneos/vlocode/compare/v2.1.1...v2.1.2) (2026-05-19)
+
+### Bug Fixes
+
+* **datapackLoader:** validate JSON structure and enhance error handling in loadJson method ([0fe0d1b](https://github.com/codeneos/vlocode/commit/0fe0d1b255ca4caa24125551e93eda6234e640d4))
+* **queryConditionBuilder:** correct operator check in fromObject method ([84b7b44](https://github.com/codeneos/vlocode/commit/84b7b44334737a7c91d816167bf00d9792461427))
+
 ## [2.1.1](https://github.com/codeneos/vlocode/compare/v2.1.0...v2.1.1) (2026-05-19)
 
 ### Bug Fixes

@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.2](https://github.com/Codeneos/vlocode/compare/v2.1.1...v2.1.2) (2026-05-19)
+
+### Bug Fixes
+
+* **queryConditionBuilder:** correct operator check in fromObject method ([84b7b44](https://github.com/Codeneos/vlocode/commit/84b7b44334737a7c91d816167bf00d9792461427))
+
 # [2.1.0](https://github.com/Codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
 
 ### Bug Fixes

@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.2](https://github.com/Codeneos/vlocode/compare/v2.1.1...v2.1.2) (2026-05-19)
+
+### Bug Fixes
+
+* **datapackLoader:** validate JSON structure and enhance error handling in loadJson method ([0fe0d1b](https://github.com/Codeneos/vlocode/commit/0fe0d1b255ca4caa24125551e93eda6234e640d4))
+
 # [2.1.0](https://github.com/Codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
 
 ### Bug Fixes
