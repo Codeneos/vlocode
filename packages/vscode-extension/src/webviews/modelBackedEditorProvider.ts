@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import path from 'path';
+import { randomBytes } from 'crypto';
 
 import { getErrorMessage } from '@vlocode/util';
 import VlocodeService from '../lib/vlocodeService';
@@ -91,6 +92,9 @@ export abstract class ModelBackedEditorProvider<
         webviewPanel.onDidDispose(() => document.webviews.delete(webviewPanel.webview));
 
         webviewPanel.webview.onDidReceiveMessage(async rawMessage => {
+            if (!isEditorMessage(rawMessage)) {
+                return;
+            }
             const message = rawMessage as EditorMessage<TModel>;
             const requestType = message.type;
             try {
@@ -218,13 +222,16 @@ export abstract class ModelBackedEditorProvider<
                 await this.postStateToWebview(document, webviewPanel.webview);
                 return true;
             case 'change':
+                assertMessageModel(message);
                 this.acceptModelChange(document, message.model as TModel);
                 return true;
             case 'save':
+                assertMessageModel(message);
                 this.acceptModelChange(document, message.model as TModel);
                 await this.saveActiveEditor();
                 return true;
             case 'deploy':
+                assertMessageModel(message);
                 this.acceptModelChange(document, message.model as TModel);
                 await this.saveActiveEditor();
                 await this.executeDocumentCommand(this.getDeployCommand?.(document.data), document.data);
@@ -334,12 +341,7 @@ function parentUri(uri: vscode.Uri): vscode.Uri {
 }
 
 function getNonce() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let text = '';
-    for (let i = 0; i < 32; i++) {
-        text += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return text;
+    return randomBytes(16).toString('base64');
 }
 
 function escapeHtml(value: string) {
@@ -348,4 +350,18 @@ function escapeHtml(value: string) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function isEditorMessage(value: unknown): value is EditorMessage<unknown> {
+    return isRecord(value) && typeof value.type === 'string' && value.type.length > 0;
+}
+
+function assertMessageModel<TModel>(message: EditorMessage<TModel>): asserts message is EditorMessage<TModel> & { model: TModel } {
+    if (!('model' in message) || message.model === undefined) {
+        throw new Error(`Missing model for ${message.type} message.`);
+    }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

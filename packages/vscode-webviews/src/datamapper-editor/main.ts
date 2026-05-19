@@ -28,7 +28,8 @@ type ExtensionToWebviewMessage =
     | { type: 'fields'; objectSuggestions?: FieldSuggestion[]; sourceFields: FieldSuggestion[]; outputFields: FieldSuggestion[]; error?: string }
     | { type: 'previewResult'; result: DataMapperPreviewResult }
     | { type: 'previewError'; message: string; debug?: DataMapperPreviewDebug }
-    | { type: 'error'; message: string };
+    | { type: 'error'; message: string }
+    | { type: 'saved' };
 
 type WebviewToExtensionMessage =
     | { type: 'ready' }
@@ -515,6 +516,9 @@ export class AppComponent {
                 this.previewError.set(message.message);
                 this.previewDebug.set(message.debug);
                 this.previewRunning.set(false);
+                return;
+            case 'saved':
+                this.saving.set(false);
                 return;
             case 'error':
                 this.error.set(message.message);

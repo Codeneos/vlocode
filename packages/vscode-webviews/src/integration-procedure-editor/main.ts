@@ -1098,6 +1098,12 @@ function getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
-bootstrapApplication(AppComponent, {
-    providers: [provideZonelessChangeDetection()]
-}).catch(error => console.error(error));
+export function bootstrapIntegrationProcedureEditor() {
+    return bootstrapApplication(AppComponent, {
+        providers: [provideZonelessChangeDetection()]
+    });
+}
+
+if (!(globalThis as { __VLOCODE_WEBVIEW_PREVIEW__?: boolean }).__VLOCODE_WEBVIEW_PREVIEW__) {
+    bootstrapIntegrationProcedureEditor().catch(error => console.error(error));
+}
