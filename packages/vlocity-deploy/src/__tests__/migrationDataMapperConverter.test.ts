@@ -41,7 +41,7 @@ describe('MigrationDataMapperConverter', () => {
         };
 
         return {
-            converter: new MigrationDataMapperConverter(salesforce as any, datapackInfo as any, expandDefinitions as any, matchingKeys as any),
+            converter: new MigrationDataMapperConverter(salesforce as any, datapackInfo as any, matchingKeys as any, expandDefinitions as any),
             salesforce,
             datapackInfo,
             expandDefinitions,
@@ -114,7 +114,7 @@ describe('MigrationDataMapperConverter', () => {
                     objectType: '%vlocity_namespace%__CalculationProcedureVersion__c',
                     filter: {
                         '%vlocity_namespace%__CalculationProcedureId__c': '{%vlocity_namespace%__CalculationProcedure__c:Id}',
-                        '%vlocity_namespace%__CurrentStatus__c': 'Pending'
+                        '%vlocity_namespace%__CurrentStatus__c': '{Pending}'
                     }
                 }
             }
@@ -127,8 +127,10 @@ describe('MigrationDataMapperConverter', () => {
 
         expect(normalizeFilterValue('Id')).toBe('{Id}');
         expect(normalizeFilterValue('Type')).toBe('{Type}');
+        expect(normalizeFilterValue('Sub Type')).toBe('{Sub Type}');
+        expect(normalizeFilterValue('Language')).toBe('{Language}');
         expect(normalizeFilterValue('vlocity_cmt__CalculationProcedure__c:Id')).toBe('{%vlocity_namespace%__CalculationProcedure__c:Id}');
-        expect(normalizeFilterValue('Grouped')).toBe('Grouped');
+        expect(normalizeFilterValue('Grouped')).toBe('{Grouped}');
         expect(normalizeFilterValue('true')).toBe(true);
         expect(normalizeFilterValue('12.5')).toBe(12.5);
         expect(normalizeFilterValue('$Vlocity.NULL')).toBeNull();
