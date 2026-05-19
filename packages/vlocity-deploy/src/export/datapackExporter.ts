@@ -133,6 +133,10 @@ export class DatapackExporter {
         'DeveloperName'
     ];
 
+    private readonly ignoredObjects = [
+        'RecordType', 'User', 'Group', 'GroupMember'
+    ];
+
     private lookupCache = new Map<string, Record<string, any> | null>();
     private datapacks: Record<string, ExportDatapack> = {};
     private matchingKeys: Record<string, string> = {};
@@ -715,7 +719,10 @@ export class DatapackExporter {
             lookup = this.addForeignKey(datapack.parent, refId, lookup);
         }
 
-        if (lookup.VlocityDataPackType === "VlocityLookupMatchingKeyObject") {
+        if (
+            lookup.VlocityDataPackType === "VlocityLookupMatchingKeyObject" && 
+            !this.ignoredObjects.includes(lookup.VlocityRecordSObjectType)
+        ) {
             const currentRefId = datapack.foreignKeys[lookup.VlocityLookupRecordSourceKey];
             if (currentRefId && currentRefId !== refId) {
                 throw new Error(`Foreign key conflict for ${lookup.VlocityLookupRecordSourceKey} on ${datapack.objectType}: ${refId} <> ${currentRefId}`);
@@ -726,6 +733,7 @@ export class DatapackExporter {
         datapack.references[refId] = lookup;
         return lookup;
     }
+    
 
     private evalProcessor(processor: string, value: unknown, datapack: ExportDatapack) {
         const context = {
