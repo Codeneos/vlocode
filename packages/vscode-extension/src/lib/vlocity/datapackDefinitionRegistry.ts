@@ -11,7 +11,6 @@ import {
     DatapackExportDefinitionStore,
     DatapackExportDefinitions,
     type DatapackExportDefinition,
-    type DatapackExportDefinitionFile,
     type LookupFilter
 } from '@vlocode/vlocity-deploy';
 

@@ -118,7 +118,7 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=omniscript&id=${record.Id}`,
                 lwc: (record: any) => `/lightning/cmp/%vlocity_namespace%__OmniDesignerAuraWrapper?c__recordId=${record.Id}`,
                 classic: (record: any) => `/apex/%vlocity_namespace%__omniscriptdesigner?id=${record.Id}`
-            },            
+            },
             displayName: (record: any) => `Version ${record.Version__c || 0}`,
             description: (record: any) => `${record.IsActive__c ? 'Active - ' : ''}${record.IsLwcEnabled__c ? 'LWC' : 'classic'}`,
             grouping: {
@@ -247,16 +247,23 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         },
         matchingKey: {
             fields: ["Name", "%vlocity_namespace%__Version__c", "%vlocity_namespace%__Author__c"]
-        }
+        },
+        description: (record: any) => record.Active__c ? 'Active' : ''
     },    
     FlexCard: {
         typeLabel: "FlexCard",
         datapackType: "FlexCard",
         source: {
             sobjectType: "OmniUiCard",
-            fieldList: ["Id", "Name"],
-            whereCondition: "IsActive = true"
+            fieldList: ["Id", "Name", "VersionNumber", "IsActive"],
+            orderBy: ["VersionNumber"]
         },
+        grouping: {
+            fields: ["Name"],
+            displayName: "Name"
+        },
+        displayName: (record: any) => `Version ${record.VersionNumber || 0}`,
+        description: (record: any) => record.IsActive ? 'Active' : '',
         salesforceUrl: {
             standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=flexcard&id=${record.Id}`
         }

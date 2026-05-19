@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import * as constants from '../../constants';
 import * as path from 'path';
 import { LogManager, injectable, container } from '@vlocode/core';
-import { DatapackTypeDefinition, NAMESPACE_PLACEHOLDER_PATTERN } from '@vlocode/vlocity';
-import { groupBy, lazy, pluralize, getErrorMessage, removeNamespacePrefix } from '@vlocode/util';
+import { DatapackTypeDefinition } from '@vlocode/vlocity';
+import { groupBy, lazy, pluralize, getErrorMessage } from '@vlocode/util';
 
 import { TreeItemCollapsibleState } from 'vscode';
 import { DatapackExportMode, ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
