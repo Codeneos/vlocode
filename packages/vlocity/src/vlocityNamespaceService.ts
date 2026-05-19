@@ -13,6 +13,7 @@ export class VlocityNamespaceService extends NamespaceService {
 
     constructor(private vlocityNamespace: string | null = null) {
         super();
+        this.isInitialized = (vlocityNamespace != null);
     }
 
     /**
@@ -41,6 +42,7 @@ export class VlocityNamespaceService extends NamespaceService {
      * @param name text to update
      */
     public updateNamespace(name: string) {
+        this.checkInitialized();
         if (this.vlocityNamespace) {
             return name.replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, this.vlocityNamespace);
         }
