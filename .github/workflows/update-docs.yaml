@@ -32,7 +32,7 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
         with:
-          node-version: '20'
+          node-version: '24'
           install-os-deps: 'false'
 
       - name: Generate Documentation
