@@ -394,6 +394,26 @@ describe('DatapackExporter', () => {
         expect(expander.expandDatapack).toHaveBeenCalledWith(datapack, { scope: 'OmniScript' });
     });
 
+    it('passes per-request export scope to the expander', async () => {
+        const { exporter, expander } = createExporter();
+        const datapack = {
+            VlocityRecordSObjectType: 'OmniProcess',
+            VlocityRecordSourceKey: 'OmniProcess/Test'
+        };
+        exporter.exportObject = jest.fn(async () => [{
+            datapack,
+            objectType: 'OmniProcess',
+            parentKeys: [],
+            relatedDatapacks: [],
+            sourceKey: 'OmniProcess/Test',
+            scope: 'std'
+        }]);
+
+        await exporter.exportObjectAndExpand([{ id: '0jN000000000001AAA', scope: 'std' }]);
+
+        expect(expander.expandDatapack).toHaveBeenCalledWith(datapack, { scope: 'std' });
+    });
+
     it('exports lookup-related objects within the selected dependency depth', async () => {
         const rootId = 'a00000000000001AAA';
         const relatedId = 'a01000000000001AAA';

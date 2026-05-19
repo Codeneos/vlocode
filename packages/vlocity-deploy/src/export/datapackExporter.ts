@@ -99,6 +99,7 @@ interface ExportResult {
     datapackType: string;
     objectType: string;
     sourceKey: string;
+    scope?: string;
 }
 
 /**
@@ -264,7 +265,8 @@ export class DatapackExporter {
             //relatedDatapacks: [...this.collectRelatedDatapacks(datapack).values()].map(item => this.asExportResult(item)),
             sourceKey: datapack.data.VlocityRecordSourceKey,
             datapackType: datapack.datapackType,
-            objectType: datapack.objectType
+            objectType: datapack.objectType,
+            scope: datapack.scope
         };
     }
 
@@ -288,7 +290,7 @@ export class DatapackExporter {
         for (const exportResult of exportResults) {
             expanded.push(
                 this.expander.expandDatapack(exportResult.datapack, {
-                    scope: context?.scope,
+                    scope: exportResult.scope ?? context?.scope,
                     datapackType: exportResult.datapackType,
                 })
             );
