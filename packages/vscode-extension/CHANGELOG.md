@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.3](https://github.com/codeneos/vlocode/compare/v2.1.2...v2.1.3) (2026-05-20)
+
+### Bug Fixes
+
+* include datapack-level deploy errors in messages ([7ec7ed9](https://github.com/codeneos/vlocode/commit/7ec7ed9897ac87d27c2d520edbe0f32bf6e3f502))
+
 ## [2.1.2](https://github.com/codeneos/vlocode/compare/v2.1.1...v2.1.2) (2026-05-19)
 
 **Note:** Version bump only for package vlocode

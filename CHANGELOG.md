@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.3](https://github.com/codeneos/vlocode/compare/v2.1.2...v2.1.3) (2026-05-20)
+
+### Bug Fixes
+
+* **datapackDeployment:** fix bug in retry logic for generic record errors causing only spec errors to be retried properly but falling outside the retry budget. ([5fd8f30](https://github.com/codeneos/vlocode/commit/5fd8f30b9b80b52526f96905502932810b25f065))
+* **datapackExporter:** add ignoredObjects list to prevent processing of specific Salesforce objects such as RecordType, User and Group ([c0f98ca](https://github.com/codeneos/vlocode/commit/c0f98cad7bbcfb990cbbd879c96339cfc7c6c89c))
+* include datapack-level deploy errors in messages ([7ec7ed9](https://github.com/codeneos/vlocode/commit/7ec7ed9897ac87d27c2d520edbe0f32bf6e3f502))
+* pre-deploy spec errors causing a record to be set to failed are still attempt for a deployment ([35f7593](https://github.com/codeneos/vlocode/commit/35f75938231f83bcf9dfcf9f0bc347ed5107dcc4))
+
 ## [2.1.2](https://github.com/codeneos/vlocode/compare/v2.1.1...v2.1.2) (2026-05-19)
 
 ### Bug Fixes
