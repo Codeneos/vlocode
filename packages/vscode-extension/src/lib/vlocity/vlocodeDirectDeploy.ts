@@ -109,10 +109,11 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
             }
 
             for (let i = 0; i < messages.length; i++) {
-                if (messages[i].type === 'error') {
-                    this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${this.formatError(messages[i].message)}`);
+                const msg = messages[i];
+                if (msg.type === 'error') {
+                    this.logger.error(` ${i + 1}. ${chalk.underline(msg.record?.sourceKey ?? msg.datapackKey)} -- ${this.formatError(msg.message)}`);
                 } else {
-                    uniqueWarnings.add(messages[i].message);
+                    uniqueWarnings.add(msg.message);
                 }
             }
         }

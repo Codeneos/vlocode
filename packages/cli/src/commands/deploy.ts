@@ -122,8 +122,8 @@ export default class extends SalesforceCommand {
         }
 
         for (const [datapack, messages] of Object.entries(deployment.getMessagesByDatapack())) {
-            for (const message of messages.sort((a,b) => (a.type + a.record.sourceKey).localeCompare(b.type + b.record.sourceKey))) {
-                const normalizedSourceKey = message.record.sourceKey.replaceAll(/%[^%]+%__/ig,'');
+            for (const message of messages.sort((a, b) => (a.type + a.datapackKey + a.record?.sourceKey).localeCompare(b.type + b.datapackKey + b.record?.sourceKey))) {
+                const normalizedSourceKey = (message.record?.sourceKey ?? message.datapackKey).replaceAll(/%[^%]+%__/ig,'');
                 const logMessage = `${datapack} -- ${normalizedSourceKey} - ${message.message}`;
                 if (message.type === 'error') {
                     this.logger.error(`${this.prefixFormat[message.type]} ${logMessage}`);

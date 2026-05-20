@@ -24,7 +24,8 @@ export interface DatapackDeploymentEvents {
 }
 
 export interface DatapackDeploymentRecordMessage {
-    record: DatapackDeploymentRecord;
+    record?: DatapackDeploymentRecord;
+    datapackKey: string;
     type: 'error' | 'warn' | 'info';
     code?: string;
     message: string;
@@ -117,7 +118,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     public get failedRecordCount() {
-        return this.errors.length;
+        return count(this.records.values(), r => r.isFailed);
     }
 
     public get failedRecords() : ReadonlyArray<DatapackDeploymentRecord> {
@@ -129,7 +130,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     public get hasErrors() {
-        return this.errors.length > 0;
+        return this.failedRecordCount > 0 || this.recordGroupsErrors.size > 0;
     }
 
     public get hasWarnings() {
@@ -298,7 +299,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         const datapackValues = [...datapacks.values()];
         return {
-            total: this.totalDatapackCount,
+            total: datapackValues.length,
             status: DatapackkDeploymentState.summarize(datapackValues.map(result => result.status)),
             datapacks: datapackValues,
         };
@@ -337,18 +338,26 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             if (!options?.includeCascadeFailures && record.isCascadeFailure) {
                 continue;
             }
+            const datapackKey = record.datapackKey;
             if (record.isFailed && record.statusMessage) {
-                messages.push({ record, type: 'error', code: record.errorCode, message: this.formatDeployError(record) });
+                messages.push({ datapackKey, record, type: 'error', code: record.errorCode, message: this.formatDeployError(record) });
             }
             for (const message of record.warnings) {
-                messages.push({ record, type: 'warn', message });
+                messages.push({ datapackKey, record, type: 'warn', message });
             }
         }
+
+        for (const [datapackKey, errors] of this.recordGroupsErrors) {
+            for (const error of errors) {
+                messages.push({ datapackKey, type: 'error', code: error.errorCode, message: error.message });
+            }
+        }
+        
         return messages;
     }
 
     public getMessagesByDatapack(options?: { includeCascadeFailures?: boolean }) : { [datapackKey: string]: Array<DatapackDeploymentRecordMessage> } {
-        return groupBy(this.getMessages(options), msg => msg.record.datapackKey);
+        return groupBy(this.getMessages(options), m => m.datapackKey);
     }
 
     private formatDeployError(record: DatapackDeploymentRecord) {
