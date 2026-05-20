@@ -783,13 +783,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     this.logger.verbose(`Deployed ${datapackRecord.sourceKey}`);
                     this.deployed.push(datapackRecord);
                 } else if (!result.success) {
-                    //atapackRecord.setError(result.error);
-                    //if (this.isRetryable(result.error)) {
-                    //    datapackRecord.retry({ incrementCounter: false });
-                    //    this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${result.error.message}`);
-                    //} else {
                     await this.handleError(datapackRecord, result.error);
-                    //}
                 }
             }
 
@@ -834,12 +828,17 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             return;
         }
 
+        // Let a datapack spec determine if a retry should be scheduled
         datapackRecord.setFailed(error);
         await this.emit('recordError', datapackRecord, { async: false });
-
-        if (this.isRetryable(datapackRecord, error)) {
-            this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${datapackRecord.errorMessage}`);
-            return;
+        
+        if (datapackRecord.isPendingRetry || this.isRetryable(error)) {
+            if (this.options.maxRetries > datapackRecord.retryCount++) {
+                datapackRecord.retry();
+                this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${datapackRecord.errorMessage}`);
+                return;
+            }
+            datapackRecord.setFailed(error);
         }
 
         if (datapackRecord.isCascadeFailure && !this.options.reportCascadeFailures) {
@@ -851,15 +850,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.errors.push(datapackRecord);
     }
 
-    private isRetryable(datapackRecord: DatapackDeploymentRecord, error: RecordError | Error | string): boolean {
-        if (datapackRecord.isPendingRetry) {
-            return true;
-        }
+    private isRetryable(error: RecordError | Error | string): boolean {
         const isRecordError = typeof error === 'object' && 'fields' in error && 'statusCode' in error;
         if (!isRecordError) {
             return false;
         }
-        return ++datapackRecord.retryCount < this.options.maxRetries;
+        return true;
     }
 
     private handleProgressReport({ processed, total }) {

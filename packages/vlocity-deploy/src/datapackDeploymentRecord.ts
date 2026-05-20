@@ -263,9 +263,9 @@ export class DatapackDeploymentRecord {
         this._statusDetail = detail?.toString();
     }
 
-    public retry({ incrementCounter = true }) {
-        if (incrementCounter) {
-            this.retryCount++;
+    public retry() {
+        if (this._status === DeploymentStatus.Retry) {
+            return;
         }
         this.updateStatus(DeploymentStatus.Retry);
     }

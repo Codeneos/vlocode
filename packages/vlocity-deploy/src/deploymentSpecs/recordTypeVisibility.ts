@@ -20,7 +20,7 @@ export class RecordTypeVisibility implements DatapackDeploymentSpec {
         if (recordTypeId) {
             // Attempt to add visibility for the record type
             await this.addRecordTypeVisibility(recordTypeId);
-            record.retry({ incrementCounter: true });
+            record.retry();
         }
     }
 
