@@ -648,7 +648,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records.values(), cancelToken) : undefined;
 
         for (const [ref, record] of records.entries()) {
-            if (record.isSkipped) {
+            if (record.isSkipped || record.isFailed) {
                 // Deployment specs can skip records; do not add them to the batch
                 continue;
             }
