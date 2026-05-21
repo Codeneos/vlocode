@@ -66,8 +66,12 @@ export class MatchingFieldsSpec implements DatapackDeploymentSpec {
 
         // Ensure that all records have upsert fields set, either from the defaults or from the record itself
         for (const record of records) {     
-            const normalizedType = this.normalizedType(record.normalizedSObjectType);
-            if (normalizedType in this.matchingKeyFields.overrides) {
+            const sobjectType = this.stripNsPlaceholder(record.sobjectType);
+            const normalizedType = this.stripNsPlaceholder(record.normalizedSObjectType);
+            if (sobjectType in this.matchingKeyFields.overrides) {
+                // Overrides always replace the upsert fields for the record
+                record.upsertFields = [...this.matchingKeyFields.overrides[sobjectType]];
+            } else if (normalizedType in this.matchingKeyFields.overrides) {
                 // Overrides always replace the upsert fields for the record
                 record.upsertFields = [...this.matchingKeyFields.overrides[normalizedType]];
             } else if (normalizedType in this.matchingKeyFields.defaults) {
@@ -100,7 +104,7 @@ export class MatchingFieldsSpec implements DatapackDeploymentSpec {
             this.logger.verbose('Override matching key fields from: %s', path);
             const matchingKeyFields = JSON.parse(await this.fs.readFileAsString(path));
             for (const [sObjectType, fields] of Object.entries(matchingKeyFields)) {
-                const normalizedType = this.normalizedType(sObjectType);
+                const normalizedType = this.stripNsPlaceholder(sObjectType);
                 matchingKeys[normalizedType] = asArray(fields).map(field => String(field));
                 this.logger.verbose(`Override matching key fields for %s: %s`, normalizedType, matchingKeys[normalizedType].join(', '));
             }
@@ -114,13 +118,13 @@ export class MatchingFieldsSpec implements DatapackDeploymentSpec {
         // Normalize the matching key fields to ensure they are all in the same format
         const normalizedKeys: MatchingKeysCollection = {};
         for (const [sObjectType, fields] of Object.entries(matchingKeys)) {
-            const normalizedType = this.normalizedType(sObjectType);
+            const normalizedType = this.stripNsPlaceholder(sObjectType);
             normalizedKeys[normalizedType] = fields;
         }
         return normalizedKeys;
     }
 
-    private normalizedType(sObjectType: string): string {
+    private stripNsPlaceholder(sObjectType: string): string {
         return sObjectType.replace('%vlocity_namespace%__', '').toLowerCase().trim();
     }
 }
