@@ -2,6 +2,11 @@ import 'jest';
 
 import { DeveloperLogDataProvider } from '../treeViews/dataProviders/developerLogDataProvider';
 
+jest.mock('../lib/vlocodeService', () => ({
+    __esModule: true,
+    default: class VlocodeService {}
+}));
+
 jest.mock('../lib/config', () => ({
     ...jest.requireActual('../lib/config'),
     ConfigurationManager: {
@@ -55,6 +60,18 @@ describe('DeveloperLogDataProvider', () => {
     it('keeps the configured number of logs', async () => {
         const { provider } = createProvider(3);
 
+        await expect(provider.getChildren()).resolves.toHaveLength(3);
+    });
+
+    it('applies a lower configured limit when Salesforce returns no new logs', async () => {
+        const { provider, service } = createProvider(100);
+
+        await expect(provider.getChildren()).resolves.toHaveLength(100);
+
+        service.config.salesforce.developerLogsLimit = 3;
+        service.salesforceService.logs.getDeveloperLogs.mockResolvedValueOnce([]);
+
+        await provider.refreshLogs();
         await expect(provider.getChildren()).resolves.toHaveLength(3);
     });
 });
