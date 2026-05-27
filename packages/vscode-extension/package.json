@@ -1498,6 +1498,11 @@
                         ],
                         "markdownDescription": "Change which logs are displayed and visible in the Developer logs panel"
                     },
+                    "vlocity.salesforce.developerLogsLimit": {
+                        "type": "number",
+                        "default": 100,
+                        "markdownDescription": "Maximum number of developer logs shown in the Developer logs panel"
+                    },
                     "vlocity.salesforce.developerLogsAutoRefresh": {
                         "type": "boolean",
                         "default": true,

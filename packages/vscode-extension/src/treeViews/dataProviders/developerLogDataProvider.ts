@@ -198,19 +198,22 @@ export class DeveloperLogDataProvider extends TreeDataProvider<DeveloperLog> imp
         const refreshDate = new Date();
         const latestLogs = await this.vlocode.salesforceService.logs.getDeveloperLogs(this.lastRefresh, this.currentUserOnly);
         this.lastRefresh = refreshDate;
+        const previousLogs = this.logs;
         const uniqueLogEntries = new Map<string, DeveloperLog>(this.logs.concat(latestLogs).map(item => ([item.id, item])));
         let newLogs = Array.from(uniqueLogEntries.values());
-
-        if (newLogs.length == this.logs.length) {
-            return;
-        }
 
         // Remove empty logs and small logs
         newLogs = newLogs.filter(log => log.operation != '<empty>' || log.size > 1024 * 5);
 
-        // Only display last 100 log entries
-        this.logs = newLogs.sort((a,b) => b.startTime.getTime() - a.startTime.getTime());
-        this.logs.splice(100);
+        // Only display the configured number of log entries
+        newLogs = newLogs.sort((a,b) => b.startTime.getTime() - a.startTime.getTime());
+        newLogs.splice(this.vlocode.config.salesforce.developerLogsLimit ?? 100);
+
+        if (newLogs.length == previousLogs.length && newLogs.every((log, index) => log.id == previousLogs[index]?.id)) {
+            return;
+        }
+
+        this.logs = newLogs;
 
         if (options?.refreshView) {
             this.refresh();
