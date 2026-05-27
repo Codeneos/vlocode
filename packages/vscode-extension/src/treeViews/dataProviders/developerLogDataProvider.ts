@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import VlocodeService from '../../lib/vlocodeService';
+import type VlocodeService from '../../lib/vlocodeService';
 import { DeveloperLog } from '@vlocode/salesforce';
 import { DateTime } from 'luxon';
 import { ConfigurationManager } from '../../lib/config';
@@ -208,9 +208,9 @@ export class DeveloperLogDataProvider extends TreeDataProvider<DeveloperLog> imp
         // Remove empty logs and small logs
         newLogs = newLogs.filter(log => log.operation != '<empty>' || log.size > 1024 * 5);
 
-        // Only display last 100 log entries
+        // Only display the configured number of log entries
         this.logs = newLogs.sort((a,b) => b.startTime.getTime() - a.startTime.getTime());
-        this.logs.splice(100);
+        this.logs.splice(this.vlocode.config.salesforce.developerLogsLimit ?? 100);
 
         if (options?.refreshView) {
             this.refresh();
