@@ -217,6 +217,10 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         return document.sourceFormat === 'xml' ? VlocodeCommand.viewInSalesforce : VlocodeCommand.openInSalesforce;
     }
 
+    protected override getDatapackGraph(document: LoadedDocument) {
+        return document.sourceFormat === 'json' ? document.datapack : undefined;
+    }
+
     private async openEditorView(uri?: vscode.Uri) {
         await this.openEditorWith(DataMapperEditorProvider.viewType, 'No DataMapper file is active.', uri);
     }
@@ -393,11 +397,19 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private updateItems(current: unknown, next: DataMapperItem[]): DataMapperItem[] {
-        if (Array.isArray(current)) {
-            current.splice(0, current.length, ...next);
-            return current;
+        if (!Array.isArray(current)) {
+            return [...next];
         }
-        return [...next];
+
+        const currentByKey = new Map(current
+            .filter(isRecord)
+            .map((item, index) => [itemKey(item) ?? `index:${index}`, item]));
+        const updated = next.map((item, index) => mergeItem(
+            currentByKey.get(itemKey(item) ?? `index:${index}`),
+            item
+        ));
+        current.splice(0, current.length, ...updated);
+        return current;
     }
 
     private async resolveDatapackHeaderUri(uri: vscode.Uri): Promise<vscode.Uri> {
@@ -422,4 +434,26 @@ function toArray<T>(value: T | T[] | undefined): T[] {
 
 function stringArray(value: unknown): string[] | undefined {
     return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : undefined;
+}
+
+function mergeItem(target: unknown, source: DataMapperItem): DataMapperItem {
+    if (!isRecord(target)) {
+        return { ...source };
+    }
+    for (const key of Object.keys(target)) {
+        if (!(key in source)) {
+            delete target[key];
+        }
+    }
+    Object.assign(target, source);
+    return target as DataMapperItem;
+}
+
+function itemKey(item: Record<string, unknown>): string | undefined {
+    const key = item.GlobalKey ?? item.VlocityRecordSourceKey;
+    return typeof key === 'string' && key ? key : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

@@ -9,6 +9,7 @@ const omniStudioDesignerDatapackTypes = new Set([
     'DataRaptor',
     'FlexCard',
     'IntegrationProcedure',
+    'OmniDataTransform',
     'OmniScript',
     'VlocityCard'
 ]);

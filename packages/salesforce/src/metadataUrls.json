@@ -157,5 +157,23 @@
     "CustomApplication": {
         "strategy": "tooling",
         "url": "/visualEditor/appBuilder.app?id=${id}"
+    },
+    "OmniDataTransform": {
+        "strategy": "standard",
+        "nameField": "UniqueName",
+        "query": "select Id from OmniDataTransform where ${nameField} = '${fullName}'",
+        "url": "/builder_omnistudio/omnistudioBuilder.app?type=dataraptor&id=${id}"
+    },
+    "OmniIntegrationProcedure": {
+        "strategy": "standard",
+        "nameField": "UniqueName",
+        "query": "select Id from OmniProcess where ${nameField} = '${fullName}'",
+        "url": "/builder_industries_interaction_rule/industriesBuilder.app?recordId=${id}"
+    },
+    "OmniProcess": {
+        "strategy": "standard",
+        "nameField": "UniqueName",
+        "query": "select Id from OmniProcess where ${nameField} = '${fullName}'",
+        "url": "/builder_omnistudio/omnistudioBuilder.app?type=omniscript&id=${id}"
     }
 }

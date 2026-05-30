@@ -1,6 +1,6 @@
 import 'jest';
 
-import { NamespaceService, SalesforceSchemaService } from '@vlocode/salesforce';
+import { SalesforceSchemaService } from '@vlocode/salesforce';
 import { VlocityMatchingKey, DatapackMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 import { container, Logger } from '@vlocode/core';
 import { DatapackExportQueries } from '../lib/vlocity/datapackExportQueries';
@@ -62,6 +62,21 @@ describe('DatapackExportQueries', () => {
                 `select Id, Name, LastModifiedDate, %vlocity_namespace%__Version__c, ` +
                 `%vlocity_namespace%__Active__c, %vlocity_namespace%__Author__c from %vlocity_namespace%__VlocityCard__c ` +
                 `where Name = 'Test' and %vlocity_namespace%__Version__c = null and %vlocity_namespace%__Author__c = 'Vlocode'`
+            );
+        });
+
+        it('supports standard OmniDataTransform datapacks', async () => {
+            const sut = new DatapackExportQueries(mockMatchingKeyService(), { schema: mockSchemaService() } as any, Logger.null);
+            const entry = {
+                datapackType: 'OmniDataTransform',
+                sobjectType: 'OmniDataTransform',
+                name: 'ExampleMapper',
+                Name: 'ExampleMapper'
+            } as Parameters<DatapackExportQueries['getQuery']>[0] & { Name: string };
+            const result = await sut.getQuery(entry);
+
+            expect(result).toStrictEqual(
+                `select Id, Name from OmniDataTransform where Name = 'ExampleMapper'`
             );
         });
     });

@@ -35,6 +35,7 @@ describe('DataMapperFormulaEvaluator', () => {
     it('uses Salesforce one-based pipe indexes in DataMapper paths and formulas', async () => {
         const evaluator = new DataMapperFormulaEvaluator();
         const source = {
+            SplitedStreet: ['Main', 'Second', 'Third'],
             SBQQ__Quote__c: [{ Id: 'Q1' }],
             currentAccount: [{ Id: 'A1' }, { Id: 'A2' }]
         };
@@ -49,6 +50,10 @@ describe('DataMapperFormulaEvaluator', () => {
             'IF(LISTSIZE(SBQQ__Quote__c) == 1 && ISBLANK(SBQQ__Quote__c|1:Id), 0, LISTSIZE(currentAccount))',
             context
         )).resolves.toBe(2);
+        await expect(evaluator.evaluate(
+            'IF(Street1 != %SplitedStreet|3%, %SplitedStreet|3%, \'\')',
+            context
+        )).resolves.toBe('Third');
     });
 
     it('reports a missing function argument comma clearly', () => {
@@ -57,6 +62,15 @@ describe('DataMapperFormulaEvaluator', () => {
         expect(() => evaluator.parse(
             'IF(LISTSIZE(SBQQ__Quote__c) == 1 && ISBLANK(SBQQ__Quote__c|1:Id), 0 LISTSIZE(currentAccount))'
         )).toThrow('Expected comma or ) but found LISTSIZE');
+    });
+
+    it('reports the invalid DataMapper formula in execution plan errors', () => {
+        const executor = new DataMapperExecutor();
+
+        expect(() => executor.buildExecutionPlan({
+            Type: 'Transform',
+            OmniDataTransformItem: [formula('IF(true', 'result', 1)]
+        })).toThrow('Invalid DataMapper formula "IF(true" for result path "result"');
     });
 
     it('evaluates documented string, list, JSON and date functions', async () => {
@@ -126,6 +140,12 @@ describe('DataMapperExecutor', () => {
                     TransformValueMappings: JSON.stringify({ A: 'Active' })
                 },
                 {
+                    InputFieldName: 'account:type',
+                    OutputFieldName: 'customer:type',
+                    OutputObjectName: 'json',
+                    TransformValuesMappings: JSON.stringify({ C: 'Customer' })
+                },
+                {
                     InputFieldName: 'account:missing',
                     OutputFieldName: 'customer:fallback',
                     OutputObjectName: 'json',
@@ -137,12 +157,14 @@ describe('DataMapperExecutor', () => {
         await expect(new DataMapperExecutor().execute(mapper, {
             account: {
                 name: 'Acme',
-                status: 'A'
+                status: 'A',
+                type: 'C'
             }
         })).resolves.toEqual({
             customer: {
                 displayName: 'Acme',
                 state: 'Active',
+                type: 'Customer',
                 fallback: 'default'
             }
         });

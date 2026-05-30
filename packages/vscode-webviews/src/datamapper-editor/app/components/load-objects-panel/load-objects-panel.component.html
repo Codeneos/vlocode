@@ -2,26 +2,23 @@
     <section class="dm-flow" aria-label="Load objects">
         <div class="dm-flow__start" aria-hidden="true"></div>
         @for (group of groups(); track group.trackId) {
-            <article class="dm-card dm-card--load">
-                <header class="dm-card__header">
-                    <span class="dm-card__icon codicon codicon-database" aria-hidden="true"></span>
-                    <div>
-                        <h2>{{ group.outputObjectName || 'Untitled' }}</h2>
-                        <p>Load Object {{ group.sequence }}</p>
-                    </div>
-                    <div class="dm-card__actions" aria-label="Load object actions">
-                        <button type="button" class="dm-icon-button" title="Move up" aria-label="Move load object up" (click)="moveGroupRequested.emit({ group, direction: -1 })">
-                            <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="dm-icon-button" title="Move down" aria-label="Move load object down" (click)="moveGroupRequested.emit({ group, direction: 1 })">
-                            <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="dm-icon-button" title="Delete" aria-label="Delete load object" (click)="deleteGroupRequested.emit(group)">
-                            <span class="codicon codicon-trash" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                </header>
-                <div class="dm-card__body dm-card__body--edit">
+            <dm-data-mapper-card
+                variant="load"
+                icon="database"
+                toggleName="load object"
+                actionsLabel="Load object actions"
+                [title]="group.outputObjectName || 'Untitled'"
+                [subtitle]="'Load Object ' + group.sequence">
+                <button dmCardAction type="button" class="dm-icon-button" title="Move up" aria-label="Move load object up" (click)="moveGroupRequested.emit({ group, direction: -1 })">
+                    <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
+                </button>
+                <button dmCardAction type="button" class="dm-icon-button" title="Move down" aria-label="Move load object down" (click)="moveGroupRequested.emit({ group, direction: 1 })">
+                    <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
+                </button>
+                <button dmCardAction type="button" class="dm-icon-button" title="Delete" aria-label="Delete load object" (click)="deleteGroupRequested.emit(group)">
+                    <span class="codicon codicon-trash" aria-hidden="true"></span>
+                </button>
+                <div dmCardBody class="dm-card__body dm-card__body--edit">
                     <label class="dm-field">
                         <span><abbr title="Required">*</abbr> Object</span>
                         <dm-autocomplete-input
@@ -72,7 +69,7 @@
                         }
                     </section>
                 </div>
-            </article>
+            </dm-data-mapper-card>
             <div class="dm-flow__insert">
                 <button type="button" class="dm-flow__add dm-flow__add--insert" aria-label="Insert load object" (click)="insertObjectRequested.emit(group)"></button>
             </div>

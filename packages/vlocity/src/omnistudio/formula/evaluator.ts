@@ -348,7 +348,7 @@ class FormulaTokenizer {
             }
             if (char === '%') {
                 const closeIndex = this.expression.indexOf('%', this.index + 1);
-                if (closeIndex !== -1 && /^[\w.:]+$/.test(this.expression.slice(this.index + 1, closeIndex))) {
+                if (closeIndex !== -1 && /^[\w.:|]+$/.test(this.expression.slice(this.index + 1, closeIndex))) {
                     const start = this.index;
                     tokens.push({ type: 'variable', value: this.readPercentVariable(), start, end: this.index });
                     continue;

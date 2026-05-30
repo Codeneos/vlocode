@@ -35,6 +35,10 @@
                 </div>
             </section>
             <section class="ip-actions" aria-label="Editor actions">
+                <button type="button" class="ip-button" (click)="selectProcedure()">
+                    <span class="codicon codicon-gear" aria-hidden="true"></span>
+                    Settings
+                </button>
                 <button type="button" class="ip-button" [disabled]="refreshing()" (click)="refresh()">
                     <span class="codicon" [class.codicon-refresh]="!refreshing()" [class.codicon-sync]="refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
                     @if (refreshing()) { Refreshing } @else { Refresh }
@@ -160,13 +164,19 @@
                                         <section class="ip-palette__group">
                                             <h2>{{ family }}</h2>
                                             @for (template of familyTemplates(family); track template.type) {
-                                                <button type="button" class="ip-palette__item" (click)="addElement(template.type)">
+                                                <div
+                                                    class="ip-palette__item"
+                                                    draggable="true"
+                                                    [class.ip-palette__item--dragging]="draggedTemplateType() === template.type"
+                                                    title="Drag to add {{ template.type }}"
+                                                    (dragstart)="startTemplateDrag(template.type, $event)"
+                                                    (dragend)="endDrag()">
                                                     <span [ngClass]="['codicon', 'codicon-' + template.icon]" aria-hidden="true"></span>
                                                     <span>
                                                         <strong>{{ template.type }}</strong>
                                                         <small>{{ template.description }}</small>
                                                     </span>
-                                                </button>
+                                                </div>
                                             }
                                         </section>
                                     }
@@ -199,7 +209,12 @@
                         <span class="codicon codicon-file-code" aria-hidden="true"></span>
                     </button>
                     @if (!flowRows().length) {
-                        <section class="ip-empty ip-empty--canvas">
+                        <section
+                            class="ip-empty ip-empty--canvas"
+                            [class.ip-empty--drop-target]="dropTargetKey() === emptyFlowDropKey && dropPosition() === 'inside'"
+                            (dragover)="dragOverEmptyFlow($event)"
+                            (dragleave)="dragLeaveEmptyFlow()"
+                            (drop)="dropOnEmptyFlow($event)">
                             <span class="codicon codicon-add" aria-hidden="true"></span>
                             <h2>Start with an action or block</h2>
                             <button type="button" class="ip-button ip-button--primary" (click)="leftTab.set('add')">Open palette</button>
@@ -277,15 +292,47 @@
                                         <input [value]="propertyValue('remoteMethod')" (input)="updateElementProperty('remoteMethod', $event)" />
                                     </label>
                                     <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'remoteOptions', title: 'Remote Options' }" />
-                                } @else if (selected.type.includes('Data Mapper')) {
+                                } @else if (isDataMapperAction(selected.type)) {
                                     <label class="ip-field">
                                         <span>Data Mapper Name</span>
-                                        <input [value]="propertyValue('bundle')" (input)="updateElementProperty('bundle', $event)" />
+                                        <input list="ip-data-mapper-options" [value]="propertyValue('bundle')" (input)="updateElementProperty('bundle', $event)" />
+                                        <datalist id="ip-data-mapper-options">
+                                            @for (dataMapper of dataMapperOptions(); track dataMapper) {
+                                                <option [value]="dataMapper"></option>
+                                            }
+                                        </datalist>
                                     </label>
                                     <label class="ip-switch">
                                         <input type="checkbox" [checked]="propertyChecked('ignoreCache')" (change)="updateElementProperty('ignoreCache', $event)" />
                                         <span>Ignore cache</span>
                                     </label>
+                                    <section class="ip-map">
+                                        <header>
+                                            <h3>Input Parameters</h3>
+                                            <button type="button" class="ip-button ip-button--compact" (click)="addDataRaptorInputParameter()">
+                                                <span class="codicon codicon-add" aria-hidden="true"></span>
+                                                Add
+                                            </button>
+                                        </header>
+                                        @if (dataRaptorInputParameters().length) {
+                                            <div class="ip-map__labels" aria-hidden="true">
+                                                <span>Data Source</span>
+                                                <span>Filter Value</span>
+                                                <span></span>
+                                            </div>
+                                            @for (parameter of dataRaptorInputParameters(); track parameter.index) {
+                                                <div class="ip-map__row">
+                                                    <input aria-label="Data Source" [value]="parameter.element" (input)="updateDataRaptorInputParameter(parameter.index, 'element', $event)" />
+                                                    <input aria-label="Filter Value" [value]="parameter.inputParam" (input)="updateDataRaptorInputParameter(parameter.index, 'inputParam', $event)" />
+                                                    <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete input parameter" (click)="deleteDataRaptorInputParameter(parameter.index)">
+                                                        <span class="codicon codicon-trash" aria-hidden="true"></span>
+                                                    </button>
+                                                </div>
+                                            }
+                                        } @else {
+                                            <p class="ip-muted">No input parameters configured.</p>
+                                        }
+                                    </section>
                                 } @else if (selected.type === 'Set Values') {
                                     <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'elementValueMap', title: 'Element Value Map' }" />
                                 } @else if (selected.type === 'Response Action') {
@@ -339,15 +386,21 @@
                             }
                         }
                         @case ('conditions') {
-                            <label class="ip-field">
+                            <div class="ip-field">
                                 <span>Execution Conditional Formula</span>
-                                <textarea class="ip-code-input" rows="7" [value]="propertyValue('executionConditionalFormula') || propertyValue('show')" (input)="selectedElement() ? updateElementProperty('executionConditionalFormula', $event) : updateProcedureProperty('show', $event)"></textarea>
-                            </label>
+                                <dm-formula-editor
+                                    [value]="propertyValue('executionConditionalFormula') || propertyValue('show')"
+                                    ariaLabel="Execution conditional formula"
+                                    (valueChange)="selectedElement() ? updateElementPropertyValue('executionConditionalFormula', $event) : updateProcedurePropertyValue('show', $event)" />
+                            </div>
                             @if (selectedElement()) {
-                                <label class="ip-field">
+                                <div class="ip-field">
                                     <span>Failure Conditional Formula</span>
-                                    <textarea class="ip-code-input" rows="7" [value]="propertyValue('failureConditionalFormula')" (input)="updateElementProperty('failureConditionalFormula', $event)"></textarea>
-                                </label>
+                                    <dm-formula-editor
+                                        [value]="propertyValue('failureConditionalFormula')"
+                                        ariaLabel="Failure conditional formula"
+                                        (valueChange)="updateElementPropertyValue('failureConditionalFormula', $event)" />
+                                </div>
                                 <label class="ip-switch">
                                     <input type="checkbox" [checked]="propertyChecked('chainOnStep')" (change)="updateElementProperty('chainOnStep', $event)" />
                                     <span>Chain on step</span>
@@ -397,8 +450,14 @@
                         }
                         @case ('json') {
                             <section class="ip-json">
-                                <p>Edit the canonical JSON for the {{ jsonTargetLabel() }}.</p>
-                                <textarea class="ip-code-input" rows="18" spellcheck="false" [value]="jsonDraft()" (input)="setJsonDraft($event)"></textarea>
+                                <p>Edit the JSON for the {{ jsonTargetLabel() }}.</p>
+                                <dm-monaco-editor
+                                    language="json"
+                                    [value]="jsonDraft()"
+                                    ariaLabel="Property set JSON editor"
+                                    [options]="jsonEditorOptions"
+                                    markerOwner="ip-property-set-json"
+                                    (valueChange)="setJsonDraftValue($event)" />
                                 @if (jsonError(); as jsonMessage) {
                                     <div class="ip-inline-error">{{ jsonMessage }}</div>
                                 }

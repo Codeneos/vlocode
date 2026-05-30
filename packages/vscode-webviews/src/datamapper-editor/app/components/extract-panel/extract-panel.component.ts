@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-input.component';
+import { DataMapperCardComponent } from '../data-mapper-card/data-mapper-card.component';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import type { DataMapperItem, ExtractGroup, FieldSuggestion } from '../../models/datamapper.model';
 import { FILTER_OPERATORS, isSpecialFilter } from '../../models/extract-groups';
@@ -10,7 +11,7 @@ import { newGlobalKey } from '../../models/items';
 @Component({
     selector: 'dm-extract-panel',
     standalone: true,
-    imports: [AutocompleteInputComponent, EmptyStateComponent, FormsModule],
+    imports: [AutocompleteInputComponent, DataMapperCardComponent, EmptyStateComponent, FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './extract-panel.component.html'
 })
@@ -23,10 +24,42 @@ export class ExtractPanelComponent {
     readonly insertExtractionRequested = output<ExtractGroup>();
     readonly updateGroupRequested = output<ExtractGroup>();
     readonly moveGroupRequested = output<{ group: ExtractGroup; direction: -1 | 1 }>();
+    readonly reorderGroupRequested = output<{ group: ExtractGroup; target: ExtractGroup }>();
     readonly deleteGroupRequested = output<ExtractGroup>();
 
     protected readonly filterOperators = FILTER_OPERATORS;
     protected readonly isSpecialFilter = isSpecialFilter;
+    protected readonly draggedId = signal<string | undefined>(undefined);
+    protected readonly dropTargetId = signal<string | undefined>(undefined);
+
+    protected startDrag(group: ExtractGroup, event: DragEvent) {
+        this.draggedId.set(group.id);
+        event.dataTransfer?.setData('text/plain', group.id);
+        event.dataTransfer?.setDragImage?.(event.currentTarget as Element, 24, 24);
+    }
+
+    protected dragOver(group: ExtractGroup, event: DragEvent) {
+        if (!this.draggedId() || this.draggedId() === group.id) {
+            return;
+        }
+        event.preventDefault();
+        event.dataTransfer!.dropEffect = 'move';
+        this.dropTargetId.set(group.id);
+    }
+
+    protected dropOnGroup(target: ExtractGroup, event: DragEvent) {
+        event.preventDefault();
+        const dragged = this.groups().find(group => group.id === this.draggedId());
+        if (dragged && dragged.id !== target.id) {
+            this.reorderGroupRequested.emit({ group: dragged, target });
+        }
+        this.endDrag();
+    }
+
+    protected endDrag() {
+        this.draggedId.set(undefined);
+        this.dropTargetId.set(undefined);
+    }
 
     protected updateObject(group: ExtractGroup, value: string) {
         const objectName = value.includes(':') ? value.slice(0, value.indexOf(':')) : value;

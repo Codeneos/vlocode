@@ -75,6 +75,29 @@
             <input type="checkbox" [ngModel]="item().IsDisabled === true" (ngModelChange)="setValue('IsDisabled', $event)">
             <span>Is Disabled</span>
         </label>
+
+        <section class="dm-value-mappings" aria-label="Transform value mappings">
+            <div class="dm-value-mappings__header">
+                <h3>Transform Value Mappings</h3>
+                <button type="button" class="dm-button dm-button--compact" (click)="addTransformValueMapping()">Add Key/Value Pair</button>
+            </div>
+            @for (mapping of transformValueMappings(); track $index) {
+                <div class="dm-value-mappings__row">
+                    <label class="dm-field">
+                        <span>Source Value</span>
+                        <input type="text" [ngModel]="mapping.source" (ngModelChange)="updateTransformValueMapping($index, 'source', $event)">
+                    </label>
+                    <label class="dm-field">
+                        <span>Target Value</span>
+                        <input type="text" [ngModel]="mapping.target" (ngModelChange)="updateTransformValueMapping($index, 'target', $event)">
+                    </label>
+                    <button type="button" class="dm-icon-button dm-icon-button--compact" title="Delete mapping" aria-label="Delete transform value mapping" (click)="deleteTransformValueMapping($index)">
+                        <span class="codicon codicon-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+            }
+        </section>
+
         @if (mapperKind() === 'load') {
             <div class="dm-check-row">
                 <label class="dm-check">

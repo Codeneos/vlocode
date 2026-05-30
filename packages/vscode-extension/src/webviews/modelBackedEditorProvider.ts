@@ -3,6 +3,7 @@ import path from 'path';
 import { randomBytes } from 'crypto';
 
 import { getErrorMessage } from '@vlocode/util';
+import { getDatapackSource, type VlocityDatapack } from '@vlocode/vlocity';
 import VlocodeService from '../lib/vlocodeService';
 
 export interface ModelBackedDocumentData<TModel> {
@@ -31,16 +32,36 @@ export interface EditorMessageContext<TModel, TData extends ModelBackedDocumentD
 
 export class ModelBackedDocument<TModel, TData extends ModelBackedDocumentData<TModel>> implements vscode.CustomDocument {
     public readonly webviews = new Set<vscode.Webview>();
+    public readonly sourceFiles = new Set<string>();
     public hasUnsavedChanges = false;
+    public applyingSourceSync = false;
+
+    private syncTimer?: ReturnType<typeof setTimeout>;
 
     constructor(
         public readonly uri: vscode.Uri,
-        public data: TData
+        public data: TData,
+        private readonly onDispose?: () => void
     ) {
     }
 
     public dispose(): void {
+        if (this.syncTimer) {
+            clearTimeout(this.syncTimer);
+            this.syncTimer = undefined;
+        }
         this.webviews.clear();
+        this.onDispose?.();
+    }
+
+    public scheduleSourceSync(sync: () => Promise<void>): void {
+        if (this.syncTimer) {
+            clearTimeout(this.syncTimer);
+        }
+        this.syncTimer = setTimeout(() => {
+            this.syncTimer = undefined;
+            void sync();
+        }, 150);
     }
 }
 
@@ -51,16 +72,21 @@ export abstract class ModelBackedEditorProvider<
 > implements vscode.CustomEditorProvider<ModelBackedDocument<TModel, TData>> {
 
     private readonly changeEmitter = new vscode.EventEmitter<vscode.CustomDocumentContentChangeEvent<ModelBackedDocument<TModel, TData>>>();
+    private readonly documents = new Set<ModelBackedDocument<TModel, TData>>();
     public readonly onDidChangeCustomDocument = this.changeEmitter.event;
 
     protected constructor(
         protected readonly context: vscode.ExtensionContext,
         protected readonly service: VlocodeService
     ) {
+        this.context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(document => this.syncSourceDocumentOnOpen(document)));
     }
 
     protected abstract readonly view: EditorView;
-    protected handleEditorMessage?: (context: EditorMessageContext<TModel, TData>) => boolean | Promise<boolean>;
+    protected handleEditorMessage(context: EditorMessageContext<TModel, TData>): boolean | Promise<boolean> {
+        void context;
+        return false;
+    }
 
     public async openCustomDocument(
         uri: vscode.Uri,
@@ -68,11 +94,15 @@ export abstract class ModelBackedEditorProvider<
     ): Promise<ModelBackedDocument<TModel, TData>> {
         const text = await this.readDocumentText(uri, openContext);
         const data = await this.loadDocument(uri, text);
-        const document = new ModelBackedDocument(uri, data);
+        let document!: ModelBackedDocument<TModel, TData>;
+        document = new ModelBackedDocument(uri, data, () => this.documents.delete(document));
+        this.documents.add(document);
 
         if (openContext.backupId) {
             document.data.model = await this.readBackup(openContext.backupId);
         }
+
+        this.refreshDatapackSourceFiles(document);
 
         return document;
     }
@@ -99,7 +129,7 @@ export abstract class ModelBackedEditorProvider<
             const requestType = message.type;
             try {
                 if (!await this.handleMessage(document, webviewPanel, message)) {
-                    await this.handleEditorMessage?.({ document, panel: webviewPanel, message });
+                    await this.handleEditorMessage({ document, panel: webviewPanel, message });
                 }
             } catch (error) {
                 const errorMessage = getErrorMessage(error);
@@ -162,9 +192,25 @@ export abstract class ModelBackedEditorProvider<
     protected abstract applyModel(document: TData, model: TModel): void;
     protected abstract saveDocument(document: TData, destination?: vscode.Uri): Promise<void>;
 
-    protected getDeployCommand?: (document: TData) => string | undefined;
-    protected getRefreshCommand?: (document: TData) => string | undefined;
-    protected getOpenSalesforceCommand?: (document: TData) => string | undefined;
+    protected getDatapackGraph(document: TData): VlocityDatapack | undefined {
+        void document;
+        return undefined;
+    }
+
+    protected getDeployCommand(document: TData): string | undefined {
+        void document;
+        return undefined;
+    }
+
+    protected getRefreshCommand(document: TData): string | undefined {
+        void document;
+        return undefined;
+    }
+
+    protected getOpenSalesforceCommand(document: TData): string | undefined {
+        void document;
+        return undefined;
+    }
 
     protected getCommandUri(document: TData): vscode.Uri {
         return document.uri;
@@ -234,13 +280,13 @@ export abstract class ModelBackedEditorProvider<
                 assertMessageModel(message);
                 this.acceptModelChange(document, message.model as TModel);
                 await this.saveActiveEditor();
-                await this.executeDocumentCommand(this.getDeployCommand?.(document.data), document.data);
+                await this.executeDocumentCommand(this.getDeployCommand(document.data), document.data);
                 return true;
             case 'refresh':
                 await this.refreshDocument(document);
                 return true;
             case 'openSalesforce':
-                await this.executeDocumentCommand(this.getOpenSalesforceCommand?.(document.data), document.data);
+                await this.executeDocumentCommand(this.getOpenSalesforceCommand(document.data), document.data);
                 return true;
             case 'viewSource':
                 await vscode.commands.executeCommand('vscode.openWith', document.data.uri, 'default', { preview: false });
@@ -259,8 +305,111 @@ export abstract class ModelBackedEditorProvider<
 
     private acceptModelChange(document: ModelBackedDocument<TModel, TData>, model: TModel): void {
         document.data.model = model;
+        this.applyModel(document.data, model);
+        this.refreshDatapackSourceFiles(document);
+        this.scheduleDatapackSourceSync(document);
         document.hasUnsavedChanges = true;
         this.changeEmitter.fire({ document });
+    }
+
+    private refreshDatapackSourceFiles(document: ModelBackedDocument<TModel, TData>): void {
+        document.sourceFiles.clear();
+        const datapack = this.getDatapackGraph(document.data);
+        if (!datapack) {
+            return;
+        }
+
+        const visited = new WeakSet<object>();
+        const addFile = (fileName: string | undefined) => {
+            if (fileName && isFileSource(fileName)) {
+                document.sourceFiles.add(normalizeFileName(fileName));
+            }
+        };
+        const visit = (value: unknown) => {
+            if (!value || typeof value !== 'object' || visited.has(value)) {
+                return;
+            }
+            visited.add(value);
+            const source = getDatapackSource(value);
+            addFile(source?.fileName);
+            Object.values(source?.fieldFiles ?? {}).forEach(addFile);
+            if (Array.isArray(value)) {
+                value.forEach(visit);
+            } else {
+                Object.values(value).forEach(visit);
+            }
+        };
+
+        addFile(datapack.headerFile);
+        visit(datapack.data);
+    }
+
+    private scheduleDatapackSourceSync(document: ModelBackedDocument<TModel, TData>): void {
+        if (document.applyingSourceSync || !this.hasOpenSourceDocument(document)) {
+            return;
+        }
+        document.scheduleSourceSync(() => this.syncDatapackGraphToOpenSourceDocuments(document));
+    }
+
+    private syncSourceDocumentOnOpen(textDocument: vscode.TextDocument): void {
+        for (const document of this.documents) {
+            if (document.hasUnsavedChanges && document.webviews.size > 0 && this.isOpenSourceDocument(document, textDocument)) {
+                document.scheduleSourceSync(() => this.syncDatapackGraphToOpenSourceDocuments(document));
+            }
+        }
+    }
+
+    private hasOpenSourceDocument(document: ModelBackedDocument<TModel, TData>): boolean {
+        return vscode.workspace.textDocuments.some(textDocument => this.isOpenSourceDocument(document, textDocument));
+    }
+
+    private isOpenSourceDocument(document: ModelBackedDocument<TModel, TData>, textDocument: vscode.TextDocument): boolean {
+        return textDocument.uri.scheme === 'file' && document.sourceFiles.has(normalizeFileName(textDocument.uri.fsPath));
+    }
+
+    private async syncDatapackGraphToOpenSourceDocuments(document: ModelBackedDocument<TModel, TData>): Promise<void> {
+        const datapack = this.getDatapackGraph(document.data);
+        if (!datapack || document.applyingSourceSync) {
+            return;
+        }
+
+        const sourceTexts = this.serializeDatapackGraph(datapack);
+        const edit = new vscode.WorkspaceEdit();
+        let hasChanges = false;
+        for (const textDocument of vscode.workspace.textDocuments) {
+            if (!this.isOpenSourceDocument(document, textDocument)) {
+                continue;
+            }
+            const nextText = sourceTexts.get(normalizeFileName(textDocument.uri.fsPath));
+            if (nextText === undefined || textDocument.getText() === nextText) {
+                continue;
+            }
+            edit.replace(textDocument.uri, fullDocumentRange(textDocument), nextText);
+            hasChanges = true;
+        }
+        if (!hasChanges) {
+            return;
+        }
+        try {
+            document.applyingSourceSync = true;
+            await vscode.workspace.applyEdit(edit);
+        } finally {
+            document.applyingSourceSync = false;
+        }
+    }
+
+    private serializeDatapackGraph(datapack: VlocityDatapack): Map<string, string> {
+        const headerFile = getDatapackSource(datapack.data)?.fileName || datapack.headerFile;
+        if (!headerFile) {
+            return new Map();
+        }
+
+        const sourceTexts = new Map<string, string>();
+        const writeValue = (value: unknown, fileName: string) => {
+            sourceTexts.set(normalizeFileName(fileName), `${JSON.stringify(serializeValue(value, fileName, writeValue), undefined, 4)}\n`);
+        };
+        writeValue(datapack.data, headerFile);
+        return sourceTexts;
     }
 
     private async saveActiveEditor(): Promise<void> {
@@ -279,7 +428,7 @@ export abstract class ModelBackedEditorProvider<
             return;
         }
 
-        await this.executeDocumentCommand(this.getRefreshCommand?.(document.data), document.data);
+        await this.executeDocumentCommand(this.getRefreshCommand(document.data), document.data);
         const text = await this.readUriText(document.uri);
         document.data = await this.loadDocument(document.uri, text);
         document.hasUnsavedChanges = false;
@@ -364,4 +513,57 @@ function assertMessageModel<TModel>(message: EditorMessage<TModel>): asserts mes
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function serializeValue(value: unknown, currentFile: string, writeValue: (value: unknown, fileName: string) => void): unknown {
+    if (Buffer.isBuffer(value)) {
+        return value.toString('base64');
+    }
+    if (Array.isArray(value)) {
+        return value.map(item => serializeArrayItem(item, currentFile, writeValue));
+    }
+    if (value && typeof value === 'object') {
+        const source = getDatapackSource(value);
+        const result: Record<string, unknown> = {};
+        for (const [key, child] of Object.entries(value)) {
+            if (child === undefined) {
+                continue;
+            }
+            const childSource = getDatapackSource(child);
+            const childFile = source?.fieldFiles?.[key] || (childSource?.external ? childSource.fileName : undefined);
+            if (childFile) {
+                writeValue(child, childFile);
+                result[key] = relativeReference(currentFile, childFile);
+            } else {
+                result[key] = serializeValue(child, currentFile, writeValue);
+            }
+        }
+        return result;
+    }
+    return value;
+}
+
+function serializeArrayItem(value: unknown, currentFile: string, writeValue: (value: unknown, fileName: string) => void): unknown {
+    const source = getDatapackSource(value);
+    if (source?.external) {
+        writeValue(value, source.fileName);
+        return relativeReference(currentFile, source.fileName);
+    }
+    return serializeValue(value, currentFile, writeValue);
+}
+
+function relativeReference(fromFile: string, toFile: string): string {
+    return path.relative(path.dirname(fromFile), toFile) || path.basename(toFile);
+}
+
+function fullDocumentRange(document: vscode.TextDocument): vscode.Range {
+    return new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
+}
+
+function normalizeFileName(fileName: string): string {
+    return path.resolve(fileName).replace(/\\/g, '/');
+}
+
+function isFileSource(fileName: string): boolean {
+    return path.basename(fileName) !== '.';
 }

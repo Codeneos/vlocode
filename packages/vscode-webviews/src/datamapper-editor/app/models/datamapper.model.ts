@@ -22,11 +22,13 @@ export interface DataMapperItem {
     IsRequiredForUpsert?: boolean;
     IsUpsertKey?: boolean;
     LinkedObjectSequence?: number | string;
+    Name?: string;
     OutputCreationSequence?: number | string;
     OutputFieldFormat?: string;
     OutputFieldName?: string;
     OutputObjectName?: string;
     TransformValueMappings?: unknown;
+    TransformValuesMappings?: unknown;
     [key: string]: unknown;
 }
 

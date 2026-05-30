@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, provideZonelessChangeDetection, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { bootstrapApplication } from '@angular/platform-browser';
 
 import { EmptyStateComponent } from './app/components/empty-state/empty-state.component';
@@ -37,6 +38,7 @@ type WebviewToExtensionMessage =
     | { type: 'save'; model: DataMapperModel }
     | { type: 'deploy'; model: DataMapperModel }
     | { type: 'openSalesforce' }
+    | { type: 'viewSource' }
     | { type: 'refresh' }
     | { type: 'refreshFields'; model: DataMapperModel; objects: string[] }
     | { type: 'preview'; model: DataMapperModel; input: unknown };
@@ -65,6 +67,9 @@ const DATA_TYPES = [
     'String'
 ];
 
+const IO_TYPES = ['JSON', 'XML', 'Other'];
+const CACHE_TYPES = ['None', 'Org Cache', 'Session Cache'];
+
 @Component({
     selector: 'vlocode-datamapper-editor',
     standalone: true,
@@ -72,6 +77,7 @@ const DATA_TYPES = [
         EmptyStateComponent,
         ExtractPanelComponent,
         FormulaPanelComponent,
+        FormsModule,
         LoadObjectsPanelComponent,
         MappingDialogComponent,
         MappingPanelComponent,
@@ -102,6 +108,7 @@ export class AppComponent {
     protected readonly fieldMetadataLoading = signal(false);
     protected readonly editing = signal<DataMapperItem | undefined>(undefined);
     protected readonly editIndex = signal(-1);
+    protected readonly settingsDraft = signal<Record<string, unknown> | undefined>(undefined);
 
     private readonly vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
     private lastFieldObjectsKey = '';
@@ -109,6 +116,8 @@ export class AppComponent {
 
     protected readonly mapperKind = computed(() => getDataMapperKind(this.model()));
     protected readonly mapperSubtitle = computed(() => getDataMapperSubtitle(this.model(), this.mapperKind()));
+    protected readonly ioTypes = IO_TYPES;
+    protected readonly cacheTypes = CACHE_TYPES;
     protected readonly tabs = computed(() => getTabs(this.mapperKind()));
     protected readonly extractionGroups = computed(() => createExtractGroups(this.model().items));
     protected readonly loadObjectGroups = computed(() => createLoadObjectGroups(this.model().items));
@@ -204,6 +213,10 @@ export class AppComponent {
         window.setTimeout(() => this.openingSalesforce.set(false), 1000);
     }
 
+    protected viewSource() {
+        this.vscode?.postMessage({ type: 'viewSource' });
+    }
+
     protected refresh() {
         this.refreshing.set(true);
         this.vscode?.postMessage({ type: 'refresh' });
@@ -216,6 +229,16 @@ export class AppComponent {
         this.previewInputDirty = true;
         this.previewInputJson.set(inputJson);
         this.previewError.set(undefined);
+        const parsedInput = tryParseJson(inputJson);
+        if (parsedInput.valid) {
+            this.updateModel(model => ({
+                ...model,
+                header: {
+                    ...model.header,
+                    [previewInputField(model)]: parsedInput.value
+                }
+            }));
+        }
     }
 
     protected runPreview() {
@@ -247,13 +270,13 @@ export class AppComponent {
 
     protected createMapping() {
         this.editIndex.set(-1);
-        this.editing.set(createMappingItem(this.mapperKind(), this.loadObjectGroups()));
+        this.editing.set(this.withDefaultItemName(createMappingItem(this.mapperKind(), this.loadObjectGroups())));
     }
 
     protected insertMappingAfter(item: DataMapperItem, mappingItem = createMappingItem(this.mapperKind(), this.loadObjectGroups(), item)) {
         const index = this.model().items.findIndex(candidate => isSameItem(candidate, item));
         const items = [...this.model().items];
-        items.splice(index >= 0 ? index + 1 : items.length, 0, mappingItem);
+        items.splice(index >= 0 ? index + 1 : items.length, 0, this.withDefaultItemName(mappingItem));
         this.updateModel(model => ({ ...model, items }));
     }
 
@@ -347,6 +370,29 @@ export class AppComponent {
         }));
     }
 
+    protected reorderExtractionGroup(event: { group: ExtractGroup; target: ExtractGroup }) {
+        const groups = this.extractionGroups();
+        const from = groups.findIndex(candidate => candidate.id === event.group.id);
+        const to = groups.findIndex(candidate => candidate.id === event.target.id);
+        if (from < 0 || to < 0 || from === to) {
+            return;
+        }
+        const [moved] = groups.splice(from, 1);
+        groups.splice(to, 0, moved);
+        const sequenceByKey = new Map<string, number>();
+        groups.forEach((candidate, groupIndex) => {
+            for (const item of candidate.items) {
+                sequenceByKey.set(String(item.GlobalKey ?? extractGroupId(item)), groupIndex + 1);
+            }
+        });
+        this.updateModel(model => ({
+            ...model,
+            items: model.items.map(item => isExtractionItem(item)
+                ? { ...item, InputObjectQuerySequence: sequenceByKey.get(String(item.GlobalKey ?? extractGroupId(item))) ?? item.InputObjectQuerySequence }
+                : item)
+        }));
+    }
+
     protected updateLoadObjectGroup(group: LoadObjectGroup) {
         const rows = [...group.items, ...group.links];
         const items = this.model().items.filter(item => !isLoadItem(item) || loadObjectGroupId(item) !== group.id);
@@ -415,7 +461,7 @@ export class AppComponent {
         }
         this.upsertMappingItem(item, this.editIndex());
         this.editIndex.set(-1);
-        this.editing.set(createMappingItem(this.mapperKind(), this.loadObjectGroups(), item));
+        this.editing.set(this.withDefaultItemName(createMappingItem(this.mapperKind(), this.loadObjectGroups(), item)));
     }
 
     protected saveMappingRow(item: DataMapperItem) {
@@ -428,12 +474,40 @@ export class AppComponent {
 
     private upsertMappingItem(item: DataMapperItem, index: number) {
         const items = [...this.model().items];
+        const namedItem = this.normalizeMappingItem(item);
         if (index >= 0) {
-            items[index] = item;
+            items[index] = namedItem;
         } else {
-            items.push(item);
+            items.push(namedItem);
         }
         this.updateModel(model => ({ ...model, items }));
+    }
+
+    private withDefaultItemName(item: DataMapperItem): DataMapperItem {
+        return item.Name ? item : { ...item, Name: this.model().title };
+    }
+
+    private normalizeMappingItem(item: DataMapperItem): DataMapperItem {
+        const namedItem = this.withDefaultItemName(item);
+        const transformValuesMappings = normalizeTransformValuesMappings(
+            namedItem.TransformValuesMappings ?? namedItem.TransformValueMappings ?? namedItem.transformValuesMappings
+        );
+        return {
+            ...namedItem,
+            DefaultValue: namedItem.DefaultValue ?? '',
+            FilterGroup: namedItem.FilterGroup ?? 0,
+            InputObjectQuerySequence: namedItem.InputObjectQuerySequence ?? 0,
+            IsDisabled: namedItem.IsDisabled === true,
+            IsRequiredForUpsert: namedItem.IsRequiredForUpsert === true,
+            IsUpsertKey: namedItem.IsUpsertKey === true,
+            LinkedObjectSequence: namedItem.LinkedObjectSequence ?? 0,
+            OutputCreationSequence: namedItem.OutputCreationSequence ?? 1,
+            TransformValuesMappings: transformValuesMappings,
+            TransformValueMappings: undefined,
+            transformValuesMappings: undefined,
+            VlocityDataPackType: namedItem.VlocityDataPackType ?? 'SObject',
+            VlocityRecordSObjectType: namedItem.VlocityRecordSObjectType ?? 'OmniDataTransformItem'
+        };
     }
 
     protected updateFormula(item: DataMapperItem, updatedItem = item) {
@@ -470,12 +544,71 @@ export class AppComponent {
         }));
     }
 
+    protected reorderFormula(event: { item: DataMapperItem; target: DataMapperItem }) {
+        const formulas = this.formulaItems();
+        const from = formulas.findIndex(candidate => isSameItem(candidate, event.item));
+        const to = formulas.findIndex(candidate => isSameItem(candidate, event.target));
+        if (from < 0 || to < 0 || from === to) {
+            return;
+        }
+        const [moved] = formulas.splice(from, 1);
+        formulas.splice(to, 0, moved);
+        const sequenceByKey = new Map<string, number>();
+        formulas.forEach((formula, formulaIndex) => sequenceByKey.set(formulaKey(formula), formulaIndex + 1));
+        this.updateModel(model => ({
+            ...model,
+            items: model.items.map(candidate => isFormulaItem(candidate)
+                ? { ...candidate, FormulaSequence: sequenceByKey.get(formulaKey(candidate)) ?? candidate.FormulaSequence }
+                : candidate)
+        }));
+    }
+
     protected deleteFormula(item: DataMapperItem) {
         this.updateModel(model => ({ ...model, items: model.items.filter(candidate => !isSameItem(candidate, item)) }));
     }
 
     protected insertFormulaAfter(item: DataMapperItem) {
         this.createFormula(item);
+    }
+
+    protected openSettings() {
+        const header = this.model().header;
+        this.settingsDraft.set({
+            ...header,
+            InputType: String(header.InputType ?? 'JSON'),
+            OutputType: String(header.OutputType ?? 'JSON'),
+            ResponseCacheTtlMinutes: Number(header.ResponseCacheTtlMinutes ?? 0) || 0,
+            ResponseCacheType: String(header.ResponseCacheType ?? 'None'),
+            IsFieldLevelSecurityEnabled: header.IsFieldLevelSecurityEnabled === true,
+            IsNullInputsIncludedInOutput: header.IsNullInputsIncludedInOutput === true
+        });
+    }
+
+    protected updateSetting(key: string, value: unknown) {
+        this.settingsDraft.update(settings => settings ? { ...settings, [key]: value } : settings);
+    }
+
+    protected cancelSettings() {
+        this.settingsDraft.set(undefined);
+    }
+
+    protected saveSettings() {
+        const settings = this.settingsDraft();
+        if (!settings) {
+            return;
+        }
+        const header = {
+            ...this.model().header,
+            ...settings,
+            InputType: String(settings.InputType || 'JSON'),
+            OutputType: String(settings.OutputType || 'JSON'),
+            ResponseCacheTtlMinutes: Math.max(0, Number(settings.ResponseCacheTtlMinutes ?? 0) || 0),
+            ResponseCacheType: settings.ResponseCacheType === 'None' ? undefined : String(settings.ResponseCacheType || ''),
+            IsFieldLevelSecurityEnabled: settings.IsFieldLevelSecurityEnabled === true,
+            IsNullInputsIncludedInOutput: settings.IsNullInputsIncludedInOutput === true
+        };
+        this.updateModel(model => ({ ...model, header }));
+        this.settingsDraft.set(undefined);
     }
 
     private requestFieldsForCurrentObjects() {
@@ -625,6 +758,44 @@ function validatePreviewInput(inputJson: string) {
         return undefined;
     } catch (error) {
         return getErrorMessage(error);
+    }
+}
+
+function tryParseJson(inputJson: string): { valid: true; value: unknown } | { valid: false } {
+    if (!inputJson.trim()) {
+        return { valid: false };
+    }
+    try {
+        return { valid: true, value: JSON.parse(inputJson) };
+    } catch {
+        return { valid: false };
+    }
+}
+
+function previewInputField(model: DataMapperModel) {
+    return model.header.PreviewJsonData !== undefined || model.header.ExpectedInputJson === undefined
+        ? 'PreviewJsonData'
+        : 'ExpectedInputJson';
+}
+
+function normalizeTransformValuesMappings(value: unknown): string {
+    const mapping = parseTransformValuesMappings(value);
+    return Object.keys(mapping).length ? JSON.stringify(mapping) : '{ }';
+}
+
+function parseTransformValuesMappings(value: unknown): Record<string, unknown> {
+    const parsed = typeof value === 'string' && value.trim() ? parseJsonValue(value) : value;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+    }
+    return Object.fromEntries(Object.entries(parsed as Record<string, unknown>).filter(([key]) => key !== ''));
+}
+
+function parseJsonValue(value: string): unknown {
+    try {
+        return JSON.parse(value);
+    } catch {
+        return undefined;
     }
 }
 

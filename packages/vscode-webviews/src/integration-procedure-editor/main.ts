@@ -2,6 +2,9 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, provideZonelessChangeDetection, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
+import { FormulaEditorComponent } from '../shared/components/formula-editor/formula-editor.component';
+import { MonacoEditorComponent, type monaco } from '../shared/components/monaco-editor/monaco-editor.component';
+
 declare const acquireVsCodeApi: undefined | (() => VsCodeApi);
 
 type SourceFormat = 'json' | 'xml';
@@ -9,6 +12,10 @@ type RuntimeShape = 'managed' | 'standard';
 type LeftTab = 'outline' | 'add' | 'problems';
 type InspectorTab = 'settings' | 'conditions' | 'io' | 'failure' | 'json';
 type DropPosition = 'before' | 'after' | 'inside';
+
+const DRAG_ELEMENT_MIME = 'application/x-vlocode-ip-element';
+const DRAG_TEMPLATE_MIME = 'application/x-vlocode-ip-template';
+const EMPTY_FLOW_DROP_KEY = '__empty-flow__';
 
 interface VsCodeApi {
     postMessage(message: WebviewToExtensionMessage): void;
@@ -52,6 +59,7 @@ interface IntegrationProcedureModel {
 }
 
 interface EditorState {
+    dataMappers?: string[];
     model: IntegrationProcedureModel;
 }
 
@@ -85,6 +93,12 @@ interface Problem {
     elementKey?: string;
     message: string;
     severity: 'error' | 'warning';
+}
+
+interface DataRaptorInputParameter {
+    element: string;
+    index: number;
+    inputParam: string;
 }
 
 interface ElementTemplate {
@@ -140,10 +154,17 @@ const INSPECTOR_TABS: Array<{ id: InspectorTab; label: string }> = [
 
 const GROUP_TYPES = new Set(['Conditional Block', 'Loop Block', 'Try-Catch Block', 'Cache Block']);
 
+const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
+    folding: true,
+    foldingStrategy: 'auto',
+    lineNumbersMinChars: 2,
+    showFoldingControls: 'always'
+};
+
 @Component({
     selector: 'vlocode-integration-procedure-editor',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormulaEditorComponent, MonacoEditorComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './app/app.component.html'
 })
@@ -164,13 +185,17 @@ export class AppComponent {
     protected readonly saving = signal(false);
     protected readonly deploying = signal(false);
     protected readonly draggedKey = signal<string | undefined>(undefined);
+    protected readonly draggedTemplateType = signal<string | undefined>(undefined);
     protected readonly dropPosition = signal<DropPosition | undefined>(undefined);
     protected readonly dropTargetKey = signal<string | undefined>(undefined);
     protected readonly openingSalesforce = signal(false);
     protected readonly selectedKey = signal<string | undefined>(undefined);
+    protected readonly dataMappers = signal<string[]>([]);
 
     protected readonly inspectorTabs = INSPECTOR_TABS;
     protected readonly elementTemplates = ELEMENT_TEMPLATES;
+    protected readonly emptyFlowDropKey = EMPTY_FLOW_DROP_KEY;
+    protected readonly jsonEditorOptions = jsonEditorOptions;
     protected readonly templateFamilies: ElementTemplate['family'][] = ['Actions', 'Data Mappers', 'Groups'];
 
     private readonly vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
@@ -222,12 +247,17 @@ export class AppComponent {
 
     protected readonly problems = computed(() => validateModel(this.model()));
 
-    protected readonly jsonTargetLabel = computed(() => this.selectedElement() ? 'selected element' : 'procedure');
+    protected readonly dataMapperOptions = computed(() => {
+        const current = this.propertyValue('bundle');
+        return [...new Set([...this.dataMappers(), current].filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    });
+
+    protected readonly jsonTargetLabel = computed(() => this.selectedElement() ? 'selected element property set' : 'procedure property set');
 
     constructor() {
         window.addEventListener('message', event => this.handleMessage(event.data as ExtensionToWebviewMessage));
         effect(() => {
-            this.jsonDraft.set(JSON.stringify(this.selectedElement() ?? this.model(), undefined, 4));
+            this.jsonDraft.set(JSON.stringify(this.activePropertySet(), undefined, 4));
             this.jsonError.set(undefined);
         });
         if (this.vscode) {
@@ -280,7 +310,6 @@ export class AppComponent {
     protected selectElement(key: string) {
         this.endDrag();
         this.selectedKey.set(key);
-        this.inspectorTab.set('settings');
     }
 
     protected selectProblem(problem: Problem) {
@@ -380,6 +409,36 @@ export class AppComponent {
         return Object.entries(asRecord(this.activePropertySet()[mapName])).map(([key, value]) => ({ key, value: stringifyValue(value) }));
     }
 
+    protected dataRaptorInputParameters(): DataRaptorInputParameter[] {
+        const value = this.activePropertySet()['dataRaptor Input Parameters'];
+        return Array.isArray(value)
+            ? value.map((entry, index) => ({
+                index,
+                inputParam: stringifyValue(isRecord(entry) ? entry.inputParam : ''),
+                element: stringifyValue(isRecord(entry) ? entry.element : '')
+            }))
+            : [];
+    }
+
+    protected addDataRaptorInputParameter() {
+        this.updateDataRaptorInputParameters(parameters => [...parameters, { inputParam: '', element: '' }]);
+    }
+
+    protected updateDataRaptorInputParameter(index: number, field: 'inputParam' | 'element', event: Event) {
+        const value = inputValue(event);
+        this.updateDataRaptorInputParameters(parameters => parameters.map((parameter, parameterIndex) =>
+            parameterIndex === index ? { ...parameter, [field]: value } : parameter
+        ));
+    }
+
+    protected deleteDataRaptorInputParameter(index: number) {
+        this.updateDataRaptorInputParameters(parameters => parameters.filter((_parameter, parameterIndex) => parameterIndex !== index));
+    }
+
+    protected isDataMapperAction(type: string) {
+        return isDataMapperAction(type);
+    }
+
     protected openInsertPicker(afterKey?: string, parentKey?: string) {
         this.insertFilter.set('');
         this.pendingInsert.set({ afterKey, parentKey });
@@ -401,10 +460,11 @@ export class AppComponent {
         this.addElement(type, context?.afterKey, context?.parentKey);
     }
 
-    protected addElement(type: string, afterKey?: string, parentKey?: string) {
+    protected addElement(type: string, afterKey?: string, parentKey?: string, beforeKey?: string) {
         const model = this.model();
         const afterElement = afterKey ? model.elements.find(element => element.key === afterKey) : undefined;
-        const resolvedParentKey = parentKey ?? afterElement?.parentKey;
+        const beforeElement = beforeKey ? model.elements.find(element => element.key === beforeKey) : undefined;
+        const resolvedParentKey = parentKey ?? afterElement?.parentKey ?? beforeElement?.parentKey;
         const name = uniqueElementName(model.elements, defaultElementName(type));
         const sourceKey = `${model.sourceKey ?? `IntegrationProcedure/${model.header.type}/${model.header.subType}`}/OmniProcessElement/${name}`;
         const element: IntegrationProcedureElement = {
@@ -418,10 +478,23 @@ export class AppComponent {
             sourceKey,
             type
         };
-        const elements = insertElementInFlow(model.elements, element, afterKey, resolvedParentKey);
+        const elements = insertElementInFlow(model.elements, element, afterKey, resolvedParentKey, beforeKey);
         this.setModel({ ...model, elements: resequence(elements) });
         this.selectedKey.set(element.key);
         this.leftTab.set('outline');
+    }
+
+    protected startTemplateDrag(type: string, event: DragEvent) {
+        event.stopPropagation();
+        this.draggedKey.set(undefined);
+        this.draggedTemplateType.set(type);
+        this.dropTargetKey.set(undefined);
+        this.dropPosition.set(undefined);
+        event.dataTransfer?.setData(DRAG_TEMPLATE_MIME, type);
+        event.dataTransfer?.setData('text/plain', type);
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'copy';
+        }
     }
 
     protected addChildElement(parentKey: string) {
@@ -478,8 +551,10 @@ export class AppComponent {
     protected startDrag(key: string, event: DragEvent) {
         event.stopPropagation();
         this.draggedKey.set(key);
+        this.draggedTemplateType.set(undefined);
         this.dropTargetKey.set(undefined);
         this.dropPosition.set(undefined);
+        event.dataTransfer?.setData(DRAG_ELEMENT_MIME, key);
         event.dataTransfer?.setData('text/plain', key);
         if (event.dataTransfer) {
             event.dataTransfer.effectAllowed = 'move';
@@ -488,7 +563,20 @@ export class AppComponent {
 
     protected dragOver(targetKey: string, event: DragEvent) {
         event.stopPropagation();
-        const draggedKey = this.draggedKey() || event.dataTransfer?.getData('text/plain');
+        const templateType = this.getDraggedTemplateType(event);
+        if (templateType) {
+            event.preventDefault();
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'copy';
+            }
+            const target = event.currentTarget instanceof HTMLElement ? event.currentTarget : undefined;
+            const midpoint = target ? target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2 : 0;
+            this.dropTargetKey.set(targetKey);
+            this.dropPosition.set(event.clientY < midpoint ? 'before' : 'after');
+            return;
+        }
+
+        const draggedKey = this.getDraggedElementKey(event);
         if (!draggedKey || !this.canDropOn(draggedKey, targetKey)) {
             return;
         }
@@ -519,7 +607,18 @@ export class AppComponent {
 
     protected dragOverInsert(afterKey: string, event: DragEvent) {
         event.stopPropagation();
-        const draggedKey = this.draggedKey() || event.dataTransfer?.getData('text/plain');
+        const templateType = this.getDraggedTemplateType(event);
+        if (templateType) {
+            event.preventDefault();
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'copy';
+            }
+            this.dropTargetKey.set(afterKey);
+            this.dropPosition.set('after');
+            return;
+        }
+
+        const draggedKey = this.getDraggedElementKey(event);
         if (!draggedKey || !this.canDropOn(draggedKey, afterKey)) {
             return;
         }
@@ -534,7 +633,14 @@ export class AppComponent {
     protected dropOnInsert(afterKey: string, event: DragEvent) {
         event.stopPropagation();
         event.preventDefault();
-        const draggedKey = this.draggedKey() || event.dataTransfer?.getData('text/plain');
+        const templateType = this.getDraggedTemplateType(event);
+        if (templateType) {
+            this.endDrag();
+            this.addElement(templateType, afterKey);
+            return;
+        }
+
+        const draggedKey = this.getDraggedElementKey(event);
         this.endDrag();
         if (!draggedKey || !this.canDropOn(draggedKey, afterKey)) {
             return;
@@ -545,9 +651,19 @@ export class AppComponent {
     protected dropOnElement(targetKey: string, event: DragEvent) {
         event.stopPropagation();
         event.preventDefault();
-        const draggedKey = this.draggedKey() || event.dataTransfer?.getData('text/plain');
+        const templateType = this.getDraggedTemplateType(event);
         const dropTargetKey = this.dropTargetKey();
         const position = this.dropPosition();
+        if (templateType) {
+            this.endDrag();
+            if (!dropTargetKey || !position || position === 'inside') {
+                return;
+            }
+            this.addElementRelative(templateType, dropTargetKey, position);
+            return;
+        }
+
+        const draggedKey = this.getDraggedElementKey(event);
         this.endDrag();
         if (!draggedKey || !dropTargetKey || !position || position === 'inside' || !this.canDropOn(draggedKey, dropTargetKey)) {
             return;
@@ -557,7 +673,18 @@ export class AppComponent {
 
     protected dragOverGroup(parentKey: string, event: DragEvent) {
         event.stopPropagation();
-        const draggedKey = this.draggedKey() || event.dataTransfer?.getData('text/plain');
+        const templateType = this.getDraggedTemplateType(event);
+        if (templateType) {
+            event.preventDefault();
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'copy';
+            }
+            this.dropTargetKey.set(parentKey);
+            this.dropPosition.set('inside');
+            return;
+        }
+
+        const draggedKey = this.getDraggedElementKey(event);
         if (!draggedKey || !this.canDropOn(draggedKey, parentKey)) {
             return;
         }
@@ -572,7 +699,14 @@ export class AppComponent {
     protected dropOnGroup(parentKey: string, event: DragEvent) {
         event.stopPropagation();
         event.preventDefault();
-        const draggedKey = this.draggedKey() || event.dataTransfer?.getData('text/plain');
+        const templateType = this.getDraggedTemplateType(event);
+        if (templateType) {
+            this.endDrag();
+            this.addElement(templateType, undefined, parentKey);
+            return;
+        }
+
+        const draggedKey = this.getDraggedElementKey(event);
         this.endDrag();
         if (!draggedKey || !this.canDropOn(draggedKey, parentKey)) {
             return;
@@ -582,8 +716,40 @@ export class AppComponent {
 
     protected endDrag() {
         this.draggedKey.set(undefined);
+        this.draggedTemplateType.set(undefined);
         this.dropTargetKey.set(undefined);
         this.dropPosition.set(undefined);
+    }
+
+    protected dragOverEmptyFlow(event: DragEvent) {
+        event.stopPropagation();
+        const templateType = this.getDraggedTemplateType(event);
+        if (!templateType) {
+            return;
+        }
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'copy';
+        }
+        this.dropTargetKey.set(EMPTY_FLOW_DROP_KEY);
+        this.dropPosition.set('inside');
+    }
+
+    protected dragLeaveEmptyFlow() {
+        if (this.dropTargetKey() === EMPTY_FLOW_DROP_KEY) {
+            this.dropTargetKey.set(undefined);
+            this.dropPosition.set(undefined);
+        }
+    }
+
+    protected dropOnEmptyFlow(event: DragEvent) {
+        event.stopPropagation();
+        event.preventDefault();
+        const templateType = this.getDraggedTemplateType(event);
+        this.endDrag();
+        if (templateType) {
+            this.addElement(templateType);
+        }
     }
 
     protected confirmDeleteElement(key: string) {
@@ -607,6 +773,11 @@ export class AppComponent {
         this.jsonError.set(undefined);
     }
 
+    protected setJsonDraftValue(value: string) {
+        this.jsonDraft.set(value);
+        this.jsonError.set(undefined);
+    }
+
     protected applyJson() {
         try {
             const parsed = JSON.parse(this.jsonDraft());
@@ -615,9 +786,9 @@ export class AppComponent {
             }
             const selected = this.selectedElement();
             if (selected) {
-                this.updateElement(selected.key, normalizeElementJson(parsed, selected));
+                this.updateElement(selected.key, { propertySet: parsed });
             } else {
-                this.setModel(normalizeModelJson(parsed, this.model()));
+                this.updateModel(model => ({ ...model, propertySet: parsed }));
             }
             this.jsonError.set(undefined);
         } catch (error) {
@@ -658,7 +829,23 @@ export class AppComponent {
     }
 
     protected iconForType(type: string) {
-        return ELEMENT_TEMPLATES.find(template => template.type === type)?.icon ?? 'circle-outline';
+        const templateIcon = ELEMENT_TEMPLATES.find(template => template.type === type)?.icon;
+        if (templateIcon) {
+            return templateIcon;
+        }
+        if (/Transform/i.test(type) && isDataMapperAction(type)) {
+            return 'type-hierarchy-sub';
+        }
+        if (/Post/i.test(type) && isDataMapperAction(type)) {
+            return 'cloud-upload';
+        }
+        if (/Turbo/i.test(type) && isDataMapperAction(type)) {
+            return 'zap';
+        }
+        if (isDataMapperAction(type)) {
+            return 'database';
+        }
+        return 'circle-outline';
     }
 
     protected hasSelectedDescendant(parentKey: string) {
@@ -684,6 +871,7 @@ export class AppComponent {
         switch (message.type) {
             case 'load':
                 this.model.set(message.state.model);
+                this.dataMappers.set(message.state.dataMappers ?? []);
                 this.hasLoaded.set(true);
                 this.refreshing.set(false);
                 this.error.set(undefined);
@@ -725,6 +913,28 @@ export class AppComponent {
         }
         const keys = new Set(this.model().elements.map(element => element.key));
         return keys.has(draggedKey) && keys.has(targetKey) && !this.isDescendantOf(targetKey, draggedKey);
+    }
+
+    private getDraggedElementKey(event: DragEvent) {
+        const key = this.draggedKey() || event.dataTransfer?.getData(DRAG_ELEMENT_MIME) || event.dataTransfer?.getData('text/plain');
+        return this.model().elements.some(element => element.key === key) ? key : undefined;
+    }
+
+    private getDraggedTemplateType(event: DragEvent) {
+        const type = this.draggedTemplateType() || event.dataTransfer?.getData(DRAG_TEMPLATE_MIME) || event.dataTransfer?.getData('text/plain');
+        return ELEMENT_TEMPLATES.some(template => template.type === type) ? type : undefined;
+    }
+
+    private addElementRelative(type: string, targetKey: string, position: Exclude<DropPosition, 'inside'>) {
+        const target = this.model().elements.find(element => element.key === targetKey);
+        if (!target) {
+            return;
+        }
+        if (position === 'after') {
+            this.addElement(type, targetKey);
+            return;
+        }
+        this.addElement(type, undefined, target.parentKey, targetKey);
     }
 
     private normalizeDropTarget(targetKey: string, position: Exclude<DropPosition, 'inside'>, draggedKey: string) {
@@ -832,6 +1042,15 @@ export class AppComponent {
             }
         }));
     }
+
+    private updateDataRaptorInputParameters(updater: (current: Array<Record<string, string>>) => Array<Record<string, string>>) {
+        const current = this.dataRaptorInputParameters().map(parameter => ({
+            inputParam: parameter.inputParam,
+            element: parameter.element
+        }));
+        const next = updater(current);
+        this.updateElementPropertyValue('dataRaptor Input Parameters', next);
+    }
 }
 
 function flattenElements(elements: IntegrationProcedureElement[]): FlowRow[] {
@@ -879,7 +1098,7 @@ function validateModel(model: IntegrationProcedureModel): Problem[] {
         if (element.type === 'Remote Action' && (!element.propertySet.remoteClass || !element.propertySet.remoteMethod)) {
             problems.push({ severity: 'warning', elementKey: element.key, message: `${element.name} is missing a remote class or method.` });
         }
-        if (/Data Mapper/i.test(element.type) && !element.propertySet.bundle) {
+        if (isDataMapperAction(element.type) && !element.propertySet.bundle) {
             problems.push({ severity: 'warning', elementKey: element.key, message: `${element.name} is missing a Data Mapper name.` });
         }
         if (element.type === 'Set Values' && !Object.keys(asRecord(element.propertySet.elementValueMap)).length) {
@@ -919,14 +1138,16 @@ function buildFlowTree(elements: IntegrationProcedureElement[]): FlowNode[] {
     return visit();
 }
 
-function insertElementInFlow(elements: IntegrationProcedureElement[], element: IntegrationProcedureElement, afterKey?: string, parentKey?: string): IntegrationProcedureElement[] {
+function insertElementInFlow(elements: IntegrationProcedureElement[], element: IntegrationProcedureElement, afterKey?: string, parentKey?: string, beforeKey?: string): IntegrationProcedureElement[] {
     const siblingParentKey = parentKey ?? '';
     const siblings = elements
         .filter(candidate => (candidate.parentKey ?? '') === siblingParentKey)
         .sort((a, b) => Number(a.sequenceNumber || 0) - Number(b.sequenceNumber || 0) || a.name.localeCompare(b.name));
-    const insertIndex = afterKey
-        ? Math.max(0, siblings.findIndex(candidate => candidate.key === afterKey) + 1)
-        : siblings.length;
+    const insertIndex = beforeKey
+        ? Math.max(0, siblings.findIndex(candidate => candidate.key === beforeKey))
+        : afterKey
+            ? Math.max(0, siblings.findIndex(candidate => candidate.key === afterKey) + 1)
+            : siblings.length;
     const nextSiblings = [
         ...siblings.slice(0, insertIndex),
         { ...element, parentKey, sequenceNumber: insertIndex + 1 },
@@ -979,7 +1200,7 @@ function defaultPropertySet(type: string, name: string): Record<string, unknown>
     if (type === 'Remote Action') {
         return { ...common, remoteClass: '', remoteMethod: '', remoteOptions: {}, sendJSONPath: '', sendJSONNode: '', responseJSONPath: '', responseJSONNode: '' };
     }
-    if (/Data Mapper/i.test(type)) {
+    if (isDataMapperAction(type)) {
         return { ...common, bundle: '', ignoreCache: false, 'dataRaptor Input Parameters': [], responseJSONPath: '', responseJSONNode: '' };
     }
     if (type === 'Set Values') {
@@ -996,7 +1217,7 @@ function elementSummary(element: IntegrationProcedureElement) {
     if (element.type === 'Remote Action') {
         return [propertySet.remoteClass, propertySet.remoteMethod].filter(Boolean).join('.');
     }
-    if (/Data Mapper/i.test(element.type)) {
+    if (isDataMapperAction(element.type)) {
         return stringifyValue(propertySet.bundle || propertySet.dataRaptorBundle || propertySet.dataMapperName);
     }
     if (element.type === 'Set Values') {
@@ -1011,37 +1232,6 @@ function elementSummary(element: IntegrationProcedureElement) {
     return stringifyValue(propertySet.label || '');
 }
 
-function normalizeElementJson(value: Record<string, unknown>, fallback: IntegrationProcedureElement): Partial<IntegrationProcedureElement> {
-    return {
-        ...fallback,
-        ...value,
-        propertySet: asRecord(value.propertySet ?? fallback.propertySet)
-    };
-}
-
-function normalizeModelJson(value: Record<string, unknown>, fallback: IntegrationProcedureModel): IntegrationProcedureModel {
-    return {
-        ...fallback,
-        ...value,
-        header: { ...fallback.header, ...asRecord(value.header) } as IntegrationProcedureHeader,
-        propertySet: asRecord(value.propertySet ?? fallback.propertySet),
-        elements: Array.isArray(value.elements)
-            ? value.elements.filter(isRecord).map((element, index) => ({
-                active: element.active !== false,
-                description: stringifyValue(element.description) || undefined,
-                key: stringifyValue(element.key || element.sourceKey || `element-${index}`),
-                level: Number(element.level ?? 0),
-                name: stringifyValue(element.name || `Element${index + 1}`),
-                parentKey: stringifyValue(element.parentKey) || undefined,
-                propertySet: asRecord(element.propertySet),
-                sequenceNumber: Number(element.sequenceNumber ?? index + 1),
-                sourceKey: stringifyValue(element.sourceKey || element.key || `element-${index}`),
-                type: stringifyValue(element.type || 'Remote Action')
-            }))
-            : fallback.elements
-    };
-}
-
 function setObjectValue(source: Record<string, unknown>, field: string, value: unknown) {
     const next = { ...source };
     if (value === '' || value === undefined) {
@@ -1050,6 +1240,10 @@ function setObjectValue(source: Record<string, unknown>, field: string, value: u
         next[field] = value;
     }
     return next;
+}
+
+function isDataMapperAction(type: string): boolean {
+    return /Data\s*Mapper|DataRaptor/i.test(type);
 }
 
 function inputValue(event: Event): string {

@@ -123,6 +123,10 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
         return VlocodeCommand.openInSalesforce;
     }
 
+    protected override getDatapackGraph(document: LoadedDocument) {
+        return document.datapack;
+    }
+
     private async getObjectMetadata(objectTypes: string[]): Promise<Record<string, SObjectMetadata>> {
         if (!this.service.isInitialized) {
             return {};

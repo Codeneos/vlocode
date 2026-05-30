@@ -1,4 +1,4 @@
-import { deepClone } from '@vlocode/util';
+import { deepClone, getErrorMessage } from '@vlocode/util';
 import { OmniStudioFormulaEvaluator } from '../omnistudio/formula';
 import {
     getDataMapperPathValue,
@@ -51,13 +51,19 @@ export class DataMapperExecutor {
             .filter(item => item.source && !this.isDisabled(item.source));
         const formulas = items
             .filter(item => item.formulaExpression && item.formulaResultPath)
-            .map(item => ({
-                item,
-                expression: item.formulaExpression!,
-                resultPath: item.formulaResultPath!,
-                sequence: item.formulaSequence ?? 0,
-                dependencies: this.formulas.dependencies(item.formulaExpression!)
-            }))
+            .map(item => {
+                try {
+                    return {
+                        item,
+                        expression: item.formulaExpression!,
+                        resultPath: item.formulaResultPath!,
+                        sequence: item.formulaSequence ?? 0,
+                        dependencies: this.formulas.dependencies(item.formulaExpression!)
+                    };
+                } catch (error) {
+                    throw new Error(`Invalid DataMapper formula "${item.formulaExpression}" for result path "${item.formulaResultPath}": ${getErrorMessage(error)}`);
+                }
+            })
             .sort((a, b) => a.sequence - b.sequence);
         const extractGroups = normalizedType === 'extract' ? this.createExtractGroups(items, formulas) : [];
         const mappings = items
@@ -128,14 +134,7 @@ export class DataMapperExecutor {
             const { nodePath, fieldPath } = this.splitSourceFieldPath(formula.resultPath, plan);
             const nodes = this.findNodes(sourceTree, nodePath);
             for (const node of nodes) {
-                const value = await this.formulas.evaluate(formula.expression, {
-                    source: node.record,
-                    queryRunner: options.queryRunner,
-                    functionRegistry: options.functionRegistry,
-                    timezone: options.timezone,
-                    now: options.now,
-                    resolvePath: path => this.resolveFormulaPath(sourceTree, node, path, plan)
-                });
+                const value = await this.evaluateFormula(formula, sourceTree, node, plan, options);
                 if (fieldPath) {
                     if (plan.type === 'transform' && !nodePath.length) {
                         setDataMapperPathValue(node.record, fieldPath, value);
@@ -145,6 +144,27 @@ export class DataMapperExecutor {
                     this.attachFormulaResultNodes(node, nodePath, fieldPath, value);
                 }
             }
+        }
+    }
+
+    private async evaluateFormula(
+        formula: DataMapperFormulaStep,
+        sourceTree: SourceTree,
+        node: SourceNode,
+        plan: DataMapperExecutionPlan,
+        options: DataMapperExecutionOptions
+    ): Promise<unknown> {
+        try {
+            return await this.formulas.evaluate(formula.expression, {
+                source: node.record,
+                queryRunner: options.queryRunner,
+                functionRegistry: options.functionRegistry,
+                timezone: options.timezone,
+                now: options.now,
+                resolvePath: path => this.resolveFormulaPath(sourceTree, node, path, plan)
+            });
+        } catch (error) {
+            throw new Error(`DataMapper formula "${formula.expression}" failed for result path "${formula.resultPath}": ${getErrorMessage(error)}`);
         }
     }
 
@@ -614,7 +634,7 @@ export class DataMapperExecutor {
             outputFieldFormat: item.OutputFieldFormat ?? item.outputFieldFormat,
             outputFieldName: item.OutputFieldName ?? item.outputFieldName,
             outputObjectName: item.OutputObjectName ?? item.outputObjectName,
-            transformValueMappings: item.TransformValueMappings ?? item.transformValueMappings ?? item.transformValuesMappings
+            transformValueMappings: item.TransformValuesMappings ?? item.TransformValueMappings ?? item.transformValueMappings ?? item.transformValuesMappings
         };
     }
 

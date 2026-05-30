@@ -2,29 +2,34 @@
     <section class="dm-flow" aria-label="Formulas">
         <div class="dm-flow__start" aria-hidden="true"></div>
         @for (item of items(); track item.GlobalKey ?? item.FormulaSequence ?? $index; let index = $index) {
-            <article class="dm-card dm-card--formula" [class.dm-card--disabled]="item.IsDisabled === true">
-                <header class="dm-card__header">
-                    <span class="dm-card__icon codicon codicon-symbol-method" aria-hidden="true"></span>
-                    <div>
-                        <h2>Formula {{ item.FormulaSequence || $index + 1 }}</h2>
-                        <p>{{ item.IsDisabled === true ? 'Disabled Formula' : 'Extract Formula' }}</p>
-                    </div>
-                    <div class="dm-card__actions">
-                        <button type="button" class="dm-icon-button" title="Move up" aria-label="Move formula up" (click)="moveFormulaRequested.emit({ item, direction: -1 })">
-                            <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="dm-icon-button" title="Move down" aria-label="Move formula down" (click)="moveFormulaRequested.emit({ item, direction: 1 })">
-                            <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="dm-icon-button" [title]="item.IsDisabled === true ? 'Enable' : 'Disable'" [attr.aria-label]="item.IsDisabled === true ? 'Enable formula' : 'Disable formula'" (click)="updateFormula(item, 'IsDisabled', item.IsDisabled !== true)">
-                            <span class="codicon" [class.codicon-eye]="item.IsDisabled === true" [class.codicon-eye-closed]="item.IsDisabled !== true" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="dm-icon-button" title="Delete" aria-label="Delete formula" (click)="deleteFormulaRequested.emit(item)">
-                            <span class="codicon codicon-trash" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                </header>
-                <div class="dm-card__body dm-card__body--edit">
+            <dm-data-mapper-card
+                variant="formula"
+                icon="symbol-method"
+                toggleName="formula"
+                actionsLabel="Formula actions"
+                [title]="'Formula ' + (item.FormulaSequence || $index + 1)"
+                [subtitle]="item.FormulaResultPath || (item.IsDisabled === true ? 'Disabled Formula' : 'Extract Formula')"
+                [disabled]="item.IsDisabled === true"
+                [draggable]="true"
+                [dragging]="draggedKey() === itemKey(item, index)"
+                [dropTarget]="dropTargetKey() === itemKey(item, index)"
+                (cardDragStart)="startDrag(item, index, $event)"
+                (cardDragOver)="dragOver(item, index, $event)"
+                (cardDrop)="dropOnFormula(item, index, $event)"
+                (cardDragEnd)="endDrag()">
+                <button dmCardAction type="button" class="dm-icon-button" title="Move up" aria-label="Move formula up" (click)="moveFormulaRequested.emit({ item, direction: -1 })">
+                    <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
+                </button>
+                <button dmCardAction type="button" class="dm-icon-button" title="Move down" aria-label="Move formula down" (click)="moveFormulaRequested.emit({ item, direction: 1 })">
+                    <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
+                </button>
+                <button dmCardAction type="button" class="dm-icon-button" [title]="item.IsDisabled === true ? 'Enable' : 'Disable'" [attr.aria-label]="item.IsDisabled === true ? 'Enable formula' : 'Disable formula'" (click)="updateFormula(item, 'IsDisabled', item.IsDisabled !== true)">
+                    <span class="codicon" [class.codicon-eye]="item.IsDisabled === true" [class.codicon-eye-closed]="item.IsDisabled !== true" aria-hidden="true"></span>
+                </button>
+                <button dmCardAction type="button" class="dm-icon-button" title="Delete" aria-label="Delete formula" (click)="deleteFormulaRequested.emit(item)">
+                    <span class="codicon codicon-trash" aria-hidden="true"></span>
+                </button>
+                <div dmCardBody class="dm-card__body dm-card__body--edit">
                     <div class="dm-field">
                         <span>Formula Expression</span>
                         <dm-formula-editor
@@ -51,7 +56,7 @@
                         </label>
                     </div>
                 </div>
-            </article>
+            </dm-data-mapper-card>
             <div class="dm-flow__insert">
                 <button type="button" class="dm-flow__add dm-flow__add--insert" aria-label="Insert formula" (click)="insertFormulaRequested.emit(item)"></button>
             </div>

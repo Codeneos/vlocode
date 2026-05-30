@@ -50,6 +50,7 @@ interface IntegrationProcedureModel {
 }
 
 interface EditorState {
+    dataMappers: string[];
     model: IntegrationProcedureModel;
 }
 
@@ -143,8 +144,11 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         super(context, service);
     }
 
-    protected override createEditorState(model: IntegrationProcedureModel): EditorState {
-        return { model };
+    protected override async createEditorState(model: IntegrationProcedureModel): Promise<EditorState> {
+        return {
+            dataMappers: await this.getDataMapperNames(),
+            model
+        };
     }
 
     protected override getDeployCommand(document: LoadedDocument) {
@@ -157,6 +161,10 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
 
     protected override getOpenSalesforceCommand(document: LoadedDocument) {
         return document.sourceFormat === 'xml' ? VlocodeCommand.viewInSalesforce : VlocodeCommand.openInSalesforce;
+    }
+
+    protected override getDatapackGraph(document: LoadedDocument) {
+        return document.sourceFormat === 'json' ? document.datapack : undefined;
     }
 
     private async openEditorView(uri?: vscode.Uri) {
@@ -339,6 +347,30 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         return vscode.Uri.file(headers[0]);
     }
 
+    private async getDataMapperNames(): Promise<string[]> {
+        const files = await Promise.all([
+            vscode.workspace.findFiles('**/omniDataTransforms/*.rpt-meta.xml', '**/{node_modules,.git}/**'),
+            vscode.workspace.findFiles('**/{DataRaptor,OmniDataTransform}/*/*_DataPack.json', '**/{node_modules,.git}/**')
+        ]);
+        const names = new Set<string>();
+        for (const uri of files.flat()) {
+            const name = dataMapperNameFromPath(uri.fsPath);
+            if (name) {
+                names.add(name);
+            }
+        }
+        return [...names].sort((a, b) => a.localeCompare(b));
+    }
+}
+
+function dataMapperNameFromPath(fileName: string): string | undefined {
+    const baseName = path.basename(fileName);
+    if (/\.rpt-meta\.xml$/i.test(baseName)) {
+        return baseName.replace(/\.rpt-meta\.xml$/i, '');
+    }
+    if (/_DataPack\.json$/i.test(baseName)) {
+        return baseName.replace(/_DataPack\.json$/i, '') || path.basename(path.dirname(fileName));
+    }
 }
 
 function setElementFields(

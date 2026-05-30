@@ -197,12 +197,17 @@ button, input, select, textarea { font: inherit; }
     &__icon {
         display: grid;
         place-items: center;
-        width: 34px;
-        height: 34px;
-        border: 1px solid color-mix(in srgb, var(--vscode-errorForeground) 48%, transparent);
+        width: 32px;
+        height: 32px;
+        border: 0;
         border-radius: $radius-control;
         color: var(--vscode-errorForeground);
-        background: color-mix(in srgb, var(--vscode-inputValidation-errorBackground) 36%, #{$surface});
+        background: color-mix(in srgb, var(--vscode-errorForeground) 12%, #{$surface});
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-errorForeground) 20%, transparent);
+
+        &.codicon[class*='codicon-'] {
+            @include icon(17px);
+        }
     }
 }
 
@@ -322,10 +327,11 @@ button, input, select, textarea { font: inherit; }
 
 .ip-rail__content {
     display: grid;
-    align-content: start;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: stretch;
     min-width: 0;
     min-height: 0;
-    overflow: hidden auto;
+    overflow: hidden;
     padding-inline: var(--ip-rail-gutter);
 }
 
@@ -363,7 +369,9 @@ button, input, select, textarea { font: inherit; }
     gap: 3px;
     width: 100%;
     min-width: 0;
-    overflow: hidden;
+    min-height: 0;
+    overflow: auto;
+    scrollbar-gutter: stable;
     padding: 0 0 16px;
 }
 
@@ -484,6 +492,18 @@ button, input, select, textarea { font: inherit; }
     grid-template-columns: 24px minmax(0, 1fr);
     gap: 9px;
     padding: 8px;
+
+    &[draggable='true'] {
+        cursor: grab;
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    &--dragging {
+        opacity: 0.52;
+    }
 
     strong,
     small {
@@ -690,7 +710,7 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
 
     &__stripe {
         align-self: stretch;
-        border-radius: 0;
+        border-radius: $radius-surface 0 0 $radius-surface;
         background: var(--vscode-button-background);
     }
 
@@ -1039,6 +1059,12 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
         z-index: 1;
     }
 
+    > .ip-node--menu-open,
+    > .ip-insert--menu-open,
+    > .ip-child-frame--menu-open {
+        z-index: 80;
+    }
+
     > .ip-node {
         width: min(640px, 100%);
     }
@@ -1264,9 +1290,9 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
     }
 }
 
-.ip-field input,
-.ip-field select,
-.ip-field textarea,
+.ip-field > input,
+.ip-field > select,
+.ip-field > textarea,
 .ip-map input,
 .ip-code-input {
     @include control;
@@ -1286,6 +1312,35 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
     resize: vertical;
     font-family: var(--vscode-editor-font-family);
     line-height: 1.45;
+}
+
+.ip-field dm-formula-editor {
+    display: block;
+    overflow: hidden;
+    width: 100%;
+    height: 156px;
+    min-height: 120px;
+    border: 1px solid $input-border;
+    border-radius: $radius-control;
+    background: var(--vscode-editor-background);
+}
+
+.ip-field dm-formula-editor dm-monaco-editor,
+.ip-field dm-formula-editor .dm-monaco-editor {
+    display: block;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+dm-monaco-editor,
+.dm-monaco-editor {
+    position: relative;
+}
+
+.dm-monaco-editor {
+    overflow: hidden;
 }
 
 .ip-switch {
@@ -1340,6 +1395,15 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
             flex-basis: 30px;
         }
     }
+
+    &__labels {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 30px;
+        gap: 6px;
+        color: $desc;
+        font-size: 12px;
+        font-weight: 600;
+    }
 }
 
 .ip-json {
@@ -1349,6 +1413,25 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
     p {
         margin: 0;
         color: $desc;
+    }
+
+    dm-monaco-editor,
+    .dm-monaco-editor {
+        display: block;
+        overflow: hidden;
+        width: 100%;
+        height: min(520px, calc(100vh - 380px));
+        min-height: 360px;
+        border: 1px solid $input-border;
+        border-radius: $radius-control;
+        background: var(--vscode-editor-background);
+    }
+
+    dm-monaco-editor .dm-monaco-editor {
+        height: 100%;
+        min-height: 0;
+        border: 0;
+        border-radius: 0;
     }
 }
 
@@ -1406,6 +1489,12 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
         border: 1px solid $panel;
         border-radius: $radius-surface;
         background: $surface;
+    }
+
+    &--drop-target {
+        border-color: $focus;
+        background: color-mix(in srgb, #{$focus} 10%, #{$surface});
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, #{$focus} 42%, transparent);
     }
 }
 

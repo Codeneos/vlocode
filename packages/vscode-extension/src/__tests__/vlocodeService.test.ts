@@ -23,19 +23,17 @@ describe('VlocodeService', () => {
 
     describe('validateSalesforceConnectivity', () => {
         it('asks for org selection before attempting initialization', async () => {
-            const service = Object.create(VlocodeService.prototype) as VlocodeService & {
-                sfUsername?: string;
-                initializeConnection: jest.Mock;
-            };
+            const service = Object.create(VlocodeService.prototype) as VlocodeService;
+            const initializeConnection = jest.fn();
 
-            service.sfUsername = undefined;
-            service.initializeConnection = jest.fn();
+            (service as any).sfUsername = undefined;
+            (service as any).initializeConnection = initializeConnection;
             (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
 
             await expect(service.validateSalesforceConnectivity()).resolves.toBe(
                 'Select a Salesforce instance for this workspace to use Vlocode'
             );
-            expect(service.initializeConnection).not.toHaveBeenCalled();
+            expect(initializeConnection).not.toHaveBeenCalled();
         });
     });
 

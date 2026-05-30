@@ -2,7 +2,7 @@ import { XML, fileName as getFileName } from '@vlocode/util';
 import { injectable } from '@vlocode/core';
 import { VlocityDatapack } from '@vlocode/vlocity';
 
-type MetadataRootName = 'OmniDataTransform' | 'OmniScript' | 'OmniIntegrationProcedure';
+type MetadataRootName = 'OmniDataTransform' | 'OmniProcess' | 'OmniIntegrationProcedure';
 type MetadataRecord = Record<string, any>;
 
 interface MetadataSourceInfo {
@@ -219,7 +219,7 @@ class DataMapperMetadataConverter extends MetadataRecordConverter {
 
 class OmniProcessMetadataConverter extends MetadataRecordConverter {
 
-    public readonly rootNames = ['OmniScript', 'OmniIntegrationProcedure'] as const;
+    public readonly rootNames = ['OmniProcess', 'OmniIntegrationProcedure'] as const;
     public readonly sobjectTypes = ['OmniProcess'] as const;
 
     public fromXml(fileName: string, rootName: MetadataRootName, root: MetadataRecord): VlocityDatapack {

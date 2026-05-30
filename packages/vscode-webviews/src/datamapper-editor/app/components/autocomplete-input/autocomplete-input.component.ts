@@ -61,26 +61,23 @@ export class AutocompleteInputComponent {
     }
 
     @HostListener('window:resize')
-    @HostListener('window:scroll')
     protected updateListPosition() {
         const inputElement = this.host.nativeElement.querySelector('input');
         if (!inputElement) {
             return;
         }
 
-        const rect = inputElement.getBoundingClientRect();
         const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const rect = inputElement.getBoundingClientRect();
         const gap = 3;
         const viewportPadding = 12;
         const maxPreferredHeight = 300;
         const availableBelow = viewportHeight - rect.bottom - viewportPadding;
-        const availableAbove = rect.top - viewportPadding;
-        const openBelow = availableBelow >= 120 || availableBelow >= availableAbove;
-        const maxHeight = Math.max(96, Math.min(maxPreferredHeight, openBelow ? availableBelow : availableAbove));
+        const maxHeight = Math.max(96, Math.min(maxPreferredHeight, availableBelow));
 
-        this.listLeft.set(rect.left);
-        this.listWidth.set(rect.width);
+        this.listLeft.set(0);
+        this.listWidth.set(inputElement.offsetWidth);
         this.listMaxHeight.set(maxHeight);
-        this.listTop.set(openBelow ? rect.bottom + gap : rect.top - maxHeight - gap);
+        this.listTop.set(inputElement.offsetTop + inputElement.offsetHeight + gap);
     }
 }

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { FormsModule } from '@angular/forms';
 
 import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-input.component';
+import { DataMapperCardComponent } from '../data-mapper-card/data-mapper-card.component';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import type { DataMapperItem, FieldSuggestion, LoadObjectGroup } from '../../models/datamapper.model';
 import { newGlobalKey } from '../../models/items';
@@ -10,7 +11,7 @@ import { loadObjectLabel } from '../../models/load-objects';
 @Component({
     selector: 'dm-load-objects-panel',
     standalone: true,
-    imports: [AutocompleteInputComponent, EmptyStateComponent, FormsModule],
+    imports: [AutocompleteInputComponent, DataMapperCardComponent, EmptyStateComponent, FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './load-objects-panel.component.html'
 })

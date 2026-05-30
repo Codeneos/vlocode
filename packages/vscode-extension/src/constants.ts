@@ -77,6 +77,7 @@ export enum VlocodeCommand {
     convertVlocityCard  = 'vlocode.vlocityCard.convert', 
     convertIntegrationProcedure  = 'vlocode.ip.convert',
     convertDataRaptor  = 'vlocode.dataRaptor.convert', 
+    convertOmniStudioMetadata = 'vlocode.omniStudio.convertMetadata',
     cardGenerateLwc  = 'vlocode.card.generateLwc',
     cardDeployLwc  = 'vlocode.card.deployLwc',
     cardActivate  = 'vlocode.card.activate',

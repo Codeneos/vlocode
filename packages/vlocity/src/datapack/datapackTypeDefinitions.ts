@@ -222,7 +222,7 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 fieldList: ["Id", "Name"]
             },
             salesforceUrl: {
-                standard: (record: any) => `/lightning/r/OmniDataTransform/${record.Id}/view`,
+                standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=datamapper&id=${record.Id}`,
                 classic: (record: any) => `/apex/%vlocity_namespace%__drmapper?id=${record.Id}`
             },
             matchingKey: {
@@ -230,6 +230,20 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
             }
         }
     ],
+    OmniDataTransform: {
+        typeLabel: "DataMapper",
+        datapackType: "OmniDataTransform",
+        source: {
+            sobjectType: "OmniDataTransform",
+            fieldList: ["Id", "Name"]
+        },
+        salesforceUrl: {
+            standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=datamapper&id=${record.Id}`
+        },
+        matchingKey: {
+            fields: ["Name"]
+        }
+    },
     VlocityCard: {
         typeLabel: "Vlocity Card",
         datapackType: "VlocityCard",

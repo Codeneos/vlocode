@@ -103,13 +103,30 @@ button, input, select, textarea { font: inherit; }
     }
 }
 
+dm-data-mapper-card {
+    display: block;
+}
+
+.dm-flow__insert + dm-data-mapper-card .dm-card {
+    margin-top: 0;
+}
+
 .dm-card {
     position: relative; z-index: 1; overflow: hidden; margin: 28px auto 0; border: 1px solid $panel; border-radius: $radius-surface;
-    background: $surface; box-shadow: $shadow-subtle;
+    background: $surface; box-shadow: $shadow-subtle; transition: border-color $quick, box-shadow $quick, transform $quick, opacity $quick;
+
+    &:hover, &:focus-within, &--drop-target {
+        border-color: var(--vscode-focusBorder);
+        box-shadow: 0 0 0 1px var(--vscode-focusBorder), 0 6px 18px color-mix(in srgb, var(--vscode-focusBorder) 24%, transparent);
+    }
+
+    &--dragging { opacity: 0.55; transform: scale(0.995); }
+    &--collapsed .dm-card__header { border-bottom: 0; }
 
     &__header {
-        display: flex; align-items: center; gap: 12px; padding: 18px; border-bottom: 1px solid $panel; background: $surface-alt;
+        display: flex; align-items: center; gap: 12px; padding: 18px; border-bottom: 1px solid $panel; background: $surface-alt; cursor: grab;
         > div { min-width: 0; }
+        &:active { cursor: grabbing; }
     }
     &__actions { display: flex; gap: 6px; margin-left: auto; }
     &--extract &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 30%, #{$surface-alt}); }
@@ -130,6 +147,12 @@ button, input, select, textarea { font: inherit; }
             display: inline-grid; place-items: center; font-size: 22px; line-height: 1;
             &::before { display: block; font-size: inherit; line-height: 1; }
         }
+    }
+    &__toggle {
+        appearance: none; display: inline-grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; border: 0; border-radius: $radius-control;
+        color: $desc; background: transparent; cursor: pointer;
+        &:hover, &:focus-visible { color: var(--vscode-foreground); background: $surface-hover; outline: 1px solid $focus; outline-offset: 0; }
+        .codicon[class*='codicon-'] { @include icon(16px); }
     }
     &__body {
         padding: 20px 18px 22px;
@@ -162,7 +185,7 @@ button, input, select, textarea { font: inherit; }
     .dm-search { justify-self: end; min-width: min(360px, 100%); }
 }
 
-.dm-search input, .dm-field input, .dm-field select, .dm-field textarea, .dm-combobox input, .dm-table select, .dm-filter-row__joiner select {
+.dm-search input, .dm-field > input, .dm-field > select, .dm-field > textarea, .dm-combobox input, .dm-table select, .dm-filter-row__joiner select {
     @include control;
 }
 
@@ -185,27 +208,10 @@ dm-monaco-editor,
     overflow: hidden;
 }
 
-.dm-monaco-overflow-widgets {
-    position: fixed; inset: 0; z-index: 10000; overflow: visible; pointer-events: none;
-    background: transparent !important;
-
-    .overflowingContentWidgets,
-    .overflowingOverlayWidgets {
-        overflow: visible;
-    }
-
-    .suggest-widget,
-    .suggest-details,
-    .parameter-hints-widget,
-    .monaco-hover {
-        z-index: 10000; pointer-events: auto;
-    }
-}
-
 .dm-combobox {
     position: relative;
     &__list {
-        position: fixed; z-index: 1000; overflow: auto;
+        position: absolute; z-index: 1000; overflow: auto;
         margin: 0; padding: 2px 0; border: 1px solid color-mix(in srgb, var(--vscode-widget-border, #{$input-border}) 70%, transparent); border-radius: $radius-control;
         color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); box-shadow: $shadow-popover; list-style: none;
     }
@@ -270,6 +276,7 @@ dm-monaco-editor,
 .dm-dialog {
     position: fixed; z-index: 11; top: 50%; left: 50%; width: min(760px, calc(100% - 32px)); transform: translate(-50%, -50%);
     border: 1px solid $panel; border-radius: $radius-popover; background: $surface; box-shadow: $shadow-popover;
+    &--wide { width: min(900px, calc(100% - 32px)); }
     &-backdrop { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, #{$editor} 60%, black); }
     &__close {
         @include button; position: absolute; top: -38px; right: 0; display: grid; place-items: center;
@@ -289,9 +296,18 @@ dm-monaco-editor,
     &--inline { align-self: end; min-height: 30px; }
     &-row { display: flex; flex-wrap: wrap; gap: 14px; }
 }
+.dm-value-mappings {
+    display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid $panel;
+    &__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--vscode-foreground); }
+    &__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) max-content; align-items: end; gap: 10px; }
+}
 .dm-muted { margin: 0; color: $desc; }
 .dm-empty {
-    padding: 32px; border: 1px solid $panel; border-radius: $radius-surface; background: $surface-alt; text-align: center;
+    display: grid; justify-items: center; gap: 8px;
+    padding: 36px 24px; border: 1px solid $panel; border-radius: $radius-surface; background: $surface-alt; text-align: center;
+    p { max-width: 520px; margin: 0; }
+    .dm-button { margin-top: 4px; }
     &--page { width: min(680px, calc(100% - 32px)); margin: 72px auto; }
 }
 
@@ -346,7 +362,7 @@ dm-monaco-editor,
 }
 
 @media (max-width: 720px) {
-    .dm-header, .dm-toolbar, .dm-details, .dm-form-grid, .dm-extract-grid, .dm-filter-row, .dm-link-row { grid-template-columns: 1fr; }
+    .dm-header, .dm-toolbar, .dm-details, .dm-form-grid, .dm-extract-grid, .dm-filter-row, .dm-link-row, .dm-value-mappings__row { grid-template-columns: 1fr; }
     .dm-header { display: grid; }
     .dm-toolbar { justify-content: stretch; .dm-search { justify-self: stretch; } }
     .dm-filter-row__joiner { min-height: 0; }

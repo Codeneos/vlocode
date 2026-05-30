@@ -14,17 +14,25 @@
                     </div>
                 </div>
                 <div class="dm-header__actions">
+                    <button type="button" class="dm-button" (click)="openSettings()">
+                        <span class="codicon codicon-gear" aria-hidden="true"></span>
+                        Settings
+                    </button>
                     <button type="button" class="dm-button" [disabled]="refreshing()" (click)="refresh()">
                         <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
                         @if (refreshing()) { Refreshing } @else { Refresh }
                     </button>
+                    <button type="button" class="dm-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
+                        <span class="codicon codicon-link-external" aria-hidden="true"></span>
+                        @if (openingSalesforce()) { Opening } @else { Open in Org }
+                    </button>
+                    <button type="button" class="dm-button" (click)="viewSource()">
+                        <span class="codicon codicon-code" aria-hidden="true"></span>
+                        Source
+                    </button>
                     <button type="button" class="dm-button" [disabled]="deploying()" (click)="deploy()">
                         <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
                         @if (deploying()) { Deploying } @else { Deploy }
-                    </button>
-                    <button type="button" class="dm-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
-                        <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                        @if (openingSalesforce()) { Opening } @else { Open in Salesforce }
                     </button>
                     <button type="button" class="dm-button dm-button--primary" [disabled]="saving()" (click)="save()">
                         <span class="codicon codicon-save" aria-hidden="true"></span>
@@ -62,6 +70,7 @@
                     (insertExtractionRequested)="createExtraction($event)"
                     (updateGroupRequested)="updateExtractionGroup($event)"
                     (moveGroupRequested)="moveExtractionGroup($event.group, $event.direction)"
+                    (reorderGroupRequested)="reorderExtractionGroup($event)"
                     (deleteGroupRequested)="deleteExtractionGroup($event)" />
             }
             @case ('formula') {
@@ -72,6 +81,7 @@
                     (insertFormulaRequested)="insertFormulaAfter($event)"
                     (updateFormulaRequested)="updateFormula($event.item, $event.updatedItem)"
                     (moveFormulaRequested)="moveFormula($event.item, $event.direction)"
+                    (reorderFormulaRequested)="reorderFormula($event)"
                     (deleteFormulaRequested)="deleteFormula($event)" />
             }
             @case ('mapping') {
@@ -117,6 +127,78 @@
                 (cancel)="cancelEdit()"
                 (saveMapping)="applyEdit($event)"
                 (saveAndAddAnother)="applyEditAndCreateNext($event)" />
+        }
+
+        @if (settingsDraft(); as settings) {
+            <div class="dm-dialog-backdrop" role="presentation" (click)="cancelSettings()"></div>
+            <section class="dm-dialog dm-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+                <button type="button" class="dm-dialog__close" aria-label="Close" (click)="cancelSettings()">
+                    <span class="codicon codicon-close" aria-hidden="true"></span>
+                </button>
+                <header class="dm-dialog__header">
+                    <h2 id="settings-title">DataMapper Settings</h2>
+                </header>
+                <div class="dm-dialog__body">
+                    <div class="dm-form-grid">
+                        <label class="dm-field">
+                            <span>Input Type</span>
+                            <select [ngModel]="settings.InputType || 'JSON'" (ngModelChange)="updateSetting('InputType', $event)">
+                                @for (type of ioTypes; track type) {
+                                    <option [value]="type">{{ type }}</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="dm-field">
+                            <span>Output Type</span>
+                            <select [ngModel]="settings.OutputType || 'JSON'" (ngModelChange)="updateSetting('OutputType', $event)">
+                                @for (type of ioTypes; track type) {
+                                    <option [value]="type">{{ type }}</option>
+                                }
+                            </select>
+                        </label>
+                    </div>
+
+                    <label class="dm-field">
+                        <span>Required Permission</span>
+                        <input type="text" [ngModel]="settings.RequiredPermission || ''" (ngModelChange)="updateSetting('RequiredPermission', $event)">
+                    </label>
+
+                    <label class="dm-field">
+                        <span>Description</span>
+                        <textarea rows="3" [ngModel]="settings.Description || ''" (ngModelChange)="updateSetting('Description', $event)"></textarea>
+                    </label>
+
+                    <div class="dm-form-grid">
+                        <label class="dm-field">
+                            <span>Time To Live In Minutes</span>
+                            <input type="number" min="0" [ngModel]="settings.ResponseCacheTtlMinutes ?? 0" (ngModelChange)="updateSetting('ResponseCacheTtlMinutes', $event)">
+                        </label>
+                        <label class="dm-field">
+                            <span>Salesforce Platform Cache Type</span>
+                            <select [ngModel]="settings.ResponseCacheType || 'None'" (ngModelChange)="updateSetting('ResponseCacheType', $event)">
+                                @for (type of cacheTypes; track type) {
+                                    <option [value]="type">{{ type }}</option>
+                                }
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="dm-check-row">
+                        <label class="dm-check">
+                            <input type="checkbox" [ngModel]="settings.IsFieldLevelSecurityEnabled === true" (ngModelChange)="updateSetting('IsFieldLevelSecurityEnabled', $event)">
+                            <span>Check field level security before execution</span>
+                        </label>
+                        <label class="dm-check">
+                            <input type="checkbox" [ngModel]="settings.IsNullInputsIncludedInOutput === true" (ngModelChange)="updateSetting('IsNullInputsIncludedInOutput', $event)">
+                            <span>Include null values in the response</span>
+                        </label>
+                    </div>
+                </div>
+                <footer class="dm-dialog__footer">
+                    <button type="button" class="dm-button" (click)="cancelSettings()">Cancel</button>
+                    <button type="button" class="dm-button dm-button--primary" (click)="saveSettings()">Save</button>
+                </footer>
+            </section>
         }
 
         @if (loading()) {
