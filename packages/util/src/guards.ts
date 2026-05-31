@@ -11,6 +11,13 @@ export function isReadonlyArray<T>(arg: unknown): arg is readonly T[] {
     return Array.isArray(arg) || arg instanceof Array;
 }
 
+/**
+ * Type guard for non-array object records.
+ */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 
 /**
  * Type-check helper method that checks the specified parameter for null or undefined and 

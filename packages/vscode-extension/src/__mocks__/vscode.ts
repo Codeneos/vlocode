@@ -99,6 +99,20 @@ export class CancellationTokenSource {
 
 export const workspace = {
     workspaceFolders: undefined as Array<{ uri: Uri }> | undefined,
+    textDocuments: [] as Array<{ uri: Uri; getText(): string }>,
+    fs: {
+        createDirectory: jest.fn(),
+        delete: jest.fn(),
+        readFile: jest.fn(),
+        writeFile: jest.fn()
+    },
+    applyEdit: jest.fn(),
+    onDidOpenTextDocument: jest.fn().mockReturnValue({
+        dispose: jest.fn()
+    }),
+    onDidChangeTextDocument: jest.fn().mockReturnValue({
+        dispose: jest.fn()
+    }),
     openTextDocument: jest.fn(),
     registerTextDocumentContentProvider: jest.fn().mockReturnValue({
         dispose: jest.fn()

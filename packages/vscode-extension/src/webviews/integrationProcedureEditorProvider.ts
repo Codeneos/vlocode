@@ -3,9 +3,12 @@ import path from 'path';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
-import { container } from '@vlocode/core';
-import { DatapackFileWriter, DatapackLoader, getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
-import { MetadataConverter } from '@vlocode/vlocity-deploy';
+import { deepClone, isRecord } from '@vlocode/util';
+import { FileSystem, injectable } from '@vlocode/core';
+import { DatapackInfoService, getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
+import { MetadataConverter, OmniScriptElementMapping, OmniScriptMapping, type ObjectMapping } from '@vlocode/vlocity-deploy';
+import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
+import { VlocodeContext } from '../lib/vlocodeContext';
 import { ModelBackedEditorProvider } from './modelBackedEditorProvider';
 
 type SourceFormat = 'json' | 'xml';
@@ -102,34 +105,32 @@ const HEADER_FIELDS = {
 } as const;
 
 const ELEMENT_FIELDS = {
-    name: ['Name'],
-    type: ['Type', 'Type__c'],
-    active: ['IsActive', 'Active__c'],
-    description: ['Description', 'InternalNotes__c'],
-    sequenceNumber: ['SequenceNumber', 'Order__c'],
-    level: ['Level', 'Level__c'],
-    parent: ['ParentElementId', 'ParentElementId__c'],
-    propertySet: ['PropertySetConfig', 'PropertySet__c'],
-    uniqueIndex: ['UniqueIndex', 'SearchKey__c']
+    name: 'Name',
+    type: 'Type',
+    active: 'IsActive',
+    description: 'Description',
+    sequenceNumber: 'SequenceNumber',
+    level: 'Level',
+    parent: 'ParentElementId',
+    propertySet: 'PropertySetConfig',
+    uniqueIndex: 'UniqueIndex'
 } as const;
 
+@injectable()
 export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvider<IntegrationProcedureModel, EditorState, LoadedDocument> {
-    public static readonly viewType = 'vlocode.integrationProcedureEditor';
+    private readonly viewType = 'vlocode.integrationProcedureEditor';
 
-    public static register(context: vscode.ExtensionContext, service: VlocodeService) {
-        const provider = new IntegrationProcedureEditorProvider(context, service);
+    public register(): vscode.Disposable {
         return vscode.Disposable.from(
-            vscode.window.registerCustomEditorProvider(IntegrationProcedureEditorProvider.viewType, provider, {
+            vscode.window.registerCustomEditorProvider(this.viewType, this, {
                 webviewOptions: { retainContextWhenHidden: true },
                 supportsMultipleEditorsPerDocument: false
             }),
-            vscode.commands.registerCommand(VlocodeCommand.openIntegrationProcedureEditor, uri => provider.openEditorView(uri)),
-            vscode.commands.registerCommand(VlocodeCommand.viewIntegrationProcedureSource, uri => provider.openSourceView(uri))
+            vscode.commands.registerCommand(VlocodeCommand.openIntegrationProcedureEditor, uri => this.openEditorView(uri)),
+            vscode.commands.registerCommand(VlocodeCommand.viewIntegrationProcedureSource, uri => this.openSourceView(uri))
         );
     }
 
-    private readonly loader = container.get(DatapackLoader);
-    private readonly metadataConverter = container.get(MetadataConverter);
     protected readonly view = {
         resourceRoot: 'resources/integration-procedure-editor',
         savedMessage: 'Integration Procedure saved',
@@ -137,11 +138,15 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         title: 'Integration Procedure Editor'
     };
 
-    private constructor(
-        context: vscode.ExtensionContext,
-        service: VlocodeService
+    public constructor(
+        context: VlocodeContext,
+        service: VlocodeService,
+        fileSystem: FileSystem,
+        datapackInfo: DatapackInfoService,
+        datapackExpansion: DatapackExpansionService,
+        private readonly metadataConverter: MetadataConverter
     ) {
-        super(context, service);
+        super(context, service, fileSystem, datapackInfo, datapackExpansion);
     }
 
     protected override async createEditorState(model: IntegrationProcedureModel): Promise<EditorState> {
@@ -167,8 +172,14 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         return document.sourceFormat === 'json' ? document.datapack : undefined;
     }
 
+    protected override async serializeSourceDocuments(document: LoadedDocument): Promise<Map<string, string>> {
+        return document.sourceFormat === 'xml'
+            ? this.sourceTextMap([[document.uri, this.metadataConverter.datapackToMetadataXml(document.datapack)]])
+            : super.serializeSourceDocuments(document);
+    }
+
     private async openEditorView(uri?: vscode.Uri) {
-        await this.openEditorWith(IntegrationProcedureEditorProvider.viewType, 'No Integration Procedure file is active.', uri);
+        await this.openEditorWith(this.viewType, 'No Integration Procedure file is active.', uri);
     }
 
     private async openSourceView(uri?: vscode.Uri) {
@@ -184,7 +195,7 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
 
     private async loadJsonDocument(uri: vscode.Uri): Promise<LoadedDocument> {
         const headerUri = await this.resolveDatapackHeaderUri(uri);
-        const datapack = await this.loader.loadDatapack(headerUri.fsPath);
+        const datapack = await this.loadDatapackWithOpenDocuments(headerUri);
         this.assertIntegrationProcedure(datapack);
         const model = this.createModel(datapack, 'json');
         return {
@@ -192,7 +203,7 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
             datapack,
             sourceFormat: 'json',
             model,
-            headerPropertyFormat: propertyFormat(getFieldValue(datapack.data, HEADER_FIELDS.propertySet)),
+            headerPropertyFormat: this.propertyFormat(this.getFieldValue(datapack.data, HEADER_FIELDS.propertySet)),
             elementPropertyFormat: this.captureElementPropertyFormats(datapack)
         };
     }
@@ -214,8 +225,8 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
     private assertIntegrationProcedure(datapack: VlocityDatapack): void {
         const data = datapack.data;
         const isProcedure = datapack.datapackType === 'IntegrationProcedure' ||
-            getFieldValue(data, HEADER_FIELDS.isIntegrationProcedure) === true ||
-            /integration\s*procedure/i.test(String(getFieldValue(data, HEADER_FIELDS.omniProcessType) ?? ''));
+            this.getFieldValue(data, HEADER_FIELDS.isIntegrationProcedure) === true ||
+            /integration\s*procedure/i.test(String(this.getFieldValue(data, HEADER_FIELDS.omniProcessType) ?? ''));
         if (!isProcedure) {
             throw new Error('The selected file is not an Integration Procedure.');
         }
@@ -231,86 +242,87 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
             await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
             return;
         }
-        await container.get(DatapackFileWriter).saveDatapack(document.datapack);
+        await this.datapackExpansion.saveDatapack(document.datapack);
     }
 
     private createModel(datapack: VlocityDatapack, sourceFormat: SourceFormat): IntegrationProcedureModel {
         const data = datapack.data;
-        const runtime = isManagedRecord(data) ? 'managed' : 'standard';
-        const propertySetValue = getFieldValue(data, HEADER_FIELDS.propertySet);
-        const elements = toArray(getFieldValue(data, HEADER_FIELDS.elements))
-            .filter(isRecord)
+        const runtime = this.isManagedRecord(data) ? 'managed' : 'standard';
+        const propertySetValue = this.getFieldValue(data, HEADER_FIELDS.propertySet);
+        const elements = this.list(this.getFieldValue(data, HEADER_FIELDS.elements))
+            .filter((element): element is Record<string, unknown> => isRecord(element))
             .map((element, index) => this.createElementModel(element, data, index))
-            .sort(compareElements);
+            .sort((a, b) => this.compareElements(a, b));
         const header = {
-            name: stringValue(getFieldValue(data, HEADER_FIELDS.name), path.basename(datapack.headerFile ?? 'IntegrationProcedure', '_DataPack.json')),
-            type: stringValue(getFieldValue(data, HEADER_FIELDS.type), ''),
-            subType: stringValue(getFieldValue(data, HEADER_FIELDS.subType), ''),
-            versionNumber: getFieldValue(data, HEADER_FIELDS.versionNumber) as number | string | undefined,
-            active: booleanValue(getFieldValue(data, HEADER_FIELDS.active)),
-            description: optionalString(getFieldValue(data, HEADER_FIELDS.description)),
-            requiredPermission: optionalString(getFieldValue(data, HEADER_FIELDS.requiredPermission)),
-            language: optionalString(getFieldValue(data, HEADER_FIELDS.language)),
-            responseCacheType: optionalString(getFieldValue(data, HEADER_FIELDS.responseCacheType))
+            name: this.stringValue(this.getFieldValue(data, HEADER_FIELDS.name), path.basename(datapack.headerFile ?? 'IntegrationProcedure', '_DataPack.json')),
+            type: this.stringValue(this.getFieldValue(data, HEADER_FIELDS.type), ''),
+            subType: this.stringValue(this.getFieldValue(data, HEADER_FIELDS.subType), ''),
+            versionNumber: this.getFieldValue(data, HEADER_FIELDS.versionNumber) as number | string | undefined,
+            active: this.booleanValue(this.getFieldValue(data, HEADER_FIELDS.active)),
+            description: this.optionalString(this.getFieldValue(data, HEADER_FIELDS.description)),
+            requiredPermission: this.optionalString(this.getFieldValue(data, HEADER_FIELDS.requiredPermission)),
+            language: this.optionalString(this.getFieldValue(data, HEADER_FIELDS.language)),
+            responseCacheType: this.optionalString(this.getFieldValue(data, HEADER_FIELDS.responseCacheType))
         };
 
         return {
             header,
             elements,
-            propertySet: parsePropertySet(propertySetValue),
+            propertySet: this.parsePropertySet(propertySetValue),
             runtime,
             sourceFormat,
             datapackType: datapack.datapackType,
             fileName: datapack.headerFile ?? '',
             sourceKey: datapack.sourceKey,
-            title: getTitle(header)
+            title: this.getTitle(header)
         };
     }
 
     private createElementModel(element: Record<string, unknown>, header: Record<string, unknown>, index: number): IntegrationProcedureElement {
-        const sourceKey = stringValue(element.VlocityRecordSourceKey, `${stringValue(header.VlocityRecordSourceKey, 'IntegrationProcedure')}/OmniProcessElement/${index + 1}`);
-        const propertySet = parsePropertySet(getFieldValue(element, ELEMENT_FIELDS.propertySet));
+        const sourceKey = this.stringValue(element.VlocityRecordSourceKey, `${this.stringValue(header.VlocityRecordSourceKey, 'IntegrationProcedure')}/OmniProcessElement/${index + 1}`);
+        const propertySet = this.parsePropertySet(this.getFieldValue(element, ELEMENT_FIELDS.propertySet));
         return {
             key: sourceKey,
             sourceKey,
-            name: stringValue(getFieldValue(element, ELEMENT_FIELDS.name), `Element${index + 1}`),
-            type: stringValue(getFieldValue(element, ELEMENT_FIELDS.type), 'Remote Action'),
-            active: booleanValue(getFieldValue(element, ELEMENT_FIELDS.active), true),
-            description: optionalString(getFieldValue(element, ELEMENT_FIELDS.description)),
-            sequenceNumber: numberValue(getFieldValue(element, ELEMENT_FIELDS.sequenceNumber), index + 1),
-            level: numberValue(getFieldValue(element, ELEMENT_FIELDS.level), 0),
-            parentKey: getParentKey(getFieldValue(element, ELEMENT_FIELDS.parent)),
+            name: this.stringValue(this.getFieldValue(element, ELEMENT_FIELDS.name), `Element${index + 1}`),
+            type: this.stringValue(this.getFieldValue(element, ELEMENT_FIELDS.type), 'Remote Action'),
+            active: this.booleanValue(this.getFieldValue(element, ELEMENT_FIELDS.active), true),
+            description: this.optionalString(this.getFieldValue(element, ELEMENT_FIELDS.description)),
+            sequenceNumber: this.numberValue(this.getFieldValue(element, ELEMENT_FIELDS.sequenceNumber), index + 1),
+            level: this.numberValue(this.getFieldValue(element, ELEMENT_FIELDS.level), 0),
+            parentKey: this.getParentKey(this.getFieldValue(element, ELEMENT_FIELDS.parent)),
             propertySet
         };
     }
 
     protected override applyModel(document: LoadedDocument, model: IntegrationProcedureModel): void {
         const data = document.datapack.data;
-        setFieldValue(data, HEADER_FIELDS.name, model.header.name, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.type, model.header.type, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.subType, model.header.subType, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.versionNumber, model.header.versionNumber, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.active, model.header.active, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.description, model.header.description, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.requiredPermission, model.header.requiredPermission, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.language, model.header.language, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.responseCacheType, model.header.responseCacheType, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.isIntegrationProcedure, true, model.runtime);
-        setFieldValue(data, HEADER_FIELDS.omniProcessType, 'Integration Procedure', model.runtime);
-        setFieldValue(data, HEADER_FIELDS.propertySet, formatPropertySet(model.propertySet, document.headerPropertyFormat), model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.name, model.header.name, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.type, model.header.type, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.subType, model.header.subType, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.versionNumber, model.header.versionNumber, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.active, model.header.active, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.description, model.header.description, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.requiredPermission, model.header.requiredPermission, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.language, model.header.language, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.responseCacheType, model.header.responseCacheType, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.isIntegrationProcedure, true, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.omniProcessType, 'Integration Procedure', model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.propertySet, this.formatPropertySet(model.propertySet, document.headerPropertyFormat), model.runtime);
 
-        const currentElements = toArray(getFieldValue(data, HEADER_FIELDS.elements)).filter(isRecord);
-        const currentByKey = new Map(currentElements.map(element => [stringValue(element.VlocityRecordSourceKey ?? getFieldValue(element, ELEMENT_FIELDS.name), ''), element]));
-        const currentByName = new Map(currentElements.map(element => [stringValue(getFieldValue(element, ELEMENT_FIELDS.name), ''), element]));
-        const ordered = normalizeElementOrder(model.elements);
+        const currentElements = this.list(this.getFieldValue(data, HEADER_FIELDS.elements))
+            .filter((element): element is Record<string, unknown> => isRecord(element));
+        const currentByKey = new Map(currentElements.map(element => [this.stringValue(element.VlocityRecordSourceKey ?? this.getFieldValue(element, ELEMENT_FIELDS.name), ''), element]));
+        const currentByName = new Map(currentElements.map(element => [this.stringValue(this.getFieldValue(element, ELEMENT_FIELDS.name), ''), element]));
+        const ordered = this.normalizeElementOrder(model.elements);
         const nextElements = ordered.map((element, index) => {
             const target = currentByKey.get(element.sourceKey) ?? currentByName.get(element.name) ?? this.createElementRecord(data, element, model.runtime);
             const propertyFormat = document.elementPropertyFormat.get(element.key) ?? (document.sourceFormat === 'xml' ? 'json-string' : 'object');
-            setElementFields(target, element, data, index, model.runtime, propertyFormat);
+            this.setElementFields(target, element, data, index, model.runtime, propertyFormat);
             return target;
         });
 
-        setFieldValue(data, HEADER_FIELDS.elements, nextElements, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.elements, nextElements, model.runtime);
         document.model = this.createModel(document.datapack, document.sourceFormat);
         document.elementPropertyFormat = new Map(ordered.map(element => [
             element.key,
@@ -322,17 +334,18 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         return {
             VlocityDataPackType: 'SObject',
             VlocityRecordSObjectType: runtime === 'managed'
-                ? managedSObjectType(header, 'Element__c')
+                ? this.managedSObjectType(header, 'Element__c')
                 : 'OmniProcessElement',
             VlocityRecordSourceKey: element.sourceKey
         };
     }
 
     private captureElementPropertyFormats(datapack: VlocityDatapack): Map<string, PropertyValueFormat> {
-        const elements = toArray(getFieldValue(datapack.data, HEADER_FIELDS.elements)).filter(isRecord);
+        const elements = this.list(this.getFieldValue(datapack.data, HEADER_FIELDS.elements))
+            .filter((element): element is Record<string, unknown> => isRecord(element));
         return new Map(elements.map((element, index) => [
-            stringValue(element.VlocityRecordSourceKey ?? getFieldValue(element, ELEMENT_FIELDS.name), `element-${index}`),
-            propertyFormat(getFieldValue(element, ELEMENT_FIELDS.propertySet))
+            this.stringValue(element.VlocityRecordSourceKey ?? this.getFieldValue(element, ELEMENT_FIELDS.name), `element-${index}`),
+            this.propertyFormat(this.getFieldValue(element, ELEMENT_FIELDS.propertySet))
         ]));
     }
 
@@ -354,218 +367,212 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         ]);
         const names = new Set<string>();
         for (const uri of files.flat()) {
-            const name = dataMapperNameFromPath(uri.fsPath);
+            const name = this.dataMapperNameFromPath(uri.fsPath);
             if (name) {
                 names.add(name);
             }
         }
         return [...names].sort((a, b) => a.localeCompare(b));
     }
-}
 
-function dataMapperNameFromPath(fileName: string): string | undefined {
-    const baseName = path.basename(fileName);
-    if (/\.rpt-meta\.xml$/i.test(baseName)) {
-        return baseName.replace(/\.rpt-meta\.xml$/i, '');
-    }
-    if (/_DataPack\.json$/i.test(baseName)) {
-        return baseName.replace(/_DataPack\.json$/i, '') || path.basename(path.dirname(fileName));
-    }
-}
-
-function setElementFields(
-    target: Record<string, unknown>,
-    element: IntegrationProcedureElement,
-    header: Record<string, unknown>,
-    index: number,
-    runtime: RuntimeShape,
-    propertyFormat: PropertyValueFormat
-) {
-    target.VlocityRecordSourceKey = element.sourceKey;
-    setFieldValue(target, ELEMENT_FIELDS.name, element.name, runtime);
-    setFieldValue(target, ELEMENT_FIELDS.type, element.type, runtime);
-    setFieldValue(target, ELEMENT_FIELDS.active, element.active, runtime);
-    setFieldValue(target, ELEMENT_FIELDS.description, element.description, runtime);
-    setFieldValue(target, ELEMENT_FIELDS.sequenceNumber, index + 1, runtime);
-    setFieldValue(target, ELEMENT_FIELDS.level, element.level, runtime);
-    setFieldValue(target, ELEMENT_FIELDS.parent, createParentReference(element.parentKey, header, runtime), runtime);
-    setFieldValue(target, ELEMENT_FIELDS.propertySet, formatPropertySet(element.propertySet, propertyFormat), runtime);
-    setFieldValue(target, ELEMENT_FIELDS.uniqueIndex, element.name, runtime);
-}
-
-function normalizeElementOrder(elements: IntegrationProcedureElement[]): IntegrationProcedureElement[] {
-    const byParent = new Map<string, IntegrationProcedureElement[]>();
-    const keys = new Set(elements.map(element => element.key));
-    for (const element of elements) {
-        const parent = element.parentKey && keys.has(element.parentKey) ? element.parentKey : '';
-        const siblings = byParent.get(parent) ?? [];
-        siblings.push(element);
-        byParent.set(parent, siblings);
-    }
-    for (const siblings of byParent.values()) {
-        siblings.sort(compareElements);
-    }
-    const result: IntegrationProcedureElement[] = [];
-    const visit = (parentKey = '', level = 0) => {
-        for (const element of byParent.get(parentKey) ?? []) {
-            result.push({ ...element, level, sequenceNumber: (byParent.get(parentKey) ?? []).indexOf(element) + 1 });
-            visit(element.key, level + 1);
+    private dataMapperNameFromPath(fileName: string): string | undefined {
+        const baseName = path.basename(fileName);
+        if (/\.rpt-meta\.xml$/i.test(baseName)) {
+            return baseName.replace(/\.rpt-meta\.xml$/i, '');
         }
-    };
-    visit();
-    return result;
-}
+        if (/_DataPack\.json$/i.test(baseName)) {
+            return baseName.replace(/_DataPack\.json$/i, '') || path.basename(path.dirname(fileName));
+        }
+    }
 
-function compareElements(a: IntegrationProcedureElement, b: IntegrationProcedureElement): number {
-    const parentSort = (a.parentKey ?? '').localeCompare(b.parentKey ?? '');
-    return parentSort || Number(a.sequenceNumber || 0) - Number(b.sequenceNumber || 0) || a.name.localeCompare(b.name);
-}
+    private setElementFields(
+        target: Record<string, unknown>,
+        element: IntegrationProcedureElement,
+        header: Record<string, unknown>,
+        index: number,
+        runtime: RuntimeShape,
+        propertyFormat: PropertyValueFormat
+    ): void {
+        target.VlocityRecordSourceKey = element.sourceKey;
+        this.setFieldValue(target, ELEMENT_FIELDS.name, element.name, runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.type, element.type, runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.active, element.active, runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.description, element.description, runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.sequenceNumber, index + 1, runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.level, element.level, runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.parent, this.createParentReference(element.parentKey, header, runtime), runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.propertySet, this.formatPropertySet(element.propertySet, propertyFormat), runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.uniqueIndex, element.name, runtime);
+    }
 
-function createParentReference(parentKey: string | undefined, header: Record<string, unknown>, runtime: RuntimeShape) {
-    if (!parentKey) {
+    private normalizeElementOrder(elements: IntegrationProcedureElement[]): IntegrationProcedureElement[] {
+        const byParent = new Map<string, IntegrationProcedureElement[]>();
+        const keys = new Set(elements.map(element => element.key));
+        for (const element of elements) {
+            const parent = element.parentKey && keys.has(element.parentKey) ? element.parentKey : '';
+            const siblings = byParent.get(parent) ?? [];
+            siblings.push(element);
+            byParent.set(parent, siblings);
+        }
+        for (const siblings of byParent.values()) {
+            siblings.sort((a, b) => this.compareElements(a, b));
+        }
+        const result: IntegrationProcedureElement[] = [];
+        const visit = (parentKey = '', level = 0) => {
+            const siblings = byParent.get(parentKey) ?? [];
+            for (const element of siblings) {
+                result.push({ ...element, level, sequenceNumber: siblings.indexOf(element) + 1 });
+                visit(element.key, level + 1);
+            }
+        };
+        visit();
+        return result;
+    }
+
+    private compareElements(a: IntegrationProcedureElement, b: IntegrationProcedureElement): number {
+        const parentSort = (a.parentKey ?? '').localeCompare(b.parentKey ?? '');
+        return parentSort || Number(a.sequenceNumber || 0) - Number(b.sequenceNumber || 0) || a.name.localeCompare(b.name);
+    }
+
+    private createParentReference(parentKey: string | undefined, header: Record<string, unknown>, runtime: RuntimeShape) {
+        if (!parentKey) {
+            return undefined;
+        }
+        const elements = this.list(this.getFieldValue(header, HEADER_FIELDS.elements))
+            .filter((element): element is Record<string, unknown> => isRecord(element));
+        const parent = elements.find(element => element.VlocityRecordSourceKey === parentKey);
+        return {
+            VlocityDataPackType: 'VlocityMatchingKeyObject',
+            VlocityMatchingRecordSourceKey: parentKey,
+            VlocityRecordSObjectType: runtime === 'managed' ? this.managedSObjectType(header, 'Element__c') : 'OmniProcessElement',
+            Name: parent ? this.getFieldValue(parent, ELEMENT_FIELDS.name) : undefined
+        };
+    }
+
+    private getParentKey(parent: unknown): string | undefined {
+        if (isRecord(parent)) {
+            return this.optionalString(parent.VlocityMatchingRecordSourceKey ?? parent.VlocityLookupRecordSourceKey);
+        }
         return undefined;
     }
-    const elements = toArray(getFieldValue(header, HEADER_FIELDS.elements)).filter(isRecord);
-    const parent = elements.find(element => element.VlocityRecordSourceKey === parentKey);
-    return {
-        VlocityDataPackType: 'VlocityMatchingKeyObject',
-        VlocityMatchingRecordSourceKey: parentKey,
-        VlocityRecordSObjectType: runtime === 'managed' ? managedSObjectType(header, 'Element__c') : 'OmniProcessElement',
-        Name: parent ? getFieldValue(parent, ELEMENT_FIELDS.name) : undefined
-    };
-}
 
-function getParentKey(parent: unknown): string | undefined {
-    if (isRecord(parent)) {
-        return optionalString(parent.VlocityMatchingRecordSourceKey ?? parent.VlocityLookupRecordSourceKey);
+    private isManagedRecord(record: Record<string, unknown>): boolean {
+        const sobjectType = String(record.VlocityRecordSObjectType ?? '');
+        return /__OmniScript__c$/i.test(sobjectType) || Object.keys(record).some(key => /__Element__c$|__PropertySet__c$|__Type__c$/i.test(key));
     }
-    return undefined;
-}
 
-function isManagedRecord(record: Record<string, unknown>): boolean {
-    const sobjectType = String(record.VlocityRecordSObjectType ?? '');
-    return /__OmniScript__c$/i.test(sobjectType) || Object.keys(record).some(key => /__Element__c$|__PropertySet__c$|__Type__c$/i.test(key));
-}
-
-function managedSObjectType(header: Record<string, unknown>, suffix: string): string {
-    const sobjectType = String(header.VlocityRecordSObjectType ?? '');
-    const match = sobjectType.match(/^(.+__)OmniScript__c$/i);
-    return match ? `${match[1]}${suffix}` : `%vlocity_namespace%__${suffix}`;
-}
-
-function getTitle(header: IntegrationProcedureHeader): string {
-    const version = header.versionNumber ? ` v${header.versionNumber}` : '';
-    const name = header.name || [header.type, header.subType].filter(Boolean).join('/');
-    return `${name}${version}`;
-}
-
-function getFieldValue(record: Record<string, unknown>, fields: readonly string[]): unknown {
-    const key = findField(record, fields);
-    return key ? record[key] : undefined;
-}
-
-function setFieldValue(record: Record<string, unknown>, fields: readonly string[], value: unknown, runtime: RuntimeShape): void {
-    const key = findField(record, fields) ?? defaultFieldName(record, fields, runtime);
-    if (value === undefined || value === '') {
-        delete record[key];
-    } else {
-        record[key] = value;
+    private managedSObjectType(header: Record<string, unknown>, suffix: string): string {
+        const sobjectType = String(header.VlocityRecordSObjectType ?? '');
+        const match = sobjectType.match(/^(.+__)OmniScript__c$/i);
+        return match ? `${match[1]}${suffix}` : `%vlocity_namespace%__${suffix}`;
     }
-}
 
-function findField(record: Record<string, unknown>, fields: readonly string[]): string | undefined {
-    for (const field of fields) {
-        if (field in record) {
-            return field;
+    private getTitle(header: IntegrationProcedureHeader): string {
+        const version = header.versionNumber ? ` v${header.versionNumber}` : '';
+        const name = header.name || [header.type, header.subType].filter(Boolean).join('/');
+        return `${name}${version}`;
+    }
+
+    private getFieldValue(record: Record<string, unknown>, fields: readonly string[]): unknown {
+        const key = this.findField(record, fields);
+        return key ? record[key] : undefined;
+    }
+
+    private setFieldValue(record: Record<string, unknown>, fields: readonly string[], value: unknown, runtime: RuntimeShape): void {
+        const key = this.findField(record, fields) ?? this.defaultFieldName(record, fields, runtime);
+        if (value === undefined || value === '') {
+            delete record[key];
+        } else {
+            record[key] = value;
         }
     }
-    const normalized = fields.map(normalizeFieldName);
-    return Object.keys(record).find(field => normalized.includes(normalizeFieldName(field)));
-}
 
-function defaultFieldName(record: Record<string, unknown>, fields: readonly string[], runtime: RuntimeShape): string {
-    if (runtime === 'standard') {
-        return fields[0];
-    }
-    const managedField = fields.find(field => /__c$/.test(field));
-    if (!managedField) {
-        return fields[0];
-    }
-    const sobjectType = String(record.VlocityRecordSObjectType ?? '');
-    const match = sobjectType.match(/^(.+__)(?:OmniScript|Element)__c$/i);
-    return match ? `${match[1]}${managedField}` : `%vlocity_namespace%__${managedField}`;
-}
-
-function normalizeFieldName(field: string): string {
-    return field.replace(/^%vlocity_namespace%__/, '').replace(/^[A-Za-z0-9]+__(?=[A-Za-z0-9]+__c$)/, '').toLowerCase();
-}
-
-function parsePropertySet(value: unknown): Record<string, unknown> {
-    if (typeof value === 'string') {
-        if (!value.trim()) {
-            return {};
+    private findField(record: Record<string, unknown>, fields: readonly string[]): string | undefined {
+        for (const field of fields) {
+            if (field in record) {
+                return field;
+            }
         }
-        try {
-            const parsed = JSON.parse(value);
-            return isRecord(parsed) ? parsed : {};
-        } catch {
-            return { raw: value };
+        const normalized = fields.map(field => this.normalizeFieldName(field));
+        return Object.keys(record).find(field => normalized.includes(this.normalizeFieldName(field)));
+    }
+
+    private defaultFieldName(record: Record<string, unknown>, fields: readonly string[], runtime: RuntimeShape): string {
+        if (runtime === 'standard') {
+            return fields[0];
         }
+        const managedField = fields.find(field => /__c$/.test(field));
+        if (!managedField) {
+            return fields[0];
+        }
+        const sobjectType = String(record.VlocityRecordSObjectType ?? '');
+        const match = sobjectType.match(/^(.+__)(?:OmniScript|Element)__c$/i);
+        return match ? `${match[1]}${managedField}` : `%vlocity_namespace%__${managedField}`;
     }
-    if (isRecord(value)) {
-        return clone(value);
+
+    private normalizeFieldName(field: string): string {
+        return field.replace(/^%vlocity_namespace%__/, '').replace(/^[A-Za-z0-9]+__(?=[A-Za-z0-9]+__c$)/, '').toLowerCase();
     }
-    return {};
-}
 
-function formatPropertySet(value: Record<string, unknown>, format: PropertyValueFormat): string | Record<string, unknown> {
-    const normalized = clone(value ?? {});
-    if (format === 'json-string') {
-        return JSON.stringify(normalized);
+    private parsePropertySet(value: unknown): Record<string, unknown> {
+        if (typeof value === 'string') {
+            if (!value.trim()) {
+                return {};
+            }
+            try {
+                const parsed = JSON.parse(value);
+                return isRecord(parsed) ? parsed : {};
+            } catch {
+                return { raw: value };
+            }
+        }
+        if (isRecord(value)) {
+            return deepClone(value);
+        }
+        return {};
     }
-    return normalized;
-}
 
-function propertyFormat(value: unknown): PropertyValueFormat {
-    return typeof value === 'string' ? 'json-string' : 'object';
-}
-
-function toArray<T>(value: T | T[] | undefined): T[] {
-    if (value === undefined) {
-        return [];
+    private formatPropertySet(value: Record<string, unknown>, format: PropertyValueFormat): string | Record<string, unknown> {
+        const normalized = deepClone(value ?? {});
+        if (format === 'json-string') {
+            return JSON.stringify(normalized);
+        }
+        return normalized;
     }
-    return Array.isArray(value) ? value : [value];
-}
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function clone<T>(value: T): T {
-    return JSON.parse(JSON.stringify(value));
-}
-
-function stringValue(value: unknown, fallback: string): string {
-    return typeof value === 'string' && value ? value : fallback;
-}
-
-function optionalString(value: unknown): string | undefined {
-    return typeof value === 'string' && value ? value : undefined;
-}
-
-function numberValue(value: unknown, fallback: number): number {
-    const number = Number(value);
-    return Number.isFinite(number) ? number : fallback;
-}
-
-function booleanValue(value: unknown, fallback = false): boolean {
-    if (typeof value === 'boolean') {
-        return value;
+    private propertyFormat(value: unknown): PropertyValueFormat {
+        return typeof value === 'string' ? 'json-string' : 'object';
     }
-    if (typeof value === 'string') {
-        return value.toLowerCase() === 'true';
+
+    private list<T>(value: T | T[] | undefined): T[] {
+        if (value === undefined) {
+            return [];
+        }
+        return Array.isArray(value) ? value : [value];
     }
-    return fallback;
+
+    private stringValue(value: unknown, fallback: string): string {
+        return typeof value === 'string' && value ? value : fallback;
+    }
+
+    private optionalString(value: unknown): string | undefined {
+        return typeof value === 'string' && value ? value : undefined;
+    }
+
+    private numberValue(value: unknown, fallback: number): number {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : fallback;
+    }
+
+    private booleanValue(value: unknown, fallback = false): boolean {
+        if (typeof value === 'boolean') {
+            return value;
+        }
+        if (typeof value === 'string') {
+            return value.toLowerCase() === 'true';
+        }
+        return fallback;
+    }
 }
 
 export { STANDARD_ELEMENT_TYPES };

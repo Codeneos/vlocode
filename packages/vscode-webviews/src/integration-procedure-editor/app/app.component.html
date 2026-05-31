@@ -35,10 +35,6 @@
                 </div>
             </section>
             <section class="ip-actions" aria-label="Editor actions">
-                <button type="button" class="ip-button" (click)="selectProcedure()">
-                    <span class="codicon codicon-gear" aria-hidden="true"></span>
-                    Settings
-                </button>
                 <button type="button" class="ip-button" [disabled]="refreshing()" (click)="refresh()">
                     <span class="codicon" [class.codicon-refresh]="!refreshing()" [class.codicon-sync]="refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
                     @if (refreshing()) { Refreshing } @else { Refresh }
