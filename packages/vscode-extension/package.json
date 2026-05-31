@@ -106,25 +106,22 @@
                 "contents": "Select an Salesforce instance to start exploring datapacks.\n[Select Salesforce org](command:vlocode.selectOrg)"
             }
         ],
+        "configurationDefaults": {
+            "workbench.editorAssociations": {
+                "{git,gitlens}:/**/*.{rpt-meta.xml,oip-meta.xml}": "default",
+                "{git,gitlens}:/**/*_DataPack.json": "default"
+            }
+        },
         "customEditors": [
             {
                 "viewType": "vlocode.datamapperEditor",
                 "displayName": "DataMapper Editor",
                 "selector": [
                     {
-                        "filenamePattern": "**/omniDataTransforms/*.rpt-meta.xml"
+                        "filenamePattern": "*.rpt-meta.xml"
                     },
                     {
-                        "filenamePattern": "**/DataRaptor/**/*_DataPack.json"
-                    },
-                    {
-                        "filenamePattern": "**/DataRaptor/**/*_Items.json"
-                    },
-                    {
-                        "filenamePattern": "**/OmniDataTransform/**/*_DataPack.json"
-                    },
-                    {
-                        "filenamePattern": "**/OmniDataTransform/**/*_Items.json"
+                        "filenamePattern": "**/{DataRaptor,OmniDataTransform}/**/*_DataPack.json"
                     }
                 ],
                 "priority": "default"
@@ -134,13 +131,10 @@
                 "displayName": "Integration Procedure Editor",
                 "selector": [
                     {
+                        "filenamePattern": "*.oip-meta.xml"
+                    },
+                    {
                         "filenamePattern": "**/IntegrationProcedure/**/*_DataPack.json"
-                    },
-                    {
-                        "filenamePattern": "**/IntegrationProcedure/**/*_Element*.json"
-                    },
-                    {
-                        "filenamePattern": "**/omniIntegrationProcedures/*-meta.xml"
                     }
                 ],
                 "priority": "default"
