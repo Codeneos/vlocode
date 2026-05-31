@@ -192,25 +192,10 @@ export abstract class ModelBackedEditorProvider<
     protected abstract applyModel(document: TData, model: TModel): void;
     protected abstract saveDocument(document: TData, destination?: vscode.Uri): Promise<void>;
 
-    protected getDatapackGraph(document: TData): VlocityDatapack | undefined {
-        void document;
-        return undefined;
-    }
-
-    protected getDeployCommand(document: TData): string | undefined {
-        void document;
-        return undefined;
-    }
-
-    protected getRefreshCommand(document: TData): string | undefined {
-        void document;
-        return undefined;
-    }
-
-    protected getOpenSalesforceCommand(document: TData): string | undefined {
-        void document;
-        return undefined;
-    }
+    protected abstract getDatapackGraph(document: TData): VlocityDatapack | undefined;
+    protected abstract getDeployCommand(document: TData): string | undefined;
+    protected abstract getRefreshCommand(document: TData): string | undefined;
+    protected abstract getOpenSalesforceCommand(document: TData): string | undefined;
 
     protected getCommandUri(document: TData): vscode.Uri {
         return document.uri;

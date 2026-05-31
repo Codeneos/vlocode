@@ -95,10 +95,10 @@ describe('metadataConverter', () => {
         expect(result).toEqual({ customer: { name: 'Acme' } });
     });
 
-    it('should round-trip OmniScript metadata XML and keep element hierarchy', () => {
+    it('should round-trip OmniProcess metadata XML and keep OmniScript element hierarchy', () => {
         // arrange
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<OmniScript xmlns="http://soap.sforce.com/2006/04/metadata">
+<OmniProcess xmlns="http://soap.sforce.com/2006/04/metadata">
     <name>Event_Assignment_English</name>
     <type>Event</type>
     <subType>Assignment</subType>
@@ -113,16 +113,18 @@ describe('metadataConverter', () => {
             <type>Text Block</type>
         </childElements>
     </omniProcessElements>
-</OmniScript>`;
+</OmniProcess>`;
 
         // test
         const datapack = converter.metadataXmlToDatapack('/metadata/Event_Assignment_English.os-meta.xml', xml);
         const convertedXml = converter.datapackToMetadataXml(datapack);
         const converted = XML.parse<Record<string, any>>(convertedXml, {
             arrayMode: path => path.endsWith('omniProcessElements') || path.endsWith('childElements')
-        }).OmniScript;
+        }).OmniProcess;
 
         // assert
+        expect(convertedXml).toContain('<OmniProcess');
+        expect(convertedXml).not.toContain('<OmniScript');
         expect(datapack.sobjectType).toBe('OmniProcess');
         expect(datapack.OmniProcessElement).toHaveLength(2);
         expect(datapack.OmniProcessElement[1].ParentElementId.VlocityMatchingRecordSourceKey)
@@ -130,6 +132,16 @@ describe('metadataConverter', () => {
         expect(converted.name).toBe('Event_Assignment_English');
         expect(converted.omniProcessElements[0].name).toBe('Step1');
         expect(converted.omniProcessElements[0].childElements[0].name).toBe('Text1');
+    });
+
+    it('should reject OmniScript metadata XML root nodes', () => {
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<OmniScript xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>Event_Assignment_English</name>
+</OmniScript>`;
+
+        expect(() => converter.metadataXmlToDatapack('/metadata/Event_Assignment_English.os-meta.xml', xml))
+            .toThrow('Unsupported metadata XML; expected OmniDataTransform, OmniProcess, or OmniIntegrationProcedure');
     });
 
     it('should round-trip OmniIntegrationProcedure metadata XML through an IntegrationProcedure datapack', () => {

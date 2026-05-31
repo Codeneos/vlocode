@@ -86,7 +86,7 @@ export class MetadataConverter {
         });
         const match = this.findXmlConverter(document);
         if (!match) {
-            throw new Error('Unsupported metadata XML; expected OmniDataTransform, OmniScript, or OmniIntegrationProcedure');
+            throw new Error('Unsupported metadata XML; expected OmniDataTransform, OmniProcess, or OmniIntegrationProcedure');
         }
         return match.converter.fromXml(fileName, match.rootName, match.root);
     }
@@ -248,7 +248,7 @@ class OmniProcessMetadataConverter extends MetadataRecordConverter {
     }
 
     public toXml(datapack: VlocityDatapack, source?: MetadataSourceInfo): string {
-        const rootName = source?.rootName ?? (datapack.data.IsIntegrationProcedure ? 'OmniIntegrationProcedure' : 'OmniScript');
+        const rootName = source?.rootName ?? (datapack.data.IsIntegrationProcedure ? 'OmniIntegrationProcedure' : 'OmniProcess');
         const root = this.recordToMetadata(datapack.data, omniScriptMetadataAliases, ['OmniProcessElement']);
         root.$ = this.sourceAttributes(source);
         root.omniProcessElements = this.buildElementTree(this.records(datapack.data.OmniProcessElement));

@@ -3,9 +3,9 @@ import * as fs from 'fs-extra';
 import * as vscode from 'vscode';
 
 import { container } from '@vlocode/core';
-import { DatapackLoader, getDatapackHeaders, VlocityDatapack, type VlocityDatapackSObject } from '@vlocode/vlocity';
+import { DatapackLoader, getDatapackHeaders, isDatapackRecord, VlocityDatapack } from '@vlocode/vlocity';
 import { DatapackExpander, DatapackExportDefinitionStore, MetadataConverter } from '@vlocode/vlocity-deploy';
-import { normalizeName, pluralize } from '@vlocode/util';
+import { getErrorMessage, normalizeName, pluralize } from '@vlocode/util';
 
 import { VlocodeCommand } from '../../constants';
 import { CommandBase } from '../../lib/commandBase';
@@ -91,11 +91,11 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
                 return await this.convertMetadataToDatapack(file);
             }
             return await this.convertDatapackToMetadata(file);
-        } catch (error: any) {
+        } catch (error: unknown) {
             return {
                 status: 'failed',
                 from: file.fsPath,
-                to: error?.message ?? String(error)
+                to: getErrorMessage(error)
             };
         }
     }
@@ -108,7 +108,11 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
         const outputRoot = this.getWorkspaceRoot(file) ?? path.dirname(file.fsPath);
         const expander = container.get(DatapackExpander);
         const scope = container.get(DatapackExportDefinitionStore).getAvailableScopes(datapack)[0];
-        const expanded = expander.expandDatapack(this.getRootSObject(datapack), { datapackType: datapack.datapackType, scope });
+        const root = datapack.data;
+        if (!isDatapackRecord(root) || root.VlocityDataPackType !== 'SObject') {
+            throw new Error(`Converted ${datapack.datapackType} metadata did not produce a valid datapack root record.`);
+        }
+        const expanded = expander.expandDatapack(root, { datapackType: datapack.datapackType, scope });
         const files = await expanded.writeToFilesystem(outputRoot);
         const header = files.find(outputFile => /_DataPack\.json$/i.test(outputFile)) ?? files[0];
 
@@ -177,18 +181,6 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
             return;
         }
         throw new Error(`Only OmniDataTransform and Integration Procedure datapacks are supported; got ${datapack.sobjectType}`);
-    }
-
-    private getRootSObject(datapack: VlocityDatapack): VlocityDatapackSObject {
-        const data = datapack.data;
-        if (
-            data.VlocityDataPackType !== 'SObject' ||
-            typeof data.VlocityRecordSObjectType !== 'string' ||
-            typeof data.VlocityRecordSourceKey !== 'string'
-        ) {
-            throw new Error(`Converted ${datapack.datapackType} metadata did not produce a valid datapack root record.`);
-        }
-        return data as VlocityDatapackSObject;
     }
 
     private isIntegrationProcedure(datapack: VlocityDatapack): boolean {

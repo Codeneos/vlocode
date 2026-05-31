@@ -1,38 +1,39 @@
 import 'jest';
 
-import { SalesforceSchemaService } from '@vlocode/salesforce';
-import { VlocityMatchingKey, DatapackMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
+import type { FieldType } from '@vlocode/salesforce';
+import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { container, Logger } from '@vlocode/core';
-import { DatapackExportQueries } from '../lib/vlocity/datapackExportQueries';
+import {
+    DatapackExportMatchingKeyProvider,
+    DatapackExportQueries,
+    DatapackExportQuerySalesforce
+} from '../lib/vlocity/datapackExportQueries';
 
 describe('DatapackExportQueries', () => {
 
-    function mockMatchingKeyService(fields: string[] = [ 'Name' ]) {
-        return ({
-            getMatchingKeyDefinition: (obj: string) => ({
+    function mockMatchingKeyService(fields: string[] = [ 'Name' ]): DatapackExportMatchingKeyProvider {
+        return {
+            getMatchingKeyDefinition: async (obj: string) => ({
                 sobjectType: obj,
-                fields: fields,
+                fields: [...fields],
                 returnField: 'Id',
-            }) as VlocityMatchingKey
-        } as any) as DatapackMatchingKeyService;
+            })
+        };
     }
 
-    function mockSchemaService(fieldTypes?: Record<string, string>, nameField: string = 'Name') {
-        return ({
-            describeSObjectFieldPath: (obj: string, field: string) => {
-                const path = field.split('.');
-                return Promise.resolve(path.map(f => ({
-                    name: f,
-                    type: fieldTypes?.[field] ?? 'string',
-                    referenceTo: undefined,
-                    relationshipName: undefined,
-                    relationshipOrder: undefined,
-                })));
-            },            
-            getNameField: () => {
-                return nameField;
-            },
-        } as any) as SalesforceSchemaService;
+    function mockSalesforce(fieldTypes?: Record<string, FieldType>, nameField: string = 'Name'): DatapackExportQuerySalesforce {
+        return {
+            schema: {
+                describeSObjectFieldPath: (_obj: string, field: string) => {
+                    const path = field.split('.');
+                    return Promise.resolve(path.map(f => ({
+                        name: f,
+                        type: fieldTypes?.[field] ?? 'string'
+                    })));
+                },
+                getNameField: async () => nameField
+            }
+        };
     }
 
     beforeAll(() => {
@@ -42,9 +43,9 @@ describe('DatapackExportQueries', () => {
     describe('getQuery', () => {
         it('should use null when nummeric fields are empty string', async () => {
             // Arrange
-            const types = { '%vlocity_namespace%__Version__c': 'double' };
+            const types = { '%vlocity_namespace%__Version__c': 'double' } satisfies Record<string, FieldType>;
             const fieds = [ 'Name', '%vlocity_namespace%__Version__c', '%vlocity_namespace%__Author__c' ];
-            const sut = new DatapackExportQueries(mockMatchingKeyService(fieds), { schema: mockSchemaService(types) } as any, Logger.null);
+            const sut = new DatapackExportQueries(mockMatchingKeyService(fieds), mockSalesforce(types), Logger.null);
             const entry = {
                 datapackType: 'VlocityCard',
                 sobjectType: '%vlocity_namespace%__VlocityCard__c',
@@ -66,14 +67,12 @@ describe('DatapackExportQueries', () => {
         });
 
         it('supports standard OmniDataTransform datapacks', async () => {
-            const sut = new DatapackExportQueries(mockMatchingKeyService(), { schema: mockSchemaService() } as any, Logger.null);
-            const entry = {
+            const sut = new DatapackExportQueries(mockMatchingKeyService(), mockSalesforce(), Logger.null);
+            const result = await sut.getQuery({
                 datapackType: 'OmniDataTransform',
                 sobjectType: 'OmniDataTransform',
-                name: 'ExampleMapper',
-                Name: 'ExampleMapper'
-            } as Parameters<DatapackExportQueries['getQuery']>[0] & { Name: string };
-            const result = await sut.getQuery(entry);
+                name: 'ExampleMapper'
+            });
 
             expect(result).toStrictEqual(
                 `select Id, Name from OmniDataTransform where Name = 'ExampleMapper'`
