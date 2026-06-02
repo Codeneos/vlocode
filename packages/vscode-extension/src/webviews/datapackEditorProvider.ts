@@ -295,7 +295,7 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
             fileName: datapack.headerFile ?? '',
             sourceKey: datapack.sourceKey,
             sobjectType: datapack.sobjectType,
-            title: this.getRecordTitle(datapack.data, path.basename(datapack.headerFile ?? 'Datapack', '_DataPack.json'))
+            title: this.getRecordTitle(datapack as unknown as Record<string, unknown>, path.basename(datapack.headerFile ?? 'Datapack', '_DataPack.json'))
         };
     }
 

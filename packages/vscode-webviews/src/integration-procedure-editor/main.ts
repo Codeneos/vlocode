@@ -1,7 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, provideZonelessChangeDetection, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
+import { AutocompleteInputComponent } from '../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeDialogComponent } from '../shared/components/dialog/dialog.component';
+import { VlocodeEmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { FormulaEditorComponent } from '../shared/components/formula-editor/formula-editor.component';
 import { MonacoEditorComponent, type monaco } from '../shared/components/monaco-editor/monaco-editor.component';
 
@@ -58,8 +61,16 @@ interface IntegrationProcedureModel {
     title: string;
 }
 
+interface IntegrationProcedureLayout {
+    inspectorCollapsed: boolean;
+    inspectorWidth: number;
+    leftCollapsed: boolean;
+}
+
 interface EditorState {
+    apexClasses?: string[];
     dataMappers?: string[];
+    layout?: IntegrationProcedureLayout;
     model: IntegrationProcedureModel;
 }
 
@@ -75,7 +86,8 @@ type WebviewToExtensionMessage =
     | { type: 'deploy'; model: IntegrationProcedureModel }
     | { type: 'refresh' }
     | { type: 'openSalesforce' }
-    | { type: 'viewSource' };
+    | { type: 'viewSource' }
+    | { type: 'layout'; layout: IntegrationProcedureLayout };
 
 interface FlowRow {
     depth: number;
@@ -113,6 +125,14 @@ interface InsertContext {
     parentKey?: string;
 }
 
+interface MapEntryEditor {
+    key: string;
+    mapName: string;
+    originalKey: string;
+    title: string;
+    value: string;
+}
+
 const EMPTY_MODEL: IntegrationProcedureModel = {
     datapackType: 'IntegrationProcedure',
     elements: [],
@@ -126,6 +146,16 @@ const EMPTY_MODEL: IntegrationProcedureModel = {
     runtime: 'standard',
     sourceFormat: 'json',
     title: 'Integration Procedure'
+};
+
+const DEFAULT_INSPECTOR_WIDTH = 520;
+const MIN_INSPECTOR_WIDTH = 360;
+const MAX_INSPECTOR_WIDTH = 760;
+const INSPECTOR_KEYBOARD_RESIZE_STEP = 32;
+const DEFAULT_LAYOUT: IntegrationProcedureLayout = {
+    inspectorCollapsed: false,
+    inspectorWidth: DEFAULT_INSPECTOR_WIDTH,
+    leftCollapsed: false
 };
 
 const ELEMENT_TEMPLATES: ElementTemplate[] = [
@@ -164,11 +194,13 @@ const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
 @Component({
     selector: 'vlocode-integration-procedure-editor',
     standalone: true,
-    imports: [CommonModule, FormulaEditorComponent, MonacoEditorComponent],
+    imports: [AutocompleteInputComponent, CommonModule, FormulaEditorComponent, MonacoEditorComponent, VlocodeDialogComponent, VlocodeEmptyStateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './app/app.component.html'
 })
 export class AppComponent {
+    private readonly destroyRef = inject(DestroyRef);
+
     protected readonly addFilter = signal('');
     protected readonly error = signal<string | undefined>(undefined);
     protected readonly hasLoaded = signal(false);
@@ -177,6 +209,8 @@ export class AppComponent {
     protected readonly jsonDraft = signal('');
     protected readonly jsonError = signal<string | undefined>(undefined);
     protected readonly leftTab = signal<LeftTab>('outline');
+    protected readonly mapEntryEditor = signal<MapEntryEditor | undefined>(undefined);
+    protected readonly mapEntryEditorError = signal<string | undefined>(undefined);
     protected readonly model = signal<IntegrationProcedureModel>(EMPTY_MODEL);
     protected readonly outlineFilter = signal('');
     protected readonly pendingDeleteKey = signal<string | undefined>(undefined);
@@ -190,7 +224,9 @@ export class AppComponent {
     protected readonly dropTargetKey = signal<string | undefined>(undefined);
     protected readonly openingSalesforce = signal(false);
     protected readonly selectedKey = signal<string | undefined>(undefined);
+    protected readonly apexClasses = signal<string[]>([]);
     protected readonly dataMappers = signal<string[]>([]);
+    protected readonly layout = signal<IntegrationProcedureLayout>({ ...DEFAULT_LAYOUT });
 
     protected readonly inspectorTabs = INSPECTOR_TABS;
     protected readonly elementTemplates = ELEMENT_TEMPLATES;
@@ -199,6 +235,7 @@ export class AppComponent {
     protected readonly templateFamilies: ElementTemplate['family'][] = ['Actions', 'Data Mappers', 'Groups'];
 
     private readonly vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
+    private resizeCleanup?: () => void;
 
     protected readonly selectedElement = computed(() =>
         this.model().elements.find(element => element.key === this.selectedKey())
@@ -211,6 +248,12 @@ export class AppComponent {
     protected readonly pendingDeleteChildCount = computed(() => {
         const element = this.pendingDeleteElement();
         return element ? this.descendantCount(element.key) : 0;
+    });
+    protected readonly pendingDeleteMessage = computed(() => {
+        const childCount = this.pendingDeleteChildCount();
+        return childCount
+            ? `Delete this node and ${childCount} child ${childCount === 1 ? 'node' : 'nodes'}?`
+            : 'Delete this node?';
     });
 
     protected readonly selectedTitle = computed(() => this.selectedElement()?.name ?? 'Procedure');
@@ -251,11 +294,23 @@ export class AppComponent {
         const current = this.propertyValue('bundle');
         return [...new Set([...this.dataMappers(), current].filter(Boolean))].sort((a, b) => a.localeCompare(b));
     });
+    protected readonly apexClassOptions = computed(() => {
+        const current = this.propertyValue('remoteClass');
+        return [...new Set([...this.apexClasses(), current].filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    });
 
     protected readonly jsonTargetLabel = computed(() => this.selectedElement() ? 'selected element property set' : 'procedure property set');
+    protected readonly inspectorCollapsed = computed(() => this.layout().inspectorCollapsed);
+    protected readonly inspectorWidth = computed(() => `${this.layout().inspectorWidth}px`);
+    protected readonly navigationCollapsed = computed(() => this.layout().leftCollapsed);
 
     constructor() {
-        window.addEventListener('message', event => this.handleMessage(event.data as ExtensionToWebviewMessage));
+        const handleWindowMessage = (event: MessageEvent) => this.handleMessage(event.data as ExtensionToWebviewMessage);
+        window.addEventListener('message', handleWindowMessage);
+        this.destroyRef.onDestroy(() => {
+            window.removeEventListener('message', handleWindowMessage);
+            this.stopInspectorResize();
+        });
         effect(() => {
             this.jsonDraft.set(JSON.stringify(this.activePropertySet(), undefined, 4));
             this.jsonError.set(undefined);
@@ -299,6 +354,53 @@ export class AppComponent {
 
     protected viewSource() {
         this.vscode?.postMessage({ type: 'viewSource' });
+    }
+
+    protected toggleNavigationSidebar() {
+        this.updateLayout({ leftCollapsed: !this.layout().leftCollapsed });
+    }
+
+    protected toggleInspector() {
+        this.updateLayout({ inspectorCollapsed: !this.layout().inspectorCollapsed });
+    }
+
+    protected startInspectorResize(event: PointerEvent) {
+        if (this.layout().inspectorCollapsed) {
+            return;
+        }
+        event.preventDefault();
+        this.stopInspectorResize();
+        const startX = event.clientX;
+        const startWidth = this.layout().inspectorWidth;
+        const handleMove = (moveEvent: PointerEvent) => {
+            this.updateLayout({
+                inspectorCollapsed: false,
+                inspectorWidth: startWidth + startX - moveEvent.clientX
+            }, false);
+        };
+        const handleUp = () => {
+            this.stopInspectorResize();
+            this.persistLayout();
+        };
+        document.body.classList.add('ip-resizing');
+        window.addEventListener('pointermove', handleMove);
+        window.addEventListener('pointerup', handleUp, { once: true });
+        this.resizeCleanup = () => {
+            window.removeEventListener('pointermove', handleMove);
+            window.removeEventListener('pointerup', handleUp);
+            document.body.classList.remove('ip-resizing');
+        };
+    }
+
+    protected resizeInspectorWithKeyboard(event: KeyboardEvent) {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+            return;
+        }
+        event.preventDefault();
+        this.updateLayout({
+            inspectorCollapsed: false,
+            inspectorWidth: this.layout().inspectorWidth + (event.key === 'ArrowLeft' ? INSPECTOR_KEYBOARD_RESIZE_STEP : -INSPECTOR_KEYBOARD_RESIZE_STEP)
+        });
     }
 
     protected selectProcedure() {
@@ -403,6 +505,55 @@ export class AppComponent {
             delete next[key];
             return next;
         });
+    }
+
+    protected openMapEntryEditor(mapName: string, key: string, title: string) {
+        const entry = this.mapEntries(mapName).find(candidate => candidate.key === key);
+        this.mapEntryEditor.set({
+            key,
+            mapName,
+            originalKey: key,
+            title,
+            value: entry?.value ?? ''
+        });
+        this.mapEntryEditorError.set(undefined);
+    }
+
+    protected updateMapEntryEditorKey(event: Event) {
+        this.patchMapEntryEditor({ key: inputValue(event) });
+    }
+
+    protected updateMapEntryEditorValue(value: string) {
+        this.patchMapEntryEditor({ value });
+    }
+
+    protected cancelMapEntryEditor() {
+        this.mapEntryEditor.set(undefined);
+        this.mapEntryEditorError.set(undefined);
+    }
+
+    protected applyMapEntryEditor() {
+        const editor = this.mapEntryEditor();
+        if (!editor) {
+            return;
+        }
+        const key = editor.key.trim();
+        if (!key) {
+            this.mapEntryEditorError.set('Key is required.');
+            return;
+        }
+        const current = asRecord(this.activePropertySet()[editor.mapName]);
+        if (key !== editor.originalKey && Object.prototype.hasOwnProperty.call(current, key)) {
+            this.mapEntryEditorError.set(`"${key}" already exists.`);
+            return;
+        }
+        this.updateMap(editor.mapName, map => {
+            const next = { ...map };
+            delete next[editor.originalKey];
+            next[key] = editor.value;
+            return next;
+        });
+        this.cancelMapEntryEditor();
     }
 
     protected mapEntries(mapName: string) {
@@ -871,7 +1022,9 @@ export class AppComponent {
         switch (message.type) {
             case 'load':
                 this.model.set(message.state.model);
+                this.apexClasses.set(message.state.apexClasses ?? []);
                 this.dataMappers.set(message.state.dataMappers ?? []);
+                this.layout.set(normalizeLayout(message.state.layout));
                 this.hasLoaded.set(true);
                 this.refreshing.set(false);
                 this.error.set(undefined);
@@ -896,8 +1049,33 @@ export class AppComponent {
         this.vscode?.postMessage({ type: 'change', model });
     }
 
+    private updateLayout(patch: Partial<IntegrationProcedureLayout>, persist = true) {
+        const layout = normalizeLayout({ ...this.layout(), ...patch });
+        this.layout.set(layout);
+        if (persist) {
+            this.persistLayout(layout);
+        }
+    }
+
+    private persistLayout(layout = this.layout()) {
+        this.vscode?.postMessage({ type: 'layout', layout });
+    }
+
+    private stopInspectorResize() {
+        this.resizeCleanup?.();
+        this.resizeCleanup = undefined;
+    }
+
     private updateModel(updater: (model: IntegrationProcedureModel) => IntegrationProcedureModel) {
         this.setModel(updater(this.model()));
+    }
+
+    private patchMapEntryEditor(patch: Partial<MapEntryEditor>) {
+        const editor = this.mapEntryEditor();
+        if (editor) {
+            this.mapEntryEditor.set({ ...editor, ...patch });
+            this.mapEntryEditorError.set(undefined);
+        }
     }
 
     private updateElement(key: string, patch: Partial<IntegrationProcedureElement>) {
@@ -1051,6 +1229,17 @@ export class AppComponent {
         const next = updater(current);
         this.updateElementPropertyValue('dataRaptor Input Parameters', next);
     }
+}
+
+function normalizeLayout(layout?: Partial<IntegrationProcedureLayout>): IntegrationProcedureLayout {
+    const width = typeof layout?.inspectorWidth === 'number' && Number.isFinite(layout.inspectorWidth)
+        ? layout.inspectorWidth
+        : DEFAULT_INSPECTOR_WIDTH;
+    return {
+        inspectorCollapsed: layout?.inspectorCollapsed === true,
+        inspectorWidth: Math.max(MIN_INSPECTOR_WIDTH, Math.min(MAX_INSPECTOR_WIDTH, Math.round(width))),
+        leftCollapsed: layout?.leftCollapsed === true
+    };
 }
 
 function flattenElements(elements: IntegrationProcedureElement[]): FlowRow[] {

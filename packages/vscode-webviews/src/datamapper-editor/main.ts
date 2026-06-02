@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, provideZonelessCh
 import { FormsModule } from '@angular/forms';
 import { bootstrapApplication } from '@angular/platform-browser';
 
-import { EmptyStateComponent } from './app/components/empty-state/empty-state.component';
+import { VlocodeEmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { ExtractPanelComponent } from './app/components/extract-panel/extract-panel.component';
 import { FormulaPanelComponent } from './app/components/formula-panel/formula-panel.component';
 import { LoadObjectsPanelComponent } from './app/components/load-objects-panel/load-objects-panel.component';
@@ -74,14 +74,14 @@ const CACHE_TYPES = ['None', 'Org Cache', 'Session Cache'];
     selector: 'vlocode-datamapper-editor',
     standalone: true,
     imports: [
-        EmptyStateComponent,
         ExtractPanelComponent,
         FormulaPanelComponent,
         FormsModule,
         LoadObjectsPanelComponent,
         MappingDialogComponent,
         MappingPanelComponent,
-        PreviewPanelComponent
+        PreviewPanelComponent,
+        VlocodeEmptyStateComponent
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './app/app.component.html'

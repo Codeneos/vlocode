@@ -6,10 +6,12 @@ import { VlocodeCommand } from '../constants';
 import { deepClone, isRecord } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
 import { DatapackInfoService, getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
-import { MetadataConverter, OmniScriptElementMapping, OmniScriptMapping, type ObjectMapping } from '@vlocode/vlocity-deploy';
+import { MetadataConverter } from '@vlocode/vlocity-deploy';
 import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
 import { VlocodeContext } from '../lib/vlocodeContext';
-import { ModelBackedEditorProvider } from './modelBackedEditorProvider';
+import { ModelBackedEditorProvider, type EditorMessageContext } from './modelBackedEditorProvider';
+import { ApexWorkspaceIndex } from '../lib/salesforce/apexWorkspaceIndex';
+import { DataMapperWorkspaceIndex } from '../lib/omnistudio/dataMapperWorkspaceIndex';
 
 type SourceFormat = 'json' | 'xml';
 type RuntimeShape = 'managed' | 'standard';
@@ -52,8 +54,16 @@ interface IntegrationProcedureModel {
     elements: IntegrationProcedureElement[];
 }
 
+interface IntegrationProcedureLayoutState {
+    inspectorCollapsed: boolean;
+    inspectorWidth: number;
+    leftCollapsed: boolean;
+}
+
 interface EditorState {
+    apexClasses: string[];
     dataMappers: string[];
+    layout: IntegrationProcedureLayoutState;
     model: IntegrationProcedureModel;
 }
 
@@ -89,19 +99,19 @@ const STANDARD_ELEMENT_TYPES = [
 ];
 
 const HEADER_FIELDS = {
-    name: ['Name'],
-    type: ['Type', 'Type__c'],
-    subType: ['SubType', 'SubType__c'],
-    versionNumber: ['VersionNumber', 'Version__c'],
-    active: ['IsActive', 'IsActive__c'],
-    description: ['Description', 'AdditionalInformation__c'],
-    requiredPermission: ['RequiredPermission', 'RequiredPermission__c'],
-    language: ['Language', 'Language__c'],
-    responseCacheType: ['ResponseCacheType', 'ProcedureResponseCacheType__c'],
-    propertySet: ['PropertySetConfig', 'PropertySet__c'],
-    elements: ['OmniProcessElement', 'Element__c'],
-    isIntegrationProcedure: ['IsIntegrationProcedure', 'IsProcedure__c'],
-    omniProcessType: ['OmniProcessType', 'OmniProcessType__c']
+    name: 'Name',
+    type: 'Type',
+    subType: 'SubType',
+    versionNumber: 'VersionNumber',
+    active: 'IsActive',
+    description: 'Description',
+    requiredPermission: 'RequiredPermission',
+    language: 'Language',
+    responseCacheType: 'ResponseCacheType',
+    propertySet: 'PropertySetConfig',
+    elements: 'OmniProcessElement',
+    isIntegrationProcedure: 'IsIntegrationProcedure',
+    omniProcessType: 'OmniProcessType'
 } as const;
 
 const ELEMENT_FIELDS = {
@@ -115,6 +125,16 @@ const ELEMENT_FIELDS = {
     propertySet: 'PropertySetConfig',
     uniqueIndex: 'UniqueIndex'
 } as const;
+
+const LAYOUT_STATE_KEY = 'integrationProcedureEditor.layout';
+const DEFAULT_INSPECTOR_WIDTH = 520;
+const MIN_INSPECTOR_WIDTH = 360;
+const MAX_INSPECTOR_WIDTH = 760;
+const DEFAULT_LAYOUT_STATE: IntegrationProcedureLayoutState = {
+    inspectorCollapsed: false,
+    inspectorWidth: DEFAULT_INSPECTOR_WIDTH,
+    leftCollapsed: false
+};
 
 @injectable()
 export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvider<IntegrationProcedureModel, EditorState, LoadedDocument> {
@@ -144,16 +164,32 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         fileSystem: FileSystem,
         datapackInfo: DatapackInfoService,
         datapackExpansion: DatapackExpansionService,
-        private readonly metadataConverter: MetadataConverter
+        private readonly metadataConverter: MetadataConverter,
+        private readonly dataMappers: DataMapperWorkspaceIndex,
+        private readonly apexClasses: ApexWorkspaceIndex
     ) {
         super(context, service, fileSystem, datapackInfo, datapackExpansion);
     }
 
     protected override async createEditorState(model: IntegrationProcedureModel): Promise<EditorState> {
+        const [dataMappers, apexClasses] = await Promise.all([
+            this.dataMappers.names(),
+            this.apexClasses.remoteActionClassNames()
+        ]);
         return {
-            dataMappers: await this.getDataMapperNames(),
+            apexClasses,
+            dataMappers,
+            layout: this.getLayoutState(),
             model
         };
+    }
+
+    protected override async handleEditorMessage({ message }: EditorMessageContext<IntegrationProcedureModel, LoadedDocument>): Promise<boolean> {
+        if (message.type !== 'layout') {
+            return false;
+        }
+        await this.context.globalState.update(LAYOUT_STATE_KEY, this.getLayoutState(message.layout));
+        return true;
     }
 
     protected override getDeployCommand(document: LoadedDocument) {
@@ -203,7 +239,7 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
             datapack,
             sourceFormat: 'json',
             model,
-            headerPropertyFormat: this.propertyFormat(this.getFieldValue(datapack.data, HEADER_FIELDS.propertySet)),
+            headerPropertyFormat: this.propertyFormat(this.getFieldValue(datapack, HEADER_FIELDS.propertySet)),
             elementPropertyFormat: this.captureElementPropertyFormats(datapack)
         };
     }
@@ -223,10 +259,9 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
     }
 
     private assertIntegrationProcedure(datapack: VlocityDatapack): void {
-        const data = datapack.data;
         const isProcedure = datapack.datapackType === 'IntegrationProcedure' ||
-            this.getFieldValue(data, HEADER_FIELDS.isIntegrationProcedure) === true ||
-            /integration\s*procedure/i.test(String(this.getFieldValue(data, HEADER_FIELDS.omniProcessType) ?? ''));
+            this.getFieldValue(datapack, HEADER_FIELDS.isIntegrationProcedure) === true ||
+            /integration\s*procedure/i.test(String(this.getFieldValue(datapack, HEADER_FIELDS.omniProcessType) ?? ''));
         if (!isProcedure) {
             throw new Error('The selected file is not an Integration Procedure.');
         }
@@ -246,8 +281,8 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
     }
 
     private createModel(datapack: VlocityDatapack, sourceFormat: SourceFormat): IntegrationProcedureModel {
-        const data = datapack.data;
-        const runtime = this.isManagedRecord(data) ? 'managed' : 'standard';
+        const data = datapack as unknown as Record<string, unknown>;
+        const runtime = this.isManagedRecord(datapack.data) ? 'managed' : 'standard';
         const propertySetValue = this.getFieldValue(data, HEADER_FIELDS.propertySet);
         const elements = this.list(this.getFieldValue(data, HEADER_FIELDS.elements))
             .filter((element): element is Record<string, unknown> => isRecord(element))
@@ -296,19 +331,19 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
     }
 
     protected override applyModel(document: LoadedDocument, model: IntegrationProcedureModel): void {
-        const data = document.datapack.data;
-        this.setFieldValue(data, HEADER_FIELDS.name, model.header.name, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.type, model.header.type, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.subType, model.header.subType, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.versionNumber, model.header.versionNumber, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.active, model.header.active, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.description, model.header.description, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.requiredPermission, model.header.requiredPermission, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.language, model.header.language, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.responseCacheType, model.header.responseCacheType, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.isIntegrationProcedure, true, model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.omniProcessType, 'Integration Procedure', model.runtime);
-        this.setFieldValue(data, HEADER_FIELDS.propertySet, this.formatPropertySet(model.propertySet, document.headerPropertyFormat), model.runtime);
+        const data = document.datapack as unknown as Record<string, unknown>;
+        this.setFieldValue(data, HEADER_FIELDS.name, model.header.name);
+        this.setFieldValue(data, HEADER_FIELDS.type, model.header.type);
+        this.setFieldValue(data, HEADER_FIELDS.subType, model.header.subType);
+        this.setFieldValue(data, HEADER_FIELDS.versionNumber, model.header.versionNumber);
+        this.setFieldValue(data, HEADER_FIELDS.active, model.header.active);
+        this.setFieldValue(data, HEADER_FIELDS.description, model.header.description);
+        this.setFieldValue(data, HEADER_FIELDS.requiredPermission, model.header.requiredPermission);
+        this.setFieldValue(data, HEADER_FIELDS.language, model.header.language);
+        this.setFieldValue(data, HEADER_FIELDS.responseCacheType, model.header.responseCacheType);
+        this.setFieldValue(data, HEADER_FIELDS.isIntegrationProcedure, true);
+        this.setFieldValue(data, HEADER_FIELDS.omniProcessType, 'Integration Procedure');
+        this.setFieldValue(data, HEADER_FIELDS.propertySet, this.formatPropertySet(model.propertySet, document.headerPropertyFormat));
 
         const currentElements = this.list(this.getFieldValue(data, HEADER_FIELDS.elements))
             .filter((element): element is Record<string, unknown> => isRecord(element));
@@ -322,7 +357,7 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
             return target;
         });
 
-        this.setFieldValue(data, HEADER_FIELDS.elements, nextElements, model.runtime);
+        this.setFieldValue(data, HEADER_FIELDS.elements, nextElements);
         document.model = this.createModel(document.datapack, document.sourceFormat);
         document.elementPropertyFormat = new Map(ordered.map(element => [
             element.key,
@@ -341,7 +376,7 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
     }
 
     private captureElementPropertyFormats(datapack: VlocityDatapack): Map<string, PropertyValueFormat> {
-        const elements = this.list(this.getFieldValue(datapack.data, HEADER_FIELDS.elements))
+        const elements = this.list(this.getFieldValue(datapack, HEADER_FIELDS.elements))
             .filter((element): element is Record<string, unknown> => isRecord(element));
         return new Map(elements.map((element, index) => [
             this.stringValue(element.VlocityRecordSourceKey ?? this.getFieldValue(element, ELEMENT_FIELDS.name), `element-${index}`),
@@ -360,29 +395,18 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         return vscode.Uri.file(headers[0]);
     }
 
-    private async getDataMapperNames(): Promise<string[]> {
-        const files = await Promise.all([
-            vscode.workspace.findFiles('**/omniDataTransforms/*.rpt-meta.xml', '**/{node_modules,.git}/**'),
-            vscode.workspace.findFiles('**/{DataRaptor,OmniDataTransform}/*/*_DataPack.json', '**/{node_modules,.git}/**')
-        ]);
-        const names = new Set<string>();
-        for (const uri of files.flat()) {
-            const name = this.dataMapperNameFromPath(uri.fsPath);
-            if (name) {
-                names.add(name);
-            }
+    private getLayoutState(value: unknown = this.context.globalState.get<unknown>(LAYOUT_STATE_KEY)): IntegrationProcedureLayoutState {
+        if (!isRecord(value)) {
+            return { ...DEFAULT_LAYOUT_STATE };
         }
-        return [...names].sort((a, b) => a.localeCompare(b));
-    }
-
-    private dataMapperNameFromPath(fileName: string): string | undefined {
-        const baseName = path.basename(fileName);
-        if (/\.rpt-meta\.xml$/i.test(baseName)) {
-            return baseName.replace(/\.rpt-meta\.xml$/i, '');
-        }
-        if (/_DataPack\.json$/i.test(baseName)) {
-            return baseName.replace(/_DataPack\.json$/i, '') || path.basename(path.dirname(fileName));
-        }
+        const width = typeof value.inspectorWidth === 'number' && Number.isFinite(value.inspectorWidth)
+            ? value.inspectorWidth
+            : DEFAULT_INSPECTOR_WIDTH;
+        return {
+            inspectorCollapsed: value.inspectorCollapsed === true,
+            inspectorWidth: Math.max(MIN_INSPECTOR_WIDTH, Math.min(MAX_INSPECTOR_WIDTH, Math.round(width))),
+            leftCollapsed: value.leftCollapsed === true
+        };
     }
 
     private setElementFields(
@@ -394,15 +418,15 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         propertyFormat: PropertyValueFormat
     ): void {
         target.VlocityRecordSourceKey = element.sourceKey;
-        this.setFieldValue(target, ELEMENT_FIELDS.name, element.name, runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.type, element.type, runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.active, element.active, runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.description, element.description, runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.sequenceNumber, index + 1, runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.level, element.level, runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.parent, this.createParentReference(element.parentKey, header, runtime), runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.propertySet, this.formatPropertySet(element.propertySet, propertyFormat), runtime);
-        this.setFieldValue(target, ELEMENT_FIELDS.uniqueIndex, element.name, runtime);
+        this.setFieldValue(target, ELEMENT_FIELDS.name, element.name);
+        this.setFieldValue(target, ELEMENT_FIELDS.type, element.type);
+        this.setFieldValue(target, ELEMENT_FIELDS.active, element.active);
+        this.setFieldValue(target, ELEMENT_FIELDS.description, element.description);
+        this.setFieldValue(target, ELEMENT_FIELDS.sequenceNumber, index + 1);
+        this.setFieldValue(target, ELEMENT_FIELDS.level, element.level);
+        this.setFieldValue(target, ELEMENT_FIELDS.parent, this.createParentReference(element.parentKey, header, runtime));
+        this.setFieldValue(target, ELEMENT_FIELDS.propertySet, this.formatPropertySet(element.propertySet, propertyFormat));
+        this.setFieldValue(target, ELEMENT_FIELDS.uniqueIndex, element.name);
     }
 
     private normalizeElementOrder(elements: IntegrationProcedureElement[]): IntegrationProcedureElement[] {
@@ -473,45 +497,16 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         return `${name}${version}`;
     }
 
-    private getFieldValue(record: Record<string, unknown>, fields: readonly string[]): unknown {
-        const key = this.findField(record, fields);
-        return key ? record[key] : undefined;
+    private getFieldValue(record: Record<string, unknown>, field: string): unknown {
+        return record[field];
     }
 
-    private setFieldValue(record: Record<string, unknown>, fields: readonly string[], value: unknown, runtime: RuntimeShape): void {
-        const key = this.findField(record, fields) ?? this.defaultFieldName(record, fields, runtime);
+    private setFieldValue(record: Record<string, unknown>, field: string, value: unknown): void {
         if (value === undefined || value === '') {
-            delete record[key];
+            record[field] = undefined;
         } else {
-            record[key] = value;
+            record[field] = value;
         }
-    }
-
-    private findField(record: Record<string, unknown>, fields: readonly string[]): string | undefined {
-        for (const field of fields) {
-            if (field in record) {
-                return field;
-            }
-        }
-        const normalized = fields.map(field => this.normalizeFieldName(field));
-        return Object.keys(record).find(field => normalized.includes(this.normalizeFieldName(field)));
-    }
-
-    private defaultFieldName(record: Record<string, unknown>, fields: readonly string[], runtime: RuntimeShape): string {
-        if (runtime === 'standard') {
-            return fields[0];
-        }
-        const managedField = fields.find(field => /__c$/.test(field));
-        if (!managedField) {
-            return fields[0];
-        }
-        const sobjectType = String(record.VlocityRecordSObjectType ?? '');
-        const match = sobjectType.match(/^(.+__)(?:OmniScript|Element)__c$/i);
-        return match ? `${match[1]}${managedField}` : `%vlocity_namespace%__${managedField}`;
-    }
-
-    private normalizeFieldName(field: string): string {
-        return field.replace(/^%vlocity_namespace%__/, '').replace(/^[A-Za-z0-9]+__(?=[A-Za-z0-9]+__c$)/, '').toLowerCase();
     }
 
     private parsePropertySet(value: unknown): Record<string, unknown> {
@@ -548,7 +543,14 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         if (value === undefined) {
             return [];
         }
-        return Array.isArray(value) ? value : [value];
+        if (!Array.isArray(value)) {
+            return [value];
+        }
+        const items: T[] = [];
+        for (let i = 0; i < value.length; i++) {
+            items.push(value[i]);
+        }
+        return items;
     }
 
     private stringValue(value: unknown, fallback: string): string {

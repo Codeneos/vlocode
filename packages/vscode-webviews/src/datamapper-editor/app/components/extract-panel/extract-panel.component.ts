@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-input.component';
 import { DataMapperCardComponent } from '../data-mapper-card/data-mapper-card.component';
-import { EmptyStateComponent } from '../empty-state/empty-state.component';
+import { AutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeEmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import type { DataMapperItem, ExtractGroup, FieldSuggestion } from '../../models/datamapper.model';
 import { FILTER_OPERATORS, isSpecialFilter } from '../../models/extract-groups';
 import { newGlobalKey } from '../../models/items';
@@ -11,7 +11,7 @@ import { newGlobalKey } from '../../models/items';
 @Component({
     selector: 'dm-extract-panel',
     standalone: true,
-    imports: [AutocompleteInputComponent, DataMapperCardComponent, EmptyStateComponent, FormsModule],
+    imports: [AutocompleteInputComponent, DataMapperCardComponent, FormsModule, VlocodeEmptyStateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './extract-panel.component.html'
 })

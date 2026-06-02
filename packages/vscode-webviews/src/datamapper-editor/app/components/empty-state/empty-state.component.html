@@ -1,9 +1,0 @@
-<section class="dm-empty" [class.dm-empty--page]="page()" [attr.role]="role()">
-    <h2>{{ title() }}</h2>
-    @if (message()) {
-        <p>{{ message() }}</p>
-    }
-    @if (actionLabel()) {
-        <button type="button" class="dm-button" (click)="action.emit()">{{ actionLabel() }}</button>
-    }
-</section>

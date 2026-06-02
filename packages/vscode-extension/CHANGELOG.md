@@ -8,22 +8,35 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
+* **datapackDeployment:** fix bug in retry logic for generic record errors causing only spec errors to be retried properly but falling outside the retry budget. ([5fd8f30](https://github.com/codeneos/vlocode/commit/5fd8f30b9b80b52526f96905502932810b25f065))
+* **datapackExporter:** add ignoredObjects list to prevent processing of specific Salesforce objects such as RecordType, User and Group ([c0f98ca](https://github.com/codeneos/vlocode/commit/c0f98cad7bbcfb990cbbd879c96339cfc7c6c89c))
 * include datapack-level deploy errors in messages ([7ec7ed9](https://github.com/codeneos/vlocode/commit/7ec7ed9897ac87d27c2d520edbe0f32bf6e3f502))
+* pre-deploy spec errors causing a record to be set to failed are still attempt for a deployment ([35f7593](https://github.com/codeneos/vlocode/commit/35f75938231f83bcf9dfcf9f0bc347ed5107dcc4))
 
 ## [2.1.2](https://github.com/codeneos/vlocode/compare/v2.1.1...v2.1.2) (2026-05-19)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* **datapackLoader:** validate JSON structure and enhance error handling in loadJson method ([0fe0d1b](https://github.com/codeneos/vlocode/commit/0fe0d1b255ca4caa24125551e93eda6234e640d4))
+* **queryConditionBuilder:** correct operator check in fromObject method ([84b7b44](https://github.com/codeneos/vlocode/commit/84b7b44334737a7c91d816167bf00d9792461427))
 
 ## [2.1.1](https://github.com/codeneos/vlocode/compare/v2.1.0...v2.1.1) (2026-05-19)
 
 ### Bug Fixes
 
+* **datapackDeployer:** check for Vlocity org before setting trigger state ([b82b195](https://github.com/codeneos/vlocode/commit/b82b195f406a74d9263d6e0bba997167081024bf))
 * enhance message handling and add saved state in data mapper editor ([51c2eb3](https://github.com/codeneos/vlocode/commit/51c2eb3601fd028e44fb2d1e1ef77d0a9ef74788))
 
 # [2.1.0](https://github.com/codeneos/vlocode/compare/v2.0.3...v2.1.0) (2026-05-19)
 
 ### Bug Fixes
 
+* correct parameter order in constructor and normalize filter values ([658e58c](https://github.com/codeneos/vlocode/commit/658e58ceda0368c33df5fd57160f5faa9498834b))
+* docs command fails in ci builds due to generate-export-definitions not running ([11f00ca](https://github.com/codeneos/vlocode/commit/11f00cae1ccae1e5a4a0b92cbdf2bf56cefaec57))
+* JSDOM errors due bundling no including required changes ([6fb4104](https://github.com/codeneos/vlocode/commit/6fb41047272b71506933f6a8cf3d7e6af83beab1))
+* packages on NPM for version 2 of vlocode are incorrectly packaged ([52395a4](https://github.com/codeneos/vlocode/commit/52395a4791aa2c73aed9ec95942fb98bbe62ff2f))
+* **vlocity-deploy:** preserve per-request scope during datapack expansion ([7c71c8e](https://github.com/codeneos/vlocode/commit/7c71c8e69543dda046e22ac07044d9c6af55df68))
+* **vlocityNamespaceService:** ensure initialization check is performed in constructor and updateNamespace method ([af20f6c](https://github.com/codeneos/vlocode/commit/af20f6c36587b3d19983dbce752465903bc3f971))
 * vscode activity progress bar never exceeds 0 when total number of items exceeds 100 ([9e14664](https://github.com/codeneos/vlocode/commit/9e14664b0fd64bede989e86ec42ece9020be8ed8))
 
 ### Features
@@ -31,14 +44,24 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * add Integration Procedure editor for IPs and review styling for other editors allinging the integrated editor styles ([8aa6aec](https://github.com/codeneos/vlocode/commit/8aa6aec4a3b75d4bcb72249650ff2e692b53b63b))
 * add support for displaying active flags for Flex Cards and Vlocity Card datapacks in the datapack explorer ([9132457](https://github.com/codeneos/vlocode/commit/91324571a0fe590d28b007e032f22b7d3ab68a8d))
 * improve export performance when exporting multiple datapacks in direct export mode ([e0bb38f](https://github.com/codeneos/vlocode/commit/e0bb38fda0e7a01a64307cfd3e6e16b9195d1bde))
+* improve Migration DataRaptor to export definition conversion logic ([14baae5](https://github.com/codeneos/vlocode/commit/14baae5b52d95972e1d970db605cdb90ceb099ba))
+* update Node.js version to 24 in documentation workflow ([716e103](https://github.com/codeneos/vlocode/commit/716e103c3f6ad02123b5c3e920a7ae60229ad51a))
 
 ## [2.0.3](https://github.com/codeneos/vlocode/compare/v2.0.2...v2.0.3) (2026-05-14)
 
 ### Bug Fixes
 
 * DataPack explorer incorrectly showed multiple root nodes with partially overlapping types this has been fixed ([5338f47](https://github.com/codeneos/vlocode/commit/5338f475c4e0e9d25f2d76873545bd17f00dcabb))
+* DatapackConfigAccess doesn't preserve lookup proxy ([e0258b4](https://github.com/codeneos/vlocode/commit/e0258b47fe0b20384a5615283a63b61dffe1c173))
+* enhance JSON editor options and import folding functionality in Monaco editor ([1a42ace](https://github.com/codeneos/vlocode/commit/1a42acecc04c289b8bef6a2b11870c911bfa2f44))
+* enhance package namespace retrieval to handle multiple matches and exclude unmanaged packages ([a55e719](https://github.com/codeneos/vlocode/commit/a55e719fc2177641b352eeb5478981e6456f5894))
+* honor extension of the file name when expanding ([00886dc](https://github.com/codeneos/vlocode/commit/00886dc4f28ce16426d56d503b2a9b1f99853ed2))
+* improve error logging for DataPack configuration loading failure ([d7908ea](https://github.com/codeneos/vlocode/commit/d7908eaaf8862e44ca4f29c548492299dfd27e21))
+* improve namespace initialization logic in VlocityNamespaceService to ensure proper handling of installed packages ([53a8455](https://github.com/codeneos/vlocode/commit/53a845524fa153c693c1303012667dd935c90688))
 * improve Salesforce connectivity validation and handle missing username in datapack data provider ([e01c06e](https://github.com/codeneos/vlocode/commit/e01c06efd6713d9486ffd2c1c5856fa70ad0431c))
+* missing replaceNamespace logic for Vlocity namespace ([bf381b5](https://github.com/codeneos/vlocode/commit/bf381b59fcb03f8642e9b00ffeeb4bd24867833d))
 * update description in DatapackDefinitionRegistry and modify namespace handling in DatapackCategoryNode ([fe32252](https://github.com/codeneos/vlocode/commit/fe32252bf1ec9de6ff746c520396b15ec91a1dda))
+* update task dependencies and commands for vscode-webviews ([660f2c8](https://github.com/codeneos/vlocode/commit/660f2c8d7ff90a5fec1a7211d9d399fccfb6c40e))
 
 ### Features
 
@@ -46,56 +69,110 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [2.0.2](https://github.com/codeneos/vlocode/compare/v2.0.1...v2.0.2) (2026-05-13)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* when there are multiple Vlocity packages installed the code picked the first package even if that had no namespace. This fix changes the bevahior to only pickup packages that have a namespace (fixes [#449](https://github.com/codeneos/vlocode/issues/449)) ([c9f2a1f](https://github.com/codeneos/vlocode/commit/c9f2a1ff9f3cc0413f92a216c046e414bb4f98fb))
 
 ## [2.0.1](https://github.com/codeneos/vlocode/compare/v2.0.0...v2.0.1) (2026-05-13)
 
 ### Bug Fixes
 
+* improve argument parsing in FormulaParser to handle parentheses and commas correctly ([eda98fd](https://github.com/codeneos/vlocode/commit/eda98fd8f7cb9cc402ff7dd666f295af7fec829e))
+* prevent auto-generated matching keys from being processed in field matching ([9580201](https://github.com/codeneos/vlocode/commit/958020136e270af67d627e4a091068ac548ca241))
+* prevent exporting related objects before fully resolving the local tree to avoid double exports ([44c44f1](https://github.com/codeneos/vlocode/commit/44c44f1b2ab5447efc443758f9e3411ec17722af))
 * update API version examples and default value in package.json ([c2f824b](https://github.com/codeneos/vlocode/commit/c2f824bd38782aa36ee65f9f70625fd361543ae9))
+
+### Features
+
+* enhance export process by implementing export queue for async handling of object exports ([33fbdb4](https://github.com/codeneos/vlocode/commit/33fbdb4674f8c333cc11a4a3cda15b9c50065021))
+* implement deferred lookup matching key expansion and enhance foreign key normalization ([5e9a57d](https://github.com/codeneos/vlocode/commit/5e9a57dd787142568a2606d0ba65940dec4f4f63))
 
 # [2.0.0](https://github.com/codeneos/vlocode/compare/v1.42.0...v2.0.0) (2026-05-11)
 
 ### Bug Fixes
 
+* add missing Monaco Editor CSS to styles in angular.json ([a11ff26](https://github.com/codeneos/vlocode/commit/a11ff26501383dce062412d512fc2692ee8a48a7))
+* building the extension on windows does not patch Vlocity module properly for ESM compatibility ([74ec5e1](https://github.com/codeneos/vlocode/commit/74ec5e1dd8eafadaf4d597d1c8a5f45d0cf7a252))
 * clean up tsconfig files by removing unnecessary options and ensuring path consistency ([d48525d](https://github.com/codeneos/vlocode/commit/d48525d3509fc07fc22d2528f9b45e1af56494b7))
 * correct metadata id resolution and merge-field concat ([#447](https://github.com/codeneos/vlocode/issues/447)) ([4d10570](https://github.com/codeneos/vlocode/commit/4d10570b63b78a52bd76e34687b79dde308d118d))
 * data mapper editor doesn't when files re in the OmniDataTransform folder ([3a77820](https://github.com/codeneos/vlocode/commit/3a778202e28affe4d5b073da58fc788717dd83d9))
+* drop transform TS for LWC compiling as Node26 drops dupport for the transform option. Type srtipping is now the default mode. ([9e8716c](https://github.com/codeneos/vlocode/commit/9e8716c4c4ccfd7bb9c834542796da04f12831ad))
+* enhance timeout handling in resumeOnce function and improve test cases for event resolution ([2518c07](https://github.com/codeneos/vlocode/commit/2518c0735e7b2ba7d69c93c4cae04c0a8f306e22))
+* eslint parsing errors ([f2dee75](https://github.com/codeneos/vlocode/commit/f2dee753de094c5cc4e8702d488d3b2c3acc3266))
+* improve cache lookup logic to handle missing records more efficiently ([10a4e51](https://github.com/codeneos/vlocode/commit/10a4e517c90cacfa02ef5575a9e5ba6a8949be80))
+* improve robustness on windows of path related functions ([18f7e11](https://github.com/codeneos/vlocode/commit/18f7e118bc7087a35796f5f3aaa63f2dfc6782c8))
+* normalize file paths for ignore pattern matching in SalesforcePackageBuilder ([8c26dd2](https://github.com/codeneos/vlocode/commit/8c26dd277a96cbe551036dff6a978953777eac57))
+* resolve 4 bugs found in recent commits ([#444](https://github.com/codeneos/vlocode/issues/444)) ([1adf631](https://github.com/codeneos/vlocode/commit/1adf631c43547e29ad40be8b064141259f340061))
 * restore build infrastructure and eliminate duplicate builds ([#445](https://github.com/codeneos/vlocode/issues/445)) ([34431fb](https://github.com/codeneos/vlocode/commit/34431fbda827f02ea001db8d72e4e75195d091bf))
+* update CLI launch configurations to use .mjs files and enable source maps ([fa85ca9](https://github.com/codeneos/vlocode/commit/fa85ca9d17722284308c494c5dfe629c2dbeee4b))
 
 ### Features
 
+* add angular compiler options for stricter template and injection checks ([5a67f74](https://github.com/codeneos/vlocode/commit/5a67f74e0602723e9eda74e3533ac6cdc397a7c7))
 * add direct expansion support for VlocityDatapackService ([033d7a0](https://github.com/codeneos/vlocode/commit/033d7a00b95f34510e7db6dea2aea7bea35ee2a7))
 * add OmniStudio formula language service and related components ([203bd0c](https://github.com/codeneos/vlocode/commit/203bd0cf520109745f6eb8571b1ff90cc5bf41e6))
 * add support for parsing conditions and only displaying datapacks matching in the explorer ([3a868b5](https://github.com/codeneos/vlocode/commit/3a868b51bba75bbcef1b169dc12ccabfcafc039a))
+* **datamapper:** add data mapper execution support running/previewing a data mapper ([da4f679](https://github.com/codeneos/vlocode/commit/da4f6791e15873ce6bb9749b7dd46ab64e2586ef))
 * enable preview support for Extract and Transform data mappers from VSCode ([d505c26](https://github.com/codeneos/vlocode/commit/d505c260a29148083b925764b6eaa17da2adb641))
 * enhance datapack export functionality and configuration ([ceb1a01](https://github.com/codeneos/vlocode/commit/ceb1a01ebabd8c4ed120f2c1f8d7be8a02894d13))
+* enhance datapack export functionality and improve clear method in DatapackExportDefinitionStore ([d65dbf4](https://github.com/codeneos/vlocode/commit/d65dbf406f64a6c33d021254e72b11be8a30d4ba))
+* enhance dependency injection with new constructor argument support and update export definitions schema ([adf31b3](https://github.com/codeneos/vlocode/commit/adf31b3f4e257ea5d218303fd699def51b870135))
 * enhance direct export to handle multiple expanded results and write to filesystem ([d9433af](https://github.com/codeneos/vlocode/commit/d9433af516b4caf5130c12b7ee6455a03f329b6e))
 * improve direct export functions to match standard datapack export ([110d966](https://github.com/codeneos/vlocode/commit/110d9668c1e94fda7dd735ca94c2d98802e3ab86))
+* improve export performance by optimizing async processing of exports ([dad762b](https://github.com/codeneos/vlocode/commit/dad762bb21e2964ed8863ecc409c24f8b85e7ffc))
 * initialize global scope in DatapackExportDefinitionStore and clean up export mode in DatapackDefinitionRegistry ([b761336](https://github.com/codeneos/vlocode/commit/b7613364f7278ce30f04d3792b61f868c4dfe7d1))
+* integrate new export command in CLI with a job/export file support ([efa74ef](https://github.com/codeneos/vlocode/commit/efa74ef3ab6f082feb679711190e28952b6caf86))
+* integrate vlocity package and enhance formula evaluation types ([8e4fdac](https://github.com/codeneos/vlocode/commit/8e4fdacb9aa284f765bddce4be54a8d0cef6ce1e))
+* optimize export path using query cache ([8db8ef7](https://github.com/codeneos/vlocode/commit/8db8ef7f2bf468136bb0ffe0576b8146b466ab03))
 * switch logging to only use the output panel as it performs better and now also has syntac highlighting support. This avoids poluting the terminal tabs and is much more inline with VSCode standards. ([bc77355](https://github.com/codeneos/vlocode/commit/bc77355f47a68cc2f39e819d9046beaec2b4324f))
 * update custom datapack definition loading to include file scope in returned definitions ([4cad6cb](https://github.com/codeneos/vlocode/commit/4cad6cb8441de67b9810038b5908ac258df55fb0))
+* update datapack definitions to refine matching key fields and add filters for integration procedures ([ec85b05](https://github.com/codeneos/vlocode/commit/ec85b0505aca3f955274fcab834e88ba7ae1c838))
+* update problem matcher in tasks.json and add DataMapper XML conversion test ([577c3b9](https://github.com/codeneos/vlocode/commit/577c3b954d7ad2878be05d39c8d273b32a0b77c3))
 
 # [1.42.0](https://github.com/codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
 
 ### Bug Fixes
 
+* enhance error handling for EXCEEDED_ID_LIMIT in getEntityDefinition method ([8cba50a](https://github.com/codeneos/vlocode/commit/8cba50ac50caf15f3f5063dfc8df0b9347b5639c))
+* handle null values in datapack expansion logic ([f514d4f](https://github.com/codeneos/vlocode/commit/f514d4f88c3d440a7bc14b06c8b6fc71050522cc))
+* npm package checks out wring ref ([3276450](https://github.com/codeneos/vlocode/commit/3276450a933665cb7ace0d08a3793115707b782d))
+* **salesforce:** field matching case sensitivity ([c6bf17c](https://github.com/codeneos/vlocode/commit/c6bf17c0d80131c7f1f48be1a3d84ab78ecc0a4d))
+* socket leak on 302 redriect responses (edge-case) ([e9c42c3](https://github.com/codeneos/vlocode/commit/e9c42c37149eaca2efb2f4a9b4ca2155638720bf))
 * update import paths for ApexSourceStatus and adjust TypeScript version in package files ([20bf38b](https://github.com/codeneos/vlocode/commit/20bf38b114530f675b2f496463bbe867dfb3dae6))
 
 ### Features
 
+* add method to retrieve final package components with optional filtering ([a050dfb](https://github.com/codeneos/vlocode/commit/a050dfb3a14575e25f77f6c3bf5953894c48555c))
 * add new data mapper UI to edit data mappers from VS Code ([9c81874](https://github.com/codeneos/vlocode/commit/9c81874938721d532ba45fa346278c96a543bac4))
 * add support for exporting data packs from OmniStudio orgs and using custom export definitions on non-vlocity orgs ([b67dbba](https://github.com/codeneos/vlocode/commit/b67dbba7d23ad7a1c1ece8f6b26d8d7ce8f6c742))
+* add tests for DatapackExporter and DatapackExpander functionality ([6eb5a4b](https://github.com/codeneos/vlocode/commit/6eb5a4bd5db8ca80d04591b98cc6837d4c958109))
+* enhance httpRequest method with retry logic for connection errors ([af79ea8](https://github.com/codeneos/vlocode/commit/af79ea863b54818c93944b1f3085a6a87d096ce2))
+* enhance SalesforcePackageBuilder to support mixed content bundles like DigitalExperienceBundle ([#439](https://github.com/codeneos/vlocode/issues/439)) ([bf755b1](https://github.com/codeneos/vlocode/commit/bf755b104e42cff897a469b1c621efb4b95b2fd9))
+* implement eager flushing of pending records to optimize memory usage ([71810eb](https://github.com/codeneos/vlocode/commit/71810ebc9b1b74a4c95fa92c6369be74737504e3))
 * refactor datapack export logic to support non omnistudio orgs ([5bcf434](https://github.com/codeneos/vlocode/commit/5bcf434cb43c4eb82cbfb42b774dfade3a93cccf))
+* **salesforce:** add namespace replace support to SalesforceService ([cfcbb33](https://github.com/codeneos/vlocode/commit/cfcbb3370b88598e980fd0c61b0872dc66f464f6))
+* update RestClient methods to support Buffer type for request bodies ([9c37d47](https://github.com/codeneos/vlocode/commit/9c37d475ed9b87d9f93e649147a3d43ed9df010d))
+* **util:** add object property aliasing and readonly modifiers ([e96410b](https://github.com/codeneos/vlocode/commit/e96410bd4a8999eefdc0afa344c2fd8f4bf8ebd4))
+* **vlocity-deploy:** add support for legacy migration dataraptor conversion ([b98d329](https://github.com/codeneos/vlocode/commit/b98d329fdf8cfc66cd5e11f569bddf11a18c4ff7))
+* **vlocity-deploy:** support complex filters and embedded lookups in datapack exporter ([c769627](https://github.com/codeneos/vlocode/commit/c7696277ffbc2d0a435eceac2469ba627463ea09))
+
+### Performance Improvements
+
+* **util:** accelerate salesforce namespace prefix removal ([cf79d5a](https://github.com/codeneos/vlocode/commit/cf79d5aff2dd104f1422d0ff6c414470ee348873))
+* **util:** improve primitive comparison with direct char scanning ([98ebf7b](https://github.com/codeneos/vlocode/commit/98ebf7bfab217a468aca870230e4ffbe5d2177b1))
+* **util:** optimize string utilities and format regex ([ec1cca7](https://github.com/codeneos/vlocode/commit/ec1cca7a5424279912b7231a545cc2caaecbbeba))
 
 ## [1.41.2](https://github.com/codeneos/vlocode/compare/v1.41.1...v1.41.2) (2026-02-26)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* faulty publishConfig in package.json for sass module ([dae4286](https://github.com/codeneos/vlocode/commit/dae4286d882efccde0e9ae88ee4e9dc0c76a6f94))
 
 ## [1.41.1](https://github.com/codeneos/vlocode/compare/v1.41.0...v1.41.1) (2026-02-26)
 
 ### Bug Fixes
 
+* lock file error ([986f168](https://github.com/codeneos/vlocode/commit/986f16898bcffe5f71be335f838ba9d0840fd036))
 * when industries/vlocity is not installed avoid loading industries specific components and warn the user instead of throwing a hard error ([4b5f3e7](https://github.com/codeneos/vlocode/commit/4b5f3e79f2f1c0728bf7de41478ce532e608f514))
 
 ### Features
@@ -104,19 +181,29 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [1.41.0](https://github.com/codeneos/vlocode/compare/v1.40.1-rc.0...v1.41.0) (2026-02-25)
 
-**Note:** Version bump only for package vlocode
+**Note:** Version bump only for package vlocode-project
 
 ## [1.40.1-rc.0](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.1-rc.0) (2026-02-25)
 
 ### Bug Fixes
 
+* add type definition for UserConfig in tsdown configuration ([97c8d91](https://github.com/codeneos/vlocode/commit/97c8d91492755a81538b4b81040103d3c23754fc))
+* build failing due to tsdown upgrade ([29799b8](https://github.com/codeneos/vlocode/commit/29799b8b1c136e8b69c93cafdedfd233d419419c))
 * do not report error when Vlocity package is missing to allow use of Vlocode without vlocity ([70a4f84](https://github.com/codeneos/vlocode/commit/70a4f847f405eb76e64c0e7ee0118431b19f477d))
 * for longer deployments report errors during deployment instead of only at the end. ([f13346b](https://github.com/codeneos/vlocode/commit/f13346bcacecf05b209ecd4ff721aac3ba3213c6))
+* omniScript access does to check for language when deploying scripts. When a script is both deployed as IP as well as an OmniScript it will only activate the IP or the OmniScript not both. ([3ff1bdb](https://github.com/codeneos/vlocode/commit/3ff1bdbc263189703c5594ab8805abaa9dbc26d2))
+* package builder does not ignore common hidden files causing errors while deploying static resources ([688e492](https://github.com/codeneos/vlocode/commit/688e492712dc0ecd404b58063ff2279948d23b10))
 * TokenReplacement plugin does not skip binary ([3fa2bb6](https://github.com/codeneos/vlocode/commit/3fa2bb6f528f4700f09240f07c9fa0d3fb1a9d22))
+* typedoc fails to generate documentation ([50d103f](https://github.com/codeneos/vlocode/commit/50d103f5f4025d0e1d888566f3486c690e020945))
+* typo in unit tests strings ([8fcf971](https://github.com/codeneos/vlocode/commit/8fcf971ea95079a4b169d500e9774538ced2613a))
 
 ### Features
 
+* add new wrap decorator that can be used to wrap properties with decorators. It is not called decorate as there is an existing decorator which is used on classes ([b5430b6](https://github.com/codeneos/vlocode/commit/b5430b6e5cfa764c528c907c9dec5b275fba45de))
 * add support for OpenVSX.org publishing into the pipeline (see [#427](https://github.com/codeneos/vlocode/issues/427)) ([12fa0a5](https://github.com/codeneos/vlocode/commit/12fa0a5cb9224275d28ceb4ee33e2360bc2a1f9a))
+* allow creation of a retrieve package from a build package to allow conversion of source code ([cadc341](https://github.com/codeneos/vlocode/commit/cadc3419556d30672ad126928949cac318713910))
+* optimize package builder to increase package building speed when dealing with manu decomposed metadata types ([f93318a](https://github.com/codeneos/vlocode/commit/f93318a608f4818c8285f3737cbe31ed4a397e24))
+* support creating a SalesforcePackage from a zip file buffer. This allows loading of previously generated build artifacts for propegation for SOX compliant build pipelines ([e4c88ee](https://github.com/codeneos/vlocode/commit/e4c88ee1d7e098d30ec1a5f53bb74ad773344f1c))
 
 # [1.40.0-rc.1](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.0-rc.1) (2026-02-23)
 
@@ -124,54 +211,111 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * do not report error when Vlocity package is missing to allow use of Vlocode without vlocity ([70a4f84](https://github.com/codeneos/vlocode/commit/70a4f847f405eb76e64c0e7ee0118431b19f477d))
 * for longer deployments report errors during deployment instead of only at the end. ([f13346b](https://github.com/codeneos/vlocode/commit/f13346bcacecf05b209ecd4ff721aac3ba3213c6))
+* omniScript access does to check for language when deploying scripts. When a script is both deployed as IP as well as an OmniScript it will only activate the IP or the OmniScript not both. ([3ff1bdb](https://github.com/codeneos/vlocode/commit/3ff1bdbc263189703c5594ab8805abaa9dbc26d2))
+* package builder does not ignore common hidden files causing errors while deploying static resources ([688e492](https://github.com/codeneos/vlocode/commit/688e492712dc0ecd404b58063ff2279948d23b10))
 * TokenReplacement plugin does not skip binary ([3fa2bb6](https://github.com/codeneos/vlocode/commit/3fa2bb6f528f4700f09240f07c9fa0d3fb1a9d22))
+* typedoc fails to generate documentation ([50d103f](https://github.com/codeneos/vlocode/commit/50d103f5f4025d0e1d888566f3486c690e020945))
+* typo in unit tests strings ([8fcf971](https://github.com/codeneos/vlocode/commit/8fcf971ea95079a4b169d500e9774538ced2613a))
 
 ### Features
 
+* add new wrap decorator that can be used to wrap properties with decorators. It is not called decorate as there is an existing decorator which is used on classes ([b5430b6](https://github.com/codeneos/vlocode/commit/b5430b6e5cfa764c528c907c9dec5b275fba45de))
 * add support for OpenVSX.org publishing into the pipeline (see [#427](https://github.com/codeneos/vlocode/issues/427)) ([12fa0a5](https://github.com/codeneos/vlocode/commit/12fa0a5cb9224275d28ceb4ee33e2360bc2a1f9a))
+* allow creation of a retrieve package from a build package to allow conversion of source code ([cadc341](https://github.com/codeneos/vlocode/commit/cadc3419556d30672ad126928949cac318713910))
+* optimize package builder to increase package building speed when dealing with manu decomposed metadata types ([f93318a](https://github.com/codeneos/vlocode/commit/f93318a608f4818c8285f3737cbe31ed4a397e24))
+* support creating a SalesforcePackage from a zip file buffer. This allows loading of previously generated build artifacts for propegation for SOX compliant build pipelines ([e4c88ee](https://github.com/codeneos/vlocode/commit/e4c88ee1d7e098d30ec1a5f53bb74ad773344f1c))
 
 # [1.40.0-beta-4](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-3...v1.40.0-beta-4) (2025-11-10)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* batch service unavailable when packaged with ocx ([04e4b27](https://github.com/codeneos/vlocode/commit/04e4b27c7047c86682a5e0267f4e1754e0e1a0fa))
+* omniScripts compiled for standard runtime do not correctly set language property ([db23e45](https://github.com/codeneos/vlocode/commit/db23e45c27bdd5662e554800e6cd6f945f34f8f8))
+* update instance and base URL references to use class properties ([d1a411e](https://github.com/codeneos/vlocode/commit/d1a411ef9e600085bd6d247e76725b8f0ff8dffe))
 
 # [1.40.0-beta-3](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-2...v1.40.0-beta-3) (2025-10-11)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* apply token replacements only on UTF8 or ASCII text entries ([9256eaf](https://github.com/codeneos/vlocode/commit/9256eaf3670fa94b032050c0caef55cb8fcab4a4))
+* correct mapping for IsOmniScriptEmbeddable to use IsReusable ([b7fe62d](https://github.com/codeneos/vlocode/commit/b7fe62d8e90c5328f89462f6b126005bf45c65e1))
+* ensure proper merging of metadata attributes in expandMetadataChildren ([6845c17](https://github.com/codeneos/vlocode/commit/6845c17626e385396e9aff15dc77802eebad239c))
+* handle errors in query execution and return empty results for FlexCardDefinitionAccess ([1215f3a](https://github.com/codeneos/vlocode/commit/1215f3a563396a913f2e7637f38e62aea5cd5869))
+* handle errors in query execution and return empty results for OmniProcess and OmniScript records ([44e3994](https://github.com/codeneos/vlocode/commit/44e399485e810be11dbf3984b95a75aede93a7ec))
 
 # [1.40.0-beta-2](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-1...v1.40.0-beta-2) (2025-10-02)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* handle undefined data in getFileData and provide default for empty jsSource in TypeScriptCompilerPlugin ([188d12d](https://github.com/codeneos/vlocode/commit/188d12db176b3485cf827ba54e3c9cfc6e9b6b5a))
 
 # [1.40.0-beta-1](https://github.com/codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
 
 ### Bug Fixes
 
+* add dependency injection for inner file system in CachedFileSystemAdapter constructor ([ffb4fab](https://github.com/codeneos/vlocode/commit/ffb4fab242a6d23738489ef95c92b109912b0be8))
+* change ILogger import to type import for better compatibility ([0ec27b7](https://github.com/codeneos/vlocode/commit/0ec27b79727ab1d0fb8be5d28558df1a11014448))
+* change import of SalesforceConnectionOptions to type import for isolatedModules: true ([ee4ada3](https://github.com/codeneos/vlocode/commit/ee4ada3b22c7a8974cf2eab1bcb629d4385d92f5))
 * correct file array construction in DeleteMetadataCommand to avoid unnecessary nesting ([33dbce7](https://github.com/codeneos/vlocode/commit/33dbce70d8a45490bb7868d3eede570a56821764))
 * correct import paths for SalesforceApexContentProvider and VirtualContentProvider for proper module resolution with tsdown ([4337b03](https://github.com/codeneos/vlocode/commit/4337b033f36e4dc2f3f13520de1060a0289c0b8f))
+* do not register NamespaceService as injectable as it is a base type ([15cdca2](https://github.com/codeneos/vlocode/commit/15cdca2c409339cfdaf25cb8130670a66876d171))
+* ensure metadata expansion sets the XML namespace ([2e45c6b](https://github.com/codeneos/vlocode/commit/2e45c6b40c21b481353069dff3f0f4ec9ae59953))
+* errors in build system due to tsdown migration ([77f4125](https://github.com/codeneos/vlocode/commit/77f4125ac379c000b17cdd00bcfc1b5fd222bf2d))
+* logger.null dynamic inline class breaks when bundled by tsdown ([1454517](https://github.com/codeneos/vlocode/commit/1454517e6984ddf3460fb2e7852afdd92a357bfb))
 * **package:** update files array in package.json and adjust sourcemap setting in tsdown.config.mts ([f504bd2](https://github.com/codeneos/vlocode/commit/f504bd26799faf8a9e9395caa5fd331c46702515))
 * settingsKey is undefined error when exporting datapacks in strict mode ([6537c6e](https://github.com/codeneos/vlocode/commit/6537c6ee81b16eb6787a22995df62a4b60331f67))
+* **sfdx:** improve error handling for SFDX logger memory logging setup ([910d747](https://github.com/codeneos/vlocode/commit/910d747713548f2459453ea127ca176dae4c23d7))
+* source file re-assembly fails on mac tdue to missing `\` for absolute paths ([096bef0](https://github.com/codeneos/vlocode/commit/096bef0a0354038a9b7ee0ec994cbb40ba531fd0))
+* **tests:** update fallback container test to use the correct container instance ([843e5bc](https://github.com/codeneos/vlocode/commit/843e5bc8a0bf7104b4a229de2ea844c33e3104fe))
+* type only import fails with isolatedModules: true ([52a7274](https://github.com/codeneos/vlocode/commit/52a7274ae7a870b3391154e8528d4d572e33d7e8))
 * update build script to use correct tsdown configuration file extension ([dae68ca](https://github.com/codeneos/vlocode/commit/dae68ca6c2bd4b9411061855f55cd609c7b9bb98))
+* update devDependencies for @types/vscode and memfs ([7f9eda8](https://github.com/codeneos/vlocode/commit/7f9eda8df6afdb33c71ab680040237c38e6271bd))
+* update environment variable setting for disabling SFDX log file ([a923378](https://github.com/codeneos/vlocode/commit/a923378d30138a3a5e29f7b88ceb8399431af555))
 * update imports and add VlocityNamespaceService to container in DatapackExportQueries tests ([44d8e8c](https://github.com/codeneos/vlocode/commit/44d8e8ccbc2b0a16513cd34e6e70e32901c4ab67))
 * update injectable decorator to use lifecycle policy and enhance type annotations in SfdxConfigManager ([00f43d5](https://github.com/codeneos/vlocode/commit/00f43d522f643820c48768e4e66dcfb7460efdbb))
 * update output file paths to be relative to the workspace in LWC generation ([22710b9](https://github.com/codeneos/vlocode/commit/22710b97eb489c1a705c4e34911ac22f3b955c9c))
+* update spec instance retrieval to use newDeferred for improved lazy loading of deployment specs (plugins) ([be1a6b1](https://github.com/codeneos/vlocode/commit/be1a6b10e82f581a7bbc65236864f0f41538a0c6))
 * **vscode:** ensure table output appends an empty line by default ([75ae99e](https://github.com/codeneos/vlocode/commit/75ae99e946b2a82279bef3b99b5fa4e5d4ce7ba6))
 * **vscode:** remove .vscodeignore file as it is no longer needed ([cbb8246](https://github.com/codeneos/vlocode/commit/cbb824607a46c6d8010388fef83ef704c202c40e))
+* XML parser did not properly detect null values when using a custom attribute group node ([d36e478](https://github.com/codeneos/vlocode/commit/d36e4789b9edfeb0b504a5fad2450dc3330689ed))
 * YAML imported into none ECMA modules returned `default` instead ([2b591ab](https://github.com/codeneos/vlocode/commit/2b591ab1b1e0990ecdd572576c674f2a850e6142))
 
 ### Features
 
 * add dynamic token replacements in deploy package for build date, instance URL, user email, name, and org ID ([6c7d2db](https://github.com/codeneos/vlocode/commit/6c7d2db42c258215ba3f03e2ad1ecf9403944ea4))
 * add folder selection dialog for target folder in CreateMetadataCommand ([cb42d15](https://github.com/codeneos/vlocode/commit/cb42d155a820092f82ca368c30aea096d29765be))
+* add Symbol.dispose and Symbol.asyncDispose methods to AwaitableAsyncGenerator ([192b38e](https://github.com/codeneos/vlocode/commit/192b38eec7c3bd1afc5cd02a50e864fbba75866f))
+* add tests for removeInstance and container injection behavior ([e4632ca](https://github.com/codeneos/vlocode/commit/e4632ca693aa4df1320dd00c129b2a278b1e87e0))
+* enable isolatedModules and strict mode by default for all packages ([fe057b8](https://github.com/codeneos/vlocode/commit/fe057b8b19c86a53c8b3a0058120599420e31c09))
+* **flexcard:** make FlexCardDesigner configurable and lazy-init LWC generator resources ([b7ee5be](https://github.com/codeneos/vlocode/commit/b7ee5beec885cd7855059ed711c6a128fa58b05e))
+* **fs:** use directoryName helper and posix join for FileSystem operations ([a7eeb08](https://github.com/codeneos/vlocode/commit/a7eeb085b909e255285070cd6e506e9ebe82700e))
+* implement lightweight event emitter with listener management ([7415660](https://github.com/codeneos/vlocode/commit/741566090f5cd21748fef89c9c65d3fa093cef6a))
+* implement plugin architecture for Salesforce package builder with token replacement and TypeScript compilation capabilities ([5fd3571](https://github.com/codeneos/vlocode/commit/5fd3571fcfeb4960637c8c0be6b62d7ffa616b51))
 * introduce new ApexSourceStatus class for managing Apex class synchronization status with an org allowing for a more object oriented approach for class checks in Vlocode extension ([80811d7](https://github.com/codeneos/vlocode/commit/80811d7c87820e93bac022701898625c6329c251))
+* migrate sass-compiler to rolldown ([180c035](https://github.com/codeneos/vlocode/commit/180c035816f07a5404d636aca4e425aa636ba594))
 * migrate Vlocode extension build system to tsdown/rolldown ([493cc51](https://github.com/codeneos/vlocode/commit/493cc51ac3b0e50989843fcc8ab5924303bd4ec8))
 * support for beta releases ([0ff03a1](https://github.com/codeneos/vlocode/commit/0ff03a1d26ad430e090f3a58d90eec77fd4758f6))
+* **tests:** add test for TypeScript class transpilation with constructor properties ([e6ca849](https://github.com/codeneos/vlocode/commit/e6ca849ee5a080733512907b34b09c0be21b527e))
+* **tests:** enhance OmniScript definition tests with schema data integration ([c8e8cac](https://github.com/codeneos/vlocode/commit/c8e8cac5f6e78e961608a86628c7dd5d2dee48a6))
 
 # [1.32.0](https://github.com/codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
 
+### Bug Fixes
+
+* atob function from window namespace is not stubbed in FlexCardDesigner ([f8267a3](https://github.com/codeneos/vlocode/commit/f8267a3c4a1a357076cc831fcf70032ecaebcbf3))
+* FlexCard compilation error when StylingConfiguration was defined as empty string ([9318034](https://github.com/codeneos/vlocode/commit/9318034d4d73ff15149ea2da19dd5f3692d878e1))
+* FlexCards public properties were not getting exposed through the Meta XML causing deployment errors for components (flexi-pages) that would try to set public properties ([aba0d26](https://github.com/codeneos/vlocode/commit/aba0d260c87cfd430eb5b1823cf600708576900b))
+* indent is ignored when passed in as option through XML.stringify ([bfbaee4](https://github.com/codeneos/vlocode/commit/bfbaee4f6949746edbdd9da77df9f0d11e0e5681))
+* labels in MultiLanguage OmniScript are not added properly to the OmniScript definition ([83f9ea8](https://github.com/codeneos/vlocode/commit/83f9ea81ee050fd31d229afef971e6f6812d8ae9))
+* OmniScript doesn't open in correct editor when using open-in-org command ([61ae903](https://github.com/codeneos/vlocode/commit/61ae9036cf60b28faeaceef6a74978f1e32bfef1))
+
 ### Features
 
+* add new prettify function to reformat XML as pretty printed output ([889aefd](https://github.com/codeneos/vlocode/commit/889aefdaed2a9ec9b8fb3b3fdd2a71256bea8e65))
 * enhanced support for metadata refresh and export in decomposed source format ([5daeb09](https://github.com/codeneos/vlocode/commit/5daeb0977ee4418415ca61ae5847d38bcb0416f5))
 * expand static resources with the proper file extension based on the contents mime type ([e2ff339](https://github.com/codeneos/vlocode/commit/e2ff339cece4bd3ef118e5ad52511d075e14c5ef))
+* extend documentation of attribute parsing and support setting attributeNode while reading XML ([08f607f](https://github.com/codeneos/vlocode/commit/08f607fa52e0af66b8e375fe779890e21404a3f3))
+* support refreshing Salesforce metadata in SF(DX) format ([b2309c1](https://github.com/codeneos/vlocode/commit/b2309c1cfd6a7a155b4261d3169f2359d1f3489e))
 
 ## [1.31.10](https://github.com/codeneos/vlocode/compare/v1.31.9...v1.31.10) (2025-07-28)
 
@@ -181,7 +325,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [1.31.9](https://github.com/codeneos/vlocode/compare/v1.31.8...v1.31.9) (2025-07-24)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* skip picklist value length check as (standard) picklist fields can store longer values ([6b4cd86](https://github.com/codeneos/vlocode/commit/6b4cd86bf4133537a54a2ed01afd0653c499c3ba))
 
 ## [1.31.8](https://github.com/codeneos/vlocode/compare/v1.31.7...v1.31.8) (2025-07-23)
 
@@ -190,6 +336,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * API 64.0 does not properly print deployment results ([c436e81](https://github.com/codeneos/vlocode/commit/c436e813134db6ede43574ab2f5432b082e5d1c6))
 * execute REST API does not return failed API responses properly ([0deb817](https://github.com/codeneos/vlocode/commit/0deb817d1da89d59fff22b3f34526bb8b933bda0))
 * increase max cell width for error display in deployment results ([2d22ff6](https://github.com/codeneos/vlocode/commit/2d22ff66c4015db6a4eb1dea476c8eb192acc7a6))
+* spread component messages into allComponentMessages for proper aggregation ([f1a674b](https://github.com/codeneos/vlocode/commit/f1a674bffe44783cab1cb2149d0c2b43957bec98))
 * vlocode doesn't update sf extension username ([aab9f12](https://github.com/codeneos/vlocode/commit/aab9f12066371b3115686354d3e419e4129ea64e))
 
 ## [1.31.7](https://github.com/codeneos/vlocode/compare/v1.31.6...v1.31.7) (2025-07-17)
@@ -209,6 +356,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * open datapack in org incorrectly uses field list instead of matching key fields when building a matching condition ([be1d8b3](https://github.com/codeneos/vlocode/commit/be1d8b3d50c6be00eac4516576e68bf7c0fdcad5))
 
+### Features
+
+* always set a Global key for ContentVersion's when deploying in industries context even when missing from the datapack ([7d1a134](https://github.com/codeneos/vlocode/commit/7d1a1349253f6143b56d16116b9c31397f61f440))
+* load override matching keys from `matching-keys.json` when present. Matching keys defined in this file always overrule matching keys defined in the org. ([ccd80b0](https://github.com/codeneos/vlocode/commit/ccd80b054936f9e71202110a814794b84824dd09))
+* segregate DocumentTemplates and DocumentTemplate datapacks based on the CLM or SFC being used ([b6f99ed](https://github.com/codeneos/vlocode/commit/b6f99edbc40dacf412fdee2ca56c760db542e12f))
+* support deployment of DocumentTemplate SFC objects and auto activate them after deployment ([c898952](https://github.com/codeneos/vlocode/commit/c898952a5916550c563507aa70f81aa5d50e8d49))
+
 ## [1.31.5](https://github.com/codeneos/vlocode/compare/v1.31.4...v1.31.5) (2025-07-08)
 
 ### Bug Fixes
@@ -222,9 +376,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [1.31.4](https://github.com/codeneos/vlocode/compare/v1.31.3...v1.31.4) (2025-07-03)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* deploying an APEX class or Metadata file with unsaved changes causes it to deploy the version of the metadata before the changes are saved. ([e907c68](https://github.com/codeneos/vlocode/commit/e907c688320a09e40a81ddc4226855dbd9bec18f))
 
 ## [1.31.3](https://github.com/codeneos/vlocode/compare/v1.31.2...v1.31.3) (2025-06-27)
+
+### Bug Fixes
+
+* do not report invalid `datapack configuration` as error but instead as warning ([2099f10](https://github.com/codeneos/vlocode/commit/2099f109a859ded8a0432984e29b390339719f56))
 
 ### Features
 
@@ -236,15 +396,29 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [1.31.2](https://github.com/codeneos/vlocode/compare/v1.31.1...v1.31.2) (2025-06-18)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* ensure deployment specs do not live longer then the deployment process and that each deployment re-instantiates the spec. ([0e60a07](https://github.com/codeneos/vlocode/commit/0e60a0765beda771bc2808302e3804ea080ed9db))
+
+### Features
+
+* allow setting of IDs on PickLists and other text like field types ([439be52](https://github.com/codeneos/vlocode/commit/439be52e6c3f40612876e0c1cb0815227cdf6dce))
+
+* support deploying document clause set from Salesforce Contracts ([4a1ee0d](https://github.com/codeneos/vlocode/commit/4a1ee0d0735ccc60eb199c580fa933e34188ec97))
 
 ## [1.31.1](https://github.com/codeneos/vlocode/compare/v1.31.0...v1.31.1) (2025-06-17)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* inconsistent imports causing build errors in 1.31.0 ([db05d9a](https://github.com/codeneos/vlocode/commit/db05d9a72fc73936023ed52685ee204dd5e5ad0d))
 
 # [1.31.0](https://github.com/codeneos/vlocode/compare/v1.30.0...v1.31.0) (2025-06-17)
 
 ### Bug Fixes
+
+* add missing rollup config ([f65d2a9](https://github.com/codeneos/vlocode/commit/f65d2a97bfe8eaec270a13e3853c9544fe793cda))
+
+* CLI does not build ([9c65c2d](https://github.com/codeneos/vlocode/commit/9c65c2d164215b1cc4dcff1d632546c3a6aa832a))
 
 * do not fail when external sass compiler can't be loaded, instead fallback to local compiler ([635270b](https://github.com/codeneos/vlocode/commit/635270bfa9ac746986a06003a48f6f9e25a2a587))
 
@@ -254,35 +428,67 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * segregate sass transpilation into stand alone module allowing for better isolation of functions ([9a23972](https://github.com/codeneos/vlocode/commit/9a239727a7f60e3c1206d56540b0430f09574c7c))
 
+* support for loading default matching keys from `matching-keys.json` file when present ([4e06d75](https://github.com/codeneos/vlocode/commit/4e06d7583e57f8cfed5cff6205b95884f9e2dcf4))
+
 # [1.30.0](https://github.com/codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
 
 ### Bug Fixes
 
+* add type annotations for imports in cachedFileSystem and logging modules ([a7d85c8](https://github.com/codeneos/vlocode/commit/a7d85c874d30766edb131a8ffe94bd532c6533fb))
+
 * correct typo in tsconfig include path for webpack ([61b0f6b](https://github.com/codeneos/vlocode/commit/61b0f6b7e52f580fc6d0d3cff4cbaa325331e664))
+
+* do not print object label lists or describe details when not in verbose mode ([a1226b4](https://github.com/codeneos/vlocode/commit/a1226b45c9237b24163b8f7e3a14cc33d785f387))
+
+* improve type definition for ArrayElement to allow non-readonly arrays ([d317530](https://github.com/codeneos/vlocode/commit/d317530eae772373f417429885d0599503c7e18c))
+
+* make getPackageMetadata backward compatible to resolve build errors ([150489d](https://github.com/codeneos/vlocode/commit/150489db2f10fdee09b4752017c7c6fb23c67ba9))
+
+* update test cases to use getPackage() instead of build() for file retrieval ([182e0b9](https://github.com/codeneos/vlocode/commit/182e0b9c393665f510101c7cc8b6297f1345b454))
 
 ### Features
 
+* add new profile manipulation service which can persist profiles changes as delta ([7334499](https://github.com/codeneos/vlocode/commit/7334499fd30bcb6deba25d872c400207d0974bde))
+
+* automatically add missing record type assignments during deployment ([627b2b2](https://github.com/codeneos/vlocode/commit/627b2b2f95b926b6afb0b660cb03995480a4a654))
+
 * refactor logging to output channel to avoid issues with line breaks ([6e085fe](https://github.com/codeneos/vlocode/commit/6e085fe1d0b69b64e7003df046aeef2d2ba2ee55))
+
+* support for specific error handling in datapack specs ([67e2423](https://github.com/codeneos/vlocode/commit/67e2423a965b5257b454caecccab06b82ff1faa9))
 
 * support token replacement after adding files to a package ([53d9f7a](https://github.com/codeneos/vlocode/commit/53d9f7a078ff0a4fe48a0953c62673b34f201f46))
 
 ## [1.29.5](https://github.com/codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* typo in CLI webpack build ([910fb70](https://github.com/codeneos/vlocode/commit/910fb70402d84bbb4743ead2dd90616e4fe56993))
 
 ## [1.29.4](https://github.com/codeneos/vlocode/compare/v1.29.3...v1.29.4) (2025-05-26)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* JSON files missing in NPM packages ([5f61f62](https://github.com/codeneos/vlocode/commit/5f61f62d42e4d473f2eabfafdaced5748eb9afc6))
 
 ## [1.29.3](https://github.com/codeneos/vlocode/compare/v1.29.2...v1.29.3) (2025-05-26)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* revert ESM changes with ESBuild as ESBuild does not emit proper decorator data for use IoC framework ([a80f136](https://github.com/codeneos/vlocode/commit/a80f13675e0fcb7e90bcccbfaedb089aeda07930))
 
 ## [1.29.2](https://github.com/codeneos/vlocode/compare/v1.29.1...v1.29.2) (2025-05-26)
 
-**Note:** Version bump only for package vlocode
+**Note:** Version bump only for package vlocode-project
+
+## [1.29.1](https://github.com/codeneos/vlocode/compare/v1.29.0...v1.29.1) (2025-05-26)
+
+**Note:** Version bump only for package vlocode-project
 
 # [1.29.0](https://github.com/codeneos/vlocode/compare/v1.28.2...v1.29.0) (2025-05-25)
+
+### Bug Fixes
+
+* CLI builds using tsc instead of webpack causing build error ([ef613b3](https://github.com/codeneos/vlocode/commit/ef613b3a5f652cf453a0338040d1565d80f1c1ed))
 
 ### Features
 
@@ -290,11 +496,17 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [1.28.2](https://github.com/codeneos/vlocode/compare/v1.28.1...v1.28.2) (2025-05-22)
 
-**Note:** Version bump only for package vlocode
+### Features
+
+* enhance XML string conversion options and deprecate global settings ([ac4d957](https://github.com/codeneos/vlocode/commit/ac4d9574a9470dc7130ce5946b60168d2bb17a4b))
 
 ## [1.28.1](https://github.com/codeneos/vlocode/compare/v1.28.0...v1.28.1) (2025-05-21)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* update pnpm version in workflow and use frozen lockfile for dependency installation ([23a124e](https://github.com/codeneos/vlocode/commit/23a124ebeadde410da7d414e4a30fa5421c0d6bb))
+
+* upgrade build images and pnpm to resolve corepack error ([cf99049](https://github.com/codeneos/vlocode/commit/cf990495df5e7eb8c5f8d9326c9244770036d8cc))
 
 # [1.28.0](https://github.com/codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
 

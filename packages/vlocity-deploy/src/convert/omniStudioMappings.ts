@@ -134,6 +134,7 @@ export const DataRaptorMapping: ObjectMapping = {
         "GlobalKey": "%vlocity_namespace%__GlobalKey__c",
         "InputParsingClass": "%vlocity_namespace%__CustomInputClass__c",
         "InputType": "%vlocity_namespace%__InputType__c",
+        "IsActive": "%vlocity_namespace%__IsActive__c",
         "IsAssignmentRulesUsed": "%vlocity_namespace%__UseAssignmentRules__c",
         "IsDeletedOnSuccess": "%vlocity_namespace%__DeleteOnSuccess__c",
         "IsErrorIgnored": "%vlocity_namespace%__IgnoreErrors__c",

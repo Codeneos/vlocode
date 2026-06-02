@@ -64,5 +64,5 @@
         <div class="dm-flow__end" aria-hidden="true"></div>
     </section>
 } @else {
-    <dm-empty-state title="No formulas" message="This DataMapper does not define formula rows." [page]="true" actionLabel="Add Formula" (action)="createFormulaRequested.emit()" />
+    <vlocode-empty-state title="No formulas" message="This DataMapper does not define formula rows." [page]="true" actionLabel="Add Formula" actionIcon="add" (action)="createFormulaRequested.emit()" />
 }

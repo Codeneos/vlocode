@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
+import { VlocodeEmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
+
 declare const acquireVsCodeApi: undefined | (() => VsCodeApi);
 
 type PathSegment = string | number;
@@ -149,39 +151,28 @@ const SUMMARY_FIELD_PRIORITY = [
 @Component({
     selector: 'vlocode-datapack-editor',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, VlocodeEmptyStateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (!hasLoaded() && error(); as message) {
             <main class="dp-shell dp-shell--center">
-                <section class="dp-empty" role="alert">
-                    <span class="codicon codicon-warning dp-empty__icon" aria-hidden="true"></span>
-                    <h1>Unable to open datapack</h1>
-                    <p>{{ message }}</p>
-                    <button type="button" class="dp-button dp-button--primary" (click)="requestReload()">
-                        <span class="codicon codicon-refresh" aria-hidden="true"></span>
-                        Retry
-                    </button>
-                </section>
+                <vlocode-empty-state title="Unable to open datapack" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
             </main>
         } @else if (notFound(); as missing) {
             <main class="dp-shell">
                 <ng-container [ngTemplateOutlet]="recordHeader" />
-                <section class="dp-empty dp-empty--body" role="status">
-                    <span class="codicon codicon-search dp-empty__icon" aria-hidden="true"></span>
-                    <h1>{{ missing.title }}</h1>
-                    <p>{{ missing.message }}</p>
-                    <div class="dp-empty__actions">
-                        <button type="button" class="dp-button" (click)="clearMissingReference()">
+                <vlocode-empty-state [title]="missing.title" icon="search" [message]="missing.message" role="status" [page]="true">
+                    <div class="vlocode-empty-state__actions">
+                        <button type="button" class="vlocode-button" (click)="clearMissingReference()">
                             <span class="codicon codicon-arrow-left" aria-hidden="true"></span>
                             Back
                         </button>
-                        <button type="button" class="dp-button dp-button--primary" (click)="exportMissingReference(missing.reference)">
+                        <button type="button" class="vlocode-button vlocode-button--primary" (click)="exportMissingReference(missing.reference)">
                             <span class="codicon codicon-cloud-download" aria-hidden="true"></span>
                             Export
                         </button>
                     </div>
-                </section>
+                </vlocode-empty-state>
             </main>
         } @else {
             <main class="dp-shell">
@@ -293,11 +284,7 @@ const SUMMARY_FIELD_PRIORITY = [
                                         }
                                     </div>
                                 } @else {
-                                    <section class="dp-empty dp-empty--inline">
-                                        <span class="codicon codicon-filter" aria-hidden="true"></span>
-                                        <h2>No matching fields</h2>
-                                        <p>Clear the filter to show the datapack fields.</p>
-                                    </section>
+                                    <vlocode-empty-state title="No matching fields" icon="filter" message="Clear the filter to show the datapack fields." [inline]="true" />
                                 }
                             </section>
                         }
@@ -363,11 +350,7 @@ const SUMMARY_FIELD_PRIORITY = [
                                         </article>
                                     }
                                 } @else {
-                                    <section class="dp-empty dp-empty--inline">
-                                        <span class="codicon codicon-symbol-array" aria-hidden="true"></span>
-                                        <h2>No related objects</h2>
-                                        <p>This datapack section does not contain embedded object arrays.</p>
-                                    </section>
+                                    <vlocode-empty-state title="No related objects" icon="symbol-array" message="This datapack section does not contain embedded object arrays." [inline]="true" />
                                 }
                             </section>
                         }
@@ -397,11 +380,7 @@ const SUMMARY_FIELD_PRIORITY = [
                                         </article>
                                     }
                                 } @else {
-                                    <section class="dp-empty dp-empty--inline">
-                                        <span class="codicon codicon-filter" aria-hidden="true"></span>
-                                        <h2>No matching content</h2>
-                                        <p>Clear the filter to show long text fields.</p>
-                                    </section>
+                                    <vlocode-empty-state title="No matching content" icon="filter" message="Clear the filter to show long text fields." [inline]="true" />
                                 }
                             </section>
                         }

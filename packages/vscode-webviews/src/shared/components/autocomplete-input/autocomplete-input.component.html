@@ -1,0 +1,45 @@
+<div class="dm-combobox">
+    <input
+        type="text"
+        role="combobox"
+        autocomplete="off"
+        [attr.aria-label]="ariaLabel()"
+        [attr.aria-expanded]="open()"
+        [disabled]="disabled()"
+        [placeholder]="placeholder()"
+        [ngModel]="draftValue()"
+        (focus)="openAll()"
+        (blur)="closeSoon()"
+        (keydown)="handleKeydown($event)"
+        (ngModelChange)="updateValue($event)">
+    <button
+        type="button"
+        class="dm-combobox__toggle"
+        tabindex="-1"
+        [disabled]="disabled()"
+        [attr.aria-label]="ariaLabel() ? 'Show ' + ariaLabel() + ' suggestions' : 'Show suggestions'"
+        (mousedown)="$event.preventDefault(); openAll()">
+        <span class="codicon codicon-chevron-down" aria-hidden="true"></span>
+    </button>
+
+    @if (open() && filteredSuggestions().length) {
+        <ul
+            class="dm-combobox__list"
+            role="listbox"
+            [style.top.px]="listTop()"
+            [style.left.px]="listLeft()"
+            [style.width.px]="listWidth()"
+            [style.max-height.px]="listMaxHeight()">
+            @for (suggestion of filteredSuggestions(); track suggestion.value) {
+                <li role="option">
+                    <button type="button" class="dm-combobox__option" (mousedown)="$event.preventDefault(); selectValue(suggestion.value)">
+                        <span>{{ suggestion.label }}</span>
+                        @if (suggestion.detail) {
+                            <small>{{ suggestion.detail }}</small>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>

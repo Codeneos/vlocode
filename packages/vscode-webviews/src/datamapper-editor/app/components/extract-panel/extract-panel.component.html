@@ -118,5 +118,5 @@
         <div class="dm-flow__end" aria-hidden="true"></div>
     </section>
 } @else {
-    <dm-empty-state title="No extract objects" message="No extraction rows are configured." actionLabel="Add Extraction" [page]="true" (action)="createExtractionRequested.emit()" />
+    <vlocode-empty-state title="No extract objects" message="No extraction rows are configured." actionLabel="Add Extraction" actionIcon="add" [page]="true" (action)="createExtractionRequested.emit()" />
 }

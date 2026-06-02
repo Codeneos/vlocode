@@ -702,56 +702,6 @@ select.dp-input[multiple] {
     }
 }
 
-.dp-empty {
-    display: grid;
-    justify-items: center;
-    max-width: min(520px, 100%);
-    gap: 10px;
-    padding: 24px;
-    text-align: center;
-
-    &--body {
-        margin: 52px auto;
-    }
-
-    &--inline {
-        margin: 18px auto;
-        color: $desc;
-    }
-
-    &__icon.codicon[class*='codicon-'] {
-        @include centered-codicon(34px);
-        color: $desc;
-    }
-
-    h1,
-    h2,
-    p {
-        margin: 0;
-    }
-
-    h1,
-    h2 {
-        color: var(--vscode-foreground);
-        font-size: 17px;
-        font-weight: 700;
-        letter-spacing: 0;
-    }
-
-    p {
-        color: $desc;
-        line-height: 1.45;
-    }
-
-    &__actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 6px;
-    }
-}
-
 .dp-banner {
     display: flex;
     align-items: center;

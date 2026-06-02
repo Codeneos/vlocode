@@ -71,6 +71,40 @@ describe('metadataConverter', () => {
         expect(converted.OmniDataTransformItem[0].OutputFieldName).toBe('account:name');
     });
 
+    it('should convert managed DataRaptor datapacks to standard metadata XML', () => {
+        // arrange
+        const datapack = new VlocityDatapack('DataRaptor', {
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: '%vlocity_namespace%__DRBundle__c',
+            VlocityRecordSourceKey: '%vlocity_namespace%__DRBundle__c/ManagedMapper',
+            Name: 'ManagedMapper',
+            '%vlocity_namespace%__Type__c': 'Extract',
+            '%vlocity_namespace%__IsActive__c': true,
+            '%vlocity_namespace%__DRMapItem__c': [{
+                VlocityDataPackType: 'SObject',
+                VlocityRecordSObjectType: '%vlocity_namespace%__DRMapItem__c',
+                VlocityRecordSourceKey: '%vlocity_namespace%__DRMapItem__c/ManagedMapper/item-1',
+                '%vlocity_namespace%__GlobalKey__c': 'item-1',
+                '%vlocity_namespace%__InterfaceFieldAPIName__c': 'Account:Name',
+                '%vlocity_namespace%__DomainObjectFieldAPIName__c': 'account:name'
+            }]
+        });
+
+        // test
+        const xml = converter.datapackToMetadataXml(datapack);
+        const converted = XML.parse<Record<string, any>>(xml, {
+            arrayMode: path => path.endsWith('omniDataTransformItem')
+        }).OmniDataTransform;
+
+        // assert
+        expect(converted.name).toBe('ManagedMapper');
+        expect(converted.type).toBe('Extract');
+        expect(converted.active).toBe(true);
+        expect(converted.omniDataTransformItem[0].inputFieldName).toBe('Account:Name');
+        expect(xml).not.toContain('VlocityRecordSObjectType');
+        expect(xml).not.toContain('%vlocity_namespace%__');
+    });
+
     it('should produce DataMapper XML conversions that can be executed', async () => {
         // arrange
         const xml = `<?xml version="1.0" encoding="UTF-8"?>

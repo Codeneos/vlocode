@@ -1,16 +1,16 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-input.component';
 import { DataMapperCardComponent } from '../data-mapper-card/data-mapper-card.component';
-import { EmptyStateComponent } from '../empty-state/empty-state.component';
-import { FormulaEditorComponent } from '../formula-editor/formula-editor.component';
+import { AutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeEmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { FormulaEditorComponent } from '../../../../shared/components/formula-editor/formula-editor.component';
 import type { DataMapperItem, FieldSuggestion } from '../../models/datamapper.model';
 
 @Component({
     selector: 'dm-formula-panel',
     standalone: true,
-    imports: [AutocompleteInputComponent, DataMapperCardComponent, EmptyStateComponent, FormulaEditorComponent, FormsModule],
+    imports: [AutocompleteInputComponent, DataMapperCardComponent, FormulaEditorComponent, FormsModule, VlocodeEmptyStateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './formula-panel.component.html'
 })

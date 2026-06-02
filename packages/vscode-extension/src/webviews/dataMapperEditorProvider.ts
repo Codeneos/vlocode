@@ -3,7 +3,7 @@ import path from 'path';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
-import { getErrorMessage, isRecord } from '@vlocode/util';
+import { deepClone, getErrorMessage, isRecord } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
 import { DataMapperExecutor, DatapackInfoService, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition } from '@vlocode/vlocity';
 import { MetadataConverter } from '@vlocode/vlocity-deploy';
@@ -200,7 +200,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private getDataMapperKind(model: DataMapperModel) {
-        const type = String(model.header.Type ?? model.header.type ?? '').toLowerCase();
+        const type = String(model.header.Type ?? '').toLowerCase();
         if (type.includes('load')) {
             return 'load';
         }
@@ -385,13 +385,14 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private createModel(datapack: VlocityDatapack, sourceFormat: 'json' | 'xml'): DataMapperModel {
+        const record = datapack as unknown as Record<string, unknown>;
         const header = { ...datapack.data };
         delete header.OmniDataTransformItem;
         return {
             header,
-            items: this.dataMapperItems(datapack.data.OmniDataTransformItem),
+            items: this.dataMapperItems(record.OmniDataTransformItem),
             sourceFormat,
-            title: String(datapack.data.Name ?? path.basename(datapack.headerFile ?? 'DataMapper', '_DataPack.json'))
+            title: String(record.Name ?? path.basename(datapack.headerFile ?? 'DataMapper', '_DataPack.json'))
         };
     }
 
@@ -439,10 +440,17 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private dataMapperItems(value: unknown): DataMapperItem[] {
-        const items = value === undefined ? [] : Array.isArray(value) ? value : [value];
+        const items: unknown[] = [];
+        if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i++) {
+                items.push(value[i]);
+            }
+        } else if (value !== undefined) {
+            items.push(value);
+        }
         return items
             .filter((item): item is Record<string, unknown> => isRecord(item))
-            .map(item => item as DataMapperItem);
+            .map(item => deepClone(item) as DataMapperItem);
     }
 
     private mergeItem(target: unknown, source: DataMapperItem): DataMapperItem {

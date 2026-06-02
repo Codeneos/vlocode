@@ -16,7 +16,7 @@
                 <h3>Input</h3>
                 <span>JSON</span>
             </header>
-            <dm-json-editor
+            <vlocode-json-editor
                 [value]="inputJson()"
                 ariaLabel="Input JSON"
                 (valueChange)="inputJsonChange.emit($event)" />
@@ -31,7 +31,7 @@
                     <h3>Output</h3>
                     <span>JSON</span>
                 </header>
-                <dm-json-editor
+                <vlocode-json-editor
                     [value]="outputJson()"
                     [readOnly]="true"
                     ariaLabel="Output JSON" />

@@ -46,8 +46,8 @@ button, input, select, textarea { font: inherit; }
     }
 }
 
-.dm-header h1, .dm-panel h2, .dm-card h2, .dm-dialog h2, .dm-empty h1, .dm-empty h2 { @include heading; }
-.dm-header p, .dm-panel p, .dm-card p, .dm-empty p { @include copy; }
+.dm-header h1, .dm-panel h2, .dm-card h2, .dm-dialog h2 { @include heading; }
+.dm-header p, .dm-panel p, .dm-card p { @include copy; }
 .dm-header h1 { @include editor-header-title; }
 .dm-header p { @include editor-header-subtitle; }
 
@@ -185,7 +185,7 @@ dm-data-mapper-card {
     .dm-search { justify-self: end; min-width: min(360px, 100%); }
 }
 
-.dm-search input, .dm-field > input, .dm-field > select, .dm-field > textarea, .dm-combobox input, .dm-table select, .dm-filter-row__joiner select {
+.dm-search input, .dm-field > input, .dm-field > select, .dm-field > textarea, .dm-table select, .dm-filter-row__joiner select {
     @include control;
 }
 
@@ -206,21 +206,6 @@ dm-monaco-editor,
 
 .dm-monaco-editor {
     overflow: hidden;
-}
-
-.dm-combobox {
-    position: relative;
-    &__list {
-        position: absolute; z-index: 1000; overflow: auto;
-        margin: 0; padding: 2px 0; border: 1px solid color-mix(in srgb, var(--vscode-widget-border, #{$input-border}) 70%, transparent); border-radius: $radius-control;
-        color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); box-shadow: $shadow-popover; list-style: none;
-    }
-    &__option {
-        display: grid; width: 100%; border: 0; border-radius: 0; padding: 6px 10px; color: inherit; background: transparent; text-align: left;
-        &:hover, &:focus { color: var(--vscode-list-hoverForeground); background: var(--vscode-list-hoverBackground); outline: none; }
-        span { @include truncate; }
-        small { color: $desc; }
-    }
 }
 
 .dm-table {
@@ -303,14 +288,6 @@ dm-monaco-editor,
     &__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) max-content; align-items: end; gap: 10px; }
 }
 .dm-muted { margin: 0; color: $desc; }
-.dm-empty {
-    display: grid; justify-items: center; gap: 8px;
-    padding: 36px 24px; border: 1px solid $panel; border-radius: $radius-surface; background: $surface-alt; text-align: center;
-    p { max-width: 520px; margin: 0; }
-    .dm-button { margin-top: 4px; }
-    &--page { width: min(680px, calc(100% - 32px)); margin: 72px auto; }
-}
-
 .dm-preview {
     display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px;
     width: min(1480px, calc(100% - 24px)); height: calc(100vh - 136px); min-height: 560px; margin: 18px auto 24px;
@@ -334,7 +311,7 @@ dm-monaco-editor,
         h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; }
         span { color: $desc; font-size: 12px; }
     }
-    dm-json-editor, dm-formula-editor, dm-monaco-editor, .dm-monaco-editor {
+    vlocode-json-editor, dm-formula-editor, dm-monaco-editor, .dm-monaco-editor {
         display: block; overflow: hidden; width: 100%; height: 100%; min-height: 0;
         background: var(--vscode-editor-background);
     }

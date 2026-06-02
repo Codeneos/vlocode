@@ -9,7 +9,7 @@ const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
 };
 
 @Component({
-    selector: 'dm-json-editor',
+    selector: 'vlocode-json-editor',
     standalone: true,
     imports: [MonacoEditorComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,15 +20,16 @@ const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
             [readOnly]="readOnly()"
             [ariaLabel]="ariaLabel()"
             [options]="jsonEditorOptions"
-            markerOwner="dm-json-editor"
+            markerOwner="vlocode-json-editor"
             (valueChange)="valueChange.emit($event)" />
     `
 })
-export class JsonEditorComponent {
+export class VlocodeJsonEditorComponent {
     protected readonly jsonEditorOptions = jsonEditorOptions;
-    readonly value = input('');
-    readonly readOnly = input(false);
+
     readonly ariaLabel = input('JSON editor');
+    readonly readOnly = input(false);
+    readonly value = input('');
 
     readonly valueChange = output<string>();
 }

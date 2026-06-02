@@ -1,6 +1,6 @@
 @if (!hasLoaded() && error(); as message) {
     <main class="dm-shell dm-shell--center">
-        <dm-empty-state title="Unable to open DataMapper" [message]="message" role="alert" actionLabel="Retry" (action)="requestReload()" />
+        <vlocode-empty-state title="Unable to open DataMapper" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
     </main>
 } @else {
     <main class="dm-shell">

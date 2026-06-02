@@ -1,14 +1,6 @@
 @if (!hasLoaded() && error(); as message) {
     <main class="ip-shell ip-shell--center">
-        <section class="ip-empty" role="alert">
-            <span class="codicon codicon-warning ip-empty__icon" aria-hidden="true"></span>
-            <h1>Unable to open Integration Procedure</h1>
-            <p>{{ message }}</p>
-            <button type="button" class="ip-button ip-button--primary" (click)="requestReload()">
-                <span class="codicon codicon-refresh" aria-hidden="true"></span>
-                Retry
-            </button>
-        </section>
+        <vlocode-empty-state title="Unable to open Integration Procedure" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
     </main>
 } @else {
     <main class="ip-shell">
@@ -65,34 +57,65 @@
             </section>
         }
 
-        @if (pendingDeleteElement(); as pendingDelete) {
-            <div class="ip-dialog-backdrop" role="presentation" (click)="cancelDelete()"></div>
-            <section class="ip-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-node-title" (click)="$event.stopPropagation()">
+        @if (pendingDeleteElement()) {
+            <vlocode-dialog
+                type="danger"
+                title="Confirm delete"
+                [message]="pendingDeleteMessage()"
+                confirmLabel="Delete"
+                (cancel)="cancelDelete()"
+                (confirm)="deletePendingElement()" />
+        }
+
+        @if (mapEntryEditor(); as editor) {
+            <div class="ip-dialog-backdrop" role="presentation" (click)="cancelMapEntryEditor()"></div>
+            <section class="ip-dialog ip-dialog--formula" role="dialog" aria-modal="true" aria-labelledby="map-entry-editor-title" (click)="$event.stopPropagation()">
                 <header>
-                    <span class="ip-dialog__icon codicon codicon-trash" aria-hidden="true"></span>
                     <div>
-                        <h2 id="delete-node-title">Confirm delete</h2>
-                        <p>
-                            @if (pendingDeleteChildCount()) {
-                                Delete this node and {{ pendingDeleteChildCount() }} child {{ pendingDeleteChildCount() === 1 ? 'node' : 'nodes' }}?
-                            } @else {
-                                Delete this node?
-                            }
-                        </p>
+                        <h2 id="map-entry-editor-title">Formula Editor</h2>
+                        <p>{{ editor.title }}</p>
                     </div>
+                    <button type="button" class="ip-icon-button" title="Close" aria-label="Close formula editor" (click)="cancelMapEntryEditor()">
+                        <span class="codicon codicon-close" aria-hidden="true"></span>
+                    </button>
                 </header>
+                <div class="ip-dialog__body">
+                    <label class="ip-field">
+                        <span>Key</span>
+                        <input [value]="editor.key" (input)="updateMapEntryEditorKey($event)" />
+                    </label>
+                    <div class="ip-field ip-formula-dialog__formula">
+                        <span>Value</span>
+                        <dm-formula-editor
+                            [value]="editor.value"
+                            ariaLabel="Map entry value formula"
+                            (valueChange)="updateMapEntryEditorValue($event)" />
+                    </div>
+                    @if (mapEntryEditorError(); as editorError) {
+                        <div class="ip-inline-error">{{ editorError }}</div>
+                    }
+                </div>
                 <footer>
-                    <button type="button" class="ip-button" (click)="cancelDelete()">Cancel</button>
-                    <button type="button" class="ip-button ip-button--danger" (click)="deletePendingElement()">
-                        <span class="codicon codicon-trash" aria-hidden="true"></span>
-                        Delete
+                    <button type="button" class="ip-button" (click)="cancelMapEntryEditor()">Cancel</button>
+                    <button type="button" class="ip-button ip-button--primary" (click)="applyMapEntryEditor()">
+                        <span class="codicon codicon-check" aria-hidden="true"></span>
+                        Apply
                     </button>
                 </footer>
             </section>
         }
 
-        <section class="ip-workbench">
-            <aside class="ip-rail" aria-label="Procedure navigation">
+        <section
+            class="ip-workbench"
+            [class.ip-workbench--rail-collapsed]="navigationCollapsed()"
+            [class.ip-workbench--inspector-collapsed]="inspectorCollapsed()"
+            [style.--ip-inspector-width]="inspectorWidth()">
+            <aside class="ip-rail" [class.ip-rail--collapsed]="navigationCollapsed()" aria-label="Procedure navigation">
+                @if (navigationCollapsed()) {
+                    <button type="button" class="ip-sidebar-toggle" title="Expand navigation" aria-label="Expand navigation" (click)="toggleNavigationSidebar()">
+                        <span class="codicon codicon-chevron-right" aria-hidden="true"></span>
+                    </button>
+                } @else {
                 <nav class="ip-segments" role="tablist" aria-label="Left panel">
                     <button type="button" role="tab" [attr.aria-selected]="leftTab() === 'outline'" [class.ip-segments__item--active]="leftTab() === 'outline'" class="ip-segments__item" (click)="leftTab.set('outline')">
                         <span class="codicon codicon-list-tree" aria-hidden="true"></span>
@@ -108,6 +131,9 @@
                         @if (problems().length) {
                             <span class="ip-count">{{ problems().length }}</span>
                         }
+                    </button>
+                    <button type="button" class="ip-sidebar-toggle ip-sidebar-toggle--inline" title="Collapse navigation" aria-label="Collapse navigation" (click)="toggleNavigationSidebar()">
+                        <span class="codicon codicon-chevron-left" aria-hidden="true"></span>
                     </button>
                 </nav>
 
@@ -197,6 +223,7 @@
                         }
                     }
                 </section>
+                }
             </aside>
 
             <section class="ip-canvas" aria-label="Integration Procedure flow">
@@ -225,7 +252,21 @@
                 </div>
             </section>
 
-            <aside class="ip-inspector" aria-label="Properties inspector">
+            <aside class="ip-inspector" [class.ip-inspector--collapsed]="inspectorCollapsed()" aria-label="Properties inspector">
+                @if (inspectorCollapsed()) {
+                    <button type="button" class="ip-sidebar-toggle" title="Expand details panel" aria-label="Expand details panel" (click)="toggleInspector()">
+                        <span class="codicon codicon-chevron-left" aria-hidden="true"></span>
+                    </button>
+                } @else {
+                <div
+                    class="ip-inspector__resize"
+                    role="separator"
+                    tabindex="0"
+                    aria-label="Resize details panel"
+                    aria-orientation="vertical"
+                    (pointerdown)="startInspectorResize($event)"
+                    (keydown)="resizeInspectorWithKeyboard($event)">
+                </div>
                 <header class="ip-inspector__header">
                     <div class="ip-inspector__heading">
                         <span class="ip-inspector__glyph">
@@ -242,16 +283,19 @@
                             </p>
                         </div>
                     </div>
-                    @if (selectedElement(); as selected) {
-                        <div class="ip-inspector__actions">
+                    <div class="ip-inspector__actions">
+                        <button type="button" class="ip-icon-button" title="Collapse details panel" aria-label="Collapse details panel" (click)="toggleInspector()">
+                            <span class="codicon codicon-chevron-right" aria-hidden="true"></span>
+                        </button>
+                        @if (selectedElement(); as selected) {
                             <button type="button" class="ip-icon-button" title="Duplicate" (click)="duplicateElement(selected.key)">
                                 <span class="codicon codicon-copy" aria-hidden="true"></span>
                             </button>
                             <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="confirmDeleteElement(selected.key)">
                                 <span class="codicon codicon-trash" aria-hidden="true"></span>
                             </button>
-                        </div>
-                    }
+                        }
+                    </div>
                 </header>
 
                 <nav class="ip-tabs" aria-label="Inspector tabs">
@@ -281,7 +325,12 @@
                                 @if (selected.type === 'Remote Action') {
                                     <label class="ip-field">
                                         <span>Remote Class</span>
-                                        <input [value]="propertyValue('remoteClass')" (input)="updateElementProperty('remoteClass', $event)" />
+                                        <dm-autocomplete-input
+                                            [value]="propertyValue('remoteClass')"
+                                            [suggestions]="apexClassOptions()"
+                                            [commitOnInput]="false"
+                                            ariaLabel="Remote class"
+                                            (valueChange)="updateElementPropertyValue('remoteClass', $event)" />
                                     </label>
                                     <label class="ip-field">
                                         <span>Remote Method</span>
@@ -291,12 +340,12 @@
                                 } @else if (isDataMapperAction(selected.type)) {
                                     <label class="ip-field">
                                         <span>Data Mapper Name</span>
-                                        <input list="ip-data-mapper-options" [value]="propertyValue('bundle')" (input)="updateElementProperty('bundle', $event)" />
-                                        <datalist id="ip-data-mapper-options">
-                                            @for (dataMapper of dataMapperOptions(); track dataMapper) {
-                                                <option [value]="dataMapper"></option>
-                                            }
-                                        </datalist>
+                                        <dm-autocomplete-input
+                                            [value]="propertyValue('bundle')"
+                                            [suggestions]="dataMapperOptions()"
+                                            [commitOnInput]="false"
+                                            ariaLabel="Data Mapper name"
+                                            (valueChange)="updateElementPropertyValue('bundle', $event)" />
                                     </label>
                                     <label class="ip-switch">
                                         <input type="checkbox" [checked]="propertyChecked('ignoreCache')" (change)="updateElementProperty('ignoreCache', $event)" />
@@ -404,7 +453,7 @@
                             }
                         }
                         @case ('io') {
-                            <div class="ip-field-grid">
+                            <div class="ip-field-grid ip-field-grid--io">
                                 <label class="ip-field">
                                     <span>Send JSON Path</span>
                                     <input [value]="propertyValue('sendJSONPath')" (input)="updateElementProperty('sendJSONPath', $event)" />
@@ -465,6 +514,7 @@
                         }
                     }
                 </section>
+                }
             </aside>
         </section>
     </main>
@@ -626,7 +676,10 @@
             @for (entry of mapEntries(name); track entry.key) {
                 <div class="ip-map__row">
                     <input aria-label="Key" [value]="entry.key" (input)="updateMapEntry(name, entry.key, $event, 'key')" />
-                    <input aria-label="Value" [value]="entry.value" (input)="updateMapEntry(name, entry.key, $event, 'value')" />
+                    <span class="ip-map__value">
+                        <input aria-label="Value" [value]="entry.value" (input)="updateMapEntry(name, entry.key, $event, 'value')" />
+                        <button type="button" class="ip-map__formula-button" title="Open formula editor" aria-label="Open formula editor for {{ entry.key }}" (click)="openMapEntryEditor(name, entry.key, title)">fx</button>
+                    </span>
                     <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete row" (click)="deleteMapEntry(name, entry.key)">
                         <span class="codicon codicon-trash" aria-hidden="true"></span>
                     </button>

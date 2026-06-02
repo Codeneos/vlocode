@@ -77,5 +77,5 @@
         <div class="dm-flow__end" aria-hidden="true"></div>
     </section>
 } @else {
-    <dm-empty-state title="No load objects" message="No objects are configured for this load mapper." actionLabel="Add Object" [page]="true" (action)="createObjectRequested.emit()" />
+    <vlocode-empty-state title="No load objects" message="No objects are configured for this load mapper." actionLabel="Add Object" actionIcon="add" [page]="true" (action)="createObjectRequested.emit()" />
 }

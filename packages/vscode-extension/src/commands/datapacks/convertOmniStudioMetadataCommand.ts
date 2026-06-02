@@ -125,10 +125,11 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
 
     private async convertDatapackToMetadata(file: vscode.Uri): Promise<ConversionResult> {
         const datapack = await this.datapackLoader.loadDatapack(file.fsPath);
-        this.assertSupportedDatapack(datapack);
+        const metadataDatapack = this.metadataConverter.toMetadataDatapack(datapack);
+        this.assertSupportedDatapack(metadataDatapack);
 
-        const xml = this.metadataConverter.datapackToMetadataXml(datapack);
-        const outputFile = await this.getMetadataOutputFile(file, datapack);
+        const xml = this.metadataConverter.datapackToMetadataXml(metadataDatapack);
+        const outputFile = await this.getMetadataOutputFile(file, metadataDatapack);
         await fs.outputFile(outputFile, xml.endsWith('\n') ? xml : `${xml}\n`);
 
         return {

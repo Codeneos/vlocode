@@ -169,6 +169,295 @@ $quick: 120ms ease;
     }
 }
 
+.vlocode-button {
+    @include button;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 3px 9px;
+    white-space: nowrap;
+
+    .codicon[class*='codicon-'] {
+        @include centered-codicon(16px);
+    }
+
+    &--primary {
+        color: var(--vscode-button-foreground);
+        background: var(--vscode-button-background);
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-button-foreground);
+            background: var(--vscode-button-hoverBackground);
+        }
+    }
+
+    &--danger {
+        --vlocode-confirm-accent: var(--vscode-errorForeground);
+    }
+
+    &--info {
+        --vlocode-confirm-accent: var(--vscode-notificationsInfoIcon-foreground, var(--vscode-textLink-foreground));
+    }
+
+    &--success {
+        --vlocode-confirm-accent: var(--vscode-testing-iconPassed, var(--vscode-textLink-foreground));
+    }
+
+    &--warning {
+        --vlocode-confirm-accent: var(--vscode-notificationsWarningIcon-foreground, var(--vscode-editorWarning-foreground));
+    }
+
+    &--danger,
+    &--info,
+    &--success,
+    &--warning {
+        color: var(--vscode-button-foreground);
+        border-color: color-mix(in srgb, var(--vlocode-confirm-accent) 42%, var(--vlocode-button-border));
+        background: color-mix(in srgb, var(--vlocode-confirm-accent) 34%, var(--vscode-button-background));
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-button-foreground);
+            background: color-mix(in srgb, var(--vlocode-confirm-accent) 50%, var(--vscode-button-hoverBackground));
+        }
+    }
+}
+
+.vlocode-empty-state {
+    display: grid;
+    justify-items: center;
+    max-width: min(560px, 100%);
+    gap: 10px;
+    padding: 24px;
+    color: var(--vscode-foreground);
+    text-align: center;
+
+    &--page {
+        width: min(680px, calc(100% - 32px));
+        margin: 72px auto;
+        border: 1px solid $panel;
+        border-radius: $radius-surface;
+        background: $surface-alt;
+    }
+
+    &--inline {
+        margin: 18px auto;
+        color: $desc;
+    }
+
+    &__icon.codicon[class*='codicon-'] {
+        @include centered-codicon(30px);
+        color: $desc;
+    }
+
+    h2,
+    p {
+        margin: 0;
+    }
+
+    h2 {
+        @include heading;
+    }
+
+    p {
+        @include copy;
+        max-width: 520px;
+        line-height: 1.45;
+    }
+
+    .vlocode-button,
+    &__actions {
+        margin-top: 4px;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+}
+
+.vlocode-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: color-mix(in srgb, #{$editor} 22%, transparent);
+    backdrop-filter: blur(7px) saturate(0.82);
+}
+
+.vlocode-dialog {
+    --vlocode-dialog-accent: var(--vscode-notificationsInfoIcon-foreground, var(--vscode-textLink-foreground));
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 2001;
+    display: grid;
+    gap: 18px;
+    width: min(420px, calc(100vw - 32px));
+    border: 1px solid $panel-strong;
+    border-radius: $radius-surface;
+    padding: 18px;
+    color: var(--vscode-foreground);
+    background: $surface;
+    box-shadow: $shadow-popover;
+    transform: translate(-50%, -50%);
+
+    &--danger {
+        --vlocode-dialog-accent: var(--vscode-errorForeground);
+    }
+
+    &--success {
+        --vlocode-dialog-accent: var(--vscode-testing-iconPassed, var(--vscode-textLink-foreground));
+    }
+
+    &--warning {
+        --vlocode-dialog-accent: var(--vscode-notificationsWarningIcon-foreground, var(--vscode-editorWarning-foreground));
+    }
+
+    &__header {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        align-items: start;
+        gap: 12px;
+    }
+
+    &__icon {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: $radius-control;
+        color: var(--vlocode-dialog-accent);
+        background: color-mix(in srgb, var(--vlocode-dialog-accent) 12%, #{$surface});
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vlocode-dialog-accent) 20%, transparent);
+
+        .codicon[class*='codicon-'] {
+            @include centered-codicon(17px);
+        }
+    }
+
+    &__copy {
+        min-width: 0;
+    }
+
+    h2,
+    p {
+        margin: 0;
+    }
+
+    h2 {
+        @include truncate;
+        font-size: 15px;
+        letter-spacing: 0;
+    }
+
+    p {
+        margin-top: 5px;
+        color: $desc;
+    }
+
+    &__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+}
+
+dm-autocomplete-input,
+.dm-combobox {
+    display: block;
+    width: 100%;
+}
+
+.dm-combobox {
+    position: relative;
+
+    input {
+        @include control;
+        padding-right: 34px;
+    }
+
+    &__toggle {
+        appearance: none;
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        min-height: 28px;
+        border: 0;
+        border-left: 1px solid color-mix(in srgb, #{$input-border} 70%, transparent);
+        border-radius: 0 $radius-control $radius-control 0;
+        color: var(--vscode-input-foreground);
+        background: transparent;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-foreground);
+            background: var(--vscode-toolbar-hoverBackground, #{$surface-hover});
+            outline: none;
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .codicon[class*='codicon-'] {
+            @include icon(16px);
+        }
+    }
+
+    &__list {
+        position: absolute;
+        z-index: 1000;
+        overflow: auto;
+        margin: 0;
+        padding: 2px 0;
+        border: 1px solid var(--vscode-editorSuggestWidget-border, var(--vscode-widget-border, #{$input-border}));
+        border-radius: $radius-control;
+        color: var(--vscode-editorSuggestWidget-foreground, var(--vscode-dropdown-foreground));
+        background: var(--vscode-editorSuggestWidget-background, var(--vscode-dropdown-background));
+        box-shadow: $shadow-popover;
+        list-style: none;
+    }
+
+    &__option {
+        display: grid;
+        width: 100%;
+        border: 0;
+        border-radius: 0;
+        padding: 6px 10px;
+        color: inherit;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+
+        &:hover,
+        &:focus {
+            color: var(--vscode-list-hoverForeground);
+            background: var(--vscode-list-hoverBackground);
+            outline: none;
+        }
+
+        span {
+            @include truncate;
+        }
+
+        small {
+            @include truncate;
+            color: $desc;
+        }
+    }
+}
+
 @mixin editor-topbar {
     display: flex;
     align-items: center;
