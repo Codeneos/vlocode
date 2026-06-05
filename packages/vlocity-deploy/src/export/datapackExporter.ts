@@ -126,7 +126,8 @@ export class DatapackExporter {
     public static readonly UNWRITABLE_FIELDS = [
         'Id', 'CreatedById', 'CreatedDate', 'LastModifiedById', 'LastModifiedDate', 'SystemModstamp',
         'IsDeleted', 'LastReferencedDate', 'LastViewedDate', 'LastActivityDate', 'OwnerId', 'SetupOwnerId',
-        'IsCustomerPortal', 'IsPartner'
+        'IsCustomerPortal', 'IsPartner', 'ConnectionReceivedDate', 'ConnectionReceivedId', 'ConnectionSentDate',
+        'ConnectionSentId'
     ];
 
     private readonly autoMatchingKeyFields = [
