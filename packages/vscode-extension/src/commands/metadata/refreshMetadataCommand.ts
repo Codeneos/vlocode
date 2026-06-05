@@ -84,7 +84,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             }
 
             if (componentsNotFound.length > 0) {
-                void vscode.window.showWarningMessage(`Refreshed ${componentsRequested.length - componentsNotFound.length} out of ${componentsNotFound.length} components`);
+                void vscode.window.showWarningMessage(`Refreshed ${componentsRequested.length - componentsNotFound.length} out of ${componentsRequested.length} components`);
             } else {
                 void vscode.window.showInformationMessage(`Refreshed ${progressTitle}`);
             }

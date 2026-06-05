@@ -376,6 +376,16 @@ export class RetrieveResultPackage {
                 const sourceFile = this.file(fileProperties.fileName) || undefined;
                 const metaFile = this.file(`${fileProperties.fileName}-meta.xml`);
                 const componentInfo = this.getComponentInfo(fileProperties);
+                if (!sourceFile && metaFile) {
+                    return [
+                        new RetrieveResultFile(
+                            componentInfo,
+                            { ...fileProperties, fileName: `${fileProperties.fileName}-meta.xml` },
+                            metaFile
+                        )
+                    ];
+                }
+
                 const files = [ new RetrieveResultFile(componentInfo, fileProperties, sourceFile, metaFile) ];
 
                 if (metaFile) {

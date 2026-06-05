@@ -31,7 +31,7 @@ export class MetadataExpander {
             return metadataObj ? this.expandStaticResource(metadata, content, metadataObj) : {};
         }
 
-        return this.expandContent(metadata, content);
+        return this.expandContent(metadata, content, type);
     }
 
     private expandStaticResource(metadata: MetadataFile, content: Buffer, meta: object): Record<string, Buffer> {
@@ -46,10 +46,25 @@ export class MetadataExpander {
         };
     }
     
-    private expandContent(metadata: MetadataFile, content: Buffer): Record<string, Buffer> {
-        const basename = this.baseName(metadata.packagePath);
-        const appendMetaXml = this.shouldAppendMetaXml(metadata.packagePath, content);        
-        const expandedName = appendMetaXml ? `${basename}-meta.xml` : basename;
+    private expandContent(metadata: MetadataFile, content: Buffer, type?: MetadataType): Record<string, Buffer> {
+        if (!type) {
+            const basename = this.baseName(metadata.packagePath);
+            const expandedName = this.shouldAppendMetaXml(metadata.packagePath, content) ? `${basename}-meta.xml` : basename;
+            return {
+                [expandedName]: content
+            };
+        }
+
+        const isXml = this.isXml(metadata.packagePath, content);
+        if (isXml && type.folderType) {
+            const xmlType = this.getRootNode(content);
+            type = xmlType ? MetadataRegistry.getMetadataType(xmlType) ?? type : type;
+        }
+
+        const expandedName = this.baseName(metadata.componentName) +
+            (type.suffix ? `.${type.suffix}` : '') +
+            (isXml ? `-meta.xml` : '');
+
         return {
             [expandedName]: content
         };
@@ -117,9 +132,23 @@ export class MetadataExpander {
         if (fileName.endsWith('.xml')) {
             return false;
         }
+        return this.isXml(fileName, body);
+    }
+
+    private isXml(fileName: string, body: Buffer) {
+        if (fileName.endsWith('.xml')) {
+            return true;
+        }
         // Check if the body starts with XML declaration
         const bodyString = body.toString('utf8', 0, Math.min(100, body.length));
         return bodyString.includes('<?xml');
+    }
+
+    private getRootNode(body: Buffer) {
+        // get root node except for the XML declaration
+        const bodyString = body.toString('utf8', 0, Math.min(100, body.length));
+        const match = bodyString.match(/<\?xml.*?\?>\s*<(\w+)/);
+        return match ? match[1] : undefined;
     }
 
     private baseName(packagePath: string, removeSuffix?: boolean): string {

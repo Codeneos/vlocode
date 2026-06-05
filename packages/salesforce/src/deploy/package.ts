@@ -342,11 +342,17 @@ export class SalesforcePackage {
     public getSourceFolder(componentType: string, componentName: string) {
         const metadataInfo = MetadataRegistry.getMetadataType(componentType);
         const decomposed = metadataInfo?.strategies?.decomposition !== undefined;
+        const matchComponentName = metadataInfo?.folderType
+            ? componentName.replace(/\/+$/g, '')
+            : componentName;
         for (const [fsPath, sourceFileInfo] of this.sourceFileToComponent.entries()) {
             if (sourceFileInfo.componentType !== componentType) {
                 continue;
             }
-            if (sourceFileInfo.componentName === componentName) {
+            const sourceComponentName = metadataInfo?.folderType
+                ? sourceFileInfo.componentName.replace(/\/+$/g, '')
+                : sourceFileInfo.componentName;
+            if (sourceComponentName === matchComponentName) {
                 return directoryName(fsPath, decomposed ? 2 : 1);
             }
         }
@@ -391,7 +397,7 @@ export class SalesforcePackage {
      * @param predicate Optional predicate to filter the components
      */
     public *packageFiles(predicate?: ((entry: SalesforcePackageComponent) => boolean) | string ) {
-        for (const [packagePath, component] of this.packageData) {
+        for (const component of this.packageData.values()) {
             if (!predicate || (typeof predicate === 'string' ? 
                 component.componentType === predicate : predicate(component))
             ) {

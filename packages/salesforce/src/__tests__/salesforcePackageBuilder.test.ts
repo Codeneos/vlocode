@@ -69,6 +69,12 @@ describe('SalesforcePackageBuilder', () => {
         // Dashboards
         'src/dashboards/MyFolder.dashboardFolder-meta.xml': buildXml('DashboardFolder', { name: 'MyFolder', accessType: 'Public', publicFolderAccess: 'ReadWrite' }),
         'src/dashboards/MyFolder/Board.dashboard-meta.xml': buildXml('Dashboard', { name: 'Board' }),
+        // Reports
+        'src/reports/USFReports.reportFolder-meta.xml': buildXml('ReportFolder', { name: 'USFReports', accessType: 'Public', publicFolderAccess: 'ReadWrite' }),
+        'src/reports/USFReports/Quote_Lines_w_USF_Confirmation_llD1.report-meta.xml': buildXml('Report', { name: 'Quote Lines w USF Confirmation' }),
+        'src/reports/USFReports/All_Quote_Lines_w_USF_Confirmation_99s1.report-meta.xml': buildXml('Report', { name: 'All Quote Lines w USF Confirmation' }),
+        'src/reports/CSE_Reports/Africa.reportFolder-meta.xml': buildXml('ReportFolder', { name: 'Africa', accessType: 'Public', publicFolderAccess: 'ReadWrite' }),
+        'src/reports/CSE_Reports/Africa/Sales_by_Country.report-meta.xml': buildXml('Report', { name: 'Sales by Country' }),
         // DigitalExperienceBundle
         'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml': buildXml('DigitalExperienceBundle', { label: 'OrderSign1', type: 'LWR' }),
         'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/_meta.json': JSON.stringify({ type: 'sfdc_cms__view', title: 'News Detail' }),
@@ -546,7 +552,7 @@ describe('SalesforcePackageBuilder', () => {
                     'src/classes/myClass.cls-meta.xml',
                     'src/triggers/myTrigger.trigger-meta.xml',
                 ]));
-                expect(manifest.list().length).toEqual(12);
+                expect(manifest.list().length).toEqual(17);
                 expect(manifest.list('AuraDefinitionBundle').length).toEqual(1);
                 expect(manifest.list('LightningComponentBundle').length).toEqual(1);
                 expect(manifest.list('ApexClass').length).toEqual(1);
@@ -555,6 +561,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.list('CustomField').length).toEqual(1);
                 expect(manifest.list('ListView').length).toEqual(1);
                 expect(manifest.list('Dashboard').length).toEqual(2);
+                expect(manifest.list('Report').length).toEqual(5);
                 expect(manifest.list('DigitalExperienceBundle').length).toEqual(1);
                 expect(manifest.list('DigitalExperience').length).toEqual(2);
             });
@@ -571,7 +578,109 @@ describe('SalesforcePackageBuilder', () => {
                 expect(folder.packagePath).toEqual('dashboards/MyFolder-meta.xml');
                 expect(dashBoard.packagePath).toEqual('dashboards/MyFolder/Board.dashboard');
                 expect(manifest.list().length).toEqual(2);
-                expect(manifest.list('Dashboard').length).toEqual(2);
+                expect(manifest.list('Dashboard')).toEqual([ 'MyFolder/', 'MyFolder/Board' ]);
+            });
+        });
+        describe('#reports', () => {
+            it('should add report folders as Report manifest entries', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([
+                    'src/reports/USFReports/Quote_Lines_w_USF_Confirmation_llD1.report-meta.xml',
+                    'src/reports/USFReports/All_Quote_Lines_w_USF_Confirmation_99s1.report-meta.xml'
+                ]);
+
+                const manifest = packageBuilder.getManifest();
+
+                expect(manifest.list().length).toEqual(3);
+                expect(manifest.list('Report')).toEqual(expect.arrayContaining([
+                    'USFReports/',
+                    'USFReports/Quote_Lines_w_USF_Confirmation_llD1',
+                    'USFReports/All_Quote_Lines_w_USF_Confirmation_99s1'
+                ]));
+            });
+            it('should add report folders with a trailing slash for retrieve manifests', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.retrieve, apiVersion);
+                await packageBuilder.addFiles([
+                    'src/reports/USFReports/Quote_Lines_w_USF_Confirmation_llD1.report-meta.xml',
+                    'src/reports/USFReports/All_Quote_Lines_w_USF_Confirmation_99s1.report-meta.xml'
+                ]);
+
+                const manifest = packageBuilder.getManifest();
+
+                expect(manifest.list().length).toEqual(3);
+                expect(manifest.list('Report')).toEqual(expect.arrayContaining([
+                    'USFReports/',
+                    'USFReports/Quote_Lines_w_USF_Confirmation_llD1',
+                    'USFReports/All_Quote_Lines_w_USF_Confirmation_99s1'
+                ]));
+                expect(manifest.list('Report')).not.toContain('USFReports');
+            });
+            it('should retrieve folder metadata as content members with a trailing slash', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.retrieve, apiVersion);
+                await packageBuilder.addFiles([
+                    'src/reports/USFReports.reportFolder-meta.xml',
+                    'src/dashboards/MyFolder.dashboardFolder-meta.xml'
+                ]);
+
+                const manifest = packageBuilder.getManifest();
+
+                expect(manifest.list('Report')).toEqual([ 'USFReports/' ]);
+                expect(manifest.list('Dashboard')).toEqual([ 'MyFolder/' ]);
+                expect(manifest.has('ReportFolder')).toBe(false);
+                expect(manifest.has('DashboardFolder')).toBe(false);
+            });
+            it('should preserve nested report folder paths', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.retrieve, apiVersion);
+                await packageBuilder.addFiles([
+                    'src/reports/CSE_Reports/Africa/Sales_by_Country.report-meta.xml'
+                ]);
+
+                const sfPackage = await packageBuilder.build();
+                const manifest = sfPackage.getManifest();
+                const packageFiles = [...sfPackage.packageFiles()].map(entry => entry.packagePath);
+
+                expect(manifest.list('Report')).toEqual(expect.arrayContaining([
+                    'CSE_Reports/Africa/',
+                    'CSE_Reports/Africa/Sales_by_Country'
+                ]));
+                expect(packageFiles).toEqual(expect.arrayContaining([
+                    'reports/CSE_Reports/Africa-meta.xml',
+                    'reports/CSE_Reports/Africa/Sales_by_Country.report'
+                ]));
+                expect(normalizePath(sfPackage.getSourceFolder('Report', 'CSE_Reports/Africa'))).toEqual('src/reports/CSE_Reports');
+                expect(normalizePath(sfPackage.getSourceFolder('Report', 'CSE_Reports/Africa/'))).toEqual('src/reports/CSE_Reports');
+            });
+            it('should warn when folder metadata is missing for foldered reports', async () => {
+                const reportFsMock = new MemoryFileSystem({
+                    'src/Report/USFReports/Quote_Lines_w_USF_Confirmation_llD1.report-meta.xml': buildXml('Report', { name: 'Quote Lines w USF Confirmation' }),
+                    'src/Report/USFReports/All_Quote_Lines_w_USF_Confirmation_99s1.report-meta.xml': buildXml('Report', { name: 'All Quote Lines w USF Confirmation' }),
+                });
+                const localContainer = container.create();
+                localContainer.add(reportFsMock);
+                const warn = jest.fn();
+                localContainer.add(new Logger(undefined, 'test', { write: entry => warn(entry.message) }));
+                const packageBuilder = localContainer.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([
+                    'src/Report/USFReports/Quote_Lines_w_USF_Confirmation_llD1.report-meta.xml',
+                    'src/Report/USFReports/All_Quote_Lines_w_USF_Confirmation_99s1.report-meta.xml'
+                ]);
+
+                const manifest = packageBuilder.getManifest();
+                const packageFiles = [...packageBuilder.getPackage().packageFiles()].map(entry => entry.packagePath);
+
+                expect(manifest.list('Report')).toEqual(expect.arrayContaining([
+                    'USFReports/Quote_Lines_w_USF_Confirmation_llD1',
+                    'USFReports/All_Quote_Lines_w_USF_Confirmation_99s1'
+                ]));
+                expect(packageFiles).toEqual(expect.arrayContaining([
+                    'reports/USFReports/Quote_Lines_w_USF_Confirmation_llD1.report',
+                    'reports/USFReports/All_Quote_Lines_w_USF_Confirmation_99s1.report'
+                ]));
+                expect(packageFiles).not.toContain('reports/USFReports-meta.xml');
+                expect(warn).toHaveBeenCalledWith(
+                    'Folder metadata file not found for USFReports; deployment may fail. ' +
+                    'Create the a USFReports.reportfolder-meta.xml file to fix this warning.'
+                );
             });
         });
         describe('#digitalExperienceBundle', () => {

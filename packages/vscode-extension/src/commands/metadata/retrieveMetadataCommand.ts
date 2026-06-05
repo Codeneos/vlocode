@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { getErrorMessage, unique} from '@vlocode/util';
-import { DescribeGlobalSObjectResult, FileProperties, MetadataType, PackageManifest } from '@vlocode/salesforce';
+import { DescribeGlobalSObjectResult, FileProperties, MetadataRegistry, MetadataType, PackageManifest } from '@vlocode/salesforce';
 import MetadataCommand from './metadataCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
@@ -16,7 +16,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         return this.retrieve();
     }
 
-    protected async retrieve() : Promise<void>  {
+    private async retrieve() : Promise<void>  {
         const metadataType = await this.showMetadataTypeSelection();
         if (!metadataType) {
             return; // selection cancelled;
@@ -35,15 +35,12 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
             return; // selection cancelled;
         }
 
-        return this.retrieveMetadata(componentToExport.map(item => ({ 
-            fullname: this.getManifestName(item), 
-            componentType: metadataType.name
-        })));
+        return this.retrieveMetadata(componentToExport.map(item => this.getManifestEntry(item)));
     }
 
-    protected async getExportableObjectLikeTypes(nameFilter: RegExp) : Promise<{ fullName: string }[]>
-    protected async getExportableObjectLikeTypes(nameFilter: (result: DescribeGlobalSObjectResult) => boolean) : Promise<{ fullName: string }[]>
-    protected async getExportableObjectLikeTypes(nameFilter: RegExp | ((result: DescribeGlobalSObjectResult) => boolean)) : Promise<{ fullName: string }[]> {
+    private async getExportableObjectLikeTypes(nameFilter: RegExp) : Promise<{ fullName: string }[]>
+    private async getExportableObjectLikeTypes(nameFilter: (result: DescribeGlobalSObjectResult) => boolean) : Promise<{ fullName: string }[]>
+    private async getExportableObjectLikeTypes(nameFilter: RegExp | ((result: DescribeGlobalSObjectResult) => boolean)) : Promise<{ fullName: string }[]> {
         const connection = await this.salesforce.getJsForceConnection();
         const allObjects = await connection.describeGlobal();
         const metadataTypes = allObjects.sobjects.filter(obj => typeof nameFilter === 'function' ? nameFilter(obj) : nameFilter.test(obj.name));
@@ -54,7 +51,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         }));
     }
 
-    protected async getExportableComponents(metadataType : MetadataType) : Promise<FileProperties[]> {
+    private async getExportableComponents(metadataType : MetadataType) : Promise<FileProperties[]> {
         // query available records
         const connection = await this.salesforce.getJsForceConnection();
         const components = await connection.metadata.list({ type: metadataType.xmlName });
@@ -68,7 +65,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         return components;
     }
 
-    protected async showMetadataTypeSelection() : Promise<MetadataType | undefined> {
+    private async showMetadataTypeSelection() : Promise<MetadataType | undefined> {
         const metadataTypes = this.salesforce.getMetadataTypes()
             .map(type => ({
                 label: type.label,
@@ -84,15 +81,32 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         return metadataToExport?.type;
     }
 
-    private getManifestName(component: FileProperties): string {
-        if (component.type === 'Layout' && component.namespacePrefix) {
-            const [ objectType, ...layout ] = component.fullName.split('-');
-            return `${objectType}-${component.namespacePrefix}__${layout.join('-')}`;
+    private getManifestEntry(item: FileProperties): { fullname: string; componentType: string } {
+        const type = MetadataRegistry.getMetadataType(item.type);
+
+        if (item.type === 'Layout' && item.namespacePrefix) {
+            const [ objectType, ...layout ] = item.fullName.split('-');
+            return {
+                componentType: item.type,
+                fullname: `${objectType}-${item.namespacePrefix}__${layout.join('-')}`
+            };
         }
-        return component.fullName;
+
+        const folderContentType = type?.folderContentType && MetadataRegistry.getMetadataType(type.folderContentType);
+        if (folderContentType) {
+            return {
+                componentType: folderContentType.name,
+                fullname: item.fullName.endsWith('/') ? item.fullName : `${item.fullName}/`
+            };
+        }
+
+        return {
+            componentType: item.type,
+            fullname: item.fullName
+        }
     }
 
-    protected async retrieveMetadata(components: { fullname: string; componentType: string }[]) {
+    private async retrieveMetadata(components: { fullname: string; componentType: string }[]) {
         // Build manifest
         const apiVersion = this.vlocode.config.salesforce?.apiVersion || this.salesforce.getApiVersion();
 
@@ -162,7 +176,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         });
     }
 
-    protected async showComponentSelection<T extends FileProperties>(records: T[]) : Promise<Array<T> | undefined> {
+    private async showComponentSelection<T extends FileProperties>(records: T[]) : Promise<Array<T> | undefined> {
         const objectOptions =  records.map(record => ({
             label: decodeURIComponent(record.fullName),
             description: `last modified: ${record.lastModifiedByName} (${record.lastModifiedDate})`,
@@ -179,7 +193,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         return objectSelection.map(item => item.record);
     }
 
-    protected async showExportPathSelection() : Promise<string | undefined> {
+    private async showExportPathSelection() : Promise<string | undefined> {
         const projectFolderSelection = await vscode.window.showQuickPick([
             { value: 1, label: 'Set the Default project folder for retrieving metadata', description: 'set the default Salesforce project folder and continue' },
             { value: 0, label: 'Set the folder just for this retrieve', description: 'select a folder only for this export'  },

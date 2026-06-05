@@ -209,7 +209,6 @@ export class SalesforcePackageBuilder {
         this.plugins[0].add(replacement);
     }
 
-
     /**
      * Extend the package builder with custom functionality by registering a plugin. Plugins 
      * are used to modify package entries during the build process, allowing for custom transformations,
@@ -301,6 +300,10 @@ export class SalesforcePackageBuilder {
                 if (isFolder) {
                     await this.addStaticResourceBundle(folder);
                 }
+            }
+
+            if (metadataType.folderType) {
+                await this.addParentFolderSourceFile(file, metadataType);
             }
 
             if (metadataType.isBundle) {
@@ -523,6 +526,33 @@ export class SalesforcePackageBuilder {
         }
         
         this.logger.verbose(`Added %s (%s) as [%s]`, path.basename(file), componentName, chalk.green(metadataType.name));
+    }
+
+    private async addParentFolderSourceFile(file: string, metadataType: MetadataType) {
+        const folderMetadataType = metadataType.folderType && MetadataRegistry.getMetadataType(metadataType.folderType);
+        if (!folderMetadataType) {
+            return;
+        }
+
+        const sourceFilePath = file.split(/\\|\//g);
+        const folderName = sourceFilePath[sourceFilePath.length - 2];
+        if (!folderName || stringEqualsIgnoreCase(folderName, metadataType.directoryName)) {
+            return;
+        }
+
+        const folderPath = sourceFilePath.slice(0, -1).join(path.sep);
+        const folderMetaFile = await this.findMetaFile(folderPath);
+        if (!folderMetaFile || await this.getComponentType(folderMetaFile) !== folderMetadataType.name) {
+            this.logger.warn(
+                `Folder metadata file not found for ${folderName}; deployment may fail. ` +
+                `Create the a ${folderName}.${metadataType.folderType}-meta.xml file to fix this warning.`
+            );
+            return;
+        }
+
+        if (this.addParsedFile(folderMetaFile)) {
+            await this.addSingleSourceFile(folderMetaFile, folderMetadataType);
+        }
     }
     
     /**
@@ -886,6 +916,14 @@ export class SalesforcePackageBuilder {
             return this.getBundleComponentName(path.dirname(metaFile), metadataType);
         }
 
+        if (metadataType.folderContentType) {
+            const packageFolder = this.getPackageFolder(metaFile, metadataType);
+            const folderName = packageFolder.includes(path.posix.sep)
+                ? packageFolder.split(path.posix.sep).slice(1).concat(componentName).join(path.posix.sep)
+                : componentName;
+            return `${folderName}/`;
+        }
+
         const packageFolder = this.getPackageFolder(metaFile, metadataType);
         if (packageFolder.includes(path.posix.sep)) {
             return packageFolder.split(path.posix.sep).slice(1).concat([ componentName ]).join(path.posix.sep);
@@ -903,10 +941,22 @@ export class SalesforcePackageBuilder {
         const retainFolderStructure = !!metadataType.inFolder;
         const componentPackageFolder = metadataType.directoryName;
 
+        if (metadataType.folderContentType && componentPackageFolder) {
+            const packageParts = path.dirname(fullSourcePath).split(/\/|\\/g);
+            const packageFolderIndex = packageParts.findIndex(p => stringEqualsIgnoreCase(p, componentPackageFolder));
+            if (packageFolderIndex >= 0) {
+                return packageParts.slice(packageFolderIndex).join(path.posix.sep);
+            }
+            return componentPackageFolder;
+        }
+
         if (retainFolderStructure && componentPackageFolder) {
             const packageParts = path.dirname(fullSourcePath).split(/\/|\\/g);
-            const packageFolderIndex = packageParts.indexOf(componentPackageFolder);
-            return packageParts.slice(packageFolderIndex).join(path.posix.sep);
+            const packageFolderIndex = packageParts.findIndex(p => stringEqualsIgnoreCase(p, componentPackageFolder));
+            if (packageFolderIndex >= 0) {
+                return packageParts.slice(packageFolderIndex).join(path.posix.sep);
+            }
+            return path.posix.join(componentPackageFolder, packageParts[packageParts.length - 1]);
         }
 
         if (metadataType.isBundle && componentPackageFolder) {

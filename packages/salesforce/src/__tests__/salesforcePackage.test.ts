@@ -3,7 +3,7 @@ import 'jest';
 import { Logger, MemoryFileSystem, container } from '@vlocode/core';
 import ZipArchive from 'jszip';
 import { XML } from '@vlocode/util';
-import { SalesforcePackage } from '../deploy';
+import { RetrieveResultPackage, SalesforcePackage } from '../deploy';
 
 function buildXml(rootName: string, data?: any) {
     return XML.stringify({
@@ -232,6 +232,62 @@ describe('SalesforcePackageBuilder', () => {
             expect(retrievePaths).not.toContain('destructiveChangesPre.xml');
             expect(retrievePaths).not.toContain('destructiveChangesPost.xml');
             expect(retrievePaths).not.toContain('.vlocode-package.json');
+        });
+
+        it('should preserve trailing slashes on retrieved folder component names', async () => {
+            const sfPackage = new SalesforcePackage(apiVersion);
+            sfPackage.add({
+                componentType: 'Report',
+                componentName: 'USFReports/',
+                packagePath: 'reports/USFReports-meta.xml',
+                data: buildXml('ReportFolder', { name: 'USFReports', accessType: 'Public', publicFolderAccess: 'ReadWrite' })
+            });
+
+            const retrievePackage = await sfPackage.toRetrieveResultPackage();
+            const retrieveFiles = retrievePackage.getFiles(file => file.componentType === 'Report');
+
+            expect(retrievePackage.componentNames()).toEqual([ 'Report/USFReports/' ]);
+            expect(retrieveFiles).toHaveLength(1);
+            expect(retrieveFiles[0].componentName).toEqual('USFReports/');
+        });
+
+        it('should expand metadata-only retrieved folder files', async () => {
+            const archive = new ZipArchive();
+            archive.file(
+                'reports/CSE_Reports/Africa-meta.xml',
+                buildXml('ReportFolder', { name: 'Africa', accessType: 'Public', publicFolderAccess: 'ReadWrite' })
+            );
+
+            const retrievePackage = new RetrieveResultPackage({
+                done: true,
+                success: true,
+                status: 'Succeeded',
+                id: 'test',
+                messages: [],
+                zipFile: '',
+                fileProperties: [
+                    {
+                        id: '0',
+                        type: 'Report',
+                        fileName: 'reports/CSE_Reports/Africa',
+                        fullName: 'CSE_Reports/Africa/',
+                        createdById: '005000000000000',
+                        createdByName: 'Test User',
+                        createdDate: '2026-06-05T00:00:00.000Z',
+                        lastModifiedById: '005000000000000',
+                        lastModifiedByName: 'Test User',
+                        lastModifiedDate: '2026-06-05T00:00:00.000Z'
+                    }
+                ]
+            }, true, archive);
+
+            const files = retrievePackage.getFiles(file => file.componentType === 'Report');
+            const expanded = await files[0].expandMetadataFiles();
+
+            expect(files).toHaveLength(1);
+            expect(files[0].packagePath).toEqual('reports/CSE_Reports/Africa-meta.xml');
+            expect(files[0].componentName).toEqual('CSE_Reports/Africa/');
+            expect(Object.keys(expanded)).toEqual([ 'Africa.reportFolder-meta.xml' ]);
         });
 
         it('should pass through fs option and fail without it for fsPath-only entries', async () => {
