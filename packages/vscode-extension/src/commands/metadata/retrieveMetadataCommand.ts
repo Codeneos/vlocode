@@ -1,10 +1,17 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { getErrorMessage, unique} from '@vlocode/util';
-import { DescribeGlobalSObjectResult, FileProperties, MetadataRegistry, MetadataType, PackageManifest } from '@vlocode/salesforce';
+import { FileProperties, MetadataRegistry, PackageManifest } from '@vlocode/salesforce';
 import MetadataCommand from './metadataCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
+
+type MetadataTypeSelection = {
+    label: string;
+    description: string;
+    componentType: string;
+    parentComponentType?: string;
+};
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
@@ -22,40 +29,42 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
             return; // selection cancelled;
         }
 
+        let parentComponentName: string | undefined;
+        if (metadataType.parentComponentType === 'CustomObject') {
+            parentComponentName = await this.showCustomObjectSelection(metadataType);
+            if (!parentComponentName) {
+                return; // selection cancelled;
+            }
+        }
+
         // query available records
-        const components = await this.vlocode.withProgress(`Query ${metadataType.name}...`, this.getExportableComponents(metadataType));
+        const components = await this.vlocode.withProgress(`Query ${metadataType.componentType}...`, this.getExportableComponents(metadataType, parentComponentName));
         if (components.length == 0) {
-            void vscode.window.showWarningMessage(`No exportable records for ${metadataType.name}`);
+            void vscode.window.showWarningMessage(`No exportable records for ${[ metadataType.componentType, parentComponentName ].filter(Boolean).join(' in ')}`);
             return;
         }
 
         // Select object
-        const componentToExport = await this.showComponentSelection(components);
+        const componentToExport = await this.showComponentSelection(
+            components,
+            [ metadataType.label, parentComponentName ].filter(Boolean).join(' > '),
+            parentComponentName
+        );
         if (!componentToExport) {
             return; // selection cancelled;
         }
 
-        return this.retrieveMetadata(componentToExport.map(item => this.getManifestEntry(item)));
+        return this.retrieveMetadata(componentToExport.map(item => this.getManifestEntry(item, metadataType.componentType)));
     }
 
-    private async getExportableObjectLikeTypes(nameFilter: RegExp) : Promise<{ fullName: string }[]>
-    private async getExportableObjectLikeTypes(nameFilter: (result: DescribeGlobalSObjectResult) => boolean) : Promise<{ fullName: string }[]>
-    private async getExportableObjectLikeTypes(nameFilter: RegExp | ((result: DescribeGlobalSObjectResult) => boolean)) : Promise<{ fullName: string }[]> {
-        const connection = await this.salesforce.getJsForceConnection();
-        const allObjects = await connection.describeGlobal();
-        const metadataTypes = allObjects.sobjects.filter(obj => typeof nameFilter === 'function' ? nameFilter(obj) : nameFilter.test(obj.name));
-        return metadataTypes.map(record => ({
-            label: record.label,
-            fullName: record.name,
-            keyPrefix: record.keyPrefix
-        }));
-    }
-
-    private async getExportableComponents(metadataType : MetadataType) : Promise<FileProperties[]> {
+    private async getExportableComponents(metadataType : MetadataTypeSelection, parentComponentName?: string) : Promise<FileProperties[]> {
         // query available records
         const connection = await this.salesforce.getJsForceConnection();
-        const components = await connection.metadata.list({ type: metadataType.xmlName });
-        if (metadataType.xmlName === 'CustomMetadata') {
+        const components = await connection.metadata.list(parentComponentName ? { type: metadataType.componentType, folder: parentComponentName } : { type: metadataType.componentType });
+        if (parentComponentName) {
+            return components.filter(component => component.fullName.startsWith(`${parentComponentName}.`));
+        }
+        if (metadataType.componentType === 'CustomMetadata') {
             const getTypeName = (fullName: string) => fullName.split('.')[0];
             return [...unique(components,
                 cmp => getTypeName(cmp.fullName),
@@ -65,29 +74,83 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         return components;
     }
 
-    private async showMetadataTypeSelection() : Promise<MetadataType | undefined> {
-        const metadataTypes = this.salesforce.getMetadataTypes()
-            .map(type => ({
+    private async showMetadataTypeSelection() : Promise<MetadataTypeSelection | undefined> {
+        const metadataTypes = new Map<string, MetadataTypeSelection>();
+        for (const type of this.salesforce.getMetadataTypes()) {
+            metadataTypes.set(type.name, {
                 label: type.label,
                 description: type.name,
-                type: type
-            })).sort((a,b) => a.label.localeCompare(b.label));
+                componentType: type.name
+            });
 
-        const metadataToExport = await vscode.window.showQuickPick(metadataTypes, {
-            matchOnDetail: true,
+            for (const child of Object.values(type.children?.types ?? {})) {
+                if (child.isAddressable === false || child.unaddressableWithoutParent || metadataTypes.has(child.name)) {
+                    continue;
+                }
+                metadataTypes.set(child.name, {
+                    label: this.formatMetadataTypePluralLabel(child.name),
+                    description: child.name,
+                    componentType: child.name,
+                    parentComponentType: type.name
+                });
+            }
+        }
+
+        const metadataToExport = await vscode.window.showQuickPick([...metadataTypes.values()].sort((a,b) => a.label.localeCompare(b.label)), {
+            matchOnDescription: true,
             ignoreFocusOut: true,
             placeHolder: 'Select metadata type to export'
         });
-        return metadataToExport?.type;
+        return metadataToExport;
     }
 
-    private getManifestEntry(item: FileProperties): { fullname: string; componentType: string } {
-        const type = MetadataRegistry.getMetadataType(item.type);
+    private async showCustomObjectSelection(metadataType: MetadataTypeSelection) : Promise<string | undefined> {
+        const objects = await this.vlocode.withProgress('Query CustomObject...', this.getExportableComponents({
+            label: 'Custom Object',
+            description: 'CustomObject',
+            componentType: 'CustomObject'
+        }));
 
-        if (item.type === 'Layout' && item.namespacePrefix) {
+        const objectSelection = await vscode.window.showQuickPick(objects.map(object => ({
+            label: decodeURIComponent(object.fullName),
+            ignoreFocusOut: true,
+            description: `${object.lastModifiedByName} (${object.lastModifiedDate})`,
+            object
+        })).sort((a,b) => a.label.localeCompare(b.label)), {
+            matchOnDescription: true,
+            ignoreFocusOut: true,
+            placeHolder: `${metadataType.label} > Select object`
+        });
+        return objectSelection?.object.fullName;
+    }
+
+    private formatMetadataTypePluralLabel(name: string): string {
+        const label = this.formatMetadataTypeLabel(name);
+        if (label.endsWith('y')) {
+            return `${label.slice(0, -1)}ies`;
+        }
+        if (label.endsWith('s') || label.endsWith('x')) {
+            return `${label}es`;
+        }
+        return `${label}s`;
+    }
+
+    private formatMetadataTypeLabel(name: string): string {
+        return name
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+            .replace(/([0-9])([A-Z])/g, '$1 $2')
+            .replace(/([a-zA-Z])([0-9])/g, '$1 $2');
+    }
+
+    private getManifestEntry(item: FileProperties, selectedComponentType = item.type): { fullname: string; componentType: string } {
+        const componentType = selectedComponentType || item.type;
+        const type = MetadataRegistry.getMetadataType(componentType);
+
+        if (componentType === 'Layout' && item.namespacePrefix) {
             const [ objectType, ...layout ] = item.fullName.split('-');
             return {
-                componentType: item.type,
+                componentType,
                 fullname: `${objectType}-${item.namespacePrefix}__${layout.join('-')}`
             };
         }
@@ -101,7 +164,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         }
 
         return {
-            componentType: item.type,
+            componentType,
             fullname: item.fullName
         }
     }
@@ -176,15 +239,17 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         });
     }
 
-    private async showComponentSelection<T extends FileProperties>(records: T[]) : Promise<Array<T> | undefined> {
+    private async showComponentSelection<T extends FileProperties>(records: T[], placeHolder = 'Select metadata object to export', parentComponentName?: string) : Promise<Array<T> | undefined> {
+        const parentPrefix = parentComponentName ? `${parentComponentName}.` : undefined;
         const objectOptions =  records.map(record => ({
-            label: decodeURIComponent(record.fullName),
-            description: `last modified: ${record.lastModifiedByName} (${record.lastModifiedDate})`,
+            label: decodeURIComponent(parentPrefix && record.fullName.startsWith(parentPrefix) ? record.fullName.slice(parentPrefix.length) : record.fullName),
+            description: `${record.lastModifiedByName} (${record.lastModifiedDate})`,
             record
         })).sort((a, b) => a.label.localeCompare(b.label));
 
         const objectSelection = await vscode.window.showQuickPick(objectOptions, {
-            placeHolder: 'Select metadata object to export',
+            placeHolder,
+            ignoreFocusOut: true,
             canPickMany: true
         });
         if (!objectSelection) {
