@@ -1083,9 +1083,17 @@ export class DatapackExporter {
             return this.validateFieldList(type, matchingFields);
         }
 
-        const nameField = type.fields.find(field => field.nameField && !field.autoNumber && !field.calculated);
-        if (!scope && nameField) {
-            return [ nameField.name ];
+        if (!scope) {
+            for (const field of this.autoMatchingKeyFields) {
+                if (type.fields.some(f => f.name === field)) {
+                    return [ field ];
+                }
+            }
+
+            const nameField = type.fields.find(field => field.nameField && !field.autoNumber && !field.calculated);
+            if (nameField) {
+                return [ nameField.name ];
+            }
         }
 
         const sfMatchingKey = (await this.datapackMatchingKeys.getMatchingKeyDefinition(type.name)).fields;

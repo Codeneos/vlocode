@@ -259,7 +259,32 @@ describe('DatapackExporter', () => {
         expect(result.Parent__c).not.toHaveProperty('then');
     });
 
-    it('uses the name field for unscoped SObject matching keys', async () => {
+    it('uses DeveloperName before the name field for unscoped SObject matching keys', async () => {
+        const describe = {
+            name: 'CustomMetadata__mdt',
+            fields: [
+                { name: 'Id', referenceTo: [] },
+                { name: 'Name', nameField: true, autoNumber: false, calculated: false, referenceTo: [] },
+                { name: 'DeveloperName', referenceTo: [] }
+            ]
+        };
+        const { exporter, matchingKeys } = createExporter({ describe });
+
+        const result = await exporter.getMatchingKey(
+            describe,
+            {
+                id: 'm00000000000001AAA',
+                Id: 'm00000000000001AAA',
+                Name: 'Display Name',
+                DeveloperName: 'Stable_Developer_Name'
+            }
+        );
+
+        expect(result).toBe('CustomMetadata__mdt/Stable_Developer_Name');
+        expect(matchingKeys.getMatchingKeyDefinition).not.toHaveBeenCalled();
+    });
+
+    it('uses the name field for unscoped SObject matching keys without DeveloperName', async () => {
         const describe = {
             name: 'Account',
             fields: [
