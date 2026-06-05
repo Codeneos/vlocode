@@ -4,3 +4,4 @@ export const NAMESPACE_PLACEHOLDER = '%vlocity_namespace%';
 export const NAMESPACE_PLACEHOLDER_PATTERN = /vlocity_namespace|%vlocity_namespace%|{vlocity_namespace}/gi;
 
 export const DATAPACK_RESERVED_FIELDS = Object.values<string>(DatapackFields);
+export const RECORD_TYPE_FIELD = 'RecordTypeId';

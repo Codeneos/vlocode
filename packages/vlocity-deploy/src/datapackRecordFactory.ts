@@ -3,7 +3,7 @@ import { SalesforceService, Field, NamespaceService } from '@vlocode/salesforce'
 import { Logger, injectable } from '@vlocode/core';
 import { isSalesforceId } from '@vlocode/util';
 import { DateTime } from 'luxon';
-import { DATAPACK_RESERVED_FIELDS } from './constants';
+import { DATAPACK_RESERVED_FIELDS, RECORD_TYPE_FIELD } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { VlocityDatapack, DatapackMatchingKeyService } from '@vlocode/vlocity';
 import { randomUUID } from 'crypto';
@@ -56,6 +56,12 @@ export class DatapackRecordFactory {
                 continue;
             }
 
+            if (field?.name === RECORD_TYPE_FIELD && !value) {
+                // Treat null record types as create with the default record type,
+                // otherwise the deployment will fail with: "Record Type ID: this ID value isn't valid for the user:"
+                continue;
+            }
+
             // Objects are dependencies
             if (typeof value === 'object' && value !== null) {
                 // handle lookups and embedded datapacks
@@ -66,7 +72,7 @@ export class DatapackRecordFactory {
                         const embeddedRecords = await this.createRecords(embeddedDatapack);
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
-                        if (!field) {
+                        if (!field && field !== null) {
                             this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                             continue;
                         }
@@ -80,7 +86,7 @@ export class DatapackRecordFactory {
                         this.reportWarning(record, `Unsupported datapack type ${item.VlocityDataPackType}`);
                     } else {
                         if (!field) {
-                            this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name} (check )`);
+                            this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name} (check)`);
                             continue;
                         }
                         record.values[field.name] = this.convertValue(value, field);
@@ -88,7 +94,7 @@ export class DatapackRecordFactory {
                 }
             } else {
                 // make sure the field exists
-                if (!field) {
+                if (!field && field !== null) {
                     this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                     continue;
                 }
