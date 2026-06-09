@@ -2,7 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, effect, provideZonelessCh
 import { FormsModule } from '@angular/forms';
 import { bootstrapApplication } from '@angular/platform-browser';
 
+import { VlocodeDialogComponent } from '../shared/components/dialog/dialog.component';
+import { VlocodeEditorHeaderComponent } from '../shared/components/editor-header/editor-header.component';
 import { VlocodeEmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
+import { getErrorMessage } from '../shared/utils/object';
 import { ExtractPanelComponent } from './app/components/extract-panel/extract-panel.component';
 import { FormulaPanelComponent } from './app/components/formula-panel/formula-panel.component';
 import { LoadObjectsPanelComponent } from './app/components/load-objects-panel/load-objects-panel.component';
@@ -81,6 +84,8 @@ const CACHE_TYPES = ['None', 'Org Cache', 'Session Cache'];
         MappingDialogComponent,
         MappingPanelComponent,
         PreviewPanelComponent,
+        VlocodeDialogComponent,
+        VlocodeEditorHeaderComponent,
         VlocodeEmptyStateComponent
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -801,10 +806,6 @@ function parseJsonValue(value: string): unknown {
 
 function stringifyJson(value: unknown) {
     return JSON.stringify(value ?? null, null, 2);
-}
-
-function getErrorMessage(error: unknown) {
-    return error instanceof Error ? error.message : String(error);
 }
 
 export function bootstrapDataMapperEditor() {

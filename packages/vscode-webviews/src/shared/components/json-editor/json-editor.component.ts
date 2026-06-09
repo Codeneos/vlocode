@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-import { MonacoEditorComponent, type monaco } from '../monaco-editor/monaco-editor.component';
+import { VlocodeMonacoEditorComponent, type monaco } from '../monaco-editor/monaco-editor.component';
 
 const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
     folding: true,
@@ -9,18 +9,18 @@ const jsonEditorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
 };
 
 @Component({
-    selector: 'vlocode-json-editor',
+    selector: 'vlo-json-editor',
     standalone: true,
-    imports: [MonacoEditorComponent],
+    imports: [VlocodeMonacoEditorComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <dm-monaco-editor
+        <vlo-monaco-editor
             language="json"
             [value]="value()"
             [readOnly]="readOnly()"
             [ariaLabel]="ariaLabel()"
             [options]="jsonEditorOptions"
-            markerOwner="vlocode-json-editor"
+            markerOwner="vlo-json-editor"
             (valueChange)="valueChange.emit($event)" />
     `
 })

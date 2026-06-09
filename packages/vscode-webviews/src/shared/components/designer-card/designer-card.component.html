@@ -1,0 +1,31 @@
+<article
+    class="vlo-designer-card"
+    [class.vlo-designer-card--extract]="variant() === 'extract'"
+    [class.vlo-designer-card--formula]="variant() === 'formula'"
+    [class.vlo-designer-card--load]="variant() === 'load'"
+    [class.vlo-designer-card--collapsed]="!expanded()"
+    [class.vlo-designer-card--disabled]="disabled()"
+    [class.vlo-designer-card--dragging]="dragging()"
+    [class.vlo-designer-card--drop-target]="dropTarget()"
+    [attr.draggable]="draggable() ? 'true' : null"
+    (dragstart)="cardDragStart.emit($event)"
+    (dragover)="cardDragOver.emit($event)"
+    (drop)="cardDrop.emit($event)"
+    (dragend)="cardDragEnd.emit($event)">
+    <header class="vlo-designer-card__header">
+        <button type="button" class="vlo-designer-card__toggle" [attr.aria-expanded]="expanded()" [attr.aria-label]="toggleLabel()" (click)="toggleExpanded()">
+            <span class="codicon" [class.codicon-chevron-down]="expanded()" [class.codicon-chevron-right]="!expanded()" aria-hidden="true"></span>
+        </button>
+        <span [ngClass]="['vlo-designer-card__icon', 'codicon', 'codicon-' + icon()]" aria-hidden="true"></span>
+        <div class="vlo-designer-card__title">
+            <h2>{{ title() }}</h2>
+            <p>{{ subtitle() }}</p>
+        </div>
+        <div class="vlo-designer-card__actions" [attr.aria-label]="actionsLabel()">
+            <ng-content select="[vloDesignerCardAction]"></ng-content>
+        </div>
+    </header>
+    @if (expanded()) {
+        <ng-content select="[vloDesignerCardBody]"></ng-content>
+    }
+</article>

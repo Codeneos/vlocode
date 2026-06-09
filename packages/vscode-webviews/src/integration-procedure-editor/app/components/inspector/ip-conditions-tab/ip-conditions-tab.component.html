@@ -1,0 +1,20 @@
+<div class="ip-field">
+    <span>Execution Conditional Formula</span>
+    <vlo-formula-editor
+        [value]="propertyValue('executionConditionalFormula') || propertyValue('show')"
+        ariaLabel="Execution conditional formula"
+        (valueChange)="updateExecutionFormula($event)" />
+</div>
+@if (selectedElement()) {
+    <div class="ip-field">
+        <span>Failure Conditional Formula</span>
+        <vlo-formula-editor
+            [value]="propertyValue('failureConditionalFormula')"
+            ariaLabel="Failure conditional formula"
+            (valueChange)="propertyChange.emit({ field: 'failureConditionalFormula', value: $event })" />
+    </div>
+    <label class="ip-switch">
+        <input type="checkbox" [checked]="propertyChecked('chainOnStep')" (change)="propertyChange.emit({ field: 'chainOnStep', value: inputChecked($event) })" />
+        <span>Chain on step</span>
+    </label>
+}

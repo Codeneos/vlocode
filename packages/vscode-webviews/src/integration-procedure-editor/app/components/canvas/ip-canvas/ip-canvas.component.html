@@ -1,0 +1,47 @@
+<section class="ip-canvas" aria-label="Integration Procedure flow">
+    <div class="ip-flow">
+        <button type="button" class="ip-flow__terminal" title="Edit procedure properties" (click)="selectProcedure.emit()">
+            <span class="codicon codicon-file-code" aria-hidden="true"></span>
+        </button>
+        @if (!flowTree().length) {
+            <section
+                class="ip-empty ip-empty--canvas"
+                [class.ip-empty--drop-target]="dropTargetKey() === emptyFlowDropKey() && dropPosition() === 'inside'"
+                (dragover)="emptyFlowDragOver.emit($event)"
+                (dragleave)="emptyFlowDragLeave.emit()"
+                (drop)="emptyFlowDrop.emit($event)">
+                <vlo-empty-state title="Start with an action or block" icon="add" actionLabel="Open palette" actionIcon="add" [inline]="true" (action)="openPalette.emit()" />
+            </section>
+        }
+        @for (node of flowTree(); track node.element.key) {
+            <ip-flow-node
+                [node]="node"
+                [selectedKey]="selectedKey()"
+                [draggedKey]="draggedKey()"
+                [dropTargetKey]="dropTargetKey()"
+                [dropPosition]="dropPosition()"
+                [insertContext]="insertContext()"
+                [insertFilter]="insertFilter()"
+                [insertTemplates]="insertTemplates()"
+                (selectElement)="selectElement.emit($event)"
+                (deleteRequested)="deleteRequested.emit($event)"
+                (addChildElement)="addChildElement.emit($event)"
+                (openInsertPicker)="openInsertPicker.emit($event)"
+                (closeInsertPicker)="closeInsertPicker.emit()"
+                (insertFilterChange)="insertFilterChange.emit($event)"
+                (addSelectedElement)="addSelectedElement.emit($event)"
+                (elementDragStart)="elementDragStart.emit($event)"
+                (elementDragOver)="elementDragOver.emit($event)"
+                (elementDragLeave)="elementDragLeave.emit($event)"
+                (elementDrop)="elementDrop.emit($event)"
+                (insertDragOver)="insertDragOver.emit($event)"
+                (insertDrop)="insertDrop.emit($event)"
+                (groupDragOver)="groupDragOver.emit($event)"
+                (groupDrop)="groupDrop.emit($event)"
+                (dragEnd)="dragEnd.emit()" />
+        }
+        <div class="ip-flow__end">
+            <span class="codicon codicon-debug-stop" aria-hidden="true"></span>
+        </div>
+    </div>
+</section>

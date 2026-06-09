@@ -1,0 +1,17 @@
+<section class="ip-json">
+    <p>Edit the JSON for the {{ targetLabel() }}.</p>
+    <vlo-monaco-editor
+        language="json"
+        [value]="draft()"
+        ariaLabel="Property set JSON editor"
+        [options]="editorOptions()"
+        markerOwner="ip-property-set-json"
+        (valueChange)="draftChange.emit($event)" />
+    @if (error(); as jsonMessage) {
+        <div class="ip-inline-error">{{ jsonMessage }}</div>
+    }
+    <button type="button" class="ip-button ip-button--primary" (click)="applyJson.emit()">
+        <span class="codicon codicon-check" aria-hidden="true"></span>
+        Apply JSON
+    </button>
+</section>

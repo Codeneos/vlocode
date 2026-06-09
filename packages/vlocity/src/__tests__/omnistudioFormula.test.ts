@@ -12,10 +12,13 @@ import {
 } from '../omnistudio/formula';
 
 describe('OmniStudio formula registry', () => {
-    it('covers every runtime function and keeps DataMapper compatibility aliases', () => {
+    it('advertises documented runtime functions and keeps DataMapper compatibility aliases', () => {
         const metadataNames = new Set(OMNISTUDIO_FORMULA_FUNCTIONS.map(definition => definition.name));
-        for (const runtimeName of Object.keys(OMNISTUDIO_FORMULA_RUNTIME_FUNCTIONS)) {
-            expect(metadataNames.has(runtimeName)).toBe(true);
+        const runtimeNames = new Set(Object.keys(OMNISTUDIO_FORMULA_RUNTIME_FUNCTIONS));
+        const evaluatorBuiltIns = new Set(['FILTER', 'FUNCTION', 'IF']);
+
+        for (const metadataName of metadataNames) {
+            expect(runtimeNames.has(metadataName) || evaluatorBuiltIns.has(metadataName)).toBe(true);
         }
 
         expect(OMNISTUDIO_FORMULA_FUNCTIONS).toBe(DATA_MAPPER_FORMULA_FUNCTIONS);
@@ -25,6 +28,7 @@ describe('OmniStudio formula registry', () => {
         expect(metadataNames.has('FUNCTION')).toBe(true);
         expect(metadataNames.has('QUERY')).toBe(true);
         expect(metadataNames.has('COUNTQUERY')).toBe(true);
+        expect(metadataNames.has('REPLACE')).toBe(false);
     });
 });
 

@@ -1,0 +1,120 @@
+@if (selectedElement(); as selected) {
+    <label class="ip-field">
+        <span>Element Name</span>
+        <input [value]="selected.name" (input)="elementFieldChange.emit({ field: 'name', value: inputValue($event) })" />
+    </label>
+    <div class="ip-field">
+        <span>Type</span>
+        <div class="ip-readonly-value">{{ selected.type }}</div>
+    </div>
+    <label class="ip-switch">
+        <input type="checkbox" [checked]="selected.active" (change)="elementFieldChange.emit({ field: 'active', value: inputChecked($event) })" />
+        <span>Active</span>
+    </label>
+    @if (selected.type === 'Remote Action') {
+        <label class="ip-field">
+            <span>Remote Class</span>
+            <vlo-autocomplete-input
+                [value]="propertyValue('remoteClass')"
+                [suggestions]="apexClassOptions()"
+                [commitOnInput]="false"
+                ariaLabel="Remote class"
+                (valueChange)="propertyChange.emit({ field: 'remoteClass', value: $event })" />
+        </label>
+        <label class="ip-field">
+            <span>Remote Method</span>
+            <input [value]="propertyValue('remoteMethod')" (input)="propertyChange.emit({ field: 'remoteMethod', value: inputValue($event) })" />
+        </label>
+        <vlo-key-value-map-editor title="Remote Options" [entries]="entries('remoteOptions')" (entriesChange)="emitMapEntries('remoteOptions', $event)" />
+    } @else if (isDataMapperAction(selected.type)) {
+        <label class="ip-field">
+            <span>Data Mapper Name</span>
+            <vlo-autocomplete-input
+                [value]="propertyValue('bundle')"
+                [suggestions]="dataMapperOptions()"
+                [commitOnInput]="false"
+                ariaLabel="Data Mapper name"
+                (valueChange)="propertyChange.emit({ field: 'bundle', value: $event })" />
+        </label>
+        <label class="ip-switch">
+            <input type="checkbox" [checked]="propertyChecked('ignoreCache')" (change)="propertyChange.emit({ field: 'ignoreCache', value: inputChecked($event) })" />
+            <span>Ignore cache</span>
+        </label>
+        <section class="ip-map">
+            <header>
+                <h3>Input Parameters</h3>
+                <button type="button" class="ip-button ip-button--compact" (click)="dataRaptorParameterAdd.emit()">
+                    <span class="codicon codicon-add" aria-hidden="true"></span>
+                    Add
+                </button>
+            </header>
+            @if (dataRaptorInputParameters().length) {
+                <div class="ip-map__labels" aria-hidden="true">
+                    <span>Data Source</span>
+                    <span>Filter Value</span>
+                    <span></span>
+                </div>
+                @for (parameter of dataRaptorInputParameters(); track parameter.index) {
+                    <div class="ip-map__row">
+                        <input aria-label="Data Source" [value]="parameter.element" (input)="dataRaptorParameterChange.emit({ index: parameter.index, field: 'element', value: inputValue($event) })" />
+                        <input aria-label="Filter Value" [value]="parameter.inputParam" (input)="dataRaptorParameterChange.emit({ index: parameter.index, field: 'inputParam', value: inputValue($event) })" />
+                        <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete input parameter" (click)="dataRaptorParameterDelete.emit(parameter.index)">
+                            <span class="codicon codicon-trash" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                }
+            } @else {
+                <p class="ip-muted">No input parameters configured.</p>
+            }
+        </section>
+    } @else if (selected.type === 'Set Values') {
+        <vlo-key-value-map-editor title="Element Value Map" [entries]="entries('elementValueMap')" (entriesChange)="emitMapEntries('elementValueMap', $event)" />
+    } @else if (selected.type === 'Response Action') {
+        <label class="ip-field">
+            <span>Response Format</span>
+            <input [value]="propertyValue('responseFormat')" (input)="propertyChange.emit({ field: 'responseFormat', value: inputValue($event) })" />
+        </label>
+        <label class="ip-switch">
+            <input type="checkbox" [checked]="propertyChecked('returnFullDataJSON')" (change)="propertyChange.emit({ field: 'returnFullDataJSON', value: inputChecked($event) })" />
+            <span>Return entire JSON output</span>
+        </label>
+        <vlo-key-value-map-editor title="Response Headers" [entries]="entries('responseHeaders')" (entriesChange)="emitMapEntries('responseHeaders', $event)" />
+    } @else {
+        <label class="ip-field">
+            <span>Label</span>
+            <input [value]="propertyValue('label')" (input)="propertyChange.emit({ field: 'label', value: inputValue($event) })" />
+        </label>
+    }
+    <label class="ip-field">
+        <span>Notes</span>
+        <textarea rows="4" [value]="selected.description || ''" (input)="elementFieldChange.emit({ field: 'description', value: inputValue($event) })"></textarea>
+    </label>
+} @else {
+    <label class="ip-field">
+        <span>Procedure Name</span>
+        <input [value]="model().header.name" (input)="headerFieldChange.emit({ field: 'name', value: inputValue($event) })" />
+    </label>
+    <div class="ip-field-grid">
+        <label class="ip-field">
+            <span>Type</span>
+            <input [value]="model().header.type" (input)="headerFieldChange.emit({ field: 'type', value: inputValue($event) })" />
+        </label>
+        <label class="ip-field">
+            <span>Sub Type</span>
+            <input [value]="model().header.subType" (input)="headerFieldChange.emit({ field: 'subType', value: inputValue($event) })" />
+        </label>
+    </div>
+    <label class="ip-field">
+        <span>Description</span>
+        <textarea rows="4" [value]="model().header.description || ''" (input)="headerFieldChange.emit({ field: 'description', value: inputValue($event) })"></textarea>
+    </label>
+    <label class="ip-switch">
+        <input type="checkbox" [checked]="model().header.active" (change)="headerFieldChange.emit({ field: 'active', value: inputChecked($event) })" />
+        <span>Active</span>
+    </label>
+    <label class="ip-field">
+        <span>Required Permission</span>
+        <input [value]="model().header.requiredPermission || ''" (input)="headerFieldChange.emit({ field: 'requiredPermission', value: inputValue($event) })" />
+    </label>
+    <vlo-key-value-map-editor title="Tracking Custom Data" [entries]="entries('trackingCustomData')" (entriesChange)="emitMapEntries('trackingCustomData', $event)" />
+}

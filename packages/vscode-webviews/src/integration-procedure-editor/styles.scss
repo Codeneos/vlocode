@@ -31,49 +31,6 @@ button, input, select, textarea { font: inherit; }
     }
 }
 
-.ip-topbar {
-    @include editor-topbar;
-}
-
-.ip-title {
-    @include editor-header-identity;
-
-    &__icon {
-        @include button;
-        @include editor-header-icon-tile;
-
-        .codicon[class*='codicon-'] {
-            @include editor-header-icon-glyph;
-        }
-    }
-
-    &__copy {
-        @include editor-header-copy;
-    }
-
-    h1 {
-        @include editor-header-title;
-    }
-
-    &__meta {
-        @include editor-header-meta;
-
-        span {
-            @include editor-header-chip;
-        }
-
-        &-warning {
-            color: var(--vscode-editorWarning-foreground);
-            border-color: color-mix(in srgb, var(--vscode-editorWarning-foreground) 44%, transparent) !important;
-            background: color-mix(in srgb, var(--vscode-editorWarning-background, transparent) 42%, #{$surface}) !important;
-        }
-    }
-}
-
-.ip-actions {
-    @include editor-header-actions;
-}
-
 .ip-button,
 .ip-icon-button {
     @include button;
@@ -248,9 +205,20 @@ button, input, select, textarea { font: inherit; }
     }
 }
 
+ip-rail,
+ip-canvas,
+ip-inspector {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .ip-rail,
 .ip-inspector {
     display: grid;
+    width: 100%;
+    height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -293,7 +261,7 @@ button, input, select, textarea { font: inherit; }
 
 .ip-segments {
     display: grid;
-    grid-template-columns: minmax(58px, 0.82fr) minmax(62px, 0.82fr) minmax(90px, 1.36fr) 32px;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 32px;
     position: sticky;
     top: 0;
     z-index: 2;
@@ -631,6 +599,8 @@ button, input, select, textarea { font: inherit; }
 
 .ip-canvas {
     position: relative;
+    width: 100%;
+    height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: auto;
@@ -1410,7 +1380,7 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
     line-height: 1.45;
 }
 
-.ip-field dm-formula-editor {
+.ip-field vlo-formula-editor {
     display: block;
     overflow: hidden;
     width: 100%;
@@ -1421,8 +1391,8 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
     background: var(--vscode-editor-background);
 }
 
-.ip-field dm-formula-editor dm-monaco-editor,
-.ip-field dm-formula-editor .dm-monaco-editor {
+.ip-field vlo-formula-editor vlo-monaco-editor,
+.ip-field vlo-formula-editor .vlo-monaco-editor {
     display: block;
     overflow: hidden;
     width: 100%;
@@ -1430,17 +1400,17 @@ body[data-vscode-theme-kind='vscode-high-contrast-light'] .ip-canvas {
     min-height: 0;
 }
 
-.ip-formula-dialog__formula dm-formula-editor {
+.ip-formula-dialog__formula vlo-formula-editor {
     height: min(420px, calc(100vh - 310px));
     min-height: 260px;
 }
 
-dm-monaco-editor,
-.dm-monaco-editor {
+vlo-monaco-editor,
+.vlo-monaco-editor {
     position: relative;
 }
 
-.dm-monaco-editor {
+.vlo-monaco-editor {
     overflow: hidden;
 }
 
@@ -1559,8 +1529,8 @@ dm-monaco-editor,
         color: $desc;
     }
 
-    dm-monaco-editor,
-    .dm-monaco-editor {
+    vlo-monaco-editor,
+    .vlo-monaco-editor {
         display: block;
         overflow: hidden;
         width: 100%;
@@ -1571,7 +1541,7 @@ dm-monaco-editor,
         background: var(--vscode-editor-background);
     }
 
-    dm-monaco-editor .dm-monaco-editor {
+    vlo-monaco-editor .vlo-monaco-editor {
         height: 100%;
         min-height: 0;
         border: 0;
@@ -1653,12 +1623,12 @@ dm-monaco-editor,
         overflow: visible;
     }
 
-    .ip-topbar {
+    .vlo-editor-header {
         align-items: flex-start;
         flex-direction: column;
     }
 
-    .ip-actions {
+    .vlo-editor-header__actions {
         justify-content: flex-start;
     }
 

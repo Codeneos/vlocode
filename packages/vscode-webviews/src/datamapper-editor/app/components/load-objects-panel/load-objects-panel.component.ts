@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { DataMapperCardComponent } from '../data-mapper-card/data-mapper-card.component';
-import { AutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeAutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeDesignerCardComponent } from '../../../../shared/components/designer-card/designer-card.component';
 import { VlocodeEmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import type { DataMapperItem, FieldSuggestion, LoadObjectGroup } from '../../models/datamapper.model';
 import { newGlobalKey } from '../../models/items';
@@ -11,7 +11,7 @@ import { loadObjectLabel } from '../../models/load-objects';
 @Component({
     selector: 'dm-load-objects-panel',
     standalone: true,
-    imports: [AutocompleteInputComponent, DataMapperCardComponent, FormsModule, VlocodeEmptyStateComponent],
+    imports: [VlocodeAutocompleteInputComponent, FormsModule, VlocodeDesignerCardComponent, VlocodeEmptyStateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './load-objects-panel.component.html'
 })

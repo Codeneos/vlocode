@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { AutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeAutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeDialogComponent } from '../../../../shared/components/dialog/dialog.component';
 import type { DataMapperItem, DataMapperKind, FieldSuggestion, LoadObjectGroup } from '../../models/datamapper.model';
 import { inputPath, outputPath } from '../../models/datamapper-paths';
 import { loadObjectLabel } from '../../models/load-objects';
@@ -14,7 +15,7 @@ interface TransformValueMappingPair {
 @Component({
     selector: 'dm-mapping-dialog',
     standalone: true,
-    imports: [AutocompleteInputComponent, FormsModule],
+    imports: [VlocodeAutocompleteInputComponent, FormsModule, VlocodeDialogComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './mapping-dialog.component.html'
 })

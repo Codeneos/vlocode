@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { AutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeAutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
 import type { DataMapperItem, DataMapperKind, FieldSuggestion, LoadObjectGroup } from '../../models/datamapper.model';
 import { inputPath, outputPath } from '../../models/datamapper-paths';
 import { createMappingItem } from '../../models/items';
@@ -10,7 +10,7 @@ import { loadObjectLabel } from '../../models/load-objects';
 @Component({
     selector: 'dm-mapping-panel',
     standalone: true,
-    imports: [AutocompleteInputComponent, FormsModule],
+    imports: [VlocodeAutocompleteInputComponent, FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './mapping-panel.component.html'
 })

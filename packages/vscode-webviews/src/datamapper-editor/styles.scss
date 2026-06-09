@@ -33,23 +33,8 @@ button, input, select, textarea { font: inherit; }
 
 .dm-topbar { position: sticky; top: 0; z-index: 8; width: 100%; border-bottom: 1px solid $panel; background: $editor; }
 
-.dm-header {
-    @include editor-topbar;
-
-    &__identity { @include editor-header-identity; }
-    &__icon.codicon[class*='codicon-'] { @include editor-header-icon; }
-    &__title { @include editor-header-copy; }
-    &__actions {
-        @include editor-header-actions;
-
-        .dm-button { min-height: 28px; padding: 3px 9px; }
-    }
-}
-
-.dm-header h1, .dm-panel h2, .dm-card h2, .dm-dialog h2 { @include heading; }
-.dm-header p, .dm-panel p, .dm-card p { @include copy; }
-.dm-header h1 { @include editor-header-title; }
-.dm-header p { @include editor-header-subtitle; }
+.dm-panel h2, .dm-dialog h2 { @include heading; }
+.dm-panel p { @include copy; }
 
 .dm-tabs {
     display: flex; height: 42px; background: $editor;
@@ -86,7 +71,7 @@ button, input, select, textarea { font: inherit; }
     }
     &__start, &__end { border: 4px solid $panel-strong; background: $surface; box-shadow: $shadow-subtle; }
     &__end { margin-top: 12px; }
-    &__insert { position: relative; z-index: 2; display: grid; place-items: center; height: 56px; margin: 0; + .dm-card { margin-top: 0; } }
+    &__insert { position: relative; z-index: 2; display: grid; place-items: center; height: 56px; margin: 0; }
     &__add {
         margin-top: 24px; border: 0; color: var(--vscode-button-foreground); background: var(--vscode-button-background);
         font-size: 16px; cursor: pointer; transition: background $quick, transform $quick, box-shadow $quick;
@@ -100,64 +85,6 @@ button, input, select, textarea { font: inherit; }
             outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px;
         }
         &--insert { margin-top: 0; opacity: 1; transform: scale(1); }
-    }
-}
-
-dm-data-mapper-card {
-    display: block;
-}
-
-.dm-flow__insert + dm-data-mapper-card .dm-card {
-    margin-top: 0;
-}
-
-.dm-card {
-    position: relative; z-index: 1; overflow: hidden; margin: 28px auto 0; border: 1px solid $panel; border-radius: $radius-surface;
-    background: $surface; box-shadow: $shadow-subtle; transition: border-color $quick, box-shadow $quick, transform $quick, opacity $quick;
-
-    &:hover, &:focus-within, &--drop-target {
-        border-color: var(--vscode-focusBorder);
-        box-shadow: 0 0 0 1px var(--vscode-focusBorder), 0 6px 18px color-mix(in srgb, var(--vscode-focusBorder) 24%, transparent);
-    }
-
-    &--dragging { opacity: 0.55; transform: scale(0.995); }
-    &--collapsed .dm-card__header { border-bottom: 0; }
-
-    &__header {
-        display: flex; align-items: center; gap: 12px; padding: 18px; border-bottom: 1px solid $panel; background: $surface-alt; cursor: grab;
-        > div { min-width: 0; }
-        &:active { cursor: grabbing; }
-    }
-    &__actions { display: flex; gap: 6px; margin-left: auto; }
-    &--extract &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 30%, #{$surface-alt}); }
-    &--formula &__header { background: color-mix(in srgb, var(--vscode-list-activeSelectionBackground) 10%, #{$surface-alt}); }
-    &--load &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 24%, #{$surface-alt}); }
-
-    &--disabled {
-        border-color: color-mix(in srgb, #{$disabled} 45%, transparent); @include disabled-bg($editor, 85%);
-        .dm-card__header { background: color-mix(in srgb, #{$surface-alt} 82%, #{$disabled}); }
-        .dm-card__icon { color: $disabled; background: color-mix(in srgb, var(--vscode-editor-foreground) 8%, transparent); }
-        .dm-field > span, h2, p { color: $disabled; }
-    }
-
-    &__icon {
-        flex: 0 0 auto; width: 40px; height: 40px; border-radius: $radius-surface; color: var(--vscode-button-foreground);
-        font-size: 22px; background: var(--vscode-button-background);
-        &.codicon[class*='codicon-'] {
-            display: inline-grid; place-items: center; font-size: 22px; line-height: 1;
-            &::before { display: block; font-size: inherit; line-height: 1; }
-        }
-    }
-    &__toggle {
-        appearance: none; display: inline-grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; border: 0; border-radius: $radius-control;
-        color: $desc; background: transparent; cursor: pointer;
-        &:hover, &:focus-visible { color: var(--vscode-foreground); background: $surface-hover; outline: 1px solid $focus; outline-offset: 0; }
-        .codicon[class*='codicon-'] { @include icon(16px); }
-    }
-    &__body {
-        padding: 20px 18px 22px;
-        &--edit { display: grid; gap: 22px; }
-        h3 { margin: 22px 0 10px; font-size: 14px; }
     }
 }
 
@@ -189,22 +116,22 @@ dm-data-mapper-card {
     @include control;
 }
 
-.dm-field dm-formula-editor {
+.dm-field vlo-formula-editor {
     display: block; overflow: hidden; height: 160px; min-height: 120px;
     border: 1px solid $input-border; border-radius: $radius-control; background: var(--vscode-editor-background);
 }
 
-.dm-field dm-formula-editor dm-monaco-editor,
-.dm-field dm-formula-editor .dm-monaco-editor {
+.dm-field vlo-formula-editor vlo-monaco-editor,
+.dm-field vlo-formula-editor .vlo-monaco-editor {
     display: block; width: 100%; height: 100%; min-height: 0;
 }
 
-dm-monaco-editor,
-.dm-monaco-editor {
+vlo-monaco-editor,
+.vlo-monaco-editor {
     position: relative;
 }
 
-.dm-monaco-editor {
+.vlo-monaco-editor {
     overflow: hidden;
 }
 
@@ -311,7 +238,7 @@ dm-monaco-editor,
         h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; }
         span { color: $desc; font-size: 12px; }
     }
-    vlocode-json-editor, dm-formula-editor, dm-monaco-editor, .dm-monaco-editor {
+    vlo-json-editor, vlo-formula-editor, vlo-monaco-editor, .vlo-monaco-editor {
         display: block; overflow: hidden; width: 100%; height: 100%; min-height: 0;
         background: var(--vscode-editor-background);
     }
@@ -339,8 +266,7 @@ dm-monaco-editor,
 }
 
 @media (max-width: 720px) {
-    .dm-header, .dm-toolbar, .dm-details, .dm-form-grid, .dm-extract-grid, .dm-filter-row, .dm-link-row, .dm-value-mappings__row { grid-template-columns: 1fr; }
-    .dm-header { display: grid; }
+    .dm-toolbar, .dm-details, .dm-form-grid, .dm-extract-grid, .dm-filter-row, .dm-link-row, .dm-value-mappings__row { grid-template-columns: 1fr; }
     .dm-toolbar { justify-content: stretch; .dm-search { justify-self: stretch; } }
     .dm-filter-row__joiner { min-height: 0; }
     .dm-flow, .dm-panel { width: calc(100% - 20px); margin-top: 20px; }

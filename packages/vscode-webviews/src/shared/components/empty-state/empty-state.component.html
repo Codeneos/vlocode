@@ -1,0 +1,18 @@
+<section class="vlo-empty-state" [class.vlo-empty-state--page]="page()" [class.vlo-empty-state--inline]="inline()" [attr.role]="role()">
+    @if (icon()) {
+        <span class="codicon codicon-{{ icon() }} vlo-empty-state__icon" aria-hidden="true"></span>
+    }
+    <h2>{{ title() }}</h2>
+    @if (message()) {
+        <p>{{ message() }}</p>
+    }
+    @if (actionLabel()) {
+        <button type="button" class="vlocode-button vlocode-button--primary" (click)="action.emit()">
+            @if (actionIcon()) {
+                <span class="codicon codicon-{{ actionIcon() }}" aria-hidden="true"></span>
+            }
+            {{ actionLabel() }}
+        </button>
+    }
+    <ng-content />
+</section>

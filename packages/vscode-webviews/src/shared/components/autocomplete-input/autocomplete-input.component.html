@@ -1,4 +1,4 @@
-<div class="dm-combobox">
+<div class="vlo-combobox">
     <input
         type="text"
         role="combobox"
@@ -14,7 +14,7 @@
         (ngModelChange)="updateValue($event)">
     <button
         type="button"
-        class="dm-combobox__toggle"
+        class="vlo-combobox__toggle"
         tabindex="-1"
         [disabled]="disabled()"
         [attr.aria-label]="ariaLabel() ? 'Show ' + ariaLabel() + ' suggestions' : 'Show suggestions'"
@@ -24,7 +24,8 @@
 
     @if (open() && filteredSuggestions().length) {
         <ul
-            class="dm-combobox__list"
+            #suggestionList
+            class="vlo-combobox__list"
             role="listbox"
             [style.top.px]="listTop()"
             [style.left.px]="listLeft()"
@@ -32,7 +33,7 @@
             [style.max-height.px]="listMaxHeight()">
             @for (suggestion of filteredSuggestions(); track suggestion.value) {
                 <li role="option">
-                    <button type="button" class="dm-combobox__option" (mousedown)="$event.preventDefault(); selectValue(suggestion.value)">
+                    <button type="button" class="vlo-combobox__option" (mousedown)="$event.preventDefault(); selectValue(suggestion.value)">
                         <span>{{ suggestion.label }}</span>
                         @if (suggestion.detail) {
                             <small>{{ suggestion.detail }}</small>

@@ -73,19 +73,19 @@ function applyVscodeTheme() {
 }
 
 @Component({
-    selector: 'dm-monaco-editor',
+    selector: 'vlo-monaco-editor',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: '<div class="dm-monaco-editor" #host></div>'
+    template: '<div class="vlo-monaco-editor" #host></div>'
 })
-export class MonacoEditorComponent implements AfterViewInit {
+export class VlocodeMonacoEditorComponent implements AfterViewInit {
     readonly value = input('');
     readonly language = input('plaintext');
     readonly readOnly = input(false);
     readonly ariaLabel = input('Editor');
     readonly options = input<monaco.editor.IStandaloneEditorConstructionOptions>({});
     readonly markers = input<monaco.editor.IMarkerData[]>([]);
-    readonly markerOwner = input('dm-monaco-editor');
+    readonly markerOwner = input('vlo-monaco-editor');
 
     readonly valueChange = output<string>();
     readonly editorReady = output<monaco.editor.IStandaloneCodeEditor>();

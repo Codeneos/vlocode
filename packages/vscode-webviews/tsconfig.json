@@ -11,12 +11,6 @@
             "@vlocode/vlocity/*": ["../vlocity/src/*"]
         }
     },
-    "include": [
-        "src/**/*.ts",
-        "../vlocity/src/omnistudio/formula/languageService.ts",
-        "../vlocity/src/omnistudio/formula/registry.ts",
-        "../vlocity/src/omnistudio/formula/types.ts"
-    ],
     "files": [],
     "references": [
         {

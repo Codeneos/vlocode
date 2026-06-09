@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
-import { OmniStudioFormulaLanguageService } from '@vlocode/vlocity/omnistudio/formula/languageService';
+import { OmniStudioFormulaLanguageService } from '@vlocode/vlocity/omnistudio/formula';
 
-import { MonacoEditorComponent, monaco } from '../monaco-editor/monaco-editor.component';
+import { VlocodeMonacoEditorComponent, monaco } from '../monaco-editor/monaco-editor.component';
 import {
     OMNISTUDIO_FORMULA_LANGUAGE_ID,
     registerOmniStudioFormulaLanguage
@@ -10,24 +10,24 @@ import {
 const languageService = new OmniStudioFormulaLanguageService();
 
 @Component({
-    selector: 'dm-formula-editor',
+    selector: 'vlo-formula-editor',
     standalone: true,
-    imports: [MonacoEditorComponent],
+    imports: [VlocodeMonacoEditorComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <dm-monaco-editor
+        <vlo-monaco-editor
             [language]="languageId"
             [value]="value()"
             [readOnly]="readOnly()"
             [ariaLabel]="ariaLabel()"
             [options]="editorOptions"
             [markers]="markers()"
-            markerOwner="dm-formula-editor"
+            markerOwner="vlo-formula-editor"
             (editorReady)="handleEditorReady($event)"
             (valueChange)="valueChange.emit($event)" />
     `
 })
-export class FormulaEditorComponent {
+export class VlocodeFormulaEditorComponent {
     readonly value = input('');
     readonly readOnly = input(false);
     readonly ariaLabel = input('Formula editor');

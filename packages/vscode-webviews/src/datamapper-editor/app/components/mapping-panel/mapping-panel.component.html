@@ -39,7 +39,7 @@
                         (dblclick)="handleRowDoubleClick(item)">
                         @if (isEditing(item) && draft(); as draftItem) {
                             <td>
-                                <dm-autocomplete-input
+                                <vlo-autocomplete-input
                                     placeholder="Input path"
                                     [value]="mapperKind() === 'load' ? draftItem.InputFieldName || '' : inputPath(draftItem)"
                                     [suggestions]="sourceSuggestions()"
@@ -54,14 +54,14 @@
                                                 <option [value]="group.sequence">{{ loadObjectLabel(group) }}</option>
                                             }
                                         </select>
-                                        <dm-autocomplete-input
+                                        <vlo-autocomplete-input
                                             placeholder="Field API name"
                                             [value]="draftItem.OutputFieldName || ''"
                                             [suggestions]="outputSuggestions()"
                                             (valueChange)="setDraftLoadField($event)" />
                                     </div>
                                 } @else {
-                                    <dm-autocomplete-input
+                                    <vlo-autocomplete-input
                                         placeholder="Output path"
                                         [value]="outputPath(draftItem)"
                                         [suggestions]="outputSuggestions()"

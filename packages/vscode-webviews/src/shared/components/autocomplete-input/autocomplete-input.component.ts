@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 export interface AutocompleteSuggestion {
@@ -16,14 +16,16 @@ interface NormalizedSuggestion {
 }
 
 @Component({
-    selector: 'dm-autocomplete-input',
+    selector: 'vlo-autocomplete-input',
     standalone: true,
     imports: [FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './autocomplete-input.component.html'
 })
-export class AutocompleteInputComponent {
+export class VlocodeAutocompleteInputComponent {
     private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly suggestionList = viewChild<ElementRef<HTMLUListElement>>('suggestionList');
 
     readonly value = input('');
     readonly suggestions = input<readonly (AutocompleteSuggestion | string)[]>([]);
@@ -43,12 +45,30 @@ export class AutocompleteInputComponent {
     protected readonly listWidth = signal(0);
     protected readonly listMaxHeight = signal(300);
     private readonly editing = signal(false);
+    private readonly updateOverlayPosition = () => {
+        if (this.open()) {
+            this.updateListPosition();
+        }
+    };
 
     constructor() {
         effect(() => {
             if (!this.editing()) {
                 this.draftValue.set(this.value());
             }
+        });
+
+        effect(() => {
+            if (this.open()) {
+                this.attachListToBody();
+                this.updateListPosition();
+            }
+        });
+
+        document.addEventListener('scroll', this.updateOverlayPosition, true);
+        this.destroyRef.onDestroy(() => {
+            document.removeEventListener('scroll', this.updateOverlayPosition, true);
+            this.detachListFromBody();
         });
     }
 
@@ -142,17 +162,40 @@ export class AutocompleteInputComponent {
         }
 
         const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
         const rect = inputElement.getBoundingClientRect();
         const gap = 3;
         const viewportPadding = 12;
         const maxPreferredHeight = 300;
         const availableBelow = viewportHeight - rect.bottom - viewportPadding;
-        const maxHeight = Math.max(96, Math.min(maxPreferredHeight, availableBelow));
+        const availableAbove = rect.top - viewportPadding;
+        const renderAbove = availableBelow < 96 && availableAbove > availableBelow;
+        const availableHeight = renderAbove ? availableAbove : availableBelow;
+        const maxHeight = Math.max(96, Math.min(maxPreferredHeight, availableHeight));
+        const width = Math.min(rect.width, viewportWidth - viewportPadding * 2);
+        const left = Math.min(Math.max(rect.left, viewportPadding), viewportWidth - width - viewportPadding);
 
-        this.listLeft.set(0);
-        this.listWidth.set(inputElement.offsetWidth);
+        this.listLeft.set(left);
+        this.listWidth.set(width);
         this.listMaxHeight.set(maxHeight);
-        this.listTop.set(inputElement.offsetTop + inputElement.offsetHeight + gap);
+        this.listTop.set(renderAbove
+            ? Math.max(viewportPadding, rect.top - maxHeight - gap)
+            : Math.min(rect.bottom + gap, viewportHeight - maxHeight - viewportPadding)
+        );
+    }
+
+    private attachListToBody() {
+        const list = this.suggestionList()?.nativeElement;
+        if (list && list.parentElement !== document.body) {
+            document.body.appendChild(list);
+        }
+    }
+
+    private detachListFromBody() {
+        const list = this.suggestionList()?.nativeElement;
+        if (list?.parentElement === document.body) {
+            list.remove();
+        }
     }
 
     private startEditing() {

@@ -2,7 +2,7 @@
     <section class="dm-flow" aria-label="Formulas">
         <div class="dm-flow__start" aria-hidden="true"></div>
         @for (item of items(); track item.GlobalKey ?? item.FormulaSequence ?? $index; let index = $index) {
-            <dm-data-mapper-card
+            <vlo-designer-card
                 variant="formula"
                 icon="symbol-method"
                 toggleName="formula"
@@ -17,22 +17,22 @@
                 (cardDragOver)="dragOver(item, index, $event)"
                 (cardDrop)="dropOnFormula(item, index, $event)"
                 (cardDragEnd)="endDrag()">
-                <button dmCardAction type="button" class="dm-icon-button" title="Move up" aria-label="Move formula up" (click)="moveFormulaRequested.emit({ item, direction: -1 })">
+                <button vloDesignerCardAction type="button" class="dm-icon-button" title="Move up" aria-label="Move formula up" (click)="moveFormulaRequested.emit({ item, direction: -1 })">
                     <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
                 </button>
-                <button dmCardAction type="button" class="dm-icon-button" title="Move down" aria-label="Move formula down" (click)="moveFormulaRequested.emit({ item, direction: 1 })">
+                <button vloDesignerCardAction type="button" class="dm-icon-button" title="Move down" aria-label="Move formula down" (click)="moveFormulaRequested.emit({ item, direction: 1 })">
                     <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
                 </button>
-                <button dmCardAction type="button" class="dm-icon-button" [title]="item.IsDisabled === true ? 'Enable' : 'Disable'" [attr.aria-label]="item.IsDisabled === true ? 'Enable formula' : 'Disable formula'" (click)="updateFormula(item, 'IsDisabled', item.IsDisabled !== true)">
+                <button vloDesignerCardAction type="button" class="dm-icon-button" [title]="item.IsDisabled === true ? 'Enable' : 'Disable'" [attr.aria-label]="item.IsDisabled === true ? 'Enable formula' : 'Disable formula'" (click)="updateFormula(item, 'IsDisabled', item.IsDisabled !== true)">
                     <span class="codicon" [class.codicon-eye]="item.IsDisabled === true" [class.codicon-eye-closed]="item.IsDisabled !== true" aria-hidden="true"></span>
                 </button>
-                <button dmCardAction type="button" class="dm-icon-button" title="Delete" aria-label="Delete formula" (click)="deleteFormulaRequested.emit(item)">
+                <button vloDesignerCardAction type="button" class="dm-icon-button" title="Delete" aria-label="Delete formula" (click)="deleteFormulaRequested.emit(item)">
                     <span class="codicon codicon-trash" aria-hidden="true"></span>
                 </button>
-                <div dmCardBody class="dm-card__body dm-card__body--edit">
+                <div vloDesignerCardBody class="vlo-designer-card__body vlo-designer-card__body--edit">
                     <div class="dm-field">
                         <span>Formula Expression</span>
-                        <dm-formula-editor
+                        <vlo-formula-editor
                             [readOnly]="item.IsDisabled === true"
                             [value]="item.FormulaExpression || ''"
                             ariaLabel="Formula expression"
@@ -41,7 +41,7 @@
 
                     <label class="dm-field">
                         <span>Formula Result Path</span>
-                        <dm-autocomplete-input
+                        <vlo-autocomplete-input
                             placeholder="Result path"
                             [value]="item.FormulaResultPath || ''"
                             [suggestions]="outputSuggestions()"
@@ -56,7 +56,7 @@
                         </label>
                     </div>
                 </div>
-            </dm-data-mapper-card>
+            </vlo-designer-card>
             <div class="dm-flow__insert">
                 <button type="button" class="dm-flow__add dm-flow__add--insert" aria-label="Insert formula" (click)="insertFormulaRequested.emit(item)"></button>
             </div>
@@ -64,5 +64,5 @@
         <div class="dm-flow__end" aria-hidden="true"></div>
     </section>
 } @else {
-    <vlocode-empty-state title="No formulas" message="This DataMapper does not define formula rows." [page]="true" actionLabel="Add Formula" actionIcon="add" (action)="createFormulaRequested.emit()" />
+    <vlo-empty-state title="No formulas" message="This DataMapper does not define formula rows." [page]="true" actionLabel="Add Formula" actionIcon="add" (action)="createFormulaRequested.emit()" />
 }

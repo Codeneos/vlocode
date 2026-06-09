@@ -1,45 +1,41 @@
 @if (!hasLoaded() && error(); as message) {
     <main class="dm-shell dm-shell--center">
-        <vlocode-empty-state title="Unable to open DataMapper" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
+        <vlo-empty-state title="Unable to open DataMapper" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
     </main>
 } @else {
     <main class="dm-shell">
         <div class="dm-topbar">
-            <header class="dm-header">
-                <div class="dm-header__identity">
-                    <span class="codicon codicon-type-hierarchy-sub dm-header__icon" aria-hidden="true"></span>
-                    <div class="dm-header__title">
-                        <h1>{{ model().title }}</h1>
-                        <p>{{ mapperSubtitle() }}</p>
-                    </div>
-                </div>
-                <div class="dm-header__actions">
-                    <button type="button" class="dm-button" (click)="openSettings()">
-                        <span class="codicon codicon-gear" aria-hidden="true"></span>
-                        Settings
-                    </button>
-                    <button type="button" class="dm-button" [disabled]="refreshing()" (click)="refresh()">
-                        <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
-                        @if (refreshing()) { Refreshing } @else { Refresh }
-                    </button>
-                    <button type="button" class="dm-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
-                        <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                        @if (openingSalesforce()) { Opening } @else { Open in Org }
-                    </button>
-                    <button type="button" class="dm-button" (click)="viewSource()">
-                        <span class="codicon codicon-code" aria-hidden="true"></span>
-                        Source
-                    </button>
-                    <button type="button" class="dm-button" [disabled]="deploying()" (click)="deploy()">
-                        <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
-                        @if (deploying()) { Deploying } @else { Deploy }
-                    </button>
-                    <button type="button" class="dm-button dm-button--primary" [disabled]="saving()" (click)="save()">
-                        <span class="codicon codicon-save" aria-hidden="true"></span>
-                        @if (saving()) { Saving } @else { Save }
-                    </button>
-                </div>
-            </header>
+            <vlo-editor-header
+                icon="type-hierarchy-sub"
+                iconTitle="Open settings"
+                [title]="model().title"
+                [subtitle]="mapperSubtitle()"
+                (iconClick)="openSettings()">
+                <button type="button" class="dm-button" (click)="openSettings()">
+                    <span class="codicon codicon-gear" aria-hidden="true"></span>
+                    Settings
+                </button>
+                <button type="button" class="dm-button" [disabled]="refreshing()" (click)="refresh()">
+                    <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
+                    @if (refreshing()) { Refreshing } @else { Refresh }
+                </button>
+                <button type="button" class="dm-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
+                    <span class="codicon codicon-link-external" aria-hidden="true"></span>
+                    @if (openingSalesforce()) { Opening } @else { Open in Org }
+                </button>
+                <button type="button" class="dm-button" (click)="viewSource()">
+                    <span class="codicon codicon-code" aria-hidden="true"></span>
+                    Source
+                </button>
+                <button type="button" class="dm-button" [disabled]="deploying()" (click)="deploy()">
+                    <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
+                    @if (deploying()) { Deploying } @else { Deploy }
+                </button>
+                <button type="button" class="dm-button dm-button--primary" [disabled]="saving()" (click)="save()">
+                    <span class="codicon codicon-save" aria-hidden="true"></span>
+                    @if (saving()) { Saving } @else { Save }
+                </button>
+            </vlo-editor-header>
 
             <nav class="dm-tabs" aria-label="DataMapper sections">
                 @for (tab of tabs(); track tab.id) {
@@ -130,14 +126,16 @@
         }
 
         @if (settingsDraft(); as settings) {
-            <div class="dm-dialog-backdrop" role="presentation" (click)="cancelSettings()"></div>
-            <section class="dm-dialog dm-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-                <button type="button" class="dm-dialog__close" aria-label="Close" (click)="cancelSettings()">
-                    <span class="codicon codicon-close" aria-hidden="true"></span>
-                </button>
-                <header class="dm-dialog__header">
-                    <h2 id="settings-title">DataMapper Settings</h2>
-                </header>
+            <vlo-dialog
+                type="info"
+                icon="gear"
+                size="wide"
+                title="DataMapper Settings"
+                confirmLabel="Save"
+                confirmIcon="save"
+                [showClose]="true"
+                (cancel)="cancelSettings()"
+                (confirm)="saveSettings()">
                 <div class="dm-dialog__body">
                     <div class="dm-form-grid">
                         <label class="dm-field">
@@ -194,11 +192,7 @@
                         </label>
                     </div>
                 </div>
-                <footer class="dm-dialog__footer">
-                    <button type="button" class="dm-button" (click)="cancelSettings()">Cancel</button>
-                    <button type="button" class="dm-button dm-button--primary" (click)="saveSettings()">Save</button>
-                </footer>
-            </section>
+            </vlo-dialog>
         }
 
         @if (loading()) {

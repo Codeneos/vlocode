@@ -12,40 +12,10 @@ const DIALOG_ICONS: Record<VlocodeDialogType, string> = {
 let nextDialogId = 0;
 
 @Component({
-    selector: 'vlocode-dialog',
+    selector: 'vlo-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `
-        <div class="vlocode-dialog-backdrop" role="presentation" (click)="cancel.emit()"></div>
-        <section
-            class="vlocode-dialog vlocode-dialog--{{ type() }}"
-            role="dialog"
-            aria-modal="true"
-            [attr.aria-labelledby]="titleId"
-            (click)="$event.stopPropagation()">
-            <header class="vlocode-dialog__header">
-                <span class="vlocode-dialog__icon" aria-hidden="true">
-                    <span class="codicon codicon-{{ iconName() }}"></span>
-                </span>
-                <div class="vlocode-dialog__copy">
-                    <h2 [id]="titleId">{{ title() }}</h2>
-                    @if (message()) {
-                        <p>{{ message() }}</p>
-                    }
-                </div>
-            </header>
-            <ng-content />
-            <footer class="vlocode-dialog__footer">
-                <button type="button" class="vlocode-button" (click)="cancel.emit()">
-                    {{ cancelLabel() }}
-                </button>
-                <button type="button" class="vlocode-button vlocode-button--{{ type() }}" (click)="confirm.emit()">
-                    <span class="codicon codicon-{{ confirmIconName() }}" aria-hidden="true"></span>
-                    {{ confirmLabel() }}
-                </button>
-            </footer>
-        </section>
-    `
+    templateUrl: './dialog.component.html'
 })
 export class VlocodeDialogComponent {
     readonly cancelLabel = input('Cancel');
@@ -53,13 +23,16 @@ export class VlocodeDialogComponent {
     readonly confirmLabel = input('Confirm');
     readonly icon = input<string>();
     readonly message = input('');
+    readonly showClose = input(false);
+    readonly showDefaultActions = input(true);
+    readonly size = input<'default' | 'wide'>('default');
     readonly title = input.required<string>();
     readonly type = input<VlocodeDialogType>('info');
 
     readonly cancel = output<void>();
     readonly confirm = output<void>();
 
-    protected readonly titleId = `vlocode-dialog-title-${nextDialogId++}`;
+    protected readonly titleId = `vlo-dialog-title-${nextDialogId++}`;
     protected readonly iconName = computed(() => this.icon() ?? DIALOG_ICONS[this.type()]);
     protected readonly confirmIconName = computed(() => this.confirmIcon() ?? DIALOG_ICONS[this.type()]);
 }

@@ -1,6 +1,10 @@
-import { OmniStudioFormulaLanguageService } from '@vlocode/vlocity/omnistudio/formula/languageService';
-import { OMNISTUDIO_FORMULA_CONSTANTS, OMNISTUDIO_FORMULA_FUNCTIONS, OMNISTUDIO_FORMULA_OPERATORS } from '@vlocode/vlocity/omnistudio/formula/registry';
-import type { OmniStudioFormulaArgumentDefinition } from '@vlocode/vlocity/omnistudio/formula/types';
+import {
+    OmniStudioFormulaLanguageService,
+    OMNISTUDIO_FORMULA_CONSTANTS,
+    OMNISTUDIO_FORMULA_FUNCTIONS,
+    OMNISTUDIO_FORMULA_OPERATORS,
+    type OmniStudioFormulaArgumentDefinition
+} from '@vlocode/vlocity/omnistudio/formula';
 import type { monaco } from '../components/monaco-editor/monaco-editor.component';
 
 export const OMNISTUDIO_FORMULA_LANGUAGE_ID = 'omnistudio-formula';

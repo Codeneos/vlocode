@@ -57,44 +57,6 @@ textarea {
     background: $editor;
 }
 
-.dp-header {
-    @include editor-topbar;
-
-    &__identity {
-        @include editor-header-identity;
-    }
-
-    &__icon.codicon[class*='codicon-'] {
-        @include editor-header-icon;
-    }
-
-    &__title {
-        @include editor-header-copy;
-    }
-
-    p,
-    h1 {
-        min-width: 0;
-    }
-
-    p {
-        @include editor-header-subtitle;
-    }
-
-    h1 {
-        @include editor-header-title;
-    }
-
-    &__actions {
-        @include editor-header-actions;
-
-        .dp-button {
-            min-height: 28px;
-            padding: 3px 9px;
-        }
-    }
-}
-
 .dp-change-count {
     color: $desc;
     font-size: 12px;
@@ -764,7 +726,7 @@ select.dp-input[multiple] {
 }
 
 @media (max-width: 820px) {
-    .dp-header {
+    .vlo-editor-header {
         align-items: stretch;
         flex-direction: column;
 

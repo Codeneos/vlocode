@@ -2,7 +2,9 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
+import { VlocodeEditorHeaderComponent } from '../shared/components/editor-header/editor-header.component';
 import { VlocodeEmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
+import { isRecord } from '../shared/utils/object';
 
 declare const acquireVsCodeApi: undefined | (() => VsCodeApi);
 
@@ -151,320 +153,9 @@ const SUMMARY_FIELD_PRIORITY = [
 @Component({
     selector: 'vlocode-datapack-editor',
     standalone: true,
-    imports: [CommonModule, VlocodeEmptyStateComponent],
+    imports: [CommonModule, VlocodeEditorHeaderComponent, VlocodeEmptyStateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `
-        @if (!hasLoaded() && error(); as message) {
-            <main class="dp-shell dp-shell--center">
-                <vlocode-empty-state title="Unable to open datapack" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
-            </main>
-        } @else if (notFound(); as missing) {
-            <main class="dp-shell">
-                <ng-container [ngTemplateOutlet]="recordHeader" />
-                <vlocode-empty-state [title]="missing.title" icon="search" [message]="missing.message" role="status" [page]="true">
-                    <div class="vlocode-empty-state__actions">
-                        <button type="button" class="vlocode-button" (click)="clearMissingReference()">
-                            <span class="codicon codicon-arrow-left" aria-hidden="true"></span>
-                            Back
-                        </button>
-                        <button type="button" class="vlocode-button vlocode-button--primary" (click)="exportMissingReference(missing.reference)">
-                            <span class="codicon codicon-cloud-download" aria-hidden="true"></span>
-                            Export
-                        </button>
-                    </div>
-                </vlocode-empty-state>
-            </main>
-        } @else {
-            <main class="dp-shell">
-                <ng-container [ngTemplateOutlet]="recordHeader" />
-
-                @if (error(); as message) {
-                    <section class="dp-banner" role="alert">
-                        <span class="codicon codicon-warning" aria-hidden="true"></span>
-                        {{ message }}
-                    </section>
-                }
-
-                <section class="dp-record-panel" aria-label="Datapack record">
-                    <div class="dp-record-panel__tabs">
-                        <nav class="dp-tabs" aria-label="Datapack sections">
-                            @for (tab of visibleTabs(); track tab) {
-                                <button type="button" class="dp-tabs__tab" [class.dp-tabs__tab--active]="activeVisibleTab() === tab" (click)="activeTab.set(tab)">
-                                    {{ tabLabel(tab) }}
-                                </button>
-                            }
-                        </nav>
-                        <label class="dp-search">
-                            <span class="codicon codicon-search" aria-hidden="true"></span>
-                            <input type="search" [value]="filter()" (input)="updateFilter($event)" placeholder="Filter fields and related lists" />
-                        </label>
-                    </div>
-
-                    @switch (activeVisibleTab()) {
-                        @case ('details') {
-                            <section class="dp-details" aria-label="Details">
-                                @if (filteredDetailFields().length) {
-                                    <div class="dp-field-grid">
-                                        @for (field of filteredDetailFields(); track pathKey(field.path)) {
-                                            <article
-                                                class="dp-field"
-                                                [class.dp-field--editing]="isRecordEditing() && field.editable"
-                                                [class.dp-field--dirty]="isDirtyField(field)"
-                                                [class.dp-field--editable]="field.editable && !isRecordEditing()"
-                                                (dblclick)="startEdit(field)">
-                                                <div class="dp-field__label">
-                                                    <span>{{ field.label }}</span>
-                                                    <small>{{ field.apiName }}</small>
-                                                </div>
-                                                <div class="dp-field__value">
-                                                    @if (isRecordEditing() && field.editable) {
-                                                        @switch (controlKind(field)) {
-                                                            @case ('checkbox') {
-                                                                <label class="dp-checkbox">
-                                                                    <input type="checkbox" [checked]="editChecked(field)" (change)="updateEditDraft(field, $event)" />
-                                                                    <span>{{ editChecked(field) ? 'True' : 'False' }}</span>
-                                                                </label>
-                                                            }
-                                                            @case ('number') {
-                                                                <input class="dp-input" type="number" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
-                                                            }
-                                                            @case ('date') {
-                                                                <input class="dp-input" type="date" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
-                                                            }
-                                                            @case ('datetime') {
-                                                                <input class="dp-input" type="datetime-local" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
-                                                            }
-                                                            @case ('picklist') {
-                                                                <select class="dp-input" [multiple]="isMultiPicklist(field)" (change)="updateEditDraft(field, $event)">
-                                                                    @if (field.metadata?.nillable && !isMultiPicklist(field)) {
-                                                                        <option value="">--None--</option>
-                                                                    }
-                                                                    @for (option of picklistOptions(field); track option.value) {
-                                                                        <option [value]="option.value" [selected]="isPicklistOptionSelected(field, option.value)">
-                                                                            {{ option.label }}
-                                                                        </option>
-                                                                    }
-                                                                </select>
-                                                            }
-                                                            @case ('textarea') {
-                                                                <textarea class="dp-input dp-input--textarea" [value]="editText(field)" (input)="updateEditDraft(field, $event)"></textarea>
-                                                            }
-                                                            @default {
-                                                                <input class="dp-input" type="text" [value]="editText(field)" (input)="updateEditDraft(field, $event)" />
-                                                            }
-                                                        }
-                                                    } @else if (field.kind === 'reference' && field.reference) {
-                                                        <button type="button" class="dp-link-button" (click)="openReference(field.reference)">
-                                                            <span class="dp-link-button__label">{{ referenceLabel(field.reference) }}</span>
-                                                            @if (field.reference.VlocityDataPackType === 'VlocityMatchingKeyObject') {
-                                                                <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                                                            }
-                                                        </button>
-                                                    } @else if (field.kind === 'object') {
-                                                        <button type="button" class="dp-link-button" (click)="navigateTo(field.path)">
-                                                            <span class="dp-link-button__label">{{ embeddedObjectLabel(field.value) }}</span>
-                                                        </button>
-                                                    } @else if (controlKind(field) === 'checkbox') {
-                                                        <label class="dp-checkbox dp-checkbox--readonly">
-                                                            <input type="checkbox" [checked]="field.value === true" disabled />
-                                                            <span>{{ field.value === true ? 'True' : 'False' }}</span>
-                                                        </label>
-                                                    } @else {
-                                                        <span [class.dp-muted]="isEmptyValue(field.value)">{{ displayValue(field.value, field.metadata) }}</span>
-                                                    }
-                                                </div>
-                                                <div class="dp-field__action">
-                                                    @if (field.editable && !isRecordEditing()) {
-                                                        <button type="button" class="dp-icon-button dp-icon-button--bare" title="Edit {{ field.label }}" (click)="startEdit(field)">
-                                                            <span class="codicon codicon-edit" aria-hidden="true"></span>
-                                                        </button>
-                                                    }
-                                                </div>
-                                            </article>
-                                        }
-                                    </div>
-                                } @else {
-                                    <vlocode-empty-state title="No matching fields" icon="filter" message="Clear the filter to show the datapack fields." [inline]="true" />
-                                }
-                            </section>
-                        }
-                        @case ('related') {
-                            <section class="dp-related" aria-label="Related">
-                                @if (filteredRelatedLists().length) {
-                                    @for (list of filteredRelatedLists(); track list.pathKey) {
-                                        <article class="dp-related-card">
-                                            <header class="dp-related-card__header">
-                                                <span class="codicon codicon-symbol-array dp-related-card__icon" aria-hidden="true"></span>
-                                                <div>
-                                                    <h2>{{ list.label }} ({{ list.totalCount }})</h2>
-                                                    <p>{{ list.apiName }}</p>
-                                                </div>
-                                            </header>
-                                            @if (list.rows.length) {
-                                                <div class="dp-table-wrap">
-                                                    <table class="dp-table">
-                                                        <thead>
-                                                            <tr>
-                                                                @for (column of list.columns; track column.key) {
-                                                                    <th scope="col">{{ column.label }}</th>
-                                                                }
-                                                                <th class="dp-table__actions" scope="col"></th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @for (row of list.rows; track row.pathKey) {
-                                                                <tr>
-                                                                    @for (column of list.columns; track column.key) {
-                                                                        <td [class.dp-table__cell--dirty]="row.cells[column.key] && isDirtyCell(row.cells[column.key])">
-                                                                            @if (row.cells[column.key]; as cell) {
-                                                                                @if (cell.kind === 'reference' && cell.reference) {
-                                                                                    <button type="button" class="dp-link-button" (click)="openReference(cell.reference)">
-                                                                                        <span class="dp-link-button__label">{{ referenceLabel(cell.reference) }}</span>
-                                                                                        @if (cell.reference.VlocityDataPackType === 'VlocityMatchingKeyObject') {
-                                                                                            <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                                                                                        }
-                                                                                    </button>
-                                                                                } @else if (cell.kind === 'object') {
-                                                                                    <button type="button" class="dp-link-button" (click)="navigateTo(cell.path)">
-                                                                                        <span class="dp-link-button__label">{{ embeddedObjectLabel(cell.value) }}</span>
-                                                                                    </button>
-                                                                                } @else {
-                                                                                    <span class="dp-cell-text" [class.dp-muted]="isEmptyValue(cell.value)">{{ displayValue(cell.value) }}</span>
-                                                                                }
-                                                                            }
-                                                                        </td>
-                                                                    }
-                                                                    <td class="dp-table__actions">
-                                                                        <button type="button" class="dp-icon-button" title="Open row" (click)="navigateTo(row.path)">
-                                                                            <span class="codicon codicon-chevron-right" aria-hidden="true"></span>
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            } @else {
-                                                <div class="dp-related-card__empty">No matching rows</div>
-                                            }
-                                        </article>
-                                    }
-                                } @else {
-                                    <vlocode-empty-state title="No related objects" icon="symbol-array" message="This datapack section does not contain embedded object arrays." [inline]="true" />
-                                }
-                            </section>
-                        }
-                        @case ('content') {
-                            <section class="dp-content" aria-label="Content">
-                                @if (filteredContentFields().length) {
-                                    @for (field of filteredContentFields(); track pathKey(field.path)) {
-                                        <article class="dp-content-card" [class.dp-content-card--editing]="isRecordEditing() && field.editable" [class.dp-content-card--dirty]="isDirtyField(field)">
-                                            <header class="dp-content-card__header">
-                                                <div>
-                                                    <h2>{{ field.label }}</h2>
-                                                    <p>{{ field.apiName }}</p>
-                                                </div>
-                                                @if (field.editable && !isRecordEditing()) {
-                                                    <button type="button" class="dp-icon-button dp-icon-button--bare" title="Edit {{ field.label }}" (click)="startEdit(field)">
-                                                        <span class="codicon codicon-edit" aria-hidden="true"></span>
-                                                    </button>
-                                                }
-                                            </header>
-                                            @if (isRecordEditing() && field.editable) {
-                                                <div class="dp-content-card__edit-body">
-                                                    <textarea class="dp-input dp-input--content" [value]="editText(field)" (input)="updateEditDraft(field, $event)"></textarea>
-                                                </div>
-                                            } @else {
-                                                <pre class="dp-content-card__body" [class.dp-muted]="isEmptyValue(field.value)">{{ displayValue(field.value, field.metadata) }}</pre>
-                                            }
-                                        </article>
-                                    }
-                                } @else {
-                                    <vlocode-empty-state title="No matching content" icon="filter" message="Clear the filter to show long text fields." [inline]="true" />
-                                }
-                            </section>
-                        }
-                    }
-                </section>
-
-                @if (loading()) {
-                    <section class="dp-loading" role="status" aria-live="polite" aria-busy="true">
-                        <div class="dp-loading__content">
-                            <span class="dp-loading__spinner" aria-hidden="true"></span>
-                            <h2>{{ loadingTitle() }}</h2>
-                            <p>{{ loadingMessage() }}</p>
-                        </div>
-                    </section>
-                }
-            </main>
-        }
-
-        <ng-template #recordHeader>
-            <div class="dp-topbar">
-                <header class="dp-header">
-                    <div class="dp-header__identity">
-                        <span class="codicon codicon-symbol-object dp-header__icon" aria-hidden="true"></span>
-                        <div class="dp-header__title">
-                            <h1>{{ currentTitle() }}</h1>
-                            <p>{{ currentObjectLabel() }}</p>
-                        </div>
-                    </div>
-                    <div class="dp-header__actions">
-                        @if (isRecordEditing()) {
-                            <span class="dp-change-count" aria-live="polite">{{ changeCountLabel() }}</span>
-                            <button type="button" class="dp-button" [disabled]="saving()" (click)="cancelEdit()">
-                                <span class="codicon codicon-close" aria-hidden="true"></span>
-                                Cancel
-                            </button>
-                            <button type="button" class="dp-button dp-button--primary" [disabled]="saving() || !hasChanges()" (click)="saveEdit()">
-                                <span class="codicon" [class.codicon-loading]="saving()" [class.codicon-modifier-spin]="saving()" [class.codicon-save]="!saving()" aria-hidden="true"></span>
-                                @if (saving()) { Saving } @else { Save }
-                            </button>
-                        } @else {
-                            @if (hasEditableFields()) {
-                                <button type="button" class="dp-button" (click)="startRecordEdit()">
-                                    <span class="codicon codicon-edit" aria-hidden="true"></span>
-                                    Edit
-                                </button>
-                            }
-                            <button type="button" class="dp-button" [disabled]="refreshing()" (click)="refresh()">
-                                <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
-                                @if (refreshing()) { Refreshing } @else { Refresh }
-                            </button>
-                            <button type="button" class="dp-button" [disabled]="deploying()" (click)="deploy()">
-                                <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
-                                @if (deploying()) { Deploying } @else { Deploy }
-                            </button>
-                            <button type="button" class="dp-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
-                                <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                                @if (openingSalesforce()) { Opening } @else { Open in Salesforce }
-                            </button>
-                            <button type="button" class="dp-button" (click)="viewSource()">
-                                <span class="codicon codicon-code" aria-hidden="true"></span>
-                                Source
-                            </button>
-                        }
-                    </div>
-                </header>
-                <nav class="dp-breadcrumbs" aria-label="Datapack structure">
-                    @for (crumb of breadcrumbs(); track crumb.pathKey) {
-                        @if (crumb.clickable) {
-                            <button type="button" class="dp-breadcrumbs__item" [class.dp-breadcrumbs__item--active]="pathKey(crumb.path) === pathKey(path())" (click)="navigateTo(crumb.path)">
-                                {{ crumb.label }}
-                            </button>
-                        } @else {
-                            <span class="dp-breadcrumbs__item dp-breadcrumbs__item--static" [class.dp-breadcrumbs__item--active]="pathKey(crumb.path) === pathKey(path())">
-                                {{ crumb.label }}
-                            </span>
-                        }
-                        @if (!$last) {
-                            <span class="codicon codicon-chevron-right dp-breadcrumbs__sep" aria-hidden="true"></span>
-                        }
-                    }
-                </nav>
-            </div>
-        </ng-template>
-    `
+    templateUrl: './app/app.component.html'
 })
 export class AppComponent {
     protected readonly activeTab = signal<TabId>('details');
@@ -1231,10 +922,6 @@ export class AppComponent {
     }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
 function isReference(value: unknown): value is DatapackReference {
     return isRecord(value) &&
         (value.VlocityDataPackType === 'VlocityLookupMatchingKeyObject' || value.VlocityDataPackType === 'VlocityMatchingKeyObject') &&
@@ -1280,8 +967,10 @@ function getValueAtPath(root: unknown, path: PathSegment[]) {
 function setValueAtPath(root: Record<string, unknown>, path: PathSegment[], value: unknown) {
     const parent = getValueAtPath(root, path.slice(0, -1));
     const key = path[path.length - 1];
-    if ((Array.isArray(parent) || isRecord(parent)) && key !== undefined) {
-        (parent as any)[key] = value;
+    if (Array.isArray(parent) && typeof key === 'number') {
+        parent[key] = value;
+    } else if (isRecord(parent) && typeof key === 'string') {
+        parent[key] = value;
     }
 }
 

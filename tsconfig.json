@@ -40,5 +40,6 @@
         "strictInputAccessModifiers": true,
         "strictStandalone": true,
         "strictTemplates": true
-    }
+    },
+    "exclude": ["packages/vscode-webviews/src"]
 }

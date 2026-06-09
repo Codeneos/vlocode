@@ -1,0 +1,9 @@
+<label class="ip-switch">
+    <input type="checkbox" [checked]="propertyChecked('failOnStepError')" (change)="propertyChange.emit({ field: 'failOnStepError', value: inputChecked($event) })" />
+    <span>Terminate when step fails</span>
+</label>
+<label class="ip-switch">
+    <input type="checkbox" [checked]="propertyChecked('returnOnlyFailureResponse')" (change)="propertyChange.emit({ field: 'returnOnlyFailureResponse', value: inputChecked($event) })" />
+    <span>Return only failure response</span>
+</label>
+<vlo-key-value-map-editor title="Failure Response" [entries]="entries('failureResponse')" (entriesChange)="emitMapEntries('failureResponse', $event)" />

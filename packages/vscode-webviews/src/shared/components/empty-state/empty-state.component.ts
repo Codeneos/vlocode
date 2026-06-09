@@ -1,29 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 @Component({
-    selector: 'vlocode-empty-state',
+    selector: 'vlo-empty-state',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `
-        <section class="vlocode-empty-state" [class.vlocode-empty-state--page]="page()" [class.vlocode-empty-state--inline]="inline()" [attr.role]="role()">
-            @if (icon()) {
-                <span class="codicon codicon-{{ icon() }} vlocode-empty-state__icon" aria-hidden="true"></span>
-            }
-            <h2>{{ title() }}</h2>
-            @if (message()) {
-                <p>{{ message() }}</p>
-            }
-            @if (actionLabel()) {
-                <button type="button" class="vlocode-button vlocode-button--primary" (click)="action.emit()">
-                    @if (actionIcon()) {
-                        <span class="codicon codicon-{{ actionIcon() }}" aria-hidden="true"></span>
-                    }
-                    {{ actionLabel() }}
-                </button>
-            }
-            <ng-content />
-        </section>
-    `
+    templateUrl: './empty-state.component.html'
 })
 export class VlocodeEmptyStateComponent {
     readonly actionIcon = input<string>();
