@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.2.0](https://github.com/Codeneos/vlocode/compare/v2.1.3...v2.2.0) (2026-06-09)
+
+### Bug Fixes
+
+* **datapackExporter:** add sync fields as UNWRITABLE_FIELDS list ([161724b](https://github.com/Codeneos/vlocode/commit/161724b079e830d3af979b8f17f441b3fe5eb911))
+* **datapackRecordFactory:** handle null record types and improve field validation warnings ([8140bf6](https://github.com/Codeneos/vlocode/commit/8140bf683e18298ec08412f41569dcc9b952031e))
+* **datatpackExporter:** prioritize system unique matching key fields before name field for objects that do not have a matching key specified ([2c6b35c](https://github.com/Codeneos/vlocode/commit/2c6b35ce6e0e71356010064bae600d6a17fe4bd4))
+* **matchingFields:** update matching key field normalization to handle namespace placeholders ([e190ee7](https://github.com/Codeneos/vlocode/commit/e190ee7824f00d4a3a20f64d45dbbb7b05dd9467))
+
+### Features
+
+* modularize designer UIs to improve maintenace and fix formula has unsupported functions ([bb9e154](https://github.com/Codeneos/vlocode/commit/bb9e15437fe9e85ce4b2e55e080e972795ab0b47))
+
 ## [2.1.3](https://github.com/Codeneos/vlocode/compare/v2.1.2...v2.1.3) (2026-05-20)
 
 ### Bug Fixes

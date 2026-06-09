@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.2.0](https://github.com/codeneos/vlocode/compare/v2.1.3...v2.2.0) (2026-06-09)
+
+### Features
+
+* **metadata:** add support for exporting of child components such as field ([eb03251](https://github.com/codeneos/vlocode/commit/eb03251c0c6d7fb36fc0f5e14e6341f842f781d6))
+* **metadata:** refactor outputDeployResult to simplify handling of deploy results and improve message retrieval ([e588b27](https://github.com/codeneos/vlocode/commit/e588b272d32a17e8625c2eb37094f162a81e4421))
+* modularize designer UIs to improve maintenace and fix formula has unsupported functions ([bb9e154](https://github.com/codeneos/vlocode/commit/bb9e15437fe9e85ce4b2e55e080e972795ab0b47))
+* **salesforce:** enhance handling of folder types metadata on export ([946ffe6](https://github.com/codeneos/vlocode/commit/946ffe63537d50c7700baac5c74726ef0b7d7bc3))
+
 ## [2.1.3](https://github.com/codeneos/vlocode/compare/v2.1.2...v2.1.3) (2026-05-20)
 
 ### Bug Fixes

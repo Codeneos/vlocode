@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.2.0](https://github.com/Codeneos/vlocode/compare/v2.1.3...v2.2.0) (2026-06-09)
+
+### Features
+
+* modularize designer UIs to improve maintenace and fix formula has unsupported functions ([bb9e154](https://github.com/Codeneos/vlocode/commit/bb9e15437fe9e85ce4b2e55e080e972795ab0b47))
+
 ## [2.1.2](https://github.com/Codeneos/vlocode/compare/v2.1.1...v2.1.2) (2026-05-19)
 
 ### Bug Fixes
