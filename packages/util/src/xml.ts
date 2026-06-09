@@ -1,5 +1,5 @@
 import { XMLParser, XMLBuilder, XMLValidator } from 'fast-xml-parser';
-import { DOMParser, LiveNodeList, Node } from '@xmldom/xmldom';
+import { DOMParser, Element, LiveNodeList, Node } from '@xmldom/xmldom';
 import { visitObject } from './object';
 
 type X2jOptions = Required<ConstructorParameters<typeof XMLParser>>[0];
@@ -368,7 +368,7 @@ export namespace XML {
      * @param tag - The tag name to search for within the XML
      * @returns A live NodeList collection of matched elements
      */
-    export function getElementsByTagName(xml: string, tag: string): LiveNodeList<Node> {
+    export function getElementsByTagName(xml: string, tag: string): LiveNodeList<Element> {
         return new DOMParser().parseFromString(xml, 'text/xml').getElementsByTagName(tag);
     }
 
