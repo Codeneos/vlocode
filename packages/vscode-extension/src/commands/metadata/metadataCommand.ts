@@ -1,8 +1,15 @@
 import * as vscode from 'vscode';
 
-import { getDocumentBodyAsString, getErrorMessage, mapBy } from '@vlocode/util';
+import { getDocumentBodyAsString, getErrorMessage } from '@vlocode/util';
 import { CommandBase } from '../../lib/commandBase';
-import { DeployResult, SalesforcePackage, SalesforcePackageComponent, SalesforceService } from '@vlocode/salesforce';
+import type { DeployMessage, DeployResult, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
+
+const trueValues = new Set<unknown>([ true, 'true' ]);
+const deployMessageStatusLabels = [
+    [ 'created', 'Created' ],
+    [ 'deleted', 'Deleted' ],
+    [ 'changed', 'Changed' ]
+] as const satisfies ReadonlyArray<readonly [keyof DeployMessage, string]>;
 
 /**
  * Salesforce metadata base command
@@ -34,22 +41,13 @@ export default abstract class MetadataCommand extends CommandBase {
         }
     }
 
-    protected outputDeployResult(components: SalesforcePackageComponent[], result: DeployResult) {
-        const deployMessages = mapBy(result.details?.allComponentMessages ?? [], message => `${message.componentType}/${message.fullName}`);
-        const deployComponentStatus = components.map(
-            component => {
-                const message = deployMessages.get(`${component.componentType}/${component.componentName}`);
-                const deployStatus = message?.deleted
-                    ? 'Deleted' : message?.success === false
-                    ? 'Failed' : (message?.changed ? 'Changed' : 'Unchanged');
-                return {
-                    id: message?.id || undefined,
-                    type: component.componentType,
-                    component: component.componentName,
-                    status: deployStatus
-                };
-            }
-        );
+    protected outputDeployResult(result: DeployResult) {
+        const deployComponentStatus = this.getDeployMessages(result).map(message => ({
+            id: message.id || undefined,
+            type: message.componentType,
+            component: message.fullName,
+            status: this.getDeployMessageStatus(message)
+        }));
         const deployErrors = (result.details?.componentFailures || []).map(
             component => ({
                 component: component.fullName,
@@ -57,9 +55,7 @@ export default abstract class MetadataCommand extends CommandBase {
             })
         );
 
-        if (!result.success) {
-            this.output.table(deployErrors, { appendEmptyLine: true, focus: true });
-        } else if (deployComponentStatus.length) {
+        if (deployComponentStatus.length) {
             this.output.table(deployComponentStatus, { appendEmptyLine: true, focus: true });
             if (deployErrors.length) {
                 this.output.table(deployErrors, {
@@ -71,12 +67,43 @@ export default abstract class MetadataCommand extends CommandBase {
                     }
                 });
             }
+        } else if (deployErrors.length) {
+            this.output.table(deployErrors, { appendEmptyLine: true, focus: true });
         }
 
         this.output.appendLine(
             `Deployment ${result?.id} -- ${result.status} (${result.numberComponentsDeployed}/${result.numberComponentsTotal})`,
             { appendEmptyLine: true, focus: true }
         );
+    }
+
+    private getDeployMessages(result: DeployResult) {
+        const messages = new Map<string, DeployMessage>();
+        const componentFailures = result.details?.componentFailures ?? [];
+        const componentSuccesses = result.details?.componentSuccesses ?? [];
+        const deployMessages = componentFailures.length || componentSuccesses.length
+            ? [ ...componentFailures, ...componentSuccesses ]
+            : result.details?.allComponentMessages ?? [];
+
+        for (const message of deployMessages) {
+            if (this.isPackageManifestMessage(message)) {
+                continue;
+            }
+            const key = `${message.componentType}/${message.fullName}`;
+            if (!messages.has(key) || !trueValues.has(message.success)) {
+                messages.set(key, message);
+            }
+        }
+        return [ ...messages.values() ];
+    }
+
+    private isPackageManifestMessage(message: DeployMessage) {
+        return message.forPackageManifestFile || message.fullName === 'package.xml';
+    }
+
+    private getDeployMessageStatus(message: DeployMessage) {
+        return deployMessageStatusLabels.find(([flag]) => trueValues.has(message[flag]))?.[1]
+            ?? (trueValues.has(message.success) ? 'Unchanged' : 'Failed');
     }
 
     /**

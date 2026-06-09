@@ -204,7 +204,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             return;
         }
 
-        this.outputDeployResult(deployment.deploymentPackage.components(), result);
+        this.outputDeployResult(result);
         return this.onDeploymentComplete(deployment, result);
     }
 
