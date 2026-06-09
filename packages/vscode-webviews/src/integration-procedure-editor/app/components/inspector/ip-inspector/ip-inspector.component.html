@@ -1,0 +1,104 @@
+<aside class="ip-inspector" [class.ip-inspector--collapsed]="collapsed()" aria-label="Properties inspector">
+    @if (collapsed()) {
+        <button type="button" class="ip-sidebar-toggle" title="Expand details panel" aria-label="Expand details panel" (click)="toggleCollapsed.emit()">
+            <span class="codicon codicon-chevron-left" aria-hidden="true"></span>
+        </button>
+    } @else {
+        <div
+            class="ip-inspector__resize"
+            role="separator"
+            tabindex="0"
+            aria-label="Resize details panel"
+            aria-orientation="vertical"
+            (pointerdown)="resizeStart.emit($event)"
+            (keydown)="resizeKeydown.emit($event)">
+        </div>
+        <header class="ip-inspector__header">
+            <div class="ip-inspector__heading">
+                <span class="ip-inspector__glyph">
+                    <span [ngClass]="['codicon', selectedElement() ? 'codicon-' + iconForType(selectedElement()!.type) : 'codicon-server-process']" aria-hidden="true"></span>
+                </span>
+                <div>
+                    <h2>{{ selectedElement()?.name ?? 'Procedure' }}</h2>
+                    <p>
+                        @if (selectedElement(); as selected) {
+                            <span>{{ selected.type }}</span>
+                        } @else {
+                            <span>Procedure properties</span>
+                        }
+                    </p>
+                </div>
+            </div>
+            <div class="ip-inspector__actions">
+                <button type="button" class="ip-icon-button" title="Collapse details panel" aria-label="Collapse details panel" (click)="toggleCollapsed.emit()">
+                    <span class="codicon codicon-chevron-right" aria-hidden="true"></span>
+                </button>
+                @if (selectedElement(); as selected) {
+                    <button type="button" class="ip-icon-button" title="Duplicate" (click)="duplicateElement.emit(selected.key)">
+                        <span class="codicon codicon-copy" aria-hidden="true"></span>
+                    </button>
+                    <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="deleteRequested.emit(selected.key)">
+                        <span class="codicon codicon-trash" aria-hidden="true"></span>
+                    </button>
+                }
+            </div>
+        </header>
+
+        <nav class="ip-tabs" aria-label="Inspector tabs">
+            @for (tab of inspectorTabs(); track tab.id) {
+                <button type="button" class="ip-tabs__tab" [class.ip-tabs__tab--active]="activeTab() === tab.id" (click)="activeTabChange.emit(tab.id)">
+                    {{ tab.label }}
+                </button>
+            }
+        </nav>
+
+        <section class="ip-inspector__body">
+            @switch (activeTab()) {
+                @case ('settings') {
+                    <ip-settings-tab
+                        [model]="model()"
+                        [selectedElement]="selectedElement()"
+                        [propertySet]="propertySet()"
+                        [apexClassOptions]="apexClassOptions()"
+                        [dataMapperOptions]="dataMapperOptions()"
+                        [dataRaptorInputParameters]="dataRaptorInputParameters()"
+                        (headerFieldChange)="headerFieldChange.emit($event)"
+                        (elementFieldChange)="elementFieldChange.emit($event)"
+                        (propertyChange)="propertyChange.emit($event)"
+                        (mapEntriesChange)="mapEntriesChange.emit($event)"
+                        (dataRaptorParameterAdd)="dataRaptorParameterAdd.emit()"
+                        (dataRaptorParameterChange)="dataRaptorParameterChange.emit($event)"
+                        (dataRaptorParameterDelete)="dataRaptorParameterDelete.emit($event)" />
+                }
+                @case ('conditions') {
+                    <ip-conditions-tab
+                        [selectedElement]="selectedElement()"
+                        [propertySet]="propertySet()"
+                        (propertyChange)="propertyChange.emit($event)"
+                        (procedurePropertyChange)="procedurePropertyChange.emit($event)" />
+                }
+                @case ('io') {
+                    <ip-input-output-tab
+                        [propertySet]="propertySet()"
+                        (propertyChange)="propertyChange.emit($event)"
+                        (mapEntriesChange)="mapEntriesChange.emit($event)" />
+                }
+                @case ('failure') {
+                    <ip-failure-tab
+                        [propertySet]="propertySet()"
+                        (propertyChange)="propertyChange.emit($event)"
+                        (mapEntriesChange)="mapEntriesChange.emit($event)" />
+                }
+                @case ('json') {
+                    <ip-json-tab
+                        [draft]="jsonDraft()"
+                        [error]="jsonError()"
+                        [targetLabel]="jsonTargetLabel()"
+                        [editorOptions]="jsonEditorOptions()"
+                        (draftChange)="jsonDraftChange.emit($event)"
+                        (applyJson)="applyJson.emit()" />
+                }
+            }
+        </section>
+    }
+</aside>

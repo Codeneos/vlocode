@@ -1,6 +1,8 @@
 import 'jest';
 import * as vscode from 'vscode';
 
+import { Logger } from '@vlocode/core';
+import { observeArray } from '@vlocode/util';
 import VlocodeService from '../lib/vlocodeService';
 
 describe('VlocodeService', () => {
@@ -8,34 +10,33 @@ describe('VlocodeService', () => {
         jest.clearAllMocks();
     });
 
-    function createService() {
+    interface TestServiceState {
+        activities: VlocodeService['activities'];
+        disposables: { dispose(): unknown }[];
+        logger: Pick<Logger, 'debug' | 'error'>;
+    }
+
+    function createService(): VlocodeService {
         const service = Object.create(VlocodeService.prototype) as VlocodeService;
-
-        (service as any).disposables = [];
-        (service as any).activities = [];
-        (service as any).logger = {
-            debug: jest.fn(),
-            error: jest.fn()
-        };
-
+        Object.assign(service, {
+            activities: observeArray([]),
+            disposables: [],
+            logger: Logger.null
+        } satisfies TestServiceState);
         return service;
     }
 
     describe('validateSalesforceConnectivity', () => {
         it('asks for org selection before attempting initialization', async () => {
-            const service = Object.create(VlocodeService.prototype) as VlocodeService & {
-                sfUsername?: string;
-                initializeConnection: jest.Mock;
-            };
+            const service = createService();
+            const initializeConnection = jest.spyOn(service, 'initializeConnection');
 
-            service.sfUsername = undefined;
-            service.initializeConnection = jest.fn();
             (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
 
             await expect(service.validateSalesforceConnectivity()).resolves.toBe(
                 'Select a Salesforce instance for this workspace to use Vlocode'
             );
-            expect(service.initializeConnection).not.toHaveBeenCalled();
+            expect(initializeConnection).not.toHaveBeenCalled();
         });
     });
 

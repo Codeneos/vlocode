@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { JsonEditorComponent } from '../json-editor/json-editor.component';
+import { VlocodeJsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import type { DataMapperPreviewDebug } from '../../models/datamapper.model';
 
 @Component({
     selector: 'dm-preview-panel',
     standalone: true,
-    imports: [JsonEditorComponent],
+    imports: [VlocodeJsonEditorComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './preview-panel.component.html'
 })

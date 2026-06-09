@@ -1,8 +1,9 @@
-import { randomUUID } from 'crypto';
 import { getDataMapperPathValue } from '../../../datamapper/path';
 import type { OmniStudioFormulaContext, OmniStudioFormulaRuntimeContext } from '../types';
 
 export type OmniStudioFormulaFunction = (args: unknown[], context: OmniStudioFormulaRuntimeContext) => unknown | Promise<unknown>;
+
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 export const OMNISTUDIO_FORMULA_RUNTIME_FUNCTIONS: Record<string, OmniStudioFormulaFunction> = {
     ABS: args => Math.abs(toNumber(args[0])),
@@ -12,7 +13,7 @@ export const OMNISTUDIO_FORMULA_RUNTIME_FUNCTIONS: Record<string, OmniStudioForm
     AGE: (args, context) => age(args[0], currentDate(context)),
     AGEON: args => age(args[0], toDate(args[1])),
     AVG: args => average(flattenValues(args)),
-    BASE64ENCODE: args => Buffer.from(String(args[0] ?? ''), 'utf8').toString('base64'),
+    BASE64ENCODE: args => base64Encode(String(args[0] ?? '')),
     CASE: args => caseValue(args),
     CEILING: args => Math.ceil(toNumber(args[0])),
     CONCAT: args => args.map(value => value ?? '').join(''),
@@ -41,7 +42,7 @@ export const OMNISTUDIO_FORMULA_RUNTIME_FUNCTIONS: Record<string, OmniStudioForm
     FORMATDATE: args => toIsoDate(toDate(args[0])),
     FORMATDATETIME: (args, context) => formatDateTime(args[0], args[1], args[2] ?? context.timezone),
     FORMATDATETIMEGMT: args => formatDateTime(args[0], args[2], args[1], true),
-    GENERATEGLOBALKEY: args => `${args[0] ?? ''}${randomUUID()}`,
+    GENERATEGLOBALKEY: args => `${args[0] ?? ''}${generateUuid()}`,
     GET: args => getDataMapperPathValue(args[0], String(args[1] ?? '')),
     HOUR: args => getDatePart(args[0], 'hour'),
     IFBLANK: args => isBlank(args[0]) ? args[1] : args[0],
@@ -518,6 +519,47 @@ function roundHalfEven(value: number) {
         return sign * floor;
     }
     return sign * (floor % 2 === 0 ? floor : floor + 1);
+}
+
+function generateUuid() {
+    const randomUUID = globalThis.crypto?.randomUUID?.bind(globalThis.crypto);
+    if (randomUUID) {
+        return randomUUID();
+    }
+
+    const bytes = randomBytes(16);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0'));
+    return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+}
+
+function randomBytes(length: number) {
+    const bytes = new Uint8Array(length);
+    if (globalThis.crypto?.getRandomValues) {
+        globalThis.crypto.getRandomValues(bytes);
+        return bytes;
+    }
+    for (let index = 0; index < bytes.length; index++) {
+        bytes[index] = Math.floor(Math.random() * 256);
+    }
+    return bytes;
+}
+
+function base64Encode(value: string) {
+    const bytes = new TextEncoder().encode(value);
+    let result = '';
+    for (let index = 0; index < bytes.length; index += 3) {
+        const first = bytes[index];
+        const second = bytes[index + 1];
+        const third = bytes[index + 2];
+        result += BASE64_ALPHABET[first >> 2];
+        result += BASE64_ALPHABET[((first & 0x03) << 4) | ((second ?? 0) >> 4)];
+        result += second === undefined ? '=' : BASE64_ALPHABET[((second & 0x0f) << 2) | ((third ?? 0) >> 6)];
+        result += third === undefined ? '=' : BASE64_ALPHABET[third & 0x3f];
+    }
+    return result;
 }
 
 function pad(value: number | string, length = 2) {

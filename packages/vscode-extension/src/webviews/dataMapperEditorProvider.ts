@@ -3,10 +3,12 @@ import path from 'path';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
-import { getErrorMessage } from '@vlocode/util';
-import { container } from '@vlocode/core';
-import { DataMapperExecutor, DatapackFileWriter, DatapackLoader, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition } from '@vlocode/vlocity';
+import { deepClone, getErrorMessage, isRecord } from '@vlocode/util';
+import { FileSystem, injectable } from '@vlocode/core';
+import { DataMapperExecutor, DatapackInfoService, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition } from '@vlocode/vlocity';
 import { MetadataConverter } from '@vlocode/vlocity-deploy';
+import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
+import { VlocodeContext } from '../lib/vlocodeContext';
 import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
 
 interface DataMapperModel {
@@ -75,29 +77,32 @@ interface LoadedDocument {
     uri: vscode.Uri;
 }
 
+@injectable()
 export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapperModel, EditorState, LoadedDocument> {
-    public static readonly viewType = 'vlocode.datamapperEditor';
+    private readonly viewType = 'vlocode.datamapperEditor';
 
-    public static register(context: vscode.ExtensionContext, service: VlocodeService) {
-        const provider = new DataMapperEditorProvider(context, service);
+    public register(): vscode.Disposable {
         return vscode.Disposable.from(
-            vscode.window.registerCustomEditorProvider(DataMapperEditorProvider.viewType, provider, {
+            vscode.window.registerCustomEditorProvider(this.viewType, this, {
                 webviewOptions: { retainContextWhenHidden: true },
                 supportsMultipleEditorsPerDocument: false
             }),
-            vscode.commands.registerCommand(VlocodeCommand.openDataMapperEditor, uri => provider.openEditorView(uri)),
-            vscode.commands.registerCommand(VlocodeCommand.viewDataMapperSource, uri => provider.openSourceView(uri))
+            vscode.commands.registerCommand(VlocodeCommand.openDataMapperEditor, uri => this.openEditorView(uri)),
+            vscode.commands.registerCommand(VlocodeCommand.viewDataMapperSource, uri => this.openSourceView(uri))
         );
     }
 
-    private constructor(
-        context: vscode.ExtensionContext,
-        service: VlocodeService
+    public constructor(
+        context: VlocodeContext,
+        service: VlocodeService,
+        fileSystem: FileSystem,
+        datapackInfo: DatapackInfoService,
+        datapackExpansion: DatapackExpansionService,
+        private readonly metadataConverter: MetadataConverter
     ) {
-        super(context, service);
+        super(context, service, fileSystem, datapackInfo, datapackExpansion);
     }
 
-    private readonly metadataConverter = container.get(MetadataConverter);
     private sObjectSuggestions?: Promise<FieldSuggestion[]>;
     protected readonly view = {
         resourceRoot: 'resources/datamapper-editor',
@@ -109,7 +114,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     protected override async handleEditorMessage({ document, panel, message }: EditorMessageContext<DataMapperModel, LoadedDocument>): Promise<boolean> {
         switch (message.type) {
             case 'refreshFields': {
-                const state = await this.createEditorState(message.model ?? document.data.model, stringArray(message.objects));
+                const state = await this.createEditorState(message.model ?? document.data.model, this.stringArray(message.objects));
                 panel.webview.postMessage({
                     type: 'fields',
                     objectSuggestions: state.objectSuggestions,
@@ -195,7 +200,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private getDataMapperKind(model: DataMapperModel) {
-        const type = String(model.header.Type ?? model.header.type ?? '').toLowerCase();
+        const type = String(model.header.Type ?? '').toLowerCase();
         if (type.includes('load')) {
             return 'load';
         }
@@ -217,8 +222,18 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         return document.sourceFormat === 'xml' ? VlocodeCommand.viewInSalesforce : VlocodeCommand.openInSalesforce;
     }
 
+    protected override getDatapackGraph(document: LoadedDocument) {
+        return document.sourceFormat === 'json' ? document.datapack : undefined;
+    }
+
+    protected override async serializeSourceDocuments(document: LoadedDocument): Promise<Map<string, string>> {
+        return document.sourceFormat === 'xml'
+            ? this.sourceTextMap([[document.uri, this.metadataConverter.datapackToMetadataXml(document.datapack)]])
+            : super.serializeSourceDocuments(document);
+    }
+
     private async openEditorView(uri?: vscode.Uri) {
-        await this.openEditorWith(DataMapperEditorProvider.viewType, 'No DataMapper file is active.', uri);
+        await this.openEditorWith(this.viewType, 'No DataMapper file is active.', uri);
     }
 
     private async openSourceView(uri?: vscode.Uri) {
@@ -336,7 +351,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
 
     private async loadJsonDocument(uri: vscode.Uri): Promise<LoadedDocument> {
         const headerUri = await this.resolveDatapackHeaderUri(uri);
-        const datapack = await container.get(DatapackLoader).loadDatapack(headerUri.fsPath);
+        const datapack = await this.loadDatapackWithOpenDocuments(headerUri);
         return {
             uri,
             datapack,
@@ -366,17 +381,18 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
             await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
             return;
         }
-        await container.get(DatapackFileWriter).saveDatapack(document.datapack);
+        await this.datapackExpansion.saveDatapack(document.datapack);
     }
 
     private createModel(datapack: VlocityDatapack, sourceFormat: 'json' | 'xml'): DataMapperModel {
+        const record = datapack as unknown as Record<string, unknown>;
         const header = { ...datapack.data };
         delete header.OmniDataTransformItem;
         return {
             header,
-            items: toArray(datapack.data.OmniDataTransformItem) as DataMapperItem[],
+            items: this.dataMapperItems(record.OmniDataTransformItem),
             sourceFormat,
-            title: String(datapack.data.Name ?? path.basename(datapack.headerFile ?? 'DataMapper', '_DataPack.json'))
+            title: String(record.Name ?? path.basename(datapack.headerFile ?? 'DataMapper', '_DataPack.json'))
         };
     }
 
@@ -393,11 +409,19 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private updateItems(current: unknown, next: DataMapperItem[]): DataMapperItem[] {
-        if (Array.isArray(current)) {
-            current.splice(0, current.length, ...next);
-            return current;
+        if (!Array.isArray(current)) {
+            return [...next];
         }
-        return [...next];
+
+        const currentByKey = new Map(current
+            .filter((item): item is Record<string, unknown> => isRecord(item))
+            .map((item, index) => [this.itemKey(item) ?? `index:${index}`, item]));
+        const updated = next.map((item, index) => this.mergeItem(
+            currentByKey.get(this.itemKey(item) ?? `index:${index}`),
+            item
+        ));
+        current.splice(0, current.length, ...updated);
+        return current;
     }
 
     private async resolveDatapackHeaderUri(uri: vscode.Uri): Promise<vscode.Uri> {
@@ -411,15 +435,39 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         return vscode.Uri.file(headers[0]);
     }
 
-}
-
-function toArray<T>(value: T | T[] | undefined): T[] {
-    if (value === undefined) {
-        return [];
+    private stringArray(value: unknown): string[] | undefined {
+        return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : undefined;
     }
-    return Array.isArray(value) ? value : [value];
-}
 
-function stringArray(value: unknown): string[] | undefined {
-    return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : undefined;
+    private dataMapperItems(value: unknown): DataMapperItem[] {
+        const items: unknown[] = [];
+        if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i++) {
+                items.push(value[i]);
+            }
+        } else if (value !== undefined) {
+            items.push(value);
+        }
+        return items
+            .filter((item): item is Record<string, unknown> => isRecord(item))
+            .map(item => deepClone(item) as DataMapperItem);
+    }
+
+    private mergeItem(target: unknown, source: DataMapperItem): DataMapperItem {
+        if (!isRecord(target)) {
+            return { ...source };
+        }
+        for (const key of Object.keys(target)) {
+            if (!(key in source)) {
+                delete target[key];
+            }
+        }
+        Object.assign(target, source);
+        return target as DataMapperItem;
+    }
+
+    private itemKey(item: Record<string, unknown>): string | undefined {
+        const key = item.GlobalKey ?? item.VlocityRecordSourceKey;
+        return typeof key === 'string' && key ? key : undefined;
+    }
 }

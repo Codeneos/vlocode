@@ -1,15 +1,31 @@
-import { injectable, Logger } from "@vlocode/core";
-import { QueryBuilder, QueryService, SalesforceService } from "@vlocode/salesforce";
+import { injectable, inject, Logger } from "@vlocode/core";
+import { QueryBuilder, QueryService, SalesforceService, type FieldType } from "@vlocode/salesforce";
 import { DatapackTypeDefinitions, DatapackMatchingKeyService } from "@vlocode/vlocity";
 import { ObjectEntry } from './vlocityDatapackService';
 import { deepClone, removeNamespacePrefix } from '@vlocode/util';
+
+export interface DatapackExportMatchingKeyProvider {
+    getMatchingKeyDefinition(type: string): Promise<{ sobjectType: string; fields: string[]; returnField: string }>;
+}
+
+export interface DatapackExportQueryField {
+    readonly name: string;
+    readonly type: FieldType;
+}
+
+export interface DatapackExportQuerySalesforce {
+    readonly schema: {
+        describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound?: boolean): Promise<readonly DatapackExportQueryField[] | undefined>;
+        getNameField(sobjectType: string): Promise<string | undefined>;
+    };
+}
 
 @injectable()
 export class DatapackExportQueries {
 
     constructor(
-        private readonly matchingKeys: DatapackMatchingKeyService,
-        private readonly salesforce: SalesforceService,
+        @inject(DatapackMatchingKeyService) private readonly matchingKeys: DatapackExportMatchingKeyProvider,
+        @inject(SalesforceService) private readonly salesforce: DatapackExportQuerySalesforce,
         private readonly logger: Logger) {
     }
 
@@ -64,7 +80,8 @@ export class DatapackExportQueries {
                     this.logger.warn(`Unable to resolve field ${field} for ${datapack.datapackType} export query`);
                     continue;
                 }
-                const value = fieldDescribe.reduce((o, f) => o && o[f.name], datapack);
+                const value = fieldDescribe.reduce((o, f) => o && o[f.name], datapack) ??
+                    (fieldDescribe.length === 1 && fieldDescribe[0].name === nameField ? datapack.name : undefined);
 
                 if (value !== undefined) {
                     const fullName = fieldDescribe.map(f => f.name).join('.');

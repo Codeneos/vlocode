@@ -1,0 +1,28 @@
+<div class="ip-field-grid ip-field-grid--io">
+    <label class="ip-field">
+        <span>Send JSON Path</span>
+        <input [value]="propertyValue('sendJSONPath')" (input)="propertyChange.emit({ field: 'sendJSONPath', value: inputValue($event) })" />
+    </label>
+    <label class="ip-field">
+        <span>Send JSON Node</span>
+        <input [value]="propertyValue('sendJSONNode')" (input)="propertyChange.emit({ field: 'sendJSONNode', value: inputValue($event) })" />
+    </label>
+    <label class="ip-field">
+        <span>Response JSON Path</span>
+        <input [value]="propertyValue('responseJSONPath')" (input)="propertyChange.emit({ field: 'responseJSONPath', value: inputValue($event) })" />
+    </label>
+    <label class="ip-field">
+        <span>Response JSON Node</span>
+        <input [value]="propertyValue('responseJSONNode')" (input)="propertyChange.emit({ field: 'responseJSONNode', value: inputValue($event) })" />
+    </label>
+</div>
+<label class="ip-switch">
+    <input type="checkbox" [checked]="propertyChecked('sendOnlyAdditionalInput')" (change)="propertyChange.emit({ field: 'sendOnlyAdditionalInput', value: inputChecked($event) })" />
+    <span>Send only additional input</span>
+</label>
+<label class="ip-switch">
+    <input type="checkbox" [checked]="propertyChecked('returnOnlyAdditionalOutput')" (change)="propertyChange.emit({ field: 'returnOnlyAdditionalOutput', value: inputChecked($event) })" />
+    <span>Return only additional output</span>
+</label>
+<vlo-key-value-map-editor title="Additional Input" [entries]="entries('additionalInput')" (entriesChange)="emitMapEntries('additionalInput', $event)" />
+<vlo-key-value-map-editor title="Additional Output" [entries]="entries('additionalOutput')" (entriesChange)="emitMapEntries('additionalOutput', $event)" />

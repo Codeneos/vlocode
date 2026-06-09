@@ -419,6 +419,20 @@ vlocode.dataRaptor.convert:
       when: *whenDataRaptor
     - menu: editor/context
       when: *whenDataRaptor
+vlocode.omniStudio.convertMetadata:
+  title: 'OmniStudio: Convert Metadata/DataPack'
+  group: v_vlocity_omniscript
+  menus:
+    - menu: explorer/context
+      when: &whenOmniStudioMetadataConversion
+        - resourceScheme == file && resourcePath =~ /[\/\\]omniDataTransforms[\/\\].*\.rpt-meta\.xml$/
+        - resourceScheme == file && resourcePath =~ /[\/\\]omniIntegrationProcedures[\/\\].*\.ip-meta\.xml$/
+        - resourceScheme == file && resourcePath =~ /[\/\\](DataRaptor|OmniDataTransform)[\/\\].*_(DataPack|Items)\.json$/
+        - resourceScheme == file && resourcePath =~ /[\/\\]IntegrationProcedure[\/\\].*_(DataPack|Element.*)\.json$/
+    - menu: commandPalette
+      when: *whenOmniStudioMetadataConversion
+    - menu: editor/context
+      when: *whenOmniStudioMetadataConversion
 
 # editor
 vlocode.datamapper.openEditor:

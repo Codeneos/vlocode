@@ -33,23 +33,8 @@ button, input, select, textarea { font: inherit; }
 
 .dm-topbar { position: sticky; top: 0; z-index: 8; width: 100%; border-bottom: 1px solid $panel; background: $editor; }
 
-.dm-header {
-    @include editor-topbar;
-
-    &__identity { @include editor-header-identity; }
-    &__icon.codicon[class*='codicon-'] { @include editor-header-icon; }
-    &__title { @include editor-header-copy; }
-    &__actions {
-        @include editor-header-actions;
-
-        .dm-button { min-height: 28px; padding: 3px 9px; }
-    }
-}
-
-.dm-header h1, .dm-panel h2, .dm-card h2, .dm-dialog h2, .dm-empty h1, .dm-empty h2 { @include heading; }
-.dm-header p, .dm-panel p, .dm-card p, .dm-empty p { @include copy; }
-.dm-header h1 { @include editor-header-title; }
-.dm-header p { @include editor-header-subtitle; }
+.dm-panel h2, .dm-dialog h2 { @include heading; }
+.dm-panel p { @include copy; }
 
 .dm-tabs {
     display: flex; height: 42px; background: $editor;
@@ -86,7 +71,7 @@ button, input, select, textarea { font: inherit; }
     }
     &__start, &__end { border: 4px solid $panel-strong; background: $surface; box-shadow: $shadow-subtle; }
     &__end { margin-top: 12px; }
-    &__insert { position: relative; z-index: 2; display: grid; place-items: center; height: 56px; margin: 0; + .dm-card { margin-top: 0; } }
+    &__insert { position: relative; z-index: 2; display: grid; place-items: center; height: 56px; margin: 0; }
     &__add {
         margin-top: 24px; border: 0; color: var(--vscode-button-foreground); background: var(--vscode-button-background);
         font-size: 16px; cursor: pointer; transition: background $quick, transform $quick, box-shadow $quick;
@@ -100,41 +85,6 @@ button, input, select, textarea { font: inherit; }
             outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px;
         }
         &--insert { margin-top: 0; opacity: 1; transform: scale(1); }
-    }
-}
-
-.dm-card {
-    position: relative; z-index: 1; overflow: hidden; margin: 28px auto 0; border: 1px solid $panel; border-radius: $radius-surface;
-    background: $surface; box-shadow: $shadow-subtle;
-
-    &__header {
-        display: flex; align-items: center; gap: 12px; padding: 18px; border-bottom: 1px solid $panel; background: $surface-alt;
-        > div { min-width: 0; }
-    }
-    &__actions { display: flex; gap: 6px; margin-left: auto; }
-    &--extract &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 30%, #{$surface-alt}); }
-    &--formula &__header { background: color-mix(in srgb, var(--vscode-list-activeSelectionBackground) 10%, #{$surface-alt}); }
-    &--load &__header { background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 24%, #{$surface-alt}); }
-
-    &--disabled {
-        border-color: color-mix(in srgb, #{$disabled} 45%, transparent); @include disabled-bg($editor, 85%);
-        .dm-card__header { background: color-mix(in srgb, #{$surface-alt} 82%, #{$disabled}); }
-        .dm-card__icon { color: $disabled; background: color-mix(in srgb, var(--vscode-editor-foreground) 8%, transparent); }
-        .dm-field > span, h2, p { color: $disabled; }
-    }
-
-    &__icon {
-        flex: 0 0 auto; width: 40px; height: 40px; border-radius: $radius-surface; color: var(--vscode-button-foreground);
-        font-size: 22px; background: var(--vscode-button-background);
-        &.codicon[class*='codicon-'] {
-            display: inline-grid; place-items: center; font-size: 22px; line-height: 1;
-            &::before { display: block; font-size: inherit; line-height: 1; }
-        }
-    }
-    &__body {
-        padding: 20px 18px 22px;
-        &--edit { display: grid; gap: 22px; }
-        h3 { margin: 22px 0 10px; font-size: 14px; }
     }
 }
 
@@ -162,59 +112,27 @@ button, input, select, textarea { font: inherit; }
     .dm-search { justify-self: end; min-width: min(360px, 100%); }
 }
 
-.dm-search input, .dm-field input, .dm-field select, .dm-field textarea, .dm-combobox input, .dm-table select, .dm-filter-row__joiner select {
+.dm-search input, .dm-field > input, .dm-field > select, .dm-field > textarea, .dm-table select, .dm-filter-row__joiner select {
     @include control;
 }
 
-.dm-field dm-formula-editor {
+.dm-field vlo-formula-editor {
     display: block; overflow: hidden; height: 160px; min-height: 120px;
     border: 1px solid $input-border; border-radius: $radius-control; background: var(--vscode-editor-background);
 }
 
-.dm-field dm-formula-editor dm-monaco-editor,
-.dm-field dm-formula-editor .dm-monaco-editor {
+.dm-field vlo-formula-editor vlo-monaco-editor,
+.dm-field vlo-formula-editor .vlo-monaco-editor {
     display: block; width: 100%; height: 100%; min-height: 0;
 }
 
-dm-monaco-editor,
-.dm-monaco-editor {
+vlo-monaco-editor,
+.vlo-monaco-editor {
     position: relative;
 }
 
-.dm-monaco-editor {
+.vlo-monaco-editor {
     overflow: hidden;
-}
-
-.dm-monaco-overflow-widgets {
-    position: fixed; inset: 0; z-index: 10000; overflow: visible; pointer-events: none;
-    background: transparent !important;
-
-    .overflowingContentWidgets,
-    .overflowingOverlayWidgets {
-        overflow: visible;
-    }
-
-    .suggest-widget,
-    .suggest-details,
-    .parameter-hints-widget,
-    .monaco-hover {
-        z-index: 10000; pointer-events: auto;
-    }
-}
-
-.dm-combobox {
-    position: relative;
-    &__list {
-        position: fixed; z-index: 1000; overflow: auto;
-        margin: 0; padding: 2px 0; border: 1px solid color-mix(in srgb, var(--vscode-widget-border, #{$input-border}) 70%, transparent); border-radius: $radius-control;
-        color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); box-shadow: $shadow-popover; list-style: none;
-    }
-    &__option {
-        display: grid; width: 100%; border: 0; border-radius: 0; padding: 6px 10px; color: inherit; background: transparent; text-align: left;
-        &:hover, &:focus { color: var(--vscode-list-hoverForeground); background: var(--vscode-list-hoverBackground); outline: none; }
-        span { @include truncate; }
-        small { color: $desc; }
-    }
 }
 
 .dm-table {
@@ -270,6 +188,7 @@ dm-monaco-editor,
 .dm-dialog {
     position: fixed; z-index: 11; top: 50%; left: 50%; width: min(760px, calc(100% - 32px)); transform: translate(-50%, -50%);
     border: 1px solid $panel; border-radius: $radius-popover; background: $surface; box-shadow: $shadow-popover;
+    &--wide { width: min(900px, calc(100% - 32px)); }
     &-backdrop { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, #{$editor} 60%, black); }
     &__close {
         @include button; position: absolute; top: -38px; right: 0; display: grid; place-items: center;
@@ -289,12 +208,13 @@ dm-monaco-editor,
     &--inline { align-self: end; min-height: 30px; }
     &-row { display: flex; flex-wrap: wrap; gap: 14px; }
 }
-.dm-muted { margin: 0; color: $desc; }
-.dm-empty {
-    padding: 32px; border: 1px solid $panel; border-radius: $radius-surface; background: $surface-alt; text-align: center;
-    &--page { width: min(680px, calc(100% - 32px)); margin: 72px auto; }
+.dm-value-mappings {
+    display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid $panel;
+    &__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--vscode-foreground); }
+    &__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) max-content; align-items: end; gap: 10px; }
 }
-
+.dm-muted { margin: 0; color: $desc; }
 .dm-preview {
     display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px;
     width: min(1480px, calc(100% - 24px)); height: calc(100vh - 136px); min-height: 560px; margin: 18px auto 24px;
@@ -318,7 +238,7 @@ dm-monaco-editor,
         h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; }
         span { color: $desc; font-size: 12px; }
     }
-    dm-json-editor, dm-formula-editor, dm-monaco-editor, .dm-monaco-editor {
+    vlo-json-editor, vlo-formula-editor, vlo-monaco-editor, .vlo-monaco-editor {
         display: block; overflow: hidden; width: 100%; height: 100%; min-height: 0;
         background: var(--vscode-editor-background);
     }
@@ -346,8 +266,7 @@ dm-monaco-editor,
 }
 
 @media (max-width: 720px) {
-    .dm-header, .dm-toolbar, .dm-details, .dm-form-grid, .dm-extract-grid, .dm-filter-row, .dm-link-row { grid-template-columns: 1fr; }
-    .dm-header { display: grid; }
+    .dm-toolbar, .dm-details, .dm-form-grid, .dm-extract-grid, .dm-filter-row, .dm-link-row, .dm-value-mappings__row { grid-template-columns: 1fr; }
     .dm-toolbar { justify-content: stretch; .dm-search { justify-self: stretch; } }
     .dm-filter-row__joiner { min-height: 0; }
     .dm-flow, .dm-panel { width: calc(100% - 20px); margin-top: 20px; }

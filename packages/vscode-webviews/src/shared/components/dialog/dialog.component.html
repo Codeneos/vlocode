@@ -1,0 +1,38 @@
+<div class="vlo-dialog-backdrop" role="presentation" (click)="cancel.emit()"></div>
+<section
+    class="vlo-dialog vlo-dialog--{{ type() }} vlo-dialog--{{ size() }}"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="titleId"
+    (click)="$event.stopPropagation()">
+    @if (showClose()) {
+        <button type="button" class="vlo-dialog__close" aria-label="Close" (click)="cancel.emit()">
+            <span class="codicon codicon-close" aria-hidden="true"></span>
+        </button>
+    }
+    <header class="vlo-dialog__header">
+        <span class="vlo-dialog__icon" aria-hidden="true">
+            <span class="codicon codicon-{{ iconName() }}"></span>
+        </span>
+        <div class="vlo-dialog__copy">
+            <h2 [id]="titleId">{{ title() }}</h2>
+            @if (message()) {
+                <p>{{ message() }}</p>
+            }
+        </div>
+    </header>
+    <ng-content select=":not([vloDialogFooter])" />
+    @if (showDefaultActions()) {
+        <footer class="vlo-dialog__footer">
+            <button type="button" class="vlocode-button" (click)="cancel.emit()">
+                {{ cancelLabel() }}
+            </button>
+            <button type="button" class="vlocode-button vlocode-button--{{ type() }}" (click)="confirm.emit()">
+                <span class="codicon codicon-{{ confirmIconName() }}" aria-hidden="true"></span>
+                {{ confirmLabel() }}
+            </button>
+        </footer>
+    } @else {
+        <ng-content select="[vloDialogFooter]" />
+    }
+</section>

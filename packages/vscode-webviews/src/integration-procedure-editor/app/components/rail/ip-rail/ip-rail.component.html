@@ -1,0 +1,106 @@
+<aside class="ip-rail" [class.ip-rail--collapsed]="collapsed()" aria-label="Procedure navigation">
+    @if (collapsed()) {
+        <button type="button" class="ip-sidebar-toggle" title="Expand navigation" aria-label="Expand navigation" (click)="toggleCollapsed.emit()">
+            <span class="codicon codicon-chevron-right" aria-hidden="true"></span>
+        </button>
+    } @else {
+        <nav class="ip-segments" role="tablist" aria-label="Left panel">
+            @for (tab of tabs; track tab.id) {
+                <button type="button" role="tab" [attr.aria-selected]="activeTab() === tab.id" [class.ip-segments__item--active]="activeTab() === tab.id" class="ip-segments__item" (click)="activeTabChange.emit(tab.id)">
+                    <span class="codicon codicon-{{ tab.icon }}" aria-hidden="true"></span>
+                    {{ tab.label }}
+                    @if (tab.id === 'problems' && problems().length) {
+                        <span class="ip-count">{{ problems().length }}</span>
+                    }
+                </button>
+            }
+            <button type="button" class="ip-sidebar-toggle ip-sidebar-toggle--inline" title="Collapse navigation" aria-label="Collapse navigation" (click)="toggleCollapsed.emit()">
+                <span class="codicon codicon-chevron-left" aria-hidden="true"></span>
+            </button>
+        </nav>
+
+        <section class="ip-rail__content">
+            @switch (activeTab()) {
+                @case ('outline') {
+                    <label class="ip-search">
+                        <span class="codicon codicon-search" aria-hidden="true"></span>
+                        <input type="search" [value]="outlineFilter()" placeholder="Find element" (input)="outlineFilterChange.emit(inputValue($event))" />
+                    </label>
+                    <div class="ip-outline">
+                        <button type="button" class="ip-outline__row" [class.ip-outline__row--active]="!selectedKey()" (click)="selectProcedure.emit()">
+                            <span class="codicon codicon-server-process" aria-hidden="true"></span>
+                            <span>Procedure</span>
+                        </button>
+                        @for (row of outlineRows(); track row.element.key) {
+                            <button
+                                type="button"
+                                class="ip-outline__row"
+                                draggable="true"
+                                [class.ip-outline__row--active]="selectedKey() === row.element.key"
+                                [class.ip-outline__row--dragging]="draggedKey() === row.element.key"
+                                [class.ip-outline__row--drop-before]="dropTargetKey() === row.element.key && dropPosition() === 'before'"
+                                [class.ip-outline__row--drop-after]="dropTargetKey() === row.element.key && dropPosition() === 'after'"
+                                [style.padding-left.px]="12 + row.depth * 18"
+                                (click)="selectElement.emit(row.element.key)"
+                                (dragstart)="elementDragStart.emit({ key: row.element.key, event: $event })"
+                                (dragover)="elementDragOver.emit({ key: row.element.key, event: $event })"
+                                (dragleave)="elementDragLeave.emit(row.element.key)"
+                                (drop)="elementDrop.emit({ key: row.element.key, event: $event })"
+                                (dragend)="dragEnd.emit()">
+                                <span [ngClass]="['codicon', 'codicon-' + iconForType(row.element.type)]" aria-hidden="true"></span>
+                                <span>{{ row.element.name }}</span>
+                                @if (!row.element.active) {
+                                    <small>Off</small>
+                                }
+                                <span class="ip-outline__grip codicon codicon-gripper" aria-hidden="true"></span>
+                            </button>
+                        }
+                    </div>
+                }
+                @case ('add') {
+                    <label class="ip-search">
+                        <span class="codicon codicon-search" aria-hidden="true"></span>
+                        <input type="search" [value]="paletteFilter()" placeholder="Search actions and blocks" (input)="paletteFilterChange.emit(inputValue($event))" />
+                    </label>
+                    <div class="ip-palette">
+                        @for (family of templateFamilies; track family) {
+                            @if (familyTemplates(family).length) {
+                                <section class="ip-palette__group">
+                                    <h2>{{ family }}</h2>
+                                    @for (template of familyTemplates(family); track template.type) {
+                                        <div
+                                            class="ip-palette__item"
+                                            draggable="true"
+                                            [class.ip-palette__item--dragging]="draggedTemplateType() === template.type"
+                                            title="Drag to add {{ template.type }}"
+                                            (dragstart)="templateDragStart.emit({ type: template.type, event: $event })"
+                                            (dragend)="dragEnd.emit()">
+                                            <span [ngClass]="['codicon', 'codicon-' + template.icon]" aria-hidden="true"></span>
+                                            <span>
+                                                <strong>{{ template.type }}</strong>
+                                                <small>{{ template.description }}</small>
+                                            </span>
+                                        </div>
+                                    }
+                                </section>
+                            }
+                        }
+                    </div>
+                }
+                @case ('problems') {
+                    <div class="ip-problems">
+                        @if (!problems().length) {
+                            <vlo-empty-state title="No problems found" icon="pass" [inline]="true" />
+                        }
+                        @for (problem of problems(); track problem.message + problem.elementKey) {
+                            <button type="button" class="ip-problem" [class.ip-problem--warning]="problem.severity === 'warning'" (click)="selectProblem.emit(problem)">
+                                <span class="codicon" [class.codicon-error]="problem.severity === 'error'" [class.codicon-warning]="problem.severity === 'warning'" aria-hidden="true"></span>
+                                <span>{{ problem.message }}</span>
+                            </button>
+                        }
+                    </div>
+                }
+            }
+        </section>
+    }
+</aside>

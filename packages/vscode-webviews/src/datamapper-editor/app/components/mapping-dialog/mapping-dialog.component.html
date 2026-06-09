@@ -1,15 +1,15 @@
-<div class="dm-dialog-backdrop" role="presentation" (click)="cancel.emit()"></div>
-<section class="dm-dialog" role="dialog" aria-modal="true" aria-labelledby="mapping-title">
-    <button type="button" class="dm-dialog__close" aria-label="Close" (click)="cancel.emit()">
-        <span class="codicon codicon-close" aria-hidden="true"></span>
-    </button>
-    <header class="dm-dialog__header">
-        <h2 id="mapping-title">{{ title() }}</h2>
-    </header>
+<vlo-dialog
+    type="info"
+    icon="edit"
+    size="wide"
+    [title]="title()"
+    [showClose]="true"
+    [showDefaultActions]="false"
+    (cancel)="cancel.emit()">
     <div class="dm-dialog__body">
         <label class="dm-field">
             <span>{{ inputLabel() }}</span>
-            <dm-autocomplete-input
+            <vlo-autocomplete-input
                 placeholder="Input path"
                 [value]="mapperKind() === 'load' ? item().InputFieldName || '' : inputPath(item())"
                 [suggestions]="sourceSuggestions()"
@@ -28,7 +28,7 @@
                             }
                         </select>
                     } @else {
-                        <dm-autocomplete-input
+                        <vlo-autocomplete-input
                             placeholder="Object API name"
                             [value]="item().OutputObjectName || ''"
                             [suggestions]="domainObjectSuggestions()"
@@ -37,7 +37,7 @@
                 </label>
                 <label class="dm-field">
                     <span><abbr title="Required">*</abbr> Domain Object Field</span>
-                    <dm-autocomplete-input
+                    <vlo-autocomplete-input
                         placeholder="Field API name"
                         [value]="item().OutputFieldName || ''"
                         [suggestions]="outputSuggestions()"
@@ -47,7 +47,7 @@
         } @else {
             <label class="dm-field">
                 <span><abbr title="Required">*</abbr> {{ outputLabel() }}</span>
-                <dm-autocomplete-input
+                <vlo-autocomplete-input
                     placeholder="Output path"
                     [value]="outputPath(item())"
                     [suggestions]="outputSuggestions()"
@@ -58,7 +58,7 @@
         <div class="dm-form-grid">
             <label class="dm-field">
                 <span>Output Data Type</span>
-                <dm-autocomplete-input
+                <vlo-autocomplete-input
                     placeholder="Output data type"
                     [value]="item().OutputFieldFormat || ''"
                     [suggestions]="dataTypeSuggestions()"
@@ -75,6 +75,29 @@
             <input type="checkbox" [ngModel]="item().IsDisabled === true" (ngModelChange)="setValue('IsDisabled', $event)">
             <span>Is Disabled</span>
         </label>
+
+        <section class="dm-value-mappings" aria-label="Transform value mappings">
+            <div class="dm-value-mappings__header">
+                <h3>Transform Value Mappings</h3>
+                <button type="button" class="dm-button dm-button--compact" (click)="addTransformValueMapping()">Add Key/Value Pair</button>
+            </div>
+            @for (mapping of transformValueMappings(); track $index) {
+                <div class="dm-value-mappings__row">
+                    <label class="dm-field">
+                        <span>Source Value</span>
+                        <input type="text" [ngModel]="mapping.source" (ngModelChange)="updateTransformValueMapping($index, 'source', $event)">
+                    </label>
+                    <label class="dm-field">
+                        <span>Target Value</span>
+                        <input type="text" [ngModel]="mapping.target" (ngModelChange)="updateTransformValueMapping($index, 'target', $event)">
+                    </label>
+                    <button type="button" class="dm-icon-button dm-icon-button--compact" title="Delete mapping" aria-label="Delete transform value mapping" (click)="deleteTransformValueMapping($index)">
+                        <span class="codicon codicon-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+            }
+        </section>
+
         @if (mapperKind() === 'load') {
             <div class="dm-check-row">
                 <label class="dm-check">
@@ -92,11 +115,11 @@
             </div>
         }
     </div>
-    <footer class="dm-dialog__footer">
+    <footer vloDialogFooter class="dm-dialog__footer">
         <button type="button" class="dm-button" (click)="cancel.emit()">Cancel</button>
         @if (isCreating()) {
             <button type="button" class="dm-button" [disabled]="mapperKind() === 'load' ? !item().OutputFieldName : !outputPath(item())" (click)="saveAndAddAnother.emit(item())">Save and Create Another</button>
         }
         <button type="button" class="dm-button dm-button--primary" [disabled]="mapperKind() === 'load' ? !item().OutputFieldName : !outputPath(item())" (click)="saveMapping.emit(item())">Save</button>
     </footer>
-</section>
+</vlo-dialog>

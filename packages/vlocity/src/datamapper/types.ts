@@ -53,6 +53,7 @@ export interface DataMapperItem {
     OutputObjectName?: string;
     outputObjectName?: string;
     TransformValueMappings?: unknown;
+    TransformValuesMappings?: unknown;
     transformValueMappings?: unknown;
     transformValuesMappings?: unknown;
     [key: string]: unknown;

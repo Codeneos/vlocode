@@ -3,17 +3,19 @@ import path from 'path';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
-import { container } from '@vlocode/core';
+import { deepClone, isRecord } from '@vlocode/util';
+import { FileSystem, injectable } from '@vlocode/core';
 import {
-    DatapackFileWriter,
     DatapackInfoService,
-    DatapackLoader,
     DatapackMatchingKeyService,
     getDatapackHeaders,
     VlocityDatapack,
     type VlocityDatapackReference
 } from '@vlocode/vlocity';
 import { getDatapackHeadersInWorkspace } from '../lib/vlocity/datapackUtil';
+import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
+import { WorkspaceDocuments } from '../lib/workspaceDocuments';
+import { VlocodeContext } from '../lib/vlocodeContext';
 import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
 
 interface DatapackEditorModel {
@@ -59,31 +61,32 @@ interface ObjectEntry {
     sobjectType: string;
 }
 
+@injectable()
 export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEditorModel, EditorState, LoadedDocument> {
-    public static readonly viewType = 'vlocode.datapackEditor';
+    private readonly viewType = 'vlocode.datapackEditor';
 
-    public static register(context: vscode.ExtensionContext, service: VlocodeService) {
-        const provider = new DatapackEditorProvider(context, service);
+    public register(): vscode.Disposable {
         return vscode.Disposable.from(
-            vscode.window.registerCustomEditorProvider(DatapackEditorProvider.viewType, provider, {
+            vscode.window.registerCustomEditorProvider(this.viewType, this, {
                 webviewOptions: { retainContextWhenHidden: true },
                 supportsMultipleEditorsPerDocument: false
             }),
-            vscode.commands.registerCommand(VlocodeCommand.openDatapackEditor, uri => provider.openEditorView(uri)),
-            vscode.commands.registerCommand(VlocodeCommand.viewDatapackSource, uri => provider.openSourceView(uri))
+            vscode.commands.registerCommand(VlocodeCommand.openDatapackEditor, uri => this.openEditorView(uri)),
+            vscode.commands.registerCommand(VlocodeCommand.viewDatapackSource, uri => this.openSourceView(uri))
         );
     }
 
-    private constructor(
-        context: vscode.ExtensionContext,
-        service: VlocodeService
+    public constructor(
+        context: VlocodeContext,
+        service: VlocodeService,
+        fileSystem: FileSystem,
+        private readonly datapackInfo: DatapackInfoService,
+        datapackExpansion: DatapackExpansionService,
+        private readonly matchingKeys: DatapackMatchingKeyService
     ) {
-        super(context, service);
+        super(context, service, fileSystem, datapackInfo, datapackExpansion);
     }
 
-    private readonly datapackInfo = container.get(DatapackInfoService);
-    private readonly loader = container.get(DatapackLoader);
-    private readonly matchingKeys = container.get(DatapackMatchingKeyService);
     protected readonly view = {
         resourceRoot: 'resources/datapack-editor',
         savedMessage: 'Datapack saved',
@@ -107,7 +110,7 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
     protected override async createEditorState(model: DatapackEditorModel): Promise<EditorState> {
         return {
             model,
-            metadata: await this.getObjectMetadata(collectModelSObjectTypes(model))
+            metadata: await this.getObjectMetadata(this.collectModelSObjectTypes(model))
         };
     }
 
@@ -121,6 +124,10 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
 
     protected override getOpenSalesforceCommand() {
         return VlocodeCommand.openInSalesforce;
+    }
+
+    protected override getDatapackGraph(document: LoadedDocument) {
+        return document.datapack;
     }
 
     private async getObjectMetadata(objectTypes: string[]): Promise<Record<string, SObjectMetadata>> {
@@ -166,7 +173,7 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
 
         const header = await this.findDatapackHeaderBySourceKey(referenceKey, document.uri);
         if (header) {
-            await vscode.commands.executeCommand('vscode.openWith', header, DatapackEditorProvider.viewType, { preview: false });
+            await vscode.commands.executeCommand('vscode.openWith', header, this.viewType, { preview: false });
             return;
         }
 
@@ -178,12 +185,12 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
     }
 
     private async findDatapackHeaderBySourceKey(sourceKey: string, currentUri: vscode.Uri): Promise<vscode.Uri | undefined> {
-        const currentPath = normalizePath(currentUri.fsPath);
+        const currentPath = WorkspaceDocuments.normalizeFileName(currentUri.fsPath).toLowerCase();
         for (const header of await getDatapackHeadersInWorkspace()) {
-            if (normalizePath(header.fsPath) === currentPath) {
+            if (WorkspaceDocuments.normalizeFileName(header.fsPath).toLowerCase() === currentPath) {
                 continue;
             }
-            const datapack = await this.loader.loadDatapack(header.fsPath, false);
+            const datapack = await this.loadDatapackSafely(header);
             if (!datapack) {
                 continue;
             }
@@ -192,6 +199,14 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
             }
         }
         return undefined;
+    }
+
+    private async loadDatapackSafely(uri: vscode.Uri): Promise<VlocityDatapack | undefined> {
+        try {
+            return await this.loadDatapackWithOpenDocuments(uri);
+        } catch {
+            return undefined;
+        }
     }
 
     private async exportReference(reference: VlocityDatapackReference): Promise<void> {
@@ -240,15 +255,15 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
         const referenceValues = reference as Record<string, unknown>;
         const fields = matchingKey.fields.length
             ? matchingKey.fields
-            : Object.keys(referenceValues).filter(key => !key.startsWith('Vlocity') && isPrimitive(referenceValues[key]));
+            : Object.keys(referenceValues).filter(key => !key.startsWith('Vlocity') && this.isPrimitive(referenceValues[key]));
 
         return Object.fromEntries(fields
             .map(field => [field, referenceValues[field]])
-            .filter((entry): entry is [string, string | number | boolean] => isPrimitive(entry[1]) && entry[1] !== ''));
+            .filter((entry): entry is [string, string | number | boolean] => this.isPrimitive(entry[1]) && entry[1] !== ''));
     }
 
     private async openEditorView(uri?: vscode.Uri) {
-        await this.openEditorWith(DatapackEditorProvider.viewType, 'No datapack file is active.', uri);
+        await this.openEditorWith(this.viewType, 'No datapack file is active.', uri);
     }
 
     private async openSourceView(uri?: vscode.Uri) {
@@ -257,7 +272,7 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
 
     protected override async loadDocument(uri: vscode.Uri): Promise<LoadedDocument> {
         const headerUri = await this.resolveDatapackHeaderUri(uri);
-        const datapack = await this.loader.loadDatapack(headerUri.fsPath);
+        const datapack = await this.loadDatapackWithOpenDocuments(headerUri);
         return {
             uri: headerUri,
             datapack,
@@ -270,22 +285,22 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
             await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
             return;
         }
-        await container.get(DatapackFileWriter).saveDatapack(document.datapack);
+        await this.datapackExpansion.saveDatapack(document.datapack);
     }
 
     private createModel(datapack: VlocityDatapack): DatapackEditorModel {
         return {
-            data: toSerializableObject(datapack.data),
+            data: deepClone(datapack.data),
             datapackType: datapack.datapackType,
             fileName: datapack.headerFile ?? '',
             sourceKey: datapack.sourceKey,
             sobjectType: datapack.sobjectType,
-            title: getRecordTitle(datapack.data, path.basename(datapack.headerFile ?? 'Datapack', '_DataPack.json'))
+            title: this.getRecordTitle(datapack as unknown as Record<string, unknown>, path.basename(datapack.headerFile ?? 'Datapack', '_DataPack.json'))
         };
     }
 
     protected override applyModel(document: LoadedDocument, model: DatapackEditorModel): void {
-        mergeInto(document.datapack.data, model.data);
+        this.replaceObjectGraph(document.datapack.data, model.data);
         document.model = this.createModel(document.datapack);
     }
 
@@ -300,79 +315,67 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
         return vscode.Uri.file(headers[0]);
     }
 
-}
-
-function collectSObjectTypes(value: unknown, types = new Set<string>()): string[] {
-    if (Array.isArray(value)) {
-        value.forEach(item => collectSObjectTypes(item, types));
-    } else if (isRecord(value)) {
-        if (typeof value.VlocityRecordSObjectType === 'string') {
-            types.add(value.VlocityRecordSObjectType);
+    private collectModelSObjectTypes(model: DatapackEditorModel): string[] {
+        const types = new Set(this.collectSObjectTypes(model.data));
+        if (model.sobjectType) {
+            types.add(model.sobjectType);
         }
-        Object.values(value).forEach(child => collectSObjectTypes(child, types));
-    }
-    return [...types].sort((a, b) => a.localeCompare(b));
-}
-
-function collectModelSObjectTypes(model: DatapackEditorModel): string[] {
-    const types = new Set(collectSObjectTypes(model.data));
-    if (model.sobjectType) {
-        types.add(model.sobjectType);
-    }
-    return [...types].sort((a, b) => a.localeCompare(b));
-}
-
-function getRecordTitle(record: Record<string, unknown>, fallback: string): string {
-    for (const key of ['Name', 'DeveloperName', 'Label', 'Title']) {
-        if (typeof record[key] === 'string' && record[key]) {
-            return record[key];
-        }
-    }
-    return fallback;
-}
-
-function toSerializableObject(value: Record<string, unknown>): Record<string, unknown> {
-    return JSON.parse(JSON.stringify(value));
-}
-
-function mergeInto(target: unknown, source: unknown): unknown {
-    if (Array.isArray(source)) {
-        if (!Array.isArray(target)) {
-            return source;
-        }
-        target.splice(source.length);
-        source.forEach((value, index) => {
-            target[index] = mergeInto(target[index], value);
-        });
-        return target;
+        return [...types].sort((a, b) => a.localeCompare(b));
     }
 
-    if (isRecord(source)) {
-        if (!isRecord(target)) {
-            return source;
+    private collectSObjectTypes(value: unknown, types = new Set<string>()): string[] {
+        if (Array.isArray(value)) {
+            value.forEach(item => this.collectSObjectTypes(item, types));
+        } else if (isRecord(value)) {
+            if (typeof value.VlocityRecordSObjectType === 'string') {
+                types.add(value.VlocityRecordSObjectType);
+            }
+            Object.values(value).forEach(child => this.collectSObjectTypes(child, types));
         }
-        for (const key of Object.keys(target)) {
-            if (!(key in source)) {
-                delete target[key];
+        return [...types].sort((a, b) => a.localeCompare(b));
+    }
+
+    private getRecordTitle(record: Record<string, unknown>, fallback: string): string {
+        for (const key of ['Name', 'DeveloperName', 'Label', 'Title']) {
+            if (typeof record[key] === 'string' && record[key]) {
+                return record[key];
             }
         }
-        for (const [key, value] of Object.entries(source)) {
-            target[key] = mergeInto(target[key], value);
-        }
-        return target;
+        return fallback;
     }
 
-    return source;
-}
+    // Prune deleted keys and array entries; util merge is additive and would keep stale datapack fields.
+    private replaceObjectGraph(target: unknown, source: unknown): unknown {
+        if (Array.isArray(source)) {
+            if (!Array.isArray(target)) {
+                return source;
+            }
+            target.splice(source.length);
+            source.forEach((value, index) => {
+                target[index] = this.replaceObjectGraph(target[index], value);
+            });
+            return target;
+        }
 
-function isRecord(value: unknown): value is Record<string, any> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
+        if (isRecord(source)) {
+            if (!isRecord(target)) {
+                return source;
+            }
+            for (const key of Object.keys(target)) {
+                if (!(key in source)) {
+                    delete target[key];
+                }
+            }
+            for (const [key, value] of Object.entries(source)) {
+                target[key] = this.replaceObjectGraph(target[key], value);
+            }
+            return target;
+        }
 
-function isPrimitive(value: unknown): value is string | number | boolean {
-    return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-}
+        return source;
+    }
 
-function normalizePath(filePath: string): string {
-    return path.resolve(filePath).replace(/\\/g, '/').toLowerCase();
+    private isPrimitive(value: unknown): value is string | number | boolean {
+        return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+    }
 }

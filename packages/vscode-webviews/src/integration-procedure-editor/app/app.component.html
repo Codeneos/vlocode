@@ -1,62 +1,22 @@
 @if (!hasLoaded() && error(); as message) {
     <main class="ip-shell ip-shell--center">
-        <section class="ip-empty" role="alert">
-            <span class="codicon codicon-warning ip-empty__icon" aria-hidden="true"></span>
-            <h1>Unable to open Integration Procedure</h1>
-            <p>{{ message }}</p>
-            <button type="button" class="ip-button ip-button--primary" (click)="requestReload()">
-                <span class="codicon codicon-refresh" aria-hidden="true"></span>
-                Retry
-            </button>
-        </section>
+        <vlo-empty-state title="Unable to open Integration Procedure" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
     </main>
 } @else {
     <main class="ip-shell">
-        <header class="ip-topbar">
-            <section class="ip-title">
-                <button type="button" class="ip-title__icon" title="Edit procedure properties" (click)="selectProcedure()">
-                    <span class="codicon codicon-server-process" aria-hidden="true"></span>
-                </button>
-                <div class="ip-title__copy">
-                    <h1>{{ model().title }}</h1>
-                    <div class="ip-title__meta" aria-label="Procedure metadata">
-                        @if (model().header.type && model().header.subType) {
-                            <span>{{ model().header.type }}/{{ model().header.subType }}</span>
-                        }
-                        @if (model().header.versionNumber) {
-                            <span>v{{ model().header.versionNumber }}</span>
-                        }
-                        <span>{{ model().sourceFormat.toUpperCase() }}</span>
-                        <span>{{ model().runtime }}</span>
-                        @if (problems().length) {
-                            <span class="ip-title__meta-warning">{{ problems().length }} problem{{ problems().length === 1 ? '' : 's' }}</span>
-                        }
-                    </div>
-                </div>
-            </section>
-            <section class="ip-actions" aria-label="Editor actions">
-                <button type="button" class="ip-button" [disabled]="refreshing()" (click)="refresh()">
-                    <span class="codicon" [class.codicon-refresh]="!refreshing()" [class.codicon-sync]="refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
-                    @if (refreshing()) { Refreshing } @else { Refresh }
-                </button>
-                <button type="button" class="ip-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
-                    <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                    Open in Org
-                </button>
-                <button type="button" class="ip-button" (click)="viewSource()">
-                    <span class="codicon codicon-code" aria-hidden="true"></span>
-                    Source
-                </button>
-                <button type="button" class="ip-button" [disabled]="deploying()" (click)="deploy()">
-                    <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
-                    @if (deploying()) { Deploying } @else { Deploy }
-                </button>
-                <button type="button" class="ip-button ip-button--primary" [disabled]="saving()" (click)="save()">
-                    <span class="codicon codicon-save" aria-hidden="true"></span>
-                    @if (saving()) { Saving } @else { Save }
-                </button>
-            </section>
-        </header>
+        <ip-toolbar
+            [model]="model()"
+            [problemsCount]="problems().length"
+            [refreshing]="refreshing()"
+            [openingSalesforce]="openingSalesforce()"
+            [deploying]="deploying()"
+            [saving]="saving()"
+            (selectProcedure)="selectProcedure()"
+            (refresh)="refresh()"
+            (openSalesforce)="openSalesforce()"
+            (viewSource)="viewSource()"
+            (deploy)="deploy()"
+            (save)="save()" />
 
         @if (error(); as message) {
             <section class="ip-banner" role="alert">
@@ -65,520 +25,110 @@
             </section>
         }
 
-        @if (pendingDeleteElement(); as pendingDelete) {
-            <div class="ip-dialog-backdrop" role="presentation" (click)="cancelDelete()"></div>
-            <section class="ip-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-node-title" (click)="$event.stopPropagation()">
-                <header>
-                    <span class="ip-dialog__icon codicon codicon-trash" aria-hidden="true"></span>
-                    <div>
-                        <h2 id="delete-node-title">Confirm delete</h2>
-                        <p>
-                            @if (pendingDeleteChildCount()) {
-                                Delete this node and {{ pendingDeleteChildCount() }} child {{ pendingDeleteChildCount() === 1 ? 'node' : 'nodes' }}?
-                            } @else {
-                                Delete this node?
-                            }
-                        </p>
-                    </div>
-                </header>
-                <footer>
-                    <button type="button" class="ip-button" (click)="cancelDelete()">Cancel</button>
-                    <button type="button" class="ip-button ip-button--danger" (click)="deletePendingElement()">
-                        <span class="codicon codicon-trash" aria-hidden="true"></span>
-                        Delete
-                    </button>
-                </footer>
-            </section>
+        @if (pendingDeleteElement()) {
+            <vlo-dialog
+                type="danger"
+                title="Confirm delete"
+                [message]="pendingDeleteMessage()"
+                confirmLabel="Delete"
+                (cancel)="cancelDelete()"
+                (confirm)="deletePendingElement()" />
         }
 
-        <section class="ip-workbench">
-            <aside class="ip-rail" aria-label="Procedure navigation">
-                <nav class="ip-segments" role="tablist" aria-label="Left panel">
-                    <button type="button" role="tab" [attr.aria-selected]="leftTab() === 'outline'" [class.ip-segments__item--active]="leftTab() === 'outline'" class="ip-segments__item" (click)="leftTab.set('outline')">
-                        <span class="codicon codicon-list-tree" aria-hidden="true"></span>
-                        Outline
-                    </button>
-                    <button type="button" role="tab" [attr.aria-selected]="leftTab() === 'add'" [class.ip-segments__item--active]="leftTab() === 'add'" class="ip-segments__item" (click)="leftTab.set('add')">
-                        <span class="codicon codicon-add" aria-hidden="true"></span>
-                        Palette
-                    </button>
-                    <button type="button" role="tab" [attr.aria-selected]="leftTab() === 'problems'" [class.ip-segments__item--active]="leftTab() === 'problems'" class="ip-segments__item" (click)="leftTab.set('problems')">
-                        <span class="codicon codicon-warning" aria-hidden="true"></span>
-                        Problems
-                        @if (problems().length) {
-                            <span class="ip-count">{{ problems().length }}</span>
-                        }
-                    </button>
-                </nav>
+        <section
+            class="ip-workbench"
+            [class.ip-workbench--rail-collapsed]="navigationCollapsed()"
+            [class.ip-workbench--inspector-collapsed]="inspectorCollapsed()"
+            [style.--ip-inspector-width]="inspectorWidth()">
+            <ip-rail
+                [collapsed]="navigationCollapsed()"
+                [activeTab]="leftTab()"
+                [outlineFilter]="outlineFilter()"
+                [outlineRows]="filteredOutline()"
+                [paletteFilter]="addFilter()"
+                [templates]="filteredTemplates()"
+                [problems]="problems()"
+                [selectedKey]="selectedKey()"
+                [draggedKey]="draggedKey()"
+                [draggedTemplateType]="draggedTemplateType()"
+                [dropTargetKey]="dropTargetKey()"
+                [dropPosition]="dropPosition()"
+                (toggleCollapsed)="toggleNavigationSidebar()"
+                (activeTabChange)="leftTab.set($event)"
+                (outlineFilterChange)="outlineFilter.set($event)"
+                (paletteFilterChange)="addFilter.set($event)"
+                (selectProcedure)="selectProcedure()"
+                (selectElement)="selectElement($event)"
+                (selectProblem)="selectProblem($event)"
+                (templateDragStart)="startTemplateDrag($event.type, $event.event)"
+                (elementDragStart)="startDrag($event.key, $event.event)"
+                (elementDragOver)="dragOver($event.key, $event.event)"
+                (elementDragLeave)="dragLeave($event)"
+                (elementDrop)="dropOnElement($event.key, $event.event)"
+                (dragEnd)="endDrag()" />
 
-                <section class="ip-rail__content">
-                    @switch (leftTab()) {
-                        @case ('outline') {
-                            <label class="ip-search">
-                                <span class="codicon codicon-search" aria-hidden="true"></span>
-                                <input type="search" [value]="outlineFilter()" placeholder="Find element" (input)="updateFilter('outline', $event)" />
-                            </label>
-                            <div class="ip-outline">
-                                <button type="button" class="ip-outline__row" [class.ip-outline__row--active]="!selectedKey()" (click)="selectProcedure()">
-                                    <span class="codicon codicon-server-process" aria-hidden="true"></span>
-                                    <span>Procedure</span>
-                                </button>
-                                @for (row of filteredOutline(); track row.element.key) {
-                                    <button
-                                        type="button"
-                                        class="ip-outline__row"
-                                        draggable="true"
-                                        [class.ip-outline__row--active]="selectedKey() === row.element.key"
-                                        [class.ip-outline__row--dragging]="draggedKey() === row.element.key"
-                                        [class.ip-outline__row--drop-before]="dropTargetKey() === row.element.key && dropPosition() === 'before'"
-                                        [class.ip-outline__row--drop-after]="dropTargetKey() === row.element.key && dropPosition() === 'after'"
-                                        [style.padding-left.px]="12 + row.depth * 18"
-                                        (click)="selectElement(row.element.key)"
-                                        (dragstart)="startDrag(row.element.key, $event)"
-                                        (dragover)="dragOver(row.element.key, $event)"
-                                        (dragleave)="dragLeave(row.element.key)"
-                                        (drop)="dropOnElement(row.element.key, $event)"
-                                        (dragend)="endDrag()">
-                                        <span [ngClass]="['codicon', 'codicon-' + iconForType(row.element.type)]" aria-hidden="true"></span>
-                                        <span>{{ row.element.name }}</span>
-                                        @if (!row.element.active) {
-                                            <small>Off</small>
-                                        }
-                                        <span class="ip-outline__grip codicon codicon-gripper" aria-hidden="true"></span>
-                                    </button>
-                                }
-                            </div>
-                        }
-                        @case ('add') {
-                            <label class="ip-search">
-                                <span class="codicon codicon-search" aria-hidden="true"></span>
-                                <input type="search" [value]="addFilter()" placeholder="Search actions and blocks" (input)="updateFilter('add', $event)" />
-                            </label>
-                            <div class="ip-palette">
-                                @for (family of ['Actions', 'Data Mappers', 'Groups']; track family) {
-                                    @if (familyTemplates(family).length) {
-                                        <section class="ip-palette__group">
-                                            <h2>{{ family }}</h2>
-                                            @for (template of familyTemplates(family); track template.type) {
-                                                <button type="button" class="ip-palette__item" (click)="addElement(template.type)">
-                                                    <span [ngClass]="['codicon', 'codicon-' + template.icon]" aria-hidden="true"></span>
-                                                    <span>
-                                                        <strong>{{ template.type }}</strong>
-                                                        <small>{{ template.description }}</small>
-                                                    </span>
-                                                </button>
-                                            }
-                                        </section>
-                                    }
-                                }
-                            </div>
-                        }
-                        @case ('problems') {
-                            <div class="ip-problems">
-                                @if (!problems().length) {
-                                    <section class="ip-empty ip-empty--compact">
-                                        <span class="codicon codicon-pass" aria-hidden="true"></span>
-                                        <h2>No problems found</h2>
-                                    </section>
-                                }
-                                @for (problem of problems(); track problem.message + problem.elementKey) {
-                                    <button type="button" class="ip-problem" [class.ip-problem--warning]="problem.severity === 'warning'" (click)="selectProblem(problem)">
-                                        <span class="codicon" [class.codicon-error]="problem.severity === 'error'" [class.codicon-warning]="problem.severity === 'warning'" aria-hidden="true"></span>
-                                        <span>{{ problem.message }}</span>
-                                    </button>
-                                }
-                            </div>
-                        }
-                    }
-                </section>
-            </aside>
+            <ip-canvas
+                [flowTree]="flowTree()"
+                [selectedKey]="selectedKey()"
+                [draggedKey]="draggedKey()"
+                [dropTargetKey]="dropTargetKey()"
+                [dropPosition]="dropPosition()"
+                [insertContext]="pendingInsert()"
+                [insertFilter]="insertFilter()"
+                [insertTemplates]="filteredInsertTemplates()"
+                [emptyFlowDropKey]="emptyFlowDropKey"
+                (selectProcedure)="selectProcedure()"
+                (openPalette)="leftTab.set('add')"
+                (selectElement)="selectElement($event)"
+                (deleteRequested)="confirmDeleteElement($event)"
+                (addChildElement)="addChildElement($event)"
+                (openInsertPicker)="openInsertPicker($event.afterKey, $event.parentKey)"
+                (closeInsertPicker)="closeInsertPicker()"
+                (insertFilterChange)="insertFilter.set($event)"
+                (addSelectedElement)="addSelectedElement($event)"
+                (elementDragStart)="startDrag($event.key, $event.event)"
+                (elementDragOver)="dragOver($event.key, $event.event)"
+                (elementDragLeave)="dragLeave($event)"
+                (elementDrop)="dropOnElement($event.key, $event.event)"
+                (insertDragOver)="dragOverInsert($event.key, $event.event)"
+                (insertDrop)="dropOnInsert($event.key, $event.event)"
+                (groupDragOver)="dragOverGroup($event.key, $event.event)"
+                (groupDrop)="dropOnGroup($event.key, $event.event)"
+                (emptyFlowDragOver)="dragOverEmptyFlow($event)"
+                (emptyFlowDragLeave)="dragLeaveEmptyFlow()"
+                (emptyFlowDrop)="dropOnEmptyFlow($event)"
+                (dragEnd)="endDrag()" />
 
-            <section class="ip-canvas" aria-label="Integration Procedure flow">
-                <div class="ip-flow">
-                    <button type="button" class="ip-flow__terminal" title="Edit procedure properties" (click)="selectProcedure()">
-                        <span class="codicon codicon-file-code" aria-hidden="true"></span>
-                    </button>
-                    @if (!flowRows().length) {
-                        <section class="ip-empty ip-empty--canvas">
-                            <span class="codicon codicon-add" aria-hidden="true"></span>
-                            <h2>Start with an action or block</h2>
-                            <button type="button" class="ip-button ip-button--primary" (click)="leftTab.set('add')">Open palette</button>
-                        </section>
-                    }
-                    @for (node of flowTree(); track node.element.key) {
-                        <ng-container *ngTemplateOutlet="flowNode; context: { node: node }" />
-                    }
-                    <div class="ip-flow__end">
-                        <span class="codicon codicon-debug-stop" aria-hidden="true"></span>
-                    </div>
-                </div>
-            </section>
-
-            <aside class="ip-inspector" aria-label="Properties inspector">
-                <header class="ip-inspector__header">
-                    <div class="ip-inspector__heading">
-                        <span class="ip-inspector__glyph">
-                            <span [ngClass]="['codicon', selectedElement() ? 'codicon-' + iconForType(selectedElement()!.type) : 'codicon-server-process']" aria-hidden="true"></span>
-                        </span>
-                        <div>
-                            <h2>{{ selectedTitle() }}</h2>
-                            <p>
-                                @if (selectedElement(); as selected) {
-                                    <span>{{ selected.type }}</span>
-                                } @else {
-                                    <span>Procedure properties</span>
-                                }
-                            </p>
-                        </div>
-                    </div>
-                    @if (selectedElement(); as selected) {
-                        <div class="ip-inspector__actions">
-                            <button type="button" class="ip-icon-button" title="Duplicate" (click)="duplicateElement(selected.key)">
-                                <span class="codicon codicon-copy" aria-hidden="true"></span>
-                            </button>
-                            <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="confirmDeleteElement(selected.key)">
-                                <span class="codicon codicon-trash" aria-hidden="true"></span>
-                            </button>
-                        </div>
-                    }
-                </header>
-
-                <nav class="ip-tabs" aria-label="Inspector tabs">
-                    @for (tab of inspectorTabs; track tab.id) {
-                        <button type="button" class="ip-tabs__tab" [class.ip-tabs__tab--active]="inspectorTab() === tab.id" (click)="inspectorTab.set(tab.id)">
-                            {{ tab.label }}
-                        </button>
-                    }
-                </nav>
-
-                <section class="ip-inspector__body">
-                    @switch (inspectorTab()) {
-                        @case ('settings') {
-                            @if (selectedElement(); as selected) {
-                                <label class="ip-field">
-                                    <span>Element Name</span>
-                                    <input [value]="selected.name" (input)="updateElementField('name', $event)" />
-                                </label>
-                                <div class="ip-field">
-                                    <span>Type</span>
-                                    <div class="ip-readonly-value">{{ selected.type }}</div>
-                                </div>
-                                <label class="ip-switch">
-                                    <input type="checkbox" [checked]="selected.active" (change)="updateElementField('active', $event)" />
-                                    <span>Active</span>
-                                </label>
-                                @if (selected.type === 'Remote Action') {
-                                    <label class="ip-field">
-                                        <span>Remote Class</span>
-                                        <input [value]="propertyValue('remoteClass')" (input)="updateElementProperty('remoteClass', $event)" />
-                                    </label>
-                                    <label class="ip-field">
-                                        <span>Remote Method</span>
-                                        <input [value]="propertyValue('remoteMethod')" (input)="updateElementProperty('remoteMethod', $event)" />
-                                    </label>
-                                    <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'remoteOptions', title: 'Remote Options' }" />
-                                } @else if (selected.type.includes('Data Mapper')) {
-                                    <label class="ip-field">
-                                        <span>Data Mapper Name</span>
-                                        <input [value]="propertyValue('bundle')" (input)="updateElementProperty('bundle', $event)" />
-                                    </label>
-                                    <label class="ip-switch">
-                                        <input type="checkbox" [checked]="propertyChecked('ignoreCache')" (change)="updateElementProperty('ignoreCache', $event)" />
-                                        <span>Ignore cache</span>
-                                    </label>
-                                } @else if (selected.type === 'Set Values') {
-                                    <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'elementValueMap', title: 'Element Value Map' }" />
-                                } @else if (selected.type === 'Response Action') {
-                                    <label class="ip-field">
-                                        <span>Response Format</span>
-                                        <input [value]="propertyValue('responseFormat')" (input)="updateElementProperty('responseFormat', $event)" />
-                                    </label>
-                                    <label class="ip-switch">
-                                        <input type="checkbox" [checked]="propertyChecked('returnFullDataJSON')" (change)="updateElementProperty('returnFullDataJSON', $event)" />
-                                        <span>Return entire JSON output</span>
-                                    </label>
-                                    <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'responseHeaders', title: 'Response Headers' }" />
-                                } @else {
-                                    <label class="ip-field">
-                                        <span>Label</span>
-                                        <input [value]="propertyValue('label')" (input)="updateElementProperty('label', $event)" />
-                                    </label>
-                                }
-                                <label class="ip-field">
-                                    <span>Notes</span>
-                                    <textarea rows="4" [value]="selected.description || ''" (input)="updateElementField('description', $event)"></textarea>
-                                </label>
-                            } @else {
-                                <label class="ip-field">
-                                    <span>Procedure Name</span>
-                                    <input [value]="model().header.name" (input)="updateHeader('name', $event)" />
-                                </label>
-                                <div class="ip-field-grid">
-                                    <label class="ip-field">
-                                        <span>Type</span>
-                                        <input [value]="model().header.type" (input)="updateHeader('type', $event)" />
-                                    </label>
-                                    <label class="ip-field">
-                                        <span>Sub Type</span>
-                                        <input [value]="model().header.subType" (input)="updateHeader('subType', $event)" />
-                                    </label>
-                                </div>
-                                <label class="ip-field">
-                                    <span>Description</span>
-                                    <textarea rows="4" [value]="model().header.description || ''" (input)="updateHeader('description', $event)"></textarea>
-                                </label>
-                                <label class="ip-switch">
-                                    <input type="checkbox" [checked]="model().header.active" (change)="updateHeader('active', $event)" />
-                                    <span>Active</span>
-                                </label>
-                                <label class="ip-field">
-                                    <span>Required Permission</span>
-                                    <input [value]="model().header.requiredPermission || ''" (input)="updateHeader('requiredPermission', $event)" />
-                                </label>
-                                <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'trackingCustomData', title: 'Tracking Custom Data' }" />
-                            }
-                        }
-                        @case ('conditions') {
-                            <label class="ip-field">
-                                <span>Execution Conditional Formula</span>
-                                <textarea class="ip-code-input" rows="7" [value]="propertyValue('executionConditionalFormula') || propertyValue('show')" (input)="selectedElement() ? updateElementProperty('executionConditionalFormula', $event) : updateProcedureProperty('show', $event)"></textarea>
-                            </label>
-                            @if (selectedElement()) {
-                                <label class="ip-field">
-                                    <span>Failure Conditional Formula</span>
-                                    <textarea class="ip-code-input" rows="7" [value]="propertyValue('failureConditionalFormula')" (input)="updateElementProperty('failureConditionalFormula', $event)"></textarea>
-                                </label>
-                                <label class="ip-switch">
-                                    <input type="checkbox" [checked]="propertyChecked('chainOnStep')" (change)="updateElementProperty('chainOnStep', $event)" />
-                                    <span>Chain on step</span>
-                                </label>
-                            }
-                        }
-                        @case ('io') {
-                            <div class="ip-field-grid">
-                                <label class="ip-field">
-                                    <span>Send JSON Path</span>
-                                    <input [value]="propertyValue('sendJSONPath')" (input)="updateElementProperty('sendJSONPath', $event)" />
-                                </label>
-                                <label class="ip-field">
-                                    <span>Send JSON Node</span>
-                                    <input [value]="propertyValue('sendJSONNode')" (input)="updateElementProperty('sendJSONNode', $event)" />
-                                </label>
-                                <label class="ip-field">
-                                    <span>Response JSON Path</span>
-                                    <input [value]="propertyValue('responseJSONPath')" (input)="updateElementProperty('responseJSONPath', $event)" />
-                                </label>
-                                <label class="ip-field">
-                                    <span>Response JSON Node</span>
-                                    <input [value]="propertyValue('responseJSONNode')" (input)="updateElementProperty('responseJSONNode', $event)" />
-                                </label>
-                            </div>
-                            <label class="ip-switch">
-                                <input type="checkbox" [checked]="propertyChecked('sendOnlyAdditionalInput')" (change)="updateElementProperty('sendOnlyAdditionalInput', $event)" />
-                                <span>Send only additional input</span>
-                            </label>
-                            <label class="ip-switch">
-                                <input type="checkbox" [checked]="propertyChecked('returnOnlyAdditionalOutput')" (change)="updateElementProperty('returnOnlyAdditionalOutput', $event)" />
-                                <span>Return only additional output</span>
-                            </label>
-                            <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'additionalInput', title: 'Additional Input' }" />
-                            <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'additionalOutput', title: 'Additional Output' }" />
-                        }
-                        @case ('failure') {
-                            <label class="ip-switch">
-                                <input type="checkbox" [checked]="propertyChecked('failOnStepError')" (change)="updateElementProperty('failOnStepError', $event)" />
-                                <span>Terminate when step fails</span>
-                            </label>
-                            <label class="ip-switch">
-                                <input type="checkbox" [checked]="propertyChecked('returnOnlyFailureResponse')" (change)="updateElementProperty('returnOnlyFailureResponse', $event)" />
-                                <span>Return only failure response</span>
-                            </label>
-                            <ng-container *ngTemplateOutlet="mapEditor; context: { name: 'failureResponse', title: 'Failure Response' }" />
-                        }
-                        @case ('json') {
-                            <section class="ip-json">
-                                <p>Edit the canonical JSON for the {{ jsonTargetLabel() }}.</p>
-                                <textarea class="ip-code-input" rows="18" spellcheck="false" [value]="jsonDraft()" (input)="setJsonDraft($event)"></textarea>
-                                @if (jsonError(); as jsonMessage) {
-                                    <div class="ip-inline-error">{{ jsonMessage }}</div>
-                                }
-                                <button type="button" class="ip-button ip-button--primary" (click)="applyJson()">
-                                    <span class="codicon codicon-check" aria-hidden="true"></span>
-                                    Apply JSON
-                                </button>
-                            </section>
-                        }
-                    }
-                </section>
-            </aside>
+            <ip-inspector
+                [collapsed]="inspectorCollapsed()"
+                [activeTab]="inspectorTab()"
+                [inspectorTabs]="inspectorTabs"
+                [model]="model()"
+                [selectedElement]="selectedElement()"
+                [propertySet]="activePropertySet()"
+                [apexClassOptions]="apexClassOptions()"
+                [dataMapperOptions]="dataMapperOptions()"
+                [dataRaptorInputParameters]="dataRaptorInputParameters()"
+                [jsonDraft]="jsonDraft()"
+                [jsonError]="jsonError()"
+                [jsonTargetLabel]="jsonTargetLabel()"
+                [jsonEditorOptions]="jsonEditorOptions"
+                (toggleCollapsed)="toggleInspector()"
+                (resizeStart)="startInspectorResize($event)"
+                (resizeKeydown)="resizeInspectorWithKeyboard($event)"
+                (activeTabChange)="inspectorTab.set($event)"
+                (duplicateElement)="duplicateElement($event)"
+                (deleteRequested)="confirmDeleteElement($event)"
+                (headerFieldChange)="updateHeaderField($event)"
+                (elementFieldChange)="updateElementFieldValue($event)"
+                (propertyChange)="updateElementPropertyFromChange($event)"
+                (procedurePropertyChange)="updateProcedurePropertyFromChange($event)"
+                (mapEntriesChange)="updateMapEntries($event)"
+                (dataRaptorParameterAdd)="addDataRaptorInputParameter()"
+                (dataRaptorParameterChange)="updateDataRaptorInputParameter($event)"
+                (dataRaptorParameterDelete)="deleteDataRaptorInputParameter($event)"
+                (jsonDraftChange)="setJsonDraftValue($event)"
+                (applyJson)="applyJson()" />
         </section>
     </main>
 }
-
-<ng-template #flowNode let-node="node">
-    @if (node.children.length || isGroup(node.element.type)) {
-        <section
-            class="ip-child-frame ip-child-frame--group-node"
-            draggable="true"
-            [class.ip-child-frame--active]="selectedKey() === node.element.key || hasSelectedDescendant(node.element.key)"
-            [class.ip-child-frame--dragging]="draggedKey() === node.element.key"
-            [class.ip-child-frame--drop-before]="dropTargetKey() === node.element.key && dropPosition() === 'before'"
-            [class.ip-child-frame--menu-open]="hasOpenInsertMenu(node)"
-            (click)="selectElement(node.element.key)"
-            (dragstart)="startDrag(node.element.key, $event)"
-            (dragover)="dragOver(node.element.key, $event)"
-            (dragleave)="dragLeave(node.element.key)"
-            (drop)="dropOnElement(node.element.key, $event)"
-            (dragend)="endDrag()">
-            <header class="ip-child-frame__label" title="Select and drag {{ node.element.name }}">
-                <span [ngClass]="['codicon', 'codicon-' + iconForType(node.element.type)]" aria-hidden="true"></span>
-                <strong>{{ node.element.name }}</strong>
-                @if (node.children.length) {
-                    <small>{{ node.children.length }} child {{ node.children.length === 1 ? 'node' : 'nodes' }}</small>
-                } @else {
-                    <small>Empty group</small>
-                }
-                <span class="codicon codicon-gripper" aria-hidden="true"></span>
-            </header>
-            <div class="ip-child-frame__actions">
-                <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete group" (click)="$event.stopPropagation(); confirmDeleteElement(node.element.key)">
-                    <span class="codicon codicon-trash" aria-hidden="true"></span>
-                </button>
-            </div>
-            @if (node.children.length && isInsertPickerOpen(undefined, node.element.key)) {
-                <ng-container *ngTemplateOutlet="insertMenu" />
-            }
-            @if (node.children.length) {
-                @for (child of node.children; track child.element.key) {
-                    <ng-container *ngTemplateOutlet="flowNode; context: { node: child }" />
-                }
-            } @else {
-                <section
-                    class="ip-child-frame__empty"
-                    [class.ip-child-frame__empty--drop-target]="dropTargetKey() === node.element.key && dropPosition() === 'inside'"
-                    (click)="$event.stopPropagation(); selectElement(node.element.key)"
-                    (dragover)="dragOverGroup(node.element.key, $event)"
-                    (dragleave)="dragLeave(node.element.key)"
-                    (drop)="dropOnGroup(node.element.key, $event)">
-                    <button type="button" title="Add child to {{ node.element.name }}" (click)="$event.stopPropagation(); addChildElement(node.element.key)">
-                    </button>
-                    @if (isInsertPickerOpen(undefined, node.element.key)) {
-                        <ng-container *ngTemplateOutlet="insertMenu" />
-                    }
-                </section>
-            }
-        </section>
-    } @else {
-        <article
-            class="ip-node"
-            draggable="true"
-            [class.ip-node--active]="selectedKey() === node.element.key"
-            [class.ip-node--disabled]="!node.element.active"
-            [class.ip-node--dragging]="draggedKey() === node.element.key"
-            [class.ip-node--drop-before]="dropTargetKey() === node.element.key && dropPosition() === 'before'"
-            [class.ip-node--menu-open]="isInsertPickerOpen(undefined, node.element.key)"
-            (click)="$event.stopPropagation(); selectElement(node.element.key)"
-            (dragstart)="startDrag(node.element.key, $event)"
-            (dragover)="dragOver(node.element.key, $event)"
-            (dragleave)="dragLeave(node.element.key)"
-            (drop)="dropOnElement(node.element.key, $event)"
-            (dragend)="endDrag()">
-            <div class="ip-node__stripe"></div>
-            <div class="ip-node__icon">
-                <span [ngClass]="['codicon', 'codicon-' + iconForType(node.element.type)]" aria-hidden="true"></span>
-            </div>
-            <div class="ip-node__main">
-                <div class="ip-node__title">
-                    <strong>{{ node.element.name }}</strong>
-                    @if (!node.element.active) {
-                        <span class="ip-badge">Inactive</span>
-                    }
-                </div>
-                <p>
-                    <span>{{ node.element.type }}</span>
-                    <span>#{{ node.element.sequenceNumber }}</span>
-                </p>
-                @if (elementSummary(node.element)) {
-                    <code>{{ elementSummary(node.element) }}</code>
-                }
-            </div>
-            <div class="ip-node__actions">
-                <span class="ip-drag-handle codicon codicon-gripper" title="Drag to reorder" aria-hidden="true"></span>
-                <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="$event.stopPropagation(); confirmDeleteElement(node.element.key)">
-                    <span class="codicon codicon-trash" aria-hidden="true"></span>
-                </button>
-            </div>
-            @if (isInsertPickerOpen(undefined, node.element.key)) {
-                <ng-container *ngTemplateOutlet="insertMenu" />
-            }
-        </article>
-    }
-
-    <div
-        class="ip-insert"
-        [class.ip-insert--drop-target]="dropTargetKey() === node.element.key && dropPosition() === 'after'"
-        [class.ip-insert--menu-open]="isInsertPickerOpen(node.element.key)"
-        (dragover)="dragOverInsert(node.element.key, $event)"
-        (dragleave)="dragLeave(node.element.key)"
-        (drop)="dropOnInsert(node.element.key, $event)">
-        <button type="button" title="Insert element after {{ node.element.name }}" (click)="$event.stopPropagation(); openInsertPicker(node.element.key)">
-        </button>
-        @if (isInsertPickerOpen(node.element.key)) {
-            <ng-container *ngTemplateOutlet="insertMenu" />
-        }
-    </div>
-</ng-template>
-
-<ng-template #insertMenu>
-    <section class="ip-insert-menu" aria-label="Choose element to insert" (click)="$event.stopPropagation()">
-        <header>
-            <label class="ip-insert-menu__search">
-                <span class="codicon codicon-search" aria-hidden="true"></span>
-                <input type="search" [value]="insertFilter()" placeholder="Search elements" (input)="updateInsertFilter($event)" />
-            </label>
-            <button type="button" class="ip-icon-button" title="Close" (click)="closeInsertPicker()">
-                <span class="codicon codicon-close" aria-hidden="true"></span>
-            </button>
-        </header>
-        <div class="ip-insert-menu__list">
-            @for (family of templateFamilies; track family) {
-                @if (templatesForFamily(family).length) {
-                    <section class="ip-insert-menu__group">
-                        <h3>{{ family }}</h3>
-                        @for (template of templatesForFamily(family); track template.type) {
-                            <button type="button" class="ip-insert-menu__item" (click)="addSelectedElement(template.type)">
-                                <span [ngClass]="['codicon', 'codicon-' + template.icon]" aria-hidden="true"></span>
-                                <span>{{ template.type }}</span>
-                            </button>
-                        }
-                    </section>
-                }
-            }
-        </div>
-    </section>
-</ng-template>
-
-<ng-template #mapEditor let-name="name" let-title="title">
-    <section class="ip-map">
-        <header>
-            <h3>{{ title }}</h3>
-            <button type="button" class="ip-button ip-button--compact" (click)="addMapEntry(name)">
-                <span class="codicon codicon-add" aria-hidden="true"></span>
-                Add
-            </button>
-        </header>
-        @if (mapEntries(name).length) {
-            @for (entry of mapEntries(name); track entry.key) {
-                <div class="ip-map__row">
-                    <input aria-label="Key" [value]="entry.key" (input)="updateMapEntry(name, entry.key, $event, 'key')" />
-                    <input aria-label="Value" [value]="entry.value" (input)="updateMapEntry(name, entry.key, $event, 'value')" />
-                    <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete row" (click)="deleteMapEntry(name, entry.key)">
-                        <span class="codicon codicon-trash" aria-hidden="true"></span>
-                    </button>
-                </div>
-            }
-        } @else {
-            <p class="ip-muted">No entries configured.</p>
-        }
-    </section>
-</ng-template>

@@ -1,0 +1,56 @@
+<section class="vlocode-map-editor">
+    <header>
+        <h3>{{ title() }}</h3>
+        <button type="button" class="vlocode-button" (click)="addEntry()">
+            <span class="codicon codicon-add" aria-hidden="true"></span>
+            Add
+        </button>
+    </header>
+    @if (entries().length) {
+        @for (entry of entries(); track $index) {
+            <div class="vlocode-map-editor__row">
+                <input aria-label="Key" [value]="entry.key" (input)="updateEntry($index, 'key', $event)" />
+                <span class="vlocode-map-editor__value">
+                    <input aria-label="Value" [value]="entry.value" (input)="updateEntry($index, 'value', $event)" />
+                    @if (formulaEnabled()) {
+                        <button type="button" class="vlocode-map-editor__formula-button" title="Open formula editor" aria-label="Open formula editor for {{ entry.key }}" (click)="openFormulaEditor(entry, $index)">fx</button>
+                    }
+                </span>
+                <button type="button" class="vlocode-icon-button vlocode-icon-button--danger" title="Delete row" (click)="deleteEntry($index)">
+                    <span class="codicon codicon-trash" aria-hidden="true"></span>
+                </button>
+            </div>
+        }
+    } @else {
+        <p class="vlocode-muted">{{ emptyMessage() }}</p>
+    }
+</section>
+
+@if (formulaEditor(); as editor) {
+    <vlo-dialog
+        type="info"
+        icon="symbol-method"
+        confirmIcon="check"
+        title="Formula Editor"
+        [message]="title()"
+        confirmLabel="Apply"
+        (cancel)="closeFormulaEditor()"
+        (confirm)="applyFormulaEditor()">
+        <div class="vlocode-map-editor__dialog-body">
+            <label class="vlocode-field">
+                <span>Key</span>
+                <input [value]="editor.entry.key" (input)="updateFormulaEditorKey($event)" />
+            </label>
+            <div class="vlocode-field vlocode-map-editor__formula">
+                <span>Value</span>
+                <vlo-formula-editor
+                    [value]="editor.entry.value"
+                    ariaLabel="Map entry value formula"
+                    (valueChange)="updateFormulaEditorValue($event)" />
+            </div>
+            @if (formulaError(); as error) {
+                <div class="vlocode-inline-error">{{ error }}</div>
+            }
+        </div>
+    </vlo-dialog>
+}

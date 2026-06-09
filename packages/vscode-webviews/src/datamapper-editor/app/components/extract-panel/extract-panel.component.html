@@ -2,30 +2,34 @@
     <section class="dm-flow" aria-label="Extraction objects">
         <div class="dm-flow__start" aria-hidden="true"></div>
         @for (group of groups(); track group.trackId) {
-            <article class="dm-card dm-card--extract">
-                <header class="dm-card__header">
-                    <span class="dm-card__icon codicon codicon-symbol-object" aria-hidden="true"></span>
-                    <div>
-                        <h2>{{ group.inputObjectName || 'Untitled' }}</h2>
-                        <p>Extract Object</p>
-                    </div>
-                    <div class="dm-card__actions" aria-label="Extract actions">
-                        <button type="button" class="dm-icon-button" title="Move up" aria-label="Move extraction up" (click)="moveGroupRequested.emit({ group, direction: -1 })">
-                            <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="dm-icon-button" title="Move down" aria-label="Move extraction down" (click)="moveGroupRequested.emit({ group, direction: 1 })">
-                            <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" class="dm-icon-button" title="Delete" aria-label="Delete extraction" (click)="deleteGroupRequested.emit(group)">
-                            <span class="codicon codicon-trash" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                </header>
-                <div class="dm-card__body dm-card__body--edit">
+            <vlo-designer-card
+                variant="extract"
+                icon="symbol-object"
+                toggleName="extraction"
+                actionsLabel="Extract actions"
+                [title]="group.inputObjectName || 'Untitled'"
+                [subtitle]="group.outputFieldName || 'Extract Object'"
+                [draggable]="true"
+                [dragging]="draggedId() === group.id"
+                [dropTarget]="dropTargetId() === group.id"
+                (cardDragStart)="startDrag(group, $event)"
+                (cardDragOver)="dragOver(group, $event)"
+                (cardDrop)="dropOnGroup(group, $event)"
+                (cardDragEnd)="endDrag()">
+                <button vloDesignerCardAction type="button" class="dm-icon-button" title="Move up" aria-label="Move extraction up" (click)="moveGroupRequested.emit({ group, direction: -1 })">
+                    <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
+                </button>
+                <button vloDesignerCardAction type="button" class="dm-icon-button" title="Move down" aria-label="Move extraction down" (click)="moveGroupRequested.emit({ group, direction: 1 })">
+                    <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
+                </button>
+                <button vloDesignerCardAction type="button" class="dm-icon-button" title="Delete" aria-label="Delete extraction" (click)="deleteGroupRequested.emit(group)">
+                    <span class="codicon codicon-trash" aria-hidden="true"></span>
+                </button>
+                <div vloDesignerCardBody class="vlo-designer-card__body vlo-designer-card__body--edit">
                     <div class="dm-extract-grid">
                         <label class="dm-field">
                             <span><abbr title="Required">*</abbr> Extraction Object</span>
-                            <dm-autocomplete-input
+                            <vlo-autocomplete-input
                                 placeholder="Search object or path"
                                 [value]="group.inputObjectName || ''"
                                 [suggestions]="objectSuggestions()"
@@ -77,7 +81,7 @@
                                     } @else {
                                         <label class="dm-field">
                                             <span>Field</span>
-                                            <dm-autocomplete-input
+                                            <vlo-autocomplete-input
                                                 placeholder="Select field"
                                                 [value]="item.InputFieldName || ''"
                                                 [suggestions]="sourceSuggestions()"
@@ -106,7 +110,7 @@
                         </div>
                     </div>
                 </div>
-            </article>
+            </vlo-designer-card>
             <div class="dm-flow__insert">
                 <button type="button" class="dm-flow__add dm-flow__add--insert" aria-label="Insert extraction object" (click)="insertExtractionRequested.emit(group)"></button>
             </div>
@@ -114,5 +118,5 @@
         <div class="dm-flow__end" aria-hidden="true"></div>
     </section>
 } @else {
-    <dm-empty-state title="No extract objects" message="No extraction rows are configured." actionLabel="Add Extraction" [page]="true" (action)="createExtractionRequested.emit()" />
+    <vlo-empty-state title="No extract objects" message="No extraction rows are configured." actionLabel="Add Extraction" actionIcon="add" [page]="true" (action)="createExtractionRequested.emit()" />
 }

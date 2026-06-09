@@ -1,37 +1,41 @@
 @if (!hasLoaded() && error(); as message) {
     <main class="dm-shell dm-shell--center">
-        <dm-empty-state title="Unable to open DataMapper" [message]="message" role="alert" actionLabel="Retry" (action)="requestReload()" />
+        <vlo-empty-state title="Unable to open DataMapper" icon="warning" [message]="message" role="alert" actionLabel="Retry" actionIcon="refresh" (action)="requestReload()" />
     </main>
 } @else {
     <main class="dm-shell">
         <div class="dm-topbar">
-            <header class="dm-header">
-                <div class="dm-header__identity">
-                    <span class="codicon codicon-type-hierarchy-sub dm-header__icon" aria-hidden="true"></span>
-                    <div class="dm-header__title">
-                        <h1>{{ model().title }}</h1>
-                        <p>{{ mapperSubtitle() }}</p>
-                    </div>
-                </div>
-                <div class="dm-header__actions">
-                    <button type="button" class="dm-button" [disabled]="refreshing()" (click)="refresh()">
-                        <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
-                        @if (refreshing()) { Refreshing } @else { Refresh }
-                    </button>
-                    <button type="button" class="dm-button" [disabled]="deploying()" (click)="deploy()">
-                        <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
-                        @if (deploying()) { Deploying } @else { Deploy }
-                    </button>
-                    <button type="button" class="dm-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
-                        <span class="codicon codicon-link-external" aria-hidden="true"></span>
-                        @if (openingSalesforce()) { Opening } @else { Open in Salesforce }
-                    </button>
-                    <button type="button" class="dm-button dm-button--primary" [disabled]="saving()" (click)="save()">
-                        <span class="codicon codicon-save" aria-hidden="true"></span>
-                        @if (saving()) { Saving } @else { Save }
-                    </button>
-                </div>
-            </header>
+            <vlo-editor-header
+                icon="type-hierarchy-sub"
+                iconTitle="Open settings"
+                [title]="model().title"
+                [subtitle]="mapperSubtitle()"
+                (iconClick)="openSettings()">
+                <button type="button" class="dm-button" (click)="openSettings()">
+                    <span class="codicon codicon-gear" aria-hidden="true"></span>
+                    Settings
+                </button>
+                <button type="button" class="dm-button" [disabled]="refreshing()" (click)="refresh()">
+                    <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
+                    @if (refreshing()) { Refreshing } @else { Refresh }
+                </button>
+                <button type="button" class="dm-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
+                    <span class="codicon codicon-link-external" aria-hidden="true"></span>
+                    @if (openingSalesforce()) { Opening } @else { Open in Org }
+                </button>
+                <button type="button" class="dm-button" (click)="viewSource()">
+                    <span class="codicon codicon-code" aria-hidden="true"></span>
+                    Source
+                </button>
+                <button type="button" class="dm-button" [disabled]="deploying()" (click)="deploy()">
+                    <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
+                    @if (deploying()) { Deploying } @else { Deploy }
+                </button>
+                <button type="button" class="dm-button dm-button--primary" [disabled]="saving()" (click)="save()">
+                    <span class="codicon codicon-save" aria-hidden="true"></span>
+                    @if (saving()) { Saving } @else { Save }
+                </button>
+            </vlo-editor-header>
 
             <nav class="dm-tabs" aria-label="DataMapper sections">
                 @for (tab of tabs(); track tab.id) {
@@ -62,6 +66,7 @@
                     (insertExtractionRequested)="createExtraction($event)"
                     (updateGroupRequested)="updateExtractionGroup($event)"
                     (moveGroupRequested)="moveExtractionGroup($event.group, $event.direction)"
+                    (reorderGroupRequested)="reorderExtractionGroup($event)"
                     (deleteGroupRequested)="deleteExtractionGroup($event)" />
             }
             @case ('formula') {
@@ -72,6 +77,7 @@
                     (insertFormulaRequested)="insertFormulaAfter($event)"
                     (updateFormulaRequested)="updateFormula($event.item, $event.updatedItem)"
                     (moveFormulaRequested)="moveFormula($event.item, $event.direction)"
+                    (reorderFormulaRequested)="reorderFormula($event)"
                     (deleteFormulaRequested)="deleteFormula($event)" />
             }
             @case ('mapping') {
@@ -117,6 +123,76 @@
                 (cancel)="cancelEdit()"
                 (saveMapping)="applyEdit($event)"
                 (saveAndAddAnother)="applyEditAndCreateNext($event)" />
+        }
+
+        @if (settingsDraft(); as settings) {
+            <vlo-dialog
+                type="info"
+                icon="gear"
+                size="wide"
+                title="DataMapper Settings"
+                confirmLabel="Save"
+                confirmIcon="save"
+                [showClose]="true"
+                (cancel)="cancelSettings()"
+                (confirm)="saveSettings()">
+                <div class="dm-dialog__body">
+                    <div class="dm-form-grid">
+                        <label class="dm-field">
+                            <span>Input Type</span>
+                            <select [ngModel]="settings.InputType || 'JSON'" (ngModelChange)="updateSetting('InputType', $event)">
+                                @for (type of ioTypes; track type) {
+                                    <option [value]="type">{{ type }}</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="dm-field">
+                            <span>Output Type</span>
+                            <select [ngModel]="settings.OutputType || 'JSON'" (ngModelChange)="updateSetting('OutputType', $event)">
+                                @for (type of ioTypes; track type) {
+                                    <option [value]="type">{{ type }}</option>
+                                }
+                            </select>
+                        </label>
+                    </div>
+
+                    <label class="dm-field">
+                        <span>Required Permission</span>
+                        <input type="text" [ngModel]="settings.RequiredPermission || ''" (ngModelChange)="updateSetting('RequiredPermission', $event)">
+                    </label>
+
+                    <label class="dm-field">
+                        <span>Description</span>
+                        <textarea rows="3" [ngModel]="settings.Description || ''" (ngModelChange)="updateSetting('Description', $event)"></textarea>
+                    </label>
+
+                    <div class="dm-form-grid">
+                        <label class="dm-field">
+                            <span>Time To Live In Minutes</span>
+                            <input type="number" min="0" [ngModel]="settings.ResponseCacheTtlMinutes ?? 0" (ngModelChange)="updateSetting('ResponseCacheTtlMinutes', $event)">
+                        </label>
+                        <label class="dm-field">
+                            <span>Salesforce Platform Cache Type</span>
+                            <select [ngModel]="settings.ResponseCacheType || 'None'" (ngModelChange)="updateSetting('ResponseCacheType', $event)">
+                                @for (type of cacheTypes; track type) {
+                                    <option [value]="type">{{ type }}</option>
+                                }
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="dm-check-row">
+                        <label class="dm-check">
+                            <input type="checkbox" [ngModel]="settings.IsFieldLevelSecurityEnabled === true" (ngModelChange)="updateSetting('IsFieldLevelSecurityEnabled', $event)">
+                            <span>Check field level security before execution</span>
+                        </label>
+                        <label class="dm-check">
+                            <input type="checkbox" [ngModel]="settings.IsNullInputsIncludedInOutput === true" (ngModelChange)="updateSetting('IsNullInputsIncludedInOutput', $event)">
+                            <span>Include null values in the response</span>
+                        </label>
+                    </div>
+                </div>
+            </vlo-dialog>
         }
 
         @if (loading()) {

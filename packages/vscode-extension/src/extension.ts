@@ -208,9 +208,9 @@ class Vlocode {
         VirtualContentProvider.register(this.service);
         this.configureLogLinkProvider();
         this.configureDatapackExportDefinitions();
-        this.service.registerDisposable(DataMapperEditorProvider.register(context, this.service));
-        this.service.registerDisposable(IntegrationProcedureEditorProvider.register(context, this.service));
-        this.service.registerDisposable(DatapackEditorProvider.register(context, this.service));
+        this.service.registerDisposable(container.get(DataMapperEditorProvider).register());
+        this.service.registerDisposable(container.get(IntegrationProcedureEditorProvider).register());
+        this.service.registerDisposable(container.get(DatapackEditorProvider).register());
 
         // Watch conditionalContextMenus for changes
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',

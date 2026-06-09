@@ -6,7 +6,7 @@
         "datapack-editor": {
             "projectType": "application",
             "root": "src/datapack-editor",
-            "sourceRoot": "src/datapack-editor",
+            "sourceRoot": "src",
             "prefix": "vlocode",
             "architect": {
                 "build": {
@@ -53,7 +53,7 @@
         "datamapper-editor": {
             "projectType": "application",
             "root": "src/datamapper-editor",
-            "sourceRoot": "src/datamapper-editor",
+            "sourceRoot": "src",
             "prefix": "vlocode",
             "architect": {
                 "build": {
@@ -101,7 +101,7 @@
         "integration-procedure-editor": {
             "projectType": "application",
             "root": "src/integration-procedure-editor",
-            "sourceRoot": "src/integration-procedure-editor",
+            "sourceRoot": "src",
             "prefix": "vlocode",
             "architect": {
                 "build": {
@@ -121,6 +121,7 @@
                         "assets": [],
                         "styles": [
                             "node_modules/@vscode/codicons/dist/codicon.css",
+                            "node_modules/monaco-editor/min/vs/editor/editor.main.css",
                             "src/integration-procedure-editor/styles.scss"
                         ],
                         "scripts": []

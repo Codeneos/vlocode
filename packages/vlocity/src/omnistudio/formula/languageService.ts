@@ -296,10 +296,10 @@ function completionRange(expression: string, offset: number) {
 function wordRange(expression: string, offset: number): { start: number; end: number } | undefined {
     let start = offset;
     let end = offset;
-    while (start > 0 && /[A-Za-z0-9_.$:%]/.test(expression[start - 1])) {
+    while (start > 0 && /[A-Za-z0-9_.$:%|]/.test(expression[start - 1])) {
         start--;
     }
-    while (end < expression.length && /[A-Za-z0-9_.$:%]/.test(expression[end])) {
+    while (end < expression.length && /[A-Za-z0-9_.$:%|]/.test(expression[end])) {
         end++;
     }
     return start === end ? undefined : { start, end };

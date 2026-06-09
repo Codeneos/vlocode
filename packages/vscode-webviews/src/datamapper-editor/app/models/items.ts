@@ -6,13 +6,19 @@ export function newGlobalKey(): string {
 
 export function createMappingItem(kind: DataMapperKind, loadObjects: LoadObjectGroup[], previous?: DataMapperItem): DataMapperItem {
     const isLoad = kind === 'load';
+    const outputCreationSequence = previous?.OutputCreationSequence ?? loadObjects[0]?.sequence ?? 1;
     return {
+        DefaultValue: '',
+        FilterGroup: 0,
         GlobalKey: newGlobalKey(),
+        InputObjectQuerySequence: 0,
         IsDisabled: false,
         IsRequiredForUpsert: false,
         IsUpsertKey: false,
-        OutputCreationSequence: isLoad ? (previous?.OutputCreationSequence ?? loadObjects[0]?.sequence ?? 1) : undefined,
+        LinkedObjectSequence: 0,
+        OutputCreationSequence: outputCreationSequence,
         OutputObjectName: isLoad ? (previous?.OutputObjectName ?? loadObjects[0]?.outputObjectName ?? '') : 'json',
+        TransformValuesMappings: '{ }',
         VlocityDataPackType: 'SObject',
         VlocityRecordSObjectType: 'OmniDataTransformItem'
     };

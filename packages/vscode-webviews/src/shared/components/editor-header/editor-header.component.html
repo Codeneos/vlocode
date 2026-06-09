@@ -1,0 +1,29 @@
+<header class="vlo-editor-header">
+    <section class="vlo-editor-header__identity">
+        @if (iconInteractive()) {
+            <button type="button" class="vlo-editor-header__icon" [title]="iconTitle()" (click)="iconClick.emit()">
+                <span class="codicon codicon-{{ icon() }}" aria-hidden="true"></span>
+            </button>
+        } @else {
+            <span class="vlo-editor-header__icon vlo-editor-header__icon--static" aria-hidden="true">
+                <span class="codicon codicon-{{ icon() }}"></span>
+            </span>
+        }
+        <div class="vlo-editor-header__copy">
+            <h1>{{ title() }}</h1>
+            @if (subtitle()) {
+                <p>{{ subtitle() }}</p>
+            }
+            @if (meta().length) {
+                <div class="vlo-editor-header__meta" [attr.aria-label]="metaLabel()">
+                    @for (item of meta(); track item.value) {
+                        <span [class.vlo-editor-header__meta-warning]="item.tone === 'warning'">{{ item.value }}</span>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+    <section class="vlo-editor-header__actions" [attr.aria-label]="actionsLabel()">
+        <ng-content />
+    </section>
+</header>

@@ -1,8 +1,16 @@
 import { XML, fileName as getFileName } from '@vlocode/util';
 import { injectable } from '@vlocode/core';
 import { VlocityDatapack } from '@vlocode/vlocity';
+import {
+    DataRaptorItemMapping,
+    DataRaptorMapping,
+    ObjectMapping,
+    OmniScriptElementMapping,
+    OmniScriptMapping
+} from './omniStudioMappings';
+import { OmniStudioConverter } from './omniStudioConverter';
 
-type MetadataRootName = 'OmniDataTransform' | 'OmniScript' | 'OmniIntegrationProcedure';
+type MetadataRootName = 'OmniDataTransform' | 'OmniProcess' | 'OmniIntegrationProcedure';
 type MetadataRecord = Record<string, any>;
 
 interface MetadataSourceInfo {
@@ -20,53 +28,27 @@ interface MetadataTypeConverter {
 const MetadataSourceSymbol = Symbol.for('@vlocode/metadataSource');
 const DefaultXmlAttributes = { xmlns: 'http://soap.sforce.com/2006/04/metadata' };
 
-const dataMapperHeaderAliases: Record<string, string> = {
-    active: 'IsActive',
-    assignmentRulesUsed: 'IsAssignmentRulesUsed',
-    deletedOnSuccess: 'IsDeletedOnSuccess',
-    errorIgnored: 'IsErrorIgnored',
-    fieldLevelSecurityEnabled: 'IsFieldLevelSecurityEnabled',
-    isManagedUsingStdDesigner: 'IsManagedUsingStdDesigner',
-    nullInputsIncludedInOutput: 'IsNullInputsIncludedInOutput',
-    processSuperBulk: 'IsProcessSuperBulk',
-    rollbackOnError: 'IsRollbackOnError',
-    sourceObjectDefault: 'IsSourceObjectDefault',
-    xmlDeclarationRemoved: 'IsXmlDeclarationRemoved',
-    omniDataTransformItem: 'OmniDataTransformItem'
-};
+type MetadataFieldNames = Readonly<Record<string, string>>;
 
-const dataMapperItemAliases: Record<string, string> = {
-    disabled: 'IsDisabled',
-    requiredForUpsert: 'IsRequiredForUpsert',
-    upsertKey: 'IsUpsertKey'
-};
-
-const omniScriptAliases: Record<string, string> = {
-    nameSpace: 'NameSpace',
-    omniProcessElements: 'OmniProcessElement'
-};
-
-const omniScriptElementAliases: Record<string, string> = {
-    isActive: 'IsActive',
+const dataMapperHeaderFields = metadataFieldNames(DataRaptorMapping, {
+    stripIsPrefix: true,
+    overrides: { OmniDataTransformItem: 'omniDataTransformItem' }
+});
+const dataMapperHeaderXmlFields = reverseFieldNames(dataMapperHeaderFields);
+const dataMapperItemFields = metadataFieldNames(DataRaptorItemMapping, {
+    stripIsPrefix: true,
+    overrides: { TransformValueMappings: 'transformValuesMappings' }
+});
+const dataMapperItemXmlFields = reverseFieldNames(dataMapperItemFields);
+const omniScriptFields = metadataFieldNames(OmniScriptMapping, {
+    overrides: { OmniProcessElement: 'omniProcessElements' }
+});
+const omniScriptXmlFields = reverseFieldNames(omniScriptFields);
+const omniScriptElementFields = metadataFieldNames(OmniScriptElementMapping);
+const omniScriptElementXmlFields = {
+    ...reverseFieldNames(omniScriptElementFields),
     childElements: 'ChildElements'
 };
-
-const dataMapperHeaderMetadataAliases = Object.fromEntries(Object.entries(dataMapperHeaderAliases).map(([key, value]) => [value, key]));
-const dataMapperItemMetadataAliases = Object.fromEntries(Object.entries(dataMapperItemAliases).map(([key, value]) => [value, key]));
-const omniScriptMetadataAliases = Object.fromEntries(Object.entries(omniScriptAliases).map(([key, value]) => [value, key]));
-const omniScriptElementMetadataAliases = Object.fromEntries(Object.entries(omniScriptElementAliases).map(([key, value]) => [value, key]));
-
-const ignoredXmlFields = new Set([
-    'VlocityDataPackType',
-    'VlocityRecordSObjectType',
-    'VlocityRecordSourceKey',
-    'VlocityLookupRecordSourceKey',
-    'VlocityMatchingRecordSourceKey',
-    'OmniDataTransformationId',
-    'OmniProcessId',
-    'ParentElementId',
-    'CurrencyIsoCode'
-]);
 
 const omniProcessJsonTextFields = new Set(['propertySetConfig']);
 
@@ -78,6 +60,9 @@ export class MetadataConverter {
         new OmniProcessMetadataConverter()
     ];
 
+    public constructor(private readonly omniStudioConverter = new OmniStudioConverter()) {
+    }
+
     public metadataXmlToDatapack(fileName: string, xml: string): VlocityDatapack {
         const document = XML.parse<MetadataRecord>(xml, {
             arrayMode: nodePath => nodePath.endsWith('omniDataTransformItem') ||
@@ -86,27 +71,34 @@ export class MetadataConverter {
         });
         const match = this.findXmlConverter(document);
         if (!match) {
-            throw new Error('Unsupported metadata XML; expected OmniDataTransform, OmniScript, or OmniIntegrationProcedure');
+            throw new Error('Unsupported metadata XML; expected OmniDataTransform, OmniProcess, or OmniIntegrationProcedure');
         }
         return match.converter.fromXml(fileName, match.rootName, match.root);
     }
 
     public datapackToMetadataXml(datapack: VlocityDatapack): string {
-        const source = this.getMetadataSource(datapack.data);
-        const sobjectType = String(datapack.sobjectType ?? datapack.VlocityRecordSObjectType);
+        const metadataDatapack = this.toMetadataDatapack(datapack);
+        const source = this.getMetadataSource(metadataDatapack.data) ?? this.getMetadataSource(datapack.data);
+        const sobjectType = String(metadataDatapack.sobjectType ?? metadataDatapack.VlocityRecordSObjectType);
         const converter = this.converters.find(candidate =>
             source ? candidate.rootNames.includes(source.rootName) : candidate.sobjectTypes.includes(sobjectType)
         );
         if (!converter) {
             throw new Error(`Unsupported datapack metadata conversion for ${sobjectType}`);
         }
-        return converter.toXml(datapack, source);
+        return converter.toXml(metadataDatapack, source);
+    }
+
+    public toMetadataDatapack(datapack: VlocityDatapack): VlocityDatapack {
+        return this.converters.some(converter => converter.sobjectTypes.includes(datapack.sobjectType))
+            ? datapack
+            : this.omniStudioConverter.convertDatapack(datapack);
     }
 
     private findXmlConverter(document: MetadataRecord) {
         for (const converter of this.converters) {
             for (const rootName of converter.rootNames) {
-                const root = document[rootName] ?? document[this.lowerFirst(rootName)];
+                const root = document[rootName] ?? document[lowerFirst(rootName)];
                 if (root) {
                     return { converter, rootName, root };
                 }
@@ -118,9 +110,6 @@ export class MetadataConverter {
         return (data as Record<symbol, MetadataSourceInfo | undefined>)?.[MetadataSourceSymbol];
     }
 
-    private lowerFirst(value: string) {
-        return `${value.slice(0, 1).toLowerCase()}${value.slice(1)}`;
-    }
 }
 
 abstract class MetadataRecordConverter implements MetadataTypeConverter {
@@ -130,7 +119,7 @@ abstract class MetadataRecordConverter implements MetadataTypeConverter {
     public abstract fromXml(fileName: string, rootName: MetadataRootName, root: MetadataRecord): VlocityDatapack;
     public abstract toXml(datapack: VlocityDatapack, source?: MetadataSourceInfo): string;
 
-    protected recordToDatapack(record: MetadataRecord, aliases: Record<string, string>) {
+    protected recordToDatapack(record: MetadataRecord, aliases: MetadataFieldNames) {
         return Object.entries(record).reduce((result, [key, value]) => {
             if (key !== '$') {
                 result[aliases[key] ?? this.upperFirst(key)] = value;
@@ -139,11 +128,12 @@ abstract class MetadataRecordConverter implements MetadataTypeConverter {
         }, {} as MetadataRecord);
     }
 
-    protected recordToMetadata(record: MetadataRecord, aliases: Record<string, string>, skipFields: readonly string[] = []) {
-        const skip = new Set([...ignoredXmlFields, ...skipFields]);
-        return Object.entries(record).reduce((result, [key, value]) => {
-            if (!skip.has(key) && value !== undefined) {
-                result[aliases[key] ?? this.lowerFirst(key)] = value;
+    protected recordToMetadata(record: MetadataRecord, fields: MetadataFieldNames, skipFields: readonly string[] = []) {
+        const skip = new Set(skipFields);
+        return Object.entries(fields).reduce((result, [field, xmlField]) => {
+            const value = record[field];
+            if (!skip.has(field) && value !== undefined) {
+                result[xmlField] = value;
             }
             return result;
         }, {} as MetadataRecord);
@@ -177,9 +167,6 @@ abstract class MetadataRecordConverter implements MetadataTypeConverter {
         return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
     }
 
-    private lowerFirst(value: string) {
-        return `${value.slice(0, 1).toLowerCase()}${value.slice(1)}`;
-    }
 }
 
 class DataMapperMetadataConverter extends MetadataRecordConverter {
@@ -188,11 +175,11 @@ class DataMapperMetadataConverter extends MetadataRecordConverter {
     public readonly sobjectTypes = ['OmniDataTransform'] as const;
 
     public fromXml(fileName: string, _rootName: MetadataRootName, root: MetadataRecord): VlocityDatapack {
-        const data = this.recordToDatapack(root, dataMapperHeaderAliases);
+        const data = this.recordToDatapack(root, dataMapperHeaderXmlFields);
         const name = String(data.Name ?? getFileName(fileName).replace(/\.rpt-meta\.xml$/i, ''));
 
         data.OmniDataTransformItem = this.records(data.OmniDataTransformItem).map((item, index) => ({
-            ...this.recordToDatapack(item, dataMapperItemAliases),
+            ...this.recordToDatapack(item, dataMapperItemXmlFields),
             VlocityDataPackType: 'SObject',
             VlocityRecordSObjectType: 'OmniDataTransformItem',
             VlocityRecordSourceKey: `OmniDataTransform/${name}/OmniDataTransformItem/${this.itemKey(item, index)}`
@@ -208,10 +195,10 @@ class DataMapperMetadataConverter extends MetadataRecordConverter {
     }
 
     public toXml(datapack: VlocityDatapack, source?: MetadataSourceInfo): string {
-        const root = this.recordToMetadata(datapack.data, dataMapperHeaderMetadataAliases, ['OmniDataTransformItem']);
+        const root = this.recordToMetadata(datapack.data, dataMapperHeaderFields, ['OmniDataTransformItem']);
         root.$ = this.sourceAttributes(source);
         root.omniDataTransformItem = this.records(datapack.data.OmniDataTransformItem).map(item =>
-            this.recordToMetadata(item, dataMapperItemMetadataAliases)
+            this.recordToMetadata(item, dataMapperItemFields)
         );
         return XML.stringify({ OmniDataTransform: root }, 4);
     }
@@ -219,11 +206,11 @@ class DataMapperMetadataConverter extends MetadataRecordConverter {
 
 class OmniProcessMetadataConverter extends MetadataRecordConverter {
 
-    public readonly rootNames = ['OmniScript', 'OmniIntegrationProcedure'] as const;
+    public readonly rootNames = ['OmniProcess', 'OmniIntegrationProcedure'] as const;
     public readonly sobjectTypes = ['OmniProcess'] as const;
 
     public fromXml(fileName: string, rootName: MetadataRootName, root: MetadataRecord): VlocityDatapack {
-        const data = this.recordToDatapack(root, omniScriptAliases);
+        const data = this.recordToDatapack(root, omniScriptXmlFields);
         const type = String(data.Type ?? 'OmniScript');
         const subType = String(data.SubType ?? data.Name ?? getFileName(fileName).replace(/\.(os|ip)-meta\.xml$/i, ''));
         const language = String(data.Language ?? 'English');
@@ -248,8 +235,8 @@ class OmniProcessMetadataConverter extends MetadataRecordConverter {
     }
 
     public toXml(datapack: VlocityDatapack, source?: MetadataSourceInfo): string {
-        const rootName = source?.rootName ?? (datapack.data.IsIntegrationProcedure ? 'OmniIntegrationProcedure' : 'OmniScript');
-        const root = this.recordToMetadata(datapack.data, omniScriptMetadataAliases, ['OmniProcessElement']);
+        const rootName = source?.rootName ?? (datapack.data.IsIntegrationProcedure ? 'OmniIntegrationProcedure' : 'OmniProcess');
+        const root = this.recordToMetadata(datapack.data, omniScriptFields, ['OmniProcessElement']);
         root.$ = this.sourceAttributes(source);
         root.omniProcessElements = this.buildElementTree(this.records(datapack.data.OmniProcessElement));
         if (rootName === 'OmniIntegrationProcedure') {
@@ -261,7 +248,7 @@ class OmniProcessMetadataConverter extends MetadataRecordConverter {
 
     private flattenElements(elements: MetadataRecord[], scriptSourceKey: string, parent?: MetadataRecord): MetadataRecord[] {
         return elements.flatMap((element, index) => {
-            const record = this.recordToDatapack(element, omniScriptElementAliases);
+            const record = this.recordToDatapack(element, omniScriptElementXmlFields);
             delete record.ChildElements;
             record.VlocityDataPackType = 'SObject';
             record.VlocityRecordSObjectType = 'OmniProcessElement';
@@ -286,7 +273,7 @@ class OmniProcessMetadataConverter extends MetadataRecordConverter {
     private buildElementTree(elements: MetadataRecord[]) {
         const bySourceKey = new Map<string, MetadataRecord>();
         const entries = elements.map(source => {
-            const record = this.recordToMetadata(source, omniScriptElementMetadataAliases);
+            const record = this.recordToMetadata(source, omniScriptElementFields, ['OmniProcessId', 'ParentElementId']);
             delete record.childElements;
             bySourceKey.set(String(source.VlocityRecordSourceKey ?? source.Name), record);
             return { source, record };
@@ -330,4 +317,19 @@ class OmniProcessMetadataConverter extends MetadataRecordConverter {
             `<${tag}>${value.replace(/&quot;/g, '"')}</${tag}>`
         );
     }
+}
+
+function metadataFieldNames(mapping: ObjectMapping, options: { stripIsPrefix?: boolean; overrides?: MetadataFieldNames } = {}): MetadataFieldNames {
+    return Object.fromEntries(Object.keys(mapping.fields).map(field => {
+        const metadataField = options.stripIsPrefix && /^Is[A-Z]/.test(field) ? field.slice(2) : field;
+        return [field, options.overrides?.[field] ?? lowerFirst(metadataField)];
+    }));
+}
+
+function reverseFieldNames(fields: MetadataFieldNames): MetadataFieldNames {
+    return Object.fromEntries(Object.entries(fields).map(([key, value]) => [value, key]));
+}
+
+function lowerFirst(value: string) {
+    return `${value.slice(0, 1).toLowerCase()}${value.slice(1)}`;
 }

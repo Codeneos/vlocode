@@ -1,0 +1,26 @@
+<section class="ip-insert-menu" aria-label="Choose element to insert" (click)="$event.stopPropagation()">
+    <header>
+        <label class="ip-insert-menu__search">
+            <span class="codicon codicon-search" aria-hidden="true"></span>
+            <input type="search" [value]="filter()" placeholder="Search elements" (input)="filterChange.emit(inputValue($event))" />
+        </label>
+        <button type="button" class="ip-icon-button" title="Close" (click)="close.emit()">
+            <span class="codicon codicon-close" aria-hidden="true"></span>
+        </button>
+    </header>
+    <div class="ip-insert-menu__list">
+        @for (family of templateFamilies; track family) {
+            @if (templatesForFamily(family).length) {
+                <section class="ip-insert-menu__group">
+                    <h3>{{ family }}</h3>
+                    @for (template of templatesForFamily(family); track template.type) {
+                        <button type="button" class="ip-insert-menu__item" (click)="addTemplate.emit(template.type)">
+                            <span [ngClass]="['codicon', 'codicon-' + template.icon]" aria-hidden="true"></span>
+                            <span>{{ template.type }}</span>
+                        </button>
+                    }
+                </section>
+            }
+        }
+    </div>
+</section>

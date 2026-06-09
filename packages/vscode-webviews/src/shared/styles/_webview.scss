@@ -169,6 +169,598 @@ $quick: 120ms ease;
     }
 }
 
+@mixin disabled-bg($base: $editor, $mix: 88%) {
+    color: $disabled;
+    background: color-mix(in srgb, #{$base} $mix, #{$disabled});
+}
+
+.vlocode-button {
+    @include button;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 3px 9px;
+    white-space: nowrap;
+
+    .codicon[class*='codicon-'] {
+        @include centered-codicon(16px);
+    }
+
+    &--primary {
+        color: var(--vscode-button-foreground);
+        background: var(--vscode-button-background);
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-button-foreground);
+            background: var(--vscode-button-hoverBackground);
+        }
+    }
+
+    &--danger {
+        --vlocode-confirm-accent: var(--vscode-errorForeground);
+    }
+
+    &--info {
+        --vlocode-confirm-accent: var(--vscode-notificationsInfoIcon-foreground, var(--vscode-textLink-foreground));
+    }
+
+    &--success {
+        --vlocode-confirm-accent: var(--vscode-testing-iconPassed, var(--vscode-textLink-foreground));
+    }
+
+    &--warning {
+        --vlocode-confirm-accent: var(--vscode-notificationsWarningIcon-foreground, var(--vscode-editorWarning-foreground));
+    }
+
+    &--danger,
+    &--info,
+    &--success,
+    &--warning {
+        color: var(--vscode-button-foreground);
+        border-color: color-mix(in srgb, var(--vlocode-confirm-accent) 42%, var(--vlocode-button-border));
+        background: color-mix(in srgb, var(--vlocode-confirm-accent) 34%, var(--vscode-button-background));
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-button-foreground);
+            background: color-mix(in srgb, var(--vlocode-confirm-accent) 50%, var(--vscode-button-hoverBackground));
+        }
+    }
+}
+
+.vlocode-icon-button {
+    @include button;
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+
+    .codicon[class*='codicon-'] {
+        @include centered-codicon(16px);
+    }
+
+    &--danger:hover,
+    &--danger:focus-visible {
+        color: var(--vscode-errorForeground);
+    }
+}
+
+.vlocode-field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    color: var(--vscode-foreground);
+    font-weight: 600;
+
+    input,
+    select,
+    textarea {
+        @include control;
+        font-weight: 400;
+    }
+}
+
+.vlocode-muted {
+    margin: 0;
+    color: $desc;
+}
+
+.vlocode-inline-error {
+    border: 1px solid color-mix(in srgb, var(--vscode-errorForeground) 42%, transparent);
+    border-radius: $radius-control;
+    padding: 8px;
+    color: var(--vscode-errorForeground);
+    background: color-mix(in srgb, var(--vscode-inputValidation-errorBackground) 34%, #{$editor});
+}
+
+vlo-designer-card {
+    display: block;
+}
+
+.vlo-designer-card {
+    width: 100%;
+    margin: 0 auto;
+    overflow: visible;
+    border: 1px solid $panel;
+    border-radius: $radius-surface;
+    background: $surface;
+    box-shadow: $shadow-subtle;
+    transition: border-color $quick, box-shadow $quick, transform $quick, opacity $quick;
+
+    &:hover {
+        border-color: color-mix(in srgb, #{$focus} 48%, #{$panel});
+        box-shadow: 0 0 0 1px var(--vscode-focusBorder), 0 6px 18px color-mix(in srgb, var(--vscode-focusBorder) 24%, transparent);
+    }
+
+    &--dragging {
+        opacity: 0.55;
+        transform: scale(0.995);
+    }
+
+    &--drop-target {
+        border-color: var(--vscode-focusBorder);
+        box-shadow: 0 0 0 1px var(--vscode-focusBorder), 0 8px 22px color-mix(in srgb, var(--vscode-focusBorder) 22%, transparent);
+    }
+
+    &--collapsed &__header {
+        border-bottom: 0;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px;
+        border-bottom: 1px solid $panel;
+        border-radius: $radius-surface $radius-surface 0 0;
+        background: $surface-alt;
+        cursor: grab;
+
+        > div {
+            min-width: 0;
+        }
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    &--extract &__header {
+        background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 30%, #{$surface-alt});
+    }
+
+    &--formula &__header {
+        background: color-mix(in srgb, var(--vscode-list-activeSelectionBackground) 10%, #{$surface-alt});
+    }
+
+    &--load &__header {
+        background: color-mix(in srgb, var(--vscode-inputValidation-infoBackground) 24%, #{$surface-alt});
+    }
+
+    &--disabled {
+        border-color: color-mix(in srgb, #{$disabled} 45%, transparent);
+        @include disabled-bg($editor, 85%);
+
+        .vlo-designer-card__header {
+            background: color-mix(in srgb, #{$surface-alt} 82%, #{$disabled});
+        }
+
+        .vlo-designer-card__icon,
+        .vlo-designer-card__title h2,
+        .vlo-designer-card__title p,
+        .vlocode-field > span {
+            color: $disabled;
+        }
+    }
+
+    &__toggle {
+        appearance: none;
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 26px;
+        width: 26px;
+        height: 26px;
+        border: 0;
+        border-radius: $radius-control;
+        color: $desc;
+        background: transparent;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-foreground);
+            background: $surface-hover;
+            outline: 1px solid $focus;
+            outline-offset: 0;
+        }
+
+        .codicon[class*='codicon-'] {
+            @include centered-codicon(16px);
+        }
+    }
+
+    &__icon {
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        border-radius: $radius-surface;
+        color: var(--vscode-button-foreground);
+        font-size: 22px;
+        background: var(--vscode-button-background);
+
+        &.codicon[class*='codicon-'] {
+            @include centered-codicon(22px);
+        }
+    }
+
+    &__title {
+        min-width: 0;
+
+        h2 {
+            @include heading;
+        }
+
+        p {
+            @include copy;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+    }
+
+    &__body {
+        padding: 20px 18px 22px;
+
+        &--edit {
+            display: grid;
+            gap: 22px;
+        }
+
+        h3 {
+            margin: 22px 0 10px;
+            font-size: 14px;
+        }
+    }
+}
+
+.vlocode-map-editor {
+    display: grid;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid $panel;
+
+    header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    h3 {
+        margin: 0;
+        color: var(--vscode-foreground);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    &__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) max-content;
+        align-items: end;
+        gap: 10px;
+
+        > input,
+        .vlocode-map-editor__value > input {
+            @include control;
+        }
+    }
+
+    &__value {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 32px;
+        min-width: 0;
+    }
+
+    &__value > input {
+        border-radius: $radius-control 0 0 $radius-control;
+    }
+
+    &__formula-button {
+        @include button;
+        display: inline-grid;
+        place-items: center;
+        min-height: 30px;
+        border-left: 0;
+        border-radius: 0 $radius-control $radius-control 0;
+        padding: 0;
+        color: var(--vscode-textLink-foreground);
+        font-family: var(--vscode-editor-font-family, monospace);
+        font-style: italic;
+        font-weight: 700;
+    }
+
+    &__dialog-body {
+        display: grid;
+        gap: 12px;
+        min-width: min(720px, calc(100vw - 96px));
+    }
+
+    &__formula {
+        height: min(300px, calc(100vh - 320px));
+        min-height: 180px;
+
+        vlo-formula-editor,
+        vlo-monaco-editor,
+        .vlo-monaco-editor {
+            display: block;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+    }
+}
+
+.vlo-empty-state {
+    display: grid;
+    justify-items: center;
+    max-width: min(560px, 100%);
+    gap: 10px;
+    padding: 24px;
+    color: var(--vscode-foreground);
+    text-align: center;
+
+    &--page {
+        width: min(680px, calc(100% - 32px));
+        margin: 72px auto;
+        border: 1px solid $panel;
+        border-radius: $radius-surface;
+        background: $surface-alt;
+    }
+
+    &--inline {
+        margin: 18px auto;
+        color: $desc;
+    }
+
+    &__icon.codicon[class*='codicon-'] {
+        @include centered-codicon(30px);
+        color: $desc;
+    }
+
+    h2,
+    p {
+        margin: 0;
+    }
+
+    h2 {
+        @include heading;
+    }
+
+    p {
+        @include copy;
+        max-width: 520px;
+        line-height: 1.45;
+    }
+
+    .vlocode-button,
+    &__actions {
+        margin-top: 4px;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+}
+
+.vlo-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: color-mix(in srgb, #{$editor} 22%, transparent);
+    backdrop-filter: blur(7px) saturate(0.82);
+}
+
+.vlo-dialog {
+    --vlo-dialog-accent: var(--vscode-notificationsInfoIcon-foreground, var(--vscode-textLink-foreground));
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 2001;
+    display: grid;
+    gap: 18px;
+    width: min(420px, calc(100vw - 32px));
+    border: 1px solid $panel-strong;
+    border-radius: $radius-surface;
+    padding: 18px;
+    color: var(--vscode-foreground);
+    background: $surface;
+    box-shadow: $shadow-popover;
+    transform: translate(-50%, -50%);
+
+    &--danger {
+        --vlo-dialog-accent: var(--vscode-errorForeground);
+    }
+
+    &--success {
+        --vlo-dialog-accent: var(--vscode-testing-iconPassed, var(--vscode-textLink-foreground));
+    }
+
+    &--warning {
+        --vlo-dialog-accent: var(--vscode-notificationsWarningIcon-foreground, var(--vscode-editorWarning-foreground));
+    }
+
+    &--wide {
+        width: min(900px, calc(100vw - 32px));
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+    }
+
+    &__close {
+        @include button;
+        position: absolute;
+        top: -38px;
+        right: 0;
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        font-size: 16px;
+    }
+
+    &__header {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        align-items: start;
+        gap: 12px;
+    }
+
+    &__icon {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: $radius-control;
+        color: var(--vlo-dialog-accent);
+        background: color-mix(in srgb, var(--vlo-dialog-accent) 12%, #{$surface});
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vlo-dialog-accent) 20%, transparent);
+
+        .codicon[class*='codicon-'] {
+            @include centered-codicon(17px);
+        }
+    }
+
+    &__copy {
+        min-width: 0;
+    }
+
+    h2,
+    p {
+        margin: 0;
+    }
+
+    h2 {
+        @include truncate;
+        font-size: 15px;
+        letter-spacing: 0;
+    }
+
+    p {
+        margin-top: 5px;
+        color: $desc;
+    }
+
+    &__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+}
+
+vlo-autocomplete-input,
+.vlo-combobox {
+    display: block;
+    width: 100%;
+}
+
+.vlo-combobox {
+    position: relative;
+
+    input {
+        @include control;
+        padding-right: 34px;
+    }
+
+    &__toggle {
+        appearance: none;
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        min-height: 28px;
+        border: 0;
+        border-left: 1px solid color-mix(in srgb, #{$input-border} 70%, transparent);
+        border-radius: 0 $radius-control $radius-control 0;
+        color: var(--vscode-input-foreground);
+        background: transparent;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-foreground);
+            background: var(--vscode-toolbar-hoverBackground, #{$surface-hover});
+            outline: none;
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .codicon[class*='codicon-'] {
+            @include icon(16px);
+        }
+    }
+
+    &__list {
+        position: fixed;
+        z-index: 10000;
+        overflow: auto;
+        margin: 0;
+        padding: 2px 0;
+        border: 1px solid var(--vscode-editorSuggestWidget-border, var(--vscode-widget-border, #{$input-border}));
+        border-radius: $radius-control;
+        color: var(--vscode-editorSuggestWidget-foreground, var(--vscode-dropdown-foreground));
+        background: var(--vscode-editorSuggestWidget-background, var(--vscode-dropdown-background));
+        box-shadow: $shadow-popover;
+        list-style: none;
+    }
+
+    &__option {
+        display: grid;
+        width: 100%;
+        border: 0;
+        border-radius: 0;
+        padding: 6px 10px;
+        color: inherit;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+
+        &:hover,
+        &:focus {
+            color: var(--vscode-list-hoverForeground);
+            background: var(--vscode-list-hoverBackground);
+            outline: none;
+        }
+
+        span {
+            @include truncate;
+        }
+
+        small {
+            @include truncate;
+            color: $desc;
+        }
+    }
+}
+
 @mixin editor-topbar {
     display: flex;
     align-items: center;
@@ -283,7 +875,59 @@ $quick: 120ms ease;
     gap: 7px;
 }
 
-@mixin disabled-bg($base: $editor, $mix: 88%) {
-    color: $disabled;
-    background: color-mix(in srgb, #{$base} $mix, #{$disabled});
+.vlo-editor-header {
+    @include editor-topbar;
+
+    &__identity {
+        @include editor-header-identity;
+    }
+
+    &__icon {
+        @include button;
+        @include editor-header-icon-tile;
+
+        &--static {
+            cursor: default;
+
+            &:hover,
+            &:focus-visible {
+                outline: none;
+                background: var(--vscode-button-background);
+            }
+        }
+
+        .codicon[class*='codicon-'] {
+            @include editor-header-icon-glyph;
+        }
+    }
+
+    &__copy {
+        @include editor-header-copy;
+    }
+
+    h1 {
+        @include editor-header-title;
+    }
+
+    p {
+        @include editor-header-subtitle;
+    }
+
+    &__meta {
+        @include editor-header-meta;
+
+        span {
+            @include editor-header-chip;
+        }
+    }
+
+    &__meta-warning {
+        color: var(--vscode-editorWarning-foreground);
+        border-color: color-mix(in srgb, var(--vscode-editorWarning-foreground) 44%, transparent) !important;
+        background: color-mix(in srgb, var(--vscode-editorWarning-background, transparent) 42%, #{$surface}) !important;
+    }
+
+    &__actions {
+        @include editor-header-actions;
+    }
 }

@@ -1,6 +1,7 @@
 import * as path from 'path';
 import type { ExtensionContext, Memento, ExtensionMode } from 'vscode';
 import { singleton, getInstance } from '@vlocode/util';
+import { container } from '@vlocode/core';
 import type VlocodeService from './vlocodeService';
 
 /**
@@ -93,7 +94,7 @@ class RecentItems {
      * are cleared.
      * @param key Key to clear the recent items for
      */
-    public clear<T>(key?: string) {
+    public clear(key?: string) {
         if (key) {
             this.globalState.update(`${this.recentsPrefix}:${key}`, undefined);
         } else {
@@ -132,11 +133,13 @@ export function getContext() {
  * @param context VS Codes extension context
  */
 export function initializeContext(context: ExtensionContext, service: VlocodeService) {
-    return singleton(VlocodeContext,
+    const vlocodeContext = singleton(VlocodeContext,
         context.extensionPath,
         context.workspaceState,
         context.globalState,
         service,
         context.extensionMode
     );
+    container.use(vlocodeContext, VlocodeContext);
+    return vlocodeContext;
 }

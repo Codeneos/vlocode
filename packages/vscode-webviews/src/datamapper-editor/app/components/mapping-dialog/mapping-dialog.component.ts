@@ -1,15 +1,21 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { AutocompleteInputComponent } from '../autocomplete-input/autocomplete-input.component';
+import { VlocodeAutocompleteInputComponent } from '../../../../shared/components/autocomplete-input/autocomplete-input.component';
+import { VlocodeDialogComponent } from '../../../../shared/components/dialog/dialog.component';
 import type { DataMapperItem, DataMapperKind, FieldSuggestion, LoadObjectGroup } from '../../models/datamapper.model';
 import { inputPath, outputPath } from '../../models/datamapper-paths';
 import { loadObjectLabel } from '../../models/load-objects';
 
+interface TransformValueMappingPair {
+    source: string;
+    target: string;
+}
+
 @Component({
     selector: 'dm-mapping-dialog',
     standalone: true,
-    imports: [AutocompleteInputComponent, FormsModule],
+    imports: [VlocodeAutocompleteInputComponent, FormsModule, VlocodeDialogComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './mapping-dialog.component.html'
 })
@@ -74,5 +80,50 @@ export class MappingDialogComponent {
 
     protected setValue(key: keyof DataMapperItem, value: unknown) {
         this.itemChange.emit({ ...this.item(), [key]: value });
+    }
+
+    protected transformValueMappings(): TransformValueMappingPair[] {
+        const value = this.item().TransformValuesMappings ?? this.item().TransformValueMappings ?? this.item().transformValuesMappings;
+        const parsed = typeof value === 'string' && value.trim() ? parseJsonObject(value) : value;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return [];
+        }
+        return Object.entries(parsed as Record<string, unknown>).map(([source, target]) => ({
+            source,
+            target: target === undefined || target === null ? '' : String(target)
+        }));
+    }
+
+    protected addTransformValueMapping() {
+        this.setTransformValueMappings([...this.transformValueMappings(), { source: '', target: '' }]);
+    }
+
+    protected updateTransformValueMapping(index: number, field: keyof TransformValueMappingPair, value: string) {
+        const pairs = this.transformValueMappings();
+        pairs[index] = { ...pairs[index], [field]: value };
+        this.setTransformValueMappings(pairs);
+    }
+
+    protected deleteTransformValueMapping(index: number) {
+        const pairs = this.transformValueMappings().filter((_, itemIndex) => itemIndex !== index);
+        this.setTransformValueMappings(pairs);
+    }
+
+    private setTransformValueMappings(pairs: TransformValueMappingPair[]) {
+        const mappings = Object.fromEntries(pairs.map(pair => [pair.source, pair.target]));
+        this.itemChange.emit({
+            ...this.item(),
+            TransformValueMappings: undefined,
+            transformValuesMappings: undefined,
+            TransformValuesMappings: Object.keys(mappings).length ? JSON.stringify(mappings) : '{ }'
+        });
+    }
+}
+
+function parseJsonObject(value: string): unknown {
+    try {
+        return JSON.parse(value);
+    } catch {
+        return undefined;
     }
 }
