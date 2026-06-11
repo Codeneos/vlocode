@@ -13,6 +13,7 @@ export type DatapackExportFile = {
     expand?: boolean;
     folder?: string;
     maxDepth?: number;
+    suppressNulls?: boolean;
     export: DatapackExportQueryGroup;
 };
 
@@ -31,6 +32,7 @@ export class DatapackExportFileLoader {
             expand: this.optionalBoolean(loaded.expand, 'expand'),
             folder: this.optionalString(loaded.folder, 'folder'),
             maxDepth: this.normalizeDepth(loaded.depth),
+            suppressNulls: this.optionalBoolean(loaded.suppressNulls, 'suppressNulls'),
             export: this.normalizeQueryGroup(loaded.export)
         };
     }

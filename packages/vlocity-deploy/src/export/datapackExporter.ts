@@ -15,6 +15,7 @@ interface ExportDatapack {
     readonly normalizedObjectType: string;
     readonly scope?: string;
     readonly schema: DescribeSObjectResult;
+    readonly generatedSourceKey: boolean;
     data: VlocityDatapackSObject;
     references: Record<string, VlocityDatapackReference>;
     /**
@@ -77,6 +78,7 @@ export interface ExportProcessOptions {
 export interface DatapackExportOptions extends ExportProcessOptions {
     scope?: string;
     datapackType?: string;
+    suppressNulls?: boolean;
     maxDepth?: number;
 }
 
@@ -394,6 +396,10 @@ export class DatapackExporter {
                 }
             } else if (typeof value === 'string') {
                 value = this.tryParseAsJson(value) ?? value;
+            }
+
+            if (value === null && (context.suppressNulls === true || datapack.generatedSourceKey)) {
+                return;
             }
 
             // Set datapack field
