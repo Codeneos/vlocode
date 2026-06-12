@@ -20,6 +20,7 @@ type ExportCommandOptions = {
     folder?: string;
     depth?: number;
     datapackType?: string;
+    suppressNulls?: boolean;
 };
 
 type ExportDefaults = {
@@ -27,6 +28,7 @@ type ExportDefaults = {
     expand: boolean;
     folder: string;
     maxDepth?: number;
+    suppressNulls?: boolean;
 };
 
 type ExportRequest = ExportDefaults & {
@@ -89,7 +91,11 @@ export default class extends SalesforceCommand {
         new Option(
             '--depth <depth>',
             'dependency export depth; use -1 to include all dependencies'
-        ).argParser(parseDepth)
+        ).argParser(parseDepth),
+        new Option(
+            '--suppress-nulls',
+            'suppress null SObject field values from exported datapacks'
+        ).default(false)
     ];
 
     private readonly exportFileLoader = new DatapackExportFileLoader();
@@ -176,7 +182,8 @@ export default class extends SalesforceCommand {
     private async exportRequest(exporter: DatapackExporter, request: ExportRequest, expandedOutputFiles: ExpandedOutputFiles) {
         const context = {
             datapackType: request.datapackType,
-            maxDepth: request.maxDepth
+            maxDepth: request.maxDepth,
+            suppressNulls: request.suppressNulls
         };
 
         if (request.expand) {
@@ -198,7 +205,8 @@ export default class extends SalesforceCommand {
             datapackType: overrides.datapackType ?? options.datapackType,
             expand: overrides.expand ?? Boolean(options.expand),
             folder: overrides.folder ?? options.folder ?? './',
-            maxDepth: overrides.maxDepth ?? this.normalizeDepth(options.depth)
+            maxDepth: overrides.maxDepth ?? this.normalizeDepth(options.depth),
+            suppressNulls: overrides.suppressNulls ?? Boolean(options.suppressNulls)
         };
     }
 
