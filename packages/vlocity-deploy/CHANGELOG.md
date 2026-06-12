@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.1](https://github.com/Codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
+
+### Features
+
+* deterministic datapack source keys on export ([#457](https://github.com/Codeneos/vlocode/issues/457)) ([ab4802d](https://github.com/Codeneos/vlocode/commit/ab4802d76524cd6007c10d1a4789fbb390970180))
+
 # [2.2.0](https://github.com/Codeneos/vlocode/compare/v2.1.3...v2.2.0) (2026-06-09)
 
 ### Bug Fixes
