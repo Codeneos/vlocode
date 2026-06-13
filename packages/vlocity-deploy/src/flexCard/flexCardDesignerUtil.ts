@@ -3,9 +3,6 @@ import { LightningComponentBundle } from "@vlocode/salesforce";
 import { deepClone, XML } from "@vlocode/util";
 
 namespace lodash {
-    export function cloneDeep<T>(obj: T): T {
-        return deepClone(obj);
-    }
     export function filter<T>(collection: T[], criteria: object): T[] {
         return collection.filter(item => {
             return Object.keys(criteria).every(key => {
@@ -117,7 +114,7 @@ export namespace FlexCardDesigner {
             ${elements.map((element, elementIndex) => {
                             renderedElementCount = "state" + index + "element" + elementIndex;
                             if (element.element === "customLwc") {
-                                let ele = lodash.cloneDeep(element);
+                                let ele = deepClone(element);
                                 ele.element = ele.property && ele.property.customlwcname ? ele.property.customlwcname : ele.element;
                                 if (ele.property && ele.property.customlwcname) delete ele.property.customlwcname;
                                 return generateElementDiv(ele, theme, "customLwc", omniSupport, item);
@@ -140,7 +137,7 @@ export namespace FlexCardDesigner {
             ${element.children.map((child, blockElementIndex) => {
             renderedElementCount = renderedElementBlockCount + "block_element" + blockElementIndex;
             if (child.element === "customLwc") {
-                let ele = lodash.cloneDeep(child);
+                let ele = deepClone(child);
                 ele.element = ele.property && ele.property.customlwcname ? ele.property.customlwcname : ele.element;
                 if (ele.property && ele.property.customlwcname) delete ele.property.customlwcname;
                 return generateElementDiv(ele, theme, "customLwc", omniSupport, item);
@@ -209,7 +206,7 @@ export namespace FlexCardDesigner {
         return eventStr;
     }
     function generateElementDiv(element, theme, type, omniSupport, item) {
-        let ele = lodash.cloneDeep(element);
+        let ele = deepClone(element);
         let elementName = utility.lwcPropertyNameConversion(`${nsPrefix}-${ele.element}`);
         if (ele.element === "childCardPreview") {
             let childDevName = getDevNamefromCardname(ele.property.cardName);
@@ -294,7 +291,7 @@ export namespace FlexCardDesigner {
       </div>`;
         } else if (type === "customLwc") {
             let customLwcElementName = utility.lwcPropertyNameConversion(`${nsPrefix}-customLwcWrapper`);
-            let customLwcProperties = lodash.cloneDeep(ele.property);
+            let customLwcProperties = deepClone(ele.property);
             let apiVars = ["{record}", "{records}", "{recordId}", "{objectApiName}"];
             let keys = Object.keys(ele.property);
             keys.forEach(key => {
@@ -656,7 +653,7 @@ export namespace FlexCardDesigner {
             return template;
         }
         action.property = action.flyoutParams ? { ...action.flyoutParams } : {};
-        let customLwcProperties = lodash.cloneDeep(action.property);
+        let customLwcProperties = deepClone(action.property);
         let propertyValue = action.flyoutParams ? `'\\${JSON.stringify(action.flyoutParams)}'` : "";
         if (isOsFlyout) {
             let prefillObj = {

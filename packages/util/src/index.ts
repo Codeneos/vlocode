@@ -27,7 +27,6 @@ export * from './salesforce';
 export * from './sfdx';
 export * from './singleton';
 export * from './string';
-//export * from './task';
 export * from './types';
 export * from './timedMap';
 export * from './timer';

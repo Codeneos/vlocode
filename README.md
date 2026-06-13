@@ -13,7 +13,7 @@ This is the monorepo root for all _@vlocode_ packages and the Vlocode VSCode ext
 
 ## Setup development environment
 
-Vlocode uses `pnpm` as package manager and lerna release manager. To setup a developer environment for Vlocode you should always use the latest LTS version of node with corepack. VScode is the preferred IDE for developing and debugging.
+Vlocode uses `pnpm` as package manager and lerna release manager. To setup a developer environment for Vlocode you should use Node.js 24 (the version used in CI, see `.nvmrc`) with corepack. VScode is the preferred IDE for developing and debugging.
 
 -   check out this repository
 -   enable corepack and activate the `pnpm` package manager

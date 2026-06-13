@@ -6,6 +6,7 @@ retire-cache
 .DS_Store
 !.gitignore
 !.github
+!.nvmrc
 testReports
 tslint-report.json
 packages/*/lib

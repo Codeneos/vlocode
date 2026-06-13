@@ -5,7 +5,7 @@ Use this file as the canonical runtime contract for coding agents in this repo.
 ## Runtime contract
 
 - Package manager: `pnpm@10.28.2` (from `packageManager` in root `package.json`)
-- Node.js: `>=22` at workspace root (`engines.node`)
+- Node.js: `>=24` at workspace root (`engines.node`); CI runs Node 24
 - Monorepo manager: `pnpm workspaces` + `lerna-lite`
 - CI reference path: `.github/workflows/ci.yml`
 
