@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import chalk from 'chalk';
 
 import {  injectable, Logger } from '@vlocode/core';
-import { DatapackDeployer, DatapackDeployment, DatapackDeploymentOptions, DatapackkDeploymentState } from '@vlocode/vlocity-deploy';
+import { DatapackDeployer, DatapackDeployment, DatapackDeploymentOptions, DatapackDeploymentState } from '@vlocode/vlocity-deploy';
 import { VlocityDeploy, VlocityDeployResult } from './vlocityDeploy';
 import VlocityDatapackService from './vlocityDatapackService';
 import { count, Iterable } from '@vlocode/util';
@@ -55,12 +55,12 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
     private prepareResults(deployment: DatapackDeployment): VlocityDeployResult[] {
         const status = deployment.getStatus();
         const results: VlocityDeployResult[] = [];
-        const mapping: Record<DatapackkDeploymentState, VlocityDeployResult['status']> = {
-            [DatapackkDeploymentState.Pending]: 'pending',
-            [DatapackkDeploymentState.InProgress]: 'inProgress',
-            [DatapackkDeploymentState.Error]: 'error',
-            [DatapackkDeploymentState.PartialSuccess]: 'partial',
-            [DatapackkDeploymentState.Success]: 'success',
+        const mapping: Record<DatapackDeploymentState, VlocityDeployResult['status']> = {
+            [DatapackDeploymentState.Pending]: 'pending',
+            [DatapackDeploymentState.InProgress]: 'inProgress',
+            [DatapackDeploymentState.Error]: 'error',
+            [DatapackDeploymentState.PartialSuccess]: 'partial',
+            [DatapackDeploymentState.Success]: 'success',
         } as const;
 
         for (const datapack of status.datapacks) {

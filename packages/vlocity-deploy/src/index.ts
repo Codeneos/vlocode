@@ -21,5 +21,6 @@ export * from './datapackDeploymentRecordGroup';
 export * from './datapackDeploymentSpec';
 export * from './datapackDeploymentSpecRegistry';
 export * from './datapackDeploymentStatus';
+export * from './datapackDeploymentStatusReporter';
 export * from './datapackRecordFactory';
 export * from './datapackLookupService';

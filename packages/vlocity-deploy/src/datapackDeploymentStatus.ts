@@ -1,6 +1,6 @@
 import { groupBy } from "@vlocode/util";
 
-export enum DatapackkDeploymentState {
+export enum DatapackDeploymentState {
     Pending = 'pending',
     InProgress = 'inProgress',
     Success = 'success',
@@ -8,7 +8,7 @@ export enum DatapackkDeploymentState {
     Error = 'error',
 }
 
-export namespace DatapackkDeploymentState {
+export namespace DatapackDeploymentState {
     /**
      * Summarizes an array of datapack deployment states into a single representative state.
      * 
@@ -23,25 +23,36 @@ export namespace DatapackkDeploymentState {
      * @param statuses - Array of deployment states to summarize
      * @returns A single state representing the overall deployment status
      */
-    export function summarize(statuses: DatapackkDeploymentState[]) : DatapackkDeploymentState {
+    export function summarize(statuses: DatapackDeploymentState[]) : DatapackDeploymentState {
         const stats = groupBy(statuses, r => r);
-        if (stats[DatapackkDeploymentState.InProgress]) {
-            return DatapackkDeploymentState.InProgress;
-        } else if (!stats[DatapackkDeploymentState.Pending]) {
-            if (!stats[DatapackkDeploymentState.Error]) {
-                return DatapackkDeploymentState.Success;
-            } else if (stats[DatapackkDeploymentState.PartialSuccess]) {
-                return DatapackkDeploymentState.PartialSuccess;
+        if (stats[DatapackDeploymentState.InProgress]) {
+            return DatapackDeploymentState.InProgress;
+        } else if (!stats[DatapackDeploymentState.Pending]) {
+            if (!stats[DatapackDeploymentState.Error]) {
+                return DatapackDeploymentState.Success;
+            } else if (stats[DatapackDeploymentState.PartialSuccess]) {
+                return DatapackDeploymentState.PartialSuccess;
             }
-            return DatapackkDeploymentState.Error;
+            return DatapackDeploymentState.Error;
         }
-        return DatapackkDeploymentState.Pending;
-    }    
+        return DatapackDeploymentState.Pending;
+    }
 }
 
+/**
+ * @deprecated Misspelled alias of {@link DatapackDeploymentState}; kept for backwards
+ * compatibility and scheduled for removal in a future major release. Use
+ * {@link DatapackDeploymentState} instead.
+ */
+export const DatapackkDeploymentState = DatapackDeploymentState;
+/**
+ * @deprecated Misspelled alias of {@link DatapackDeploymentState}; kept for backwards
+ * compatibility and scheduled for removal in a future major release. Use
+ * {@link DatapackDeploymentState} instead.
+ */
+export type DatapackkDeploymentState = DatapackDeploymentState;
 
-
-export type DatapackDeploymentMessage = 
+export type DatapackDeploymentMessage =
     { type: 'warn' , message: string } | 
     { type: 'error' , message: string, code?: string };
 
@@ -68,7 +79,7 @@ export interface DatapackDeploymentDatapackStatus {
      * The overall deployment status of the datapack.
      * Indicates whether deployment was successful, failed, or partially successful.
      */
-    readonly status: DatapackkDeploymentState;
+    readonly status: DatapackDeploymentState;
     
     /**
      * The total number of records contained within this datapack.
@@ -102,7 +113,7 @@ export interface DatapackDeploymentStatus {
      * The overall deployment status of the datapack.
      * Indicates whether deployment was successful, failed, or partially successful.
      */
-    readonly status: DatapackkDeploymentState;
+    readonly status: DatapackDeploymentState;
     
     /**
      * A collection of error messages generated during the deployment of this datapack.
