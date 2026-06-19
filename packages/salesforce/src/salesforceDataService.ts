@@ -1,5 +1,5 @@
 import { inject, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { asArray, CancellationToken, groupBy, isSalesforceId, joinLimit, mapKeys, type Public } from '@vlocode/util';
+import { asArray, CancellationToken, groupBy, isSalesforceId, joinLimit, mapKeys } from '@vlocode/util';
 import { DateTime } from 'luxon';
 
 import { SalesforceConnectionProvider, type Query2Options } from './connection';
@@ -72,7 +72,6 @@ export class CachedQueryRunner implements QueryRunner {
     }
 
     public enabled(state?: boolean) {
-        const currentState = this.queryCacheEnabled;
         if (state !== undefined && state !== this.queryCacheEnabled) {
             this.cache.clear();
             this.queryCacheEnabled = state;
@@ -360,13 +359,121 @@ export class SalesforceDataService {
     private fieldEquals(record: object, field: string, filterValue: any): boolean {
         // TODO: normalize filter object so namespace updates on field names are not required
         const recordValue: unknown = this.nsService.updateNamespace(field).split('.').reduce((o, p) => o?.[p], record);
+
+        if (this.isValueObject(filterValue)) {
+            return this.fieldMatchesOperator(recordValue, filterValue.op, filterValue.value);
+        }
+
+        return this.fieldMatchesOperator(recordValue, '=', filterValue);
+    }
+
+    private fieldMatchesOperator(recordValue: unknown, operator: string, filterValue: unknown): boolean {
+        switch (operator.toLowerCase().trim().replace(/\s+/g, ' ')) {
+            case '=':
+            case '==':
+                return this.valuesEqual(recordValue, filterValue);
+            case '!=':
+            case '<>':
+                return !this.valuesEqual(recordValue, filterValue);
+            case '>':
+                return this.compareFilterValues(recordValue, filterValue) > 0;
+            case '>=':
+                return this.compareFilterValues(recordValue, filterValue) >= 0;
+            case '<':
+                return this.compareFilterValues(recordValue, filterValue) < 0;
+            case '<=':
+                return this.compareFilterValues(recordValue, filterValue) <= 0;
+            case 'in':
+                return this.valuesInclude(filterValue, recordValue);
+            case 'not in':
+                return !this.valuesInclude(filterValue, recordValue);
+            case 'includes':
+                return this.multiPicklistIncludes(recordValue, filterValue);
+            case 'excludes':
+                return !this.multiPicklistIncludes(recordValue, filterValue);
+            case 'like':
+                return this.valueMatchesLike(recordValue, filterValue);
+            case 'not like':
+                return !this.valueMatchesLike(recordValue, filterValue);
+            default:
+                return false;
+        }
+    }
+
+    private compareFilterValues(recordValue: unknown, filterValue: unknown): number {
+        if (recordValue == null || filterValue == null) {
+            return NaN;
+        }
+
+        const left = this.normalizeComparableValue(recordValue);
+        const right = this.normalizeComparableValue(filterValue);
+        if (typeof left === 'number' && typeof right === 'number') {
+            return left - right;
+        }
+        return String(left).localeCompare(String(right), undefined, { sensitivity: 'accent' });
+    }
+
+    private normalizeComparableValue(value: unknown): string | number {
+        if (value instanceof Date) {
+            return value.getTime();
+        }
+        if (typeof value === 'number') {
+            return value;
+        }
+        if (typeof value === 'string') {
+            const date = DateTime.fromISO(value);
+            if (date.isValid) {
+                return date.toMillis();
+            }
+            const number = Number(value);
+            if (!Number.isNaN(number) && value.trim() !== '') {
+                return number;
+            }
+            return this.nsService.updateNamespace(value).toLowerCase().trim();
+        }
+        return String(value).toLowerCase().trim();
+    }
+
+    private valuesInclude(values: unknown, recordValue: unknown): boolean {
+        return (Array.isArray(values) ? values : [values]).some(value => this.valuesEqual(recordValue, value));
+    }
+
+    private multiPicklistIncludes(recordValue: unknown, filterValue: unknown): boolean {
+        const recordValues = this.asMultiPicklistValues(recordValue);
+        return (Array.isArray(filterValue) ? filterValue : [filterValue]).some(value =>
+            recordValues.some(item => this.valuesEqual(item, value))
+        );
+    }
+
+    private asMultiPicklistValues(value: unknown): unknown[] {
+        if (Array.isArray(value)) {
+            return value;
+        }
+        if (typeof value === 'string') {
+            return value.split(';').map(item => item.trim()).filter(Boolean);
+        }
+        return value == null ? [] : [value];
+    }
+
+    private valueMatchesLike(recordValue: unknown, filterValue: unknown): boolean {
+        if (recordValue == null || filterValue == null) {
+            return false;
+        }
+        const pattern = String(filterValue)
+            .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+            .replace(/%/g, '.*')
+            .replace(/_/g, '.');
+        return new RegExp(`^${pattern}$`, 'i').test(String(recordValue));
+    }
+
+    private valuesEqual(recordValue: unknown, filterValue: unknown): boolean {
         if (recordValue == filterValue) {
             return true;
         }
 
         if (recordValue === null) {
             return typeof filterValue === 'string' ? filterValue.trim() === '' : false;
-        } else if(filterValue === null && typeof recordValue === 'string' && recordValue === '') {
+        } else if (filterValue === null && typeof recordValue === 'string' && recordValue === '') {
             return true;
         }
 
