@@ -259,7 +259,7 @@ describe('DatapackExporter', () => {
             VlocityRecordSObjectType: 'Parent__c',
             VlocityLookupRecordSourceKey: 'Parent__c/Parent'
         };
-        exporter.buildLookup = jest.fn(async () => parentLookup);
+        exporter.buildLookup = jest.fn(() => parentLookup);
 
         const result = await exporter.buildMatchingKeyObject(
             { scope: undefined },
@@ -276,8 +276,7 @@ describe('DatapackExporter', () => {
             { scope: undefined },
             'a00000000000001AAA',
             'VlocityLookupMatchingKeyObject',
-            'Parent__c',
-            true
+            'Parent__c'
         );
         expect(result.Parent__c).toBe(parentLookup);
         expect(result.Parent__c).not.toHaveProperty('then');
