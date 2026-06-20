@@ -403,7 +403,7 @@ export class DatapackExporter {
                 if (this.definitions.isEmbeddedObject(datapack, field.name)) {
                     value = await this.buildSObject(datapack, value, context);
                 } else {
-                    value = await this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0]);
+                    value = this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0]);
                 }
             } else if (typeof value === 'string') {
                 value = this.tryParseAsJson(value) ?? value;
@@ -593,25 +593,46 @@ export class DatapackExporter {
         return this.addReference(datapack, id, sobjectPack);
     }
 
-    private async buildLookup(
+    /**
+     * Add a lookup reference to the datapack, resolved lazily. When the referenced id is part of the
+     * current export graph a local matching reference is added immediately; otherwise a placeholder is
+     * stamped with the raw id and resolved in one batch by {@link resolveDeferredLookups}.
+     */
+    private buildLookup(
         datapack: ExportDatapack,
         id: string,
         type: VlocityDatapackReferenceType = 'VlocityLookupMatchingKeyObject',
-        objectType?: string,
-        defer = true
+        objectType: string
     ) {
-        const localReference = this.buildLocalReference(datapack, id, type);
-        if (localReference) {
-            return this.addReference(datapack, id, localReference);
+        const localReference = this.addLocalReference(datapack, id, type);
+        if (localReference !== undefined) {
+            return localReference;
         }
 
-        if (defer) {
-            const deferredLookup = this.createDeferredLookup(datapack, id, type, objectType);
-            const reference = this.addReference(datapack, id, deferredLookup);
-            if (reference !== deferredLookup) {
-                this.deferredLookups.delete(deferredLookup);
-            }
-            return reference;
+        const reference = this.addReference(datapack, id, {
+            VlocityDataPackType: type,
+            VlocityRecordSObjectType: objectType,
+            [VlocityDatapackSourceKey[type]]: id
+        } as VlocityDatapackReference);
+
+        if (reference && !this.deferredLookups.has(reference)) {
+            this.deferredLookups.set(reference, { datapack, id, objectType });
+        }
+        return reference;
+    }
+
+    /**
+     * Resolve a lookup reference immediately by querying the record and building its full matching key
+     * object. Used while {@link resolveDeferredLookups} is draining the deferred lookups.
+     */
+    private async resolveLookup(
+        datapack: ExportDatapack,
+        id: string,
+        type: VlocityDatapackReferenceType = 'VlocityLookupMatchingKeyObject'
+    ) {
+        const localReference = this.addLocalReference(datapack, id, type);
+        if (localReference !== undefined) {
+            return localReference;
         }
 
         const data = await this.lookupById(id);
@@ -619,24 +640,7 @@ export class DatapackExporter {
             return null;
         }
 
-        const matchingKeyObject = await this.buildMatchingKeyObject(datapack, type, data, false);
-        const reference = this.addReference(datapack, id, matchingKeyObject);
-        return reference;
-    }
-
-    private createDeferredLookup(
-        datapack: ExportDatapack,
-        id: string,
-        refType: VlocityDatapackReferenceType,
-        objectType?: string
-    ): VlocityDatapackReference {
-        const reference = {
-            VlocityDataPackType: refType,
-            VlocityRecordSObjectType: objectType ?? '',
-            [VlocityDatapackSourceKey[refType]]: id
-        } as VlocityDatapackReference;
-        this.deferredLookups.set(reference, { datapack, id, objectType });
-        return reference;
+        return this.addReference(datapack, id, await this.buildMatchingKeyObject(datapack, type, data, false));
     }
 
     // private shouldExportRelatedLookup(datapack: ExportDatapack, type: VlocityDatapackType) {
@@ -653,20 +657,23 @@ export class DatapackExporter {
     //     }
     // }
 
-    private buildLocalReference(datapack: ExportDatapack, id: string, type: VlocityDatapackReferenceType): VlocityDatapackReference | undefined {
-        const root = this.getDatapackRoot(datapack);
-        const sourceKey = Object.entries(root.sourceKeys).find(([, recordId]) => recordId === id)?.[0];
+    /**
+     * Add a matching reference when the referenced id is already part of the current export graph
+     * (the root datapack or one of its embedded children); otherwise returns `undefined`.
+     */
+    private addLocalReference(datapack: ExportDatapack, id: string, type: VlocityDatapackReferenceType) {
+        const sourceKey = this.getSourceKeyById(this.getDatapackRoot(datapack), id);
         const referencedDatapack = this.datapacks[id];
         if (!sourceKey || !referencedDatapack) {
             return undefined;
         }
 
         const referenceType = type === 'VlocityLookupMatchingKeyObject' ? 'VlocityMatchingKeyObject' : type;
-        return {
+        return this.addReference(datapack, id, {
             VlocityDataPackType: referenceType,
             VlocityRecordSObjectType: referencedDatapack.objectType,
             [VlocityDatapackSourceKey[referenceType]]: sourceKey
-        } as VlocityDatapackReference;
+        } as VlocityDatapackReference);
     }
 
     private addReference(datapack: ExportDatapack, refId: string, ref: VlocityDatapackLookupReference): VlocityDatapackLookupReference;
@@ -924,7 +931,9 @@ export class DatapackExporter {
             const field = await this.salesforce.schema.describeSObjectField(describe.name, fieldName);
 
             if (field.referenceTo?.length && value) {
-                matchingKeyObject[field.name] = await this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0], deferLookups);
+                matchingKeyObject[field.name] = deferLookups
+                    ? this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0])
+                    : await this.resolveLookup(datapack, value, 'VlocityLookupMatchingKeyObject');
             } else {
                 matchingKeyObject[fieldName] = value;
             }
