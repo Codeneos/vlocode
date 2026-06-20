@@ -62,7 +62,12 @@ describe('DatapackExporter', () => {
                 lookupById: jest.fn(async (ids: string | string[]) =>
                     Array.isArray(ids)
                         ? new Map(ids.map(id => [id, records.get(id)]))
-                        : records.get(ids))
+                        : records.get(ids)),
+                lookupMultiple: jest.fn(async (objectType: string, filters: Record<string, any>[]) =>
+                    filters.map(filter => [...records.values()].filter(record =>
+                        record.__type === objectType &&
+                        Object.entries(filter ?? {}).every(([field, value]) => record[field] === value)
+                    )))
             },
             schema: {
                 describeSObjectById: jest.fn(async (id: string) => describeFor(records.get(id)?.__type)),
@@ -439,6 +444,49 @@ describe('DatapackExporter', () => {
         expect(childA.VlocityRecordSourceKey).not.toBe(childB.VlocityRecordSourceKey);
     });
 
+    it('batches array-clause embedded filters across parents into one query', async () => {
+        const parentAD = 'a00000000000001AAA';
+        const parentBD = 'a00000000000002AAA';
+        const describes = {
+            Parent__c: {
+                name: 'Parent__c',
+                fields: [{ name: 'Id', referenceTo: [] }, { name: 'Name', referenceTo: [] }],
+                childRelationships: []
+            },
+            Child__c: {
+                name: 'Child__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Parent__c', referenceTo: ['Parent__c'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter, salesforce } = createExporter({
+            matchingKeyFieldsByType: { Parent__c: ['Name'], Child__c: ['Name'] },
+            describes,
+            records: [
+                { Id: parentAD, __type: 'Parent__c', Name: 'Parent A' },
+                { Id: parentBD, __type: 'Parent__c', Name: 'Parent B' },
+                { Id: 'a01000000000001AAA', __type: 'Child__c', Name: 'Child A', Parent__c: parentAD },
+                { Id: 'a01000000000002AAA', __type: 'Child__c', Name: 'Child B', Parent__c: parentBD }
+            ],
+            // filter expressed as a single-element array (YAML list form) -> must still batch
+            embeddedObjects: item => item.objectType === 'Parent__c'
+                ? [{ name: 'Children__r', objectType: 'Child__c', filter: [{ Parent__c: '{Parent__c:Id}' }] }]
+                : []
+        });
+
+        const results = await exporter.exportObject([parentAD, parentBD], { maxDepth: 0 });
+        const byKey = new Map(results.map(result => [result.sourceKey, result.datapack]));
+
+        // One batched query for both parents, not one per parent.
+        expect(salesforce.data.lookupMultiple).toHaveBeenCalledTimes(1);
+        expect(byKey.get('Parent__c/Parent A')!.Children__r[0].Name).toBe('Child A');
+        expect(byKey.get('Parent__c/Parent B')!.Children__r[0].Name).toBe('Child B');
+    });
+
     it('defers lookup matching key object expansion until references are resolved', async () => {
         const relatedId = 'a01000000000001AAA';
         const relatedDescribe = {
@@ -735,6 +783,7 @@ describe('DatapackExporter', () => {
                     configure: jest.fn()
                 },
                 lookup: jest.fn(async () => [childRecord]),
+                lookupMultiple: jest.fn(async () => [[childRecord]]),
                 lookupById: jest.fn(async (ids: string | string[]) => Array.isArray(ids)
                     ? new Map(ids.map(id => [id, id === childId ? childRecord : undefined]))
                     : ids === childId ? childRecord : undefined)
@@ -766,10 +815,9 @@ describe('DatapackExporter', () => {
         exporter.maxExportDepth = 0;
 
         await exporter.exportEmbeddedObjects(parentDatapack, { currentDepth: 0, maxDepth: 0 });
+        await exporter.resolveEmbeddedObjects();
 
-        expect(salesforce.data.lookup).toHaveBeenCalledTimes(1);
-        expect(salesforce.data.lookupById).not.toHaveBeenCalledWith(childId);
-        expect(salesforce.data.lookupById).toHaveBeenCalledWith([childId]);
+        expect(salesforce.data.lookupMultiple).toHaveBeenCalledTimes(1);
         expect((parentDatapack.data as any).Child__c).toHaveLength(1);
         expect((parentDatapack.data as any).Child__c[0].VlocityDataPackType).toBe('SObject');
         expect((parentDatapack.data as any).Child__c[0].Name).toBe('Child');

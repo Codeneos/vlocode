@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { calculateHash, deepClone, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsync, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
+import { calculateHash, deepClone, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, mapAsync, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -39,6 +39,15 @@ interface DeferredLookup {
     readonly datapack: ExportDatapack;
     readonly id: string;
     readonly objectType?: string;
+}
+
+interface DeferredEmbedded {
+    readonly datapack: ExportDatapack;
+    readonly name: string;
+    readonly objectType: string;
+    readonly filter: Record<string, any> | Record<string, any>[];
+    readonly limit?: number;
+    readonly context: ExportContext;
 }
 
 export interface DatapackExportProgress {
@@ -154,6 +163,8 @@ export class DatapackExporter {
     private generatedSourceKeys = new Map<string, string>();
     private sourceKeyById = new Map<string, string>();
     private deferredLookups = new Map<VlocityDatapackReference, DeferredLookup>();
+    private deferredEmbedded: DeferredEmbedded[] = [];
+    private pendingFinalize: { datapack: ExportDatapack, context: ExportContext }[] = [];
     private exportQueue: ExportRequest[] = [];
 
     /**
@@ -167,6 +178,12 @@ export class DatapackExporter {
      */
     public exportParallelism = 5;
 
+    /**
+     * The number of IDs to export in a single chunk when exporting multiple objects. 
+     * This can be used to reduce the number of API calls when exporting large numbers of objects.
+     */
+    public exportChunkSize = 200;
+
     constructor(
         /**
          * Configuration for the Datapack Exporter instance.
@@ -174,7 +191,7 @@ export class DatapackExporter {
         public readonly definitions: DatapackExportDefinitionStore,
         private readonly expander: DatapackExpander,
         private readonly salesforce: SalesforceService,
-        @inject.new({ type: 'data', queryCache: true }) 
+        @inject.new({ type: 'data', queryCache: false }) 
         private readonly data: SalesforceDataService,
         private readonly datapackMatchingKeys: DatapackMatchingKeyService,
         private readonly logger: Logger,
@@ -189,7 +206,10 @@ export class DatapackExporter {
      * @param context Optional export context.
      * @returns A promise that resolves to the expanded datapack result.
      */
-    public async exportObjectAndExpand(input: string[] | string | ExportRequest | ExportRequest[], context?: DatapackExportOptions): Promise<DatapackExpandResult[]> {
+    public async exportObjectAndExpand(
+        input: string[] | string | ExportRequest | ExportRequest[], 
+        context?: DatapackExportOptions
+    ): Promise<DatapackExpandResult[]> {
         const result = await this.exportObject(input, context);
         return this.expand(result, context);
     }
@@ -200,7 +220,10 @@ export class DatapackExporter {
      * exporting embedded objects if needed by calling {@link exportObject} with the parent object id.
      * @param id Id of the object to export
      */
-    public exportObject(input: string[] | string | ExportRequest | ExportRequest[], context?: DatapackExportOptions): Promise<ExportResult[]> {
+    public exportObject(
+        input: string[] | string | ExportRequest | ExportRequest[], 
+        context?: DatapackExportOptions
+    ): Promise<ExportResult[]> {
         this.logger.verbose(`Export SObjects ${input}`);
         this.enqueueExport(input, context);
         return this.processExportQueue(context);
@@ -211,7 +234,7 @@ export class DatapackExporter {
         let progressTotal = 0, progressCount = 0;
 
         while(this.exportQueue.length) {
-            const requests = new Map(this.exportQueue.splice(0).map(request => [request.id, request]));
+            const requests = new Map(this.exportQueue.splice(0, this.exportChunkSize).map(request => [request.id, request]));
             const records = await this.lookupByIds(requests.keys());
             progressTotal += records.size;
 
@@ -246,6 +269,9 @@ export class DatapackExporter {
                     total: progressTotal
                 });
             }, this.exportParallelism);
+
+            await this.resolveEmbeddedObjects();
+            await this.finalizeDatapacks();
         };
 
         await this.resolveDeferredLookups();
@@ -361,18 +387,9 @@ export class DatapackExporter {
         await this.exportObjectFields(datapack, record, context);
         await this.exportEmbeddedObjects(datapack, context);
 
-        if (context.embedded) {
-            this.processFieldValues(datapack);
-        } else {
-            this.updateLookupReferences(datapack);
-            this.updateForeignKeys(datapack);
-            this.processFieldValues(datapack, { recursive: true });
-        }
-
-        const maxDepth = context.maxDepth ?? this.maxExportDepth;
-        if (!context.embedded && maxDepth > 0) {
-            await this.exportRelatedObjects(datapack, context);
-        }
+        // Finalization is deferred until the embedded objects for the whole chunk have been resolved
+        // (see resolveEmbeddedObjects); only then are all children and references of this datapack present.
+        this.pendingFinalize.push({ datapack, context });
 
         return datapack.data;
     }
@@ -454,32 +471,102 @@ export class DatapackExporter {
         // Export embedded objects
         for (const embeddedObject of this.definitions.getEmbeddedObjects(datapack)) {
             try {
-                const embeddedRecords = await this.lookupEmbeddedRecords(datapack, embeddedObject);
-                if (embeddedRecords.length === 0) {
-                    continue;
+                const { name, objectType, filter, limit } = this.resolveEmbeddedLookup(datapack, embeddedObject);
+
+                // Object filters (and arrays of object clauses) are deferred so the child records for all
+                // parents in the chunk can be looked up in a single batched query (see resolveEmbeddedObjects).
+                // Only raw SOQL string filters cannot be grouped back per parent and are resolved inline.
+                if (this.isBatchableFilter(filter)) {
+                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, context });
+                } else {
+                    const records = await this.lookupWithFilter(objectType, filter, limit);
+                    if (records.length) {
+                        datapack.data[name] = await mapAsync(records, record => this.buildEmbeddedSObject(datapack, record, context));
+                    }
                 }
-                datapack.data[embeddedObject.name] = await mapAsync(
-                    embeddedRecords,
-                    record => this.buildEmbeddedSObject(datapack, record, context)
-                );
             } catch (e) {
                 this.logger.error(`Error exporting embedded object for ${datapack.objectType}:`, e);
             }
         }
     }
 
-    private async lookupEmbeddedRecords(datapack: ExportDatapack, embeddedObject: ObjectFilter | ObjectRelationship) {
-        if ('relationshipName' in embeddedObject) {
-            embeddedObject = this.getObjectFilterFromRelationship(datapack, embeddedObject);
-        }
+    private resolveEmbeddedLookup(datapack: ExportDatapack, embeddedObject: { name: string } & (ObjectFilter | ObjectRelationship)) {
+        const objectFilter = 'relationshipName' in embeddedObject
+            ? this.getObjectFilterFromRelationship(datapack, embeddedObject)
+            : embeddedObject;
 
-        const filter = this.buildLookupFilter(embeddedObject.filter, datapack);
+        const filter = this.buildLookupFilter(objectFilter.filter, datapack);
         if (this.isEmptyLookupFilter(filter)) {
-            throw new Error(`Filter evaluated to empty object for embedded object ${embeddedObject.objectType} on ${datapack.objectType}`);
+            throw new Error(`Filter evaluated to empty object for embedded object ${objectFilter.objectType} on ${datapack.objectType}`);
         }
 
-        this.logger.verbose(`Lookup ${embeddedObject.objectType} (${datapack.objectType}) using filter:`, filter);
-        return this.lookupWithFilter(embeddedObject.objectType, filter, embeddedObject.limit);
+        this.logger.verbose(`Lookup ${objectFilter.objectType} (${datapack.objectType}) using filter:`, filter);
+        return { name: embeddedObject.name, objectType: objectFilter.objectType, filter, limit: objectFilter.limit };
+    }
+
+    private isBatchableFilter(filter: unknown): filter is Record<string, any> | Record<string, any>[] {
+        const isObjectClause = (value: unknown) => !!value && typeof value === 'object' && !Array.isArray(value);
+        return isObjectClause(filter) || (Array.isArray(filter) && filter.every(isObjectClause));
+    }
+
+    /**
+     * Resolve all deferred embedded objects. Filters for the same object type are batched into a single
+     * query and the results grouped back to each parent datapack. Building the children queues their own
+     * embedded objects, which are drained as the next wave until no deferred lookups remain.
+     */
+    private async resolveEmbeddedObjects() {
+        while (this.deferredEmbedded.length) {
+            const wave = this.deferredEmbedded.splice(0);
+            for (const [objectType, entries] of Object.entries(groupBy(wave, entry => entry.objectType))) {
+                // Expand each entry's filter into individual object clauses so a single batched query
+                // covers every parent in the wave; a clause carries a back-pointer to its entry.
+                const clauses = entries.flatMap((entry, entryIndex) =>
+                    (Array.isArray(entry.filter) ? entry.filter : [entry.filter]).map(filter => ({ entryIndex, filter })));
+                const results = await this.data.lookupMultiple(objectType, clauses.map(clause => clause.filter), 'all');
+
+                // Group records back per entry, deduplicating since clauses (and OR queries) can overlap.
+                const recordsByEntry = entries.map(() => new Map<string, Record<string, any>>());
+                clauses.forEach((clause, index) => {
+                    for (const record of results[index] ?? []) {
+                        recordsByEntry[clause.entryIndex].set(record.Id, record);
+                    }
+                });
+
+                await forEachAsyncParallel(entries, async (entry, entryIndex) => {
+                    // Limit is applied client-side; the batched OR query cannot enforce a per-parent limit.
+                    const records = [...recordsByEntry[entryIndex].values()].slice(0, entry.limit || undefined);
+                    if (records.length === 0) {
+                        return;
+                    }
+                    entry.datapack.data[entry.name] = await mapAsync(records, record => this.buildEmbeddedSObject(entry.datapack, record, entry.context));
+                }, this.exportParallelism);
+            }
+        }
+    }
+
+    /**
+     * Run the deferred finalization for every datapack built since the last drain. Processed in reverse
+     * build order so embedded children are finalized before their parents, matching the original
+     * depth-first post-order now that embedded objects are built breadth-first.
+     */
+    private async finalizeDatapacks() {
+        const pending = this.pendingFinalize.reverse();
+        this.pendingFinalize = [];
+
+        for (const { datapack, context } of pending) {
+            if (context.embedded) {
+                this.processFieldValues(datapack);
+            } else {
+                this.updateLookupReferences(datapack);
+                this.updateForeignKeys(datapack);
+                this.processFieldValues(datapack, { recursive: true });
+            }
+
+            const maxDepth = context.maxDepth ?? this.maxExportDepth;
+            if (!context.embedded && maxDepth > 0) {
+                await this.exportRelatedObjects(datapack, context);
+            }
+        }
     }
 
     private getObjectFilterFromRelationship(datapack: ExportDatapack, embeddedObject: ObjectRelationship): ObjectFilter {
@@ -643,20 +730,6 @@ export class DatapackExporter {
         return this.addReference(datapack, id, await this.buildMatchingKeyObject(datapack, type, data, false));
     }
 
-    // private shouldExportRelatedLookup(datapack: ExportDatapack, type: VlocityDatapackType) {
-    //     return type === 'VlocityLookupMatchingKeyObject' && datapack.dependencyDepth < this.maxExportDepth;
-    // }
-
-    // private async buildRelatedDatapack(datapack: ExportDatapack, data: Record<string, any>) {
-    //     const relatedDatapack = await this.buildDatapack(data, {
-    //         scope: datapack.scope,
-    //         currentDepth: datapack.dependencyDepth + 1
-    //     });
-    //     if (relatedDatapack?.VlocityDataPackType === 'SObject') {
-    //         this.addKnownSourceKey(datapack, data.id, relatedDatapack);
-    //     }
-    // }
-
     /**
      * Add a matching reference when the referenced id is already part of the current export graph
      * (the root datapack or one of its embedded children); otherwise returns `undefined`.
@@ -675,6 +748,20 @@ export class DatapackExporter {
             [VlocityDatapackSourceKey[referenceType]]: sourceKey
         } as VlocityDatapackReference);
     }
+
+    // private shouldExportRelatedLookup(datapack: ExportDatapack, type: VlocityDatapackType) {
+    //     return type === 'VlocityLookupMatchingKeyObject' && datapack.dependencyDepth < this.maxExportDepth;
+    // }
+
+    // private async buildRelatedDatapack(datapack: ExportDatapack, data: Record<string, any>) {
+    //     const relatedDatapack = await this.buildDatapack(data, {
+    //         scope: datapack.scope,
+    //         currentDepth: datapack.dependencyDepth + 1
+    //     });
+    //     if (relatedDatapack?.VlocityDataPackType === 'SObject') {
+    //         this.addKnownSourceKey(datapack, data.id, relatedDatapack);
+    //     }
+    // }
 
     private addReference(datapack: ExportDatapack, refId: string, ref: VlocityDatapackLookupReference): VlocityDatapackLookupReference;
     private addReference(datapack: ExportDatapack, refId: string, ref: null): null;
@@ -1271,7 +1358,7 @@ export class DatapackExporter {
         return [];
     }
 
-    private async lookupWithFilter(objectType: string, filter: Record<string, any>, limit?: number) {
+    private async lookupWithFilter(objectType: string, filter: LookupFilter, limit?: number) {
         const idRecords = await this.data.lookup(objectType, filter, ['Id'], limit);
         const matchedRecords = await this.lookupByIds(idRecords.map(record => record.Id));
         return [...matchedRecords.values()].filter(r => !!r);
