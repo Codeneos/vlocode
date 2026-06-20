@@ -337,50 +337,35 @@ describe('DatapackExporter', () => {
         expect(matchingKeys.getMatchingKeyDefinition).not.toHaveBeenCalled();
     });
 
-    it('uses deterministic content hashes for auto-generated source keys', async () => {
+    it('blocks top-level datapacks that have no matching key', async () => {
         const describe = {
             name: 'Generated__c',
             fields: [
                 { name: 'Id', referenceTo: [] },
                 { name: 'Name', referenceTo: [] },
-                { name: 'ExternalKey__c', referenceTo: [] },
-                { name: 'Stable__c', referenceTo: [] },
-                { name: 'Optional__c', referenceTo: [] },
-                { name: 'Json__c', referenceTo: [] }
+                { name: 'ExternalKey__c', referenceTo: [] }
             ],
             childRelationships: []
         };
-        const createHarness = (stableValue: string) => createExporter({
+        const createHarness = () => createExporter({
             matchingKeyFieldsByType: {
+                // matching field is present but empty on the record -> would fall back to auto-generated
                 Generated__c: ['ExternalKey__c']
             },
-            describes: {
-                Generated__c: describe
-            },
-            records: [{
-                Id: 'a00000000000001AAA',
-                __type: 'Generated__c',
-                Name: 'Generated',
-                ExternalKey__c: null,
-                Stable__c: stableValue,
-                Optional__c: null,
-                Json__c: '{"keep":null}'
-            }]
+            describes: { Generated__c: describe },
+            records: [{ Id: 'a00000000000001AAA', __type: 'Generated__c', Name: 'Generated', ExternalKey__c: null }]
         });
 
-        const first = await createHarness('A').exporter.exportObject('a00000000000001AAA', { maxDepth: 0 });
-        const second = await createHarness('A').exporter.exportObject('a00000000000001AAA', { maxDepth: 0 });
-        const changed = await createHarness('B').exporter.exportObject('a00000000000001AAA', { maxDepth: 0 });
+        // With failOnError the export rejects rather than emitting an auto-generated top-level key.
+        await expect(createHarness().exporter.exportObject('a00000000000001AAA', { maxDepth: 0, failOnError: true }))
+            .rejects.toThrow(/matching key/i);
 
-        expect(first[0].sourceKey).toMatch(/^Generated__c\/auto-generated\/[a-f0-9]{40}$/);
-        expect(second[0].sourceKey).toBe(first[0].sourceKey);
-        expect(changed[0].sourceKey).not.toBe(first[0].sourceKey);
-        expect(first[0].datapack).not.toHaveProperty('ExternalKey__c');
-        expect(first[0].datapack).not.toHaveProperty('Optional__c');
-        expect(first[0].datapack.Json__c).toStrictEqual({ keep: null });
+        // Without failOnError the unexportable record is skipped, not given a generated key.
+        const skipped = await createHarness().exporter.exportObject('a00000000000001AAA', { maxDepth: 0 });
+        expect(skipped).toHaveLength(0);
     });
 
-    it('suppresses nulls and includes parent references in generated source key hashes', async () => {
+    it('suppresses nulls and strips source keys from unreferenced embedded records', async () => {
         const parentAD = 'a00000000000001AAA';
         const parentBD = 'a00000000000002AAA';
         const childAD = 'a01000000000001AAA';
@@ -439,9 +424,10 @@ describe('DatapackExporter', () => {
         expect(childA).not.toHaveProperty('Optional__c');
         expect(childA.Parent__c.VlocityMatchingRecordSourceKey).toBe('Parent__c/Parent A');
         expect(childB.Parent__c.VlocityMatchingRecordSourceKey).toBe('Parent__c/Parent B');
-        expect(childA.VlocityRecordSourceKey).toMatch(/^Child__c\/auto-generated\/[a-f0-9]{40}$/);
-        expect(childB.VlocityRecordSourceKey).toMatch(/^Child__c\/auto-generated\/[a-f0-9]{40}$/);
-        expect(childA.VlocityRecordSourceKey).not.toBe(childB.VlocityRecordSourceKey);
+        // Auto-generated embedded records that are never referenced drop their source key; the
+        // deploy side synthesizes one. Only referenced embedded records keep a (cheap) key.
+        expect(childA).not.toHaveProperty('VlocityRecordSourceKey');
+        expect(childB).not.toHaveProperty('VlocityRecordSourceKey');
     });
 
     it('batches array-clause embedded filters across parents into one query', async () => {
@@ -485,6 +471,107 @@ describe('DatapackExporter', () => {
         expect(salesforce.data.lookupMultiple).toHaveBeenCalledTimes(1);
         expect(byKey.get('Parent__c/Parent A')!.Children__r[0].Name).toBe('Child A');
         expect(byKey.get('Parent__c/Parent B')!.Children__r[0].Name).toBe('Child B');
+    });
+
+    it('respects failOnError for embedded matching key collisions', async () => {
+        const parentD = 'a00000000000001AAA';
+        const describes = {
+            Parent__c: {
+                name: 'Parent__c',
+                fields: [{ name: 'Id', referenceTo: [] }, { name: 'Name', referenceTo: [] }],
+                childRelationships: []
+            },
+            Child__c: {
+                name: 'Child__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Parent__c', referenceTo: ['Parent__c'] }
+                ],
+                childRelationships: []
+            }
+        };
+        // Two children share the same matching key (Name) -> the second is a collision.
+        const makeExporter = () => createExporter({
+            matchingKeyFieldsByType: { Parent__c: ['Name'], Child__c: ['Name'] },
+            describes,
+            records: [
+                { Id: parentD, __type: 'Parent__c', Name: 'P' },
+                { Id: 'a01000000000001AAA', __type: 'Child__c', Name: 'Dup', Parent__c: parentD },
+                { Id: 'a01000000000002AAA', __type: 'Child__c', Name: 'Dup', Parent__c: parentD }
+            ],
+            embeddedObjects: item => item.objectType === 'Parent__c'
+                ? [{ name: 'Children__r', objectType: 'Child__c', filter: { Parent__c: '{Parent__c:Id}' } }]
+                : []
+        });
+
+        // failOnError: the collision aborts the whole export.
+        await expect(makeExporter().exporter.exportObject(parentD, { maxDepth: 0, failOnError: true }))
+            .rejects.toThrow(/not unique/i);
+
+        // otherwise the colliding child is skipped and the rest still exports.
+        const results = await makeExporter().exporter.exportObject(parentD, { maxDepth: 0 });
+        expect(results).toHaveLength(1);
+        expect(results[0].datapack.Children__r).toHaveLength(1);
+    });
+
+    it('gives referenced embedded auto-generated records a cheap path source key', async () => {
+        const parentD = 'a00000000000001AAA';
+        const ruleD = 'a01000000000001AAA';
+        const conditionD = 'a02000000000001AAA';
+        const describes = {
+            Parent__c: {
+                name: 'Parent__c',
+                fields: [{ name: 'Id', referenceTo: [] }, { name: 'Name', referenceTo: [] }],
+                childRelationships: []
+            },
+            Rule__c: {
+                name: 'Rule__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Parent__c', referenceTo: ['Parent__c'] }
+                ],
+                childRelationships: []
+            },
+            Condition__c: {
+                name: 'Condition__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Parent__c', referenceTo: ['Parent__c'] },
+                    { name: 'Rule__c', referenceTo: ['Rule__c'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter } = createExporter({
+            autoGeneratedObjects: ['Rule__c', 'Condition__c'],
+            matchingKeyFieldsByType: { Parent__c: ['Name'] },
+            describes,
+            records: [
+                { Id: parentD, __type: 'Parent__c', Name: 'Parent A' },
+                { Id: ruleD, __type: 'Rule__c', Name: 'R1', Parent__c: parentD },
+                { Id: conditionD, __type: 'Condition__c', Name: 'C1', Parent__c: parentD, Rule__c: ruleD }
+            ],
+            embeddedObjects: item => item.objectType === 'Parent__c'
+                ? [
+                    { name: 'Rules__r', objectType: 'Rule__c', filter: { Parent__c: '{Parent__c:Id}' } },
+                    { name: 'Conditions__r', objectType: 'Condition__c', filter: { Parent__c: '{Parent__c:Id}' } }
+                ]
+                : []
+        });
+
+        const results = await exporter.exportObject([parentD], { maxDepth: 0 });
+        const parent = results[0].datapack;
+        const rule = parent.Rules__r[0];
+        const condition = parent.Conditions__r[0];
+
+        // Rule is referenced by the condition -> gets a cheap, datapack-local path key.
+        expect(rule.VlocityRecordSourceKey).toBe('Parent__c/Parent A/Rule__c/0');
+        expect(condition.Rule__c.VlocityMatchingRecordSourceKey).toBe('Parent__c/Parent A/Rule__c/0');
+        // Condition is referenced by nothing -> key stripped.
+        expect(condition).not.toHaveProperty('VlocityRecordSourceKey');
     });
 
     it('defers lookup matching key object expansion until references are resolved', async () => {
