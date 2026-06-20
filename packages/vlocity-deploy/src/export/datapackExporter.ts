@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { calculateHash, deepClone, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, mapAsync, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
+import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, mapAsync, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -15,6 +15,7 @@ interface ExportDatapack {
     readonly scope?: string;
     readonly schema: DescribeSObjectResult;
     readonly generatedSourceKey: boolean;
+    readonly embedded: boolean;
     data: VlocityDatapackSObject;
     references: Record<string, VlocityDatapackReference>;
     /**
@@ -166,6 +167,8 @@ export class DatapackExporter {
     private deferredEmbedded: DeferredEmbedded[] = [];
     private pendingFinalize: { datapack: ExportDatapack, context: ExportContext }[] = [];
     private exportQueue: ExportRequest[] = [];
+    /** Whether the in-progress export should abort on the first error; set per {@link processExportQueue} run. */
+    private failOnError = false;
 
     /**
      * Maximum depth to export objects, when the depth is reached the 
@@ -232,6 +235,7 @@ export class DatapackExporter {
     private async processExportQueue(options?: ExportProcessOptions): Promise<ExportResult[]> {
         const results: ExportDatapack[] = [];
         let progressTotal = 0, progressCount = 0;
+        this.failOnError = options?.failOnError ?? false;
 
         while(this.exportQueue.length) {
             const requests = new Map(this.exportQueue.splice(0, this.exportChunkSize).map(request => [request.id, request]));
@@ -252,7 +256,7 @@ export class DatapackExporter {
                     const context = requests.get(id);
                     await this.buildDatapack(data, context ?? {});
                 } catch (error) {
-                    if (options?.failOnError) {
+                    if (this.failOnError) {
                         throw error;
                     }
                     this.logger.error(`Error exporting ${id}:`, error);
@@ -358,6 +362,13 @@ export class DatapackExporter {
             return this.datapacks[record.Id].data;
         }
 
+        // Top-level datapacks must resolve to a matching-key based source key; an auto-generated
+        // (content-less) key is only acceptable for embedded records.
+        const generatedSourceKey = this.generatedSourceKeys.get(matchingKey) === record.Id;
+        if (generatedSourceKey && !context.embedded) {
+            throw new Error(`Cannot export ${describe.name} (${record.Id}): top-level datapacks require a matching key but none could be determined`);
+        }
+
         const type = context.datapackType ?? this.inferDatapackType(describe.name, context?.scope);
         const datapack: ExportDatapack = {
             id: record.Id,
@@ -366,7 +377,8 @@ export class DatapackExporter {
             normalizedObjectType: removeNamespacePrefix(describe.name),
             scope: context?.scope,
             schema: describe,
-            generatedSourceKey: this.generatedSourceKeys.get(matchingKey) === record.Id,
+            generatedSourceKey,
+            embedded: !!context.embedded,
             parent: context?.parent,
             data: defineReadonlyProperties({
                     VlocityDataPackType: 'SObject',
@@ -485,6 +497,9 @@ export class DatapackExporter {
                     }
                 }
             } catch (e) {
+                if (this.failOnError) {
+                    throw e;
+                }
                 this.logger.error(`Error exporting embedded object for ${datapack.objectType}:`, e);
             }
         }
@@ -538,7 +553,22 @@ export class DatapackExporter {
                     if (records.length === 0) {
                         return;
                     }
-                    entry.datapack.data[entry.name] = await mapAsync(records, record => this.buildEmbeddedSObject(entry.datapack, record, entry.context));
+                    // Build each child independently so one failure (e.g. a non-unique matching key) skips
+                    // just that subtree unless failOnError aborts the whole export.
+                    const children = (await mapAsync(records, async record => {
+                        try {
+                            return await this.buildEmbeddedSObject(entry.datapack, record, entry.context);
+                        } catch (error) {
+                            if (this.failOnError) {
+                                throw error;
+                            }
+                            this.logger.error(`Error exporting embedded ${entry.objectType} (${record.Id ?? record.id}) for ${entry.datapack.objectType}:`, error);
+                            return undefined;
+                        }
+                    })).filter(child => child != null);
+                    if (children.length) {
+                        entry.datapack.data[entry.name] = children;
+                    }
                 }, this.exportParallelism);
             }
         }
@@ -1095,52 +1125,51 @@ export class DatapackExporter {
         }
     }
 
+    /**
+     * Finalize source keys for generated records. Only embedded records can be generated — top-level
+     * datapacks require a matching key (enforced in buildDatapack). Embedded generated records are only
+     * referenced from within their own datapack, so referenced ones get a cheap datapack-local path key
+     * and unreferenced ones drop their source key entirely (the deploy side synthesizes one).
+     */
     private finalizeGeneratedSourceKeys() {
-        const owners = new Map<string, string>();
-        const replacements = new Map<string, string>();
+        const generated = Object.values(this.datapacks).filter(datapack => datapack.generatedSourceKey);
+        const referenced = this.collectReferencedSourceKeys();
 
-        // Hash only after deferred lookup objects have been resolved so
-        // relationship keys in the final datapack participate in the hash.
-        for (const datapack of Object.values(this.datapacks)) {
-            if (!datapack.generatedSourceKey) {
-                continue;
+        for (const datapack of generated) {
+            if (!referenced.has(datapack.data.VlocityRecordSourceKey)) {
+                this.stripSourceKey(datapack);
             }
-
-            const sourceKey = this.autoGeneratedSourceKey(datapack.objectType, calculateHash(this.getGeneratedSourceKeyHashInput(datapack)));
-            const ownerId = owners.get(sourceKey);
-            const finalSourceKey = ownerId && ownerId !== datapack.id
-                ? `${sourceKey}-${calculateHash(datapack.id).substring(0, 8)}`
-                : sourceKey;
-
-            if (finalSourceKey !== sourceKey) {
-                this.logger.warn(`Generated source key collision for ${sourceKey}; using ${finalSourceKey}`);
-            }
-
-            owners.set(finalSourceKey, datapack.id);
-            replacements.set(datapack.data.VlocityRecordSourceKey, finalSourceKey);
         }
 
-        // Apply replacements after hashes are calculated so one generated
-        // record's final key does not change another record's hash in the same
-        // pass. Generated-to-generated references intentionally hash their
-        // current key for now.
-        for (const [currentSourceKey, newSourceKey] of replacements) {
-            if (currentSourceKey !== newSourceKey) {
-                this.replaceSourceKey(currentSourceKey, newSourceKey);
-            }
+        // Remaining (referenced) records get `<rootSourceKey>/<ObjectType>/<index>`, ordered by Id so
+        // the index is stable across runs against the same org.
+        const referencedGenerated = generated.filter(datapack => datapack.data.VlocityRecordSourceKey);
+        const byRootType = groupBy(referencedGenerated, datapack => `${this.getDatapackRoot(datapack).data.VlocityRecordSourceKey}/${datapack.objectType}`);
+        for (const [pathPrefix, members] of Object.entries(byRootType)) {
+            members.sort((a, b) => a.id.localeCompare(b.id));
+            members.forEach((datapack, index) => this.replaceSourceKey(datapack.data.VlocityRecordSourceKey, `${pathPrefix}/${index}`));
         }
     }
 
-    private getGeneratedSourceKeyHashInput(datapack: ExportDatapack) {
-        const hashInput = deepClone(datapack.data);
-        visitObject(hashInput, (key, value, owner) => {
-            // Ignore only generated records' own source key. Matching/lookup
-            // source keys stay in the hash to preserve relationship identity.
-            if (key === 'VlocityRecordSourceKey' && this.generatedSourceKeys.has(value)) {
-                delete owner[key];
-            }
-        });
-        return hashInput;
+    private collectReferencedSourceKeys(): Set<string> {
+        const referenced = new Set<string>();
+        for (const datapack of Object.values(this.datapacks)) {
+            visitObject(datapack.data, (key, value) => {
+                if (typeof value === 'string' && (key === 'VlocityMatchingRecordSourceKey' || key === 'VlocityLookupRecordSourceKey')) {
+                    referenced.add(value);
+                }
+            });
+        }
+        return referenced;
+    }
+
+    private stripSourceKey(datapack: ExportDatapack) {
+        const sourceKey = datapack.data.VlocityRecordSourceKey;
+        delete (datapack.data as Record<string, any>).VlocityRecordSourceKey;
+        for (let owner: ExportDatapack | undefined = datapack; owner; owner = owner.parent) {
+            delete owner.sourceKeys[sourceKey];
+        }
+        this.generatedSourceKeys.delete(sourceKey);
     }
 
     private replaceSourceKey(currentSourceKey: string, newSourceKey: string) {
@@ -1210,12 +1239,12 @@ export class DatapackExporter {
             return this.getAutoMatchingKey(describe, data['id'], scope);
         }
 
-        // Validate the key is unique
+        // A defined matching key must uniquely identify the record; a collision means the matching
+        // key fields are wrong for this object, so fail instead of silently generating a key.
         const matchingKey = [ describe.name, this.buildMatchingKey(matchingKeyFields, data, scope) ].join('/');
         const isUnique = Object.values(this.matchingKeys).filter(key => key === matchingKey).length === 0;
         if (!isUnique) {
-            this.logger.warn(`Matching key ${matchingKey} is not unique for ${describe.name} -- using auto-generated matching key instead`);
-            return this.getAutoMatchingKey(describe, data['id'], scope);
+            throw new Error(`Matching key "${matchingKey}" is not unique for ${describe.name} (${data['id']}) -- check the matching key fields [${matchingKeyFields.join(', ')}]`);
         }
 
         this.matchingKeys[matchingKeyEntry] = matchingKey;
