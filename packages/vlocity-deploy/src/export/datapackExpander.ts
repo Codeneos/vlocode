@@ -141,7 +141,7 @@ export class DatapackExpander {
         }
 
         files.addFile(DatapackExpander.datapackFileName, data);
-        this.logger.info(`Expanded ${datapack.VlocityRecordSourceKey} (${files.count})`);
+        this.logger.verbose(`Expanded ${datapack.VlocityRecordSourceKey} (${files.count})`);
 
         const result: DatapackExpandResult = {
             objectType: datapack.VlocityRecordSObjectType,

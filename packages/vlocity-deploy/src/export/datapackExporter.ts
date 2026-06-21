@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, mapAsync, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
+import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, Iterable, mapAsync, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -33,6 +33,8 @@ interface ExportDatapack {
      * The keys are the SourceKeys and the values are the Id's of the objects.
      */
     sourceKeys: Record<string, string>;
+    /** Reverse of {@link sourceKeys} (record Id -> SourceKey) for O(1) {@link getSourceKeyById} lookups. */
+    idToSourceKey: Record<string, string>;
     parent?: ExportDatapack;
 }
 
@@ -74,11 +76,25 @@ export interface ExportProcessOptions {
      */
     onProgress?: (progress: DatapackExportProgress) => any;
     /**
-     * Cancellation token that can be used to cancel the export process. 
-     * When the token is cancelled the export process will stop exporting new objects 
+     * Cancellation token that can be used to cancel the export process.
+     * When the token is cancelled the export process will stop exporting new objects
      * and throw a {@link CancellationError} to indicate that the process was cancelled.
      */
     cancellationToken?: CancellationToken;
+    /**
+     * Called once per export chunk with the fully resolved datapacks of that chunk, *after* which the
+     * chunk's datapacks are released from memory. Use this to expand/write datapacks incrementally
+     * instead of accumulating the whole export. When provided, {@link exportObject} streams results
+     * through this callback and resolves to an empty array instead of accumulating them.
+     */
+    onResults?: (results: ExportResult[]) => any;
+    /**
+     * The number of IDs to export in a single chunk when exporting multiple objects. 
+     * Increase this to reduce the number of API calls when exporting large numbers of objects,
+     * or decrease it to reduce memory usage as the exporter accumulates the whole chunk in memory before releasing it. 
+     * The default is 200.
+     */
+    chunkSize?: number;
 }
 
 /**
@@ -110,11 +126,39 @@ interface ExportResult {
         id: string;
     }[];
     datapack: VlocityDatapackSObject;
-    relatedDatapacks: ExportResult[];
     datapackType: string;
     objectType: string;
     sourceKey: string;
     scope?: string;
+}
+
+/**
+ * Tracks export progress in records (roots, related dependencies and embedded children). `total` is the
+ * number of distinct records discovered for export so far and grows as the graph is traversed, so the
+ * reported progress stays honest instead of hugging 100%.
+ */
+class ExportProgressTracker {
+    private readonly discovered = new Set<string>();
+    private completed = 0;
+
+    constructor(private readonly onProgress?: (progress: DatapackExportProgress) => any) {}
+
+    /** Register record ids discovered for export; re-discovered ids are ignored so `total` only grows. */
+    public discover(ids: Iterable<string> | string) {
+        if (typeof ids === 'string') {
+            this.discovered.add(ids);
+        } else {
+            for (const id of ids) {
+                this.discovered.add(id);
+            }
+        }
+    }
+
+    /** Mark `count` records finished and emit a progress update. */
+    public report(count: number, status: 'completed' | 'failed', id = '', sourceKey?: string) {
+        this.completed += count;
+        this.onProgress?.({ id, sourceKey, status, progress: this.completed, total: this.discovered.size });
+    }
 }
 
 /**
@@ -154,8 +198,10 @@ export class DatapackExporter {
     ];
 
     private lookupCache = new Map<string, Record<string, any> | null>();
-    private datapacks: Record<string, ExportDatapack> = {};
-    private matchingKeys: Record<string, string> = {};
+    private datapacks = new Map<string, ExportDatapack>();
+    private matchingKeys = new Map<string, string>();
+    /** Set of assigned matching keys for O(1) uniqueness checks (mirrors the matched values of {@link matchingKeys}). */
+    private usedMatchingKeys = new Set<string>();
     /**
      * Current generated source key to Salesforce record id. Keys start as
      * deterministic temporary values and are rewritten after the export graph is
@@ -167,8 +213,6 @@ export class DatapackExporter {
     private deferredEmbedded: DeferredEmbedded[] = [];
     private pendingFinalize: { datapack: ExportDatapack, context: ExportContext }[] = [];
     private exportQueue: ExportRequest[] = [];
-    /** Whether the in-progress export should abort on the first error; set per {@link processExportQueue} run. */
-    private failOnError = false;
 
     /**
      * Maximum depth to export objects, when the depth is reached the 
@@ -210,7 +254,7 @@ export class DatapackExporter {
      * @returns A promise that resolves to the expanded datapack result.
      */
     public async exportObjectAndExpand(
-        input: string[] | string | ExportRequest | ExportRequest[], 
+        input: string[] | string | ExportRequest | ExportRequest[],
         context?: DatapackExportOptions
     ): Promise<DatapackExpandResult[]> {
         const result = await this.exportObject(input, context);
@@ -233,15 +277,29 @@ export class DatapackExporter {
     }
 
     private async processExportQueue(options?: ExportProcessOptions): Promise<ExportResult[]> {
-        const results: ExportDatapack[] = [];
-        let progressTotal = 0, progressCount = 0;
-        this.failOnError = options?.failOnError ?? false;
+        const results: ExportResult[] = [];
+        const chunkSize = options?.chunkSize ?? this.exportChunkSize;
+        const progress = new ExportProgressTracker(options?.onProgress);
+        this.exportQueue.forEach(request => progress.discover(request.id));
+
+        // datapacks is flushed per chunk, so this preserves the cross-chunk dedup that prevents
+        // re-exporting an object reached again at a later depth. Scoped to a single export run.
+        const exportedIds = new Set<string>();
 
         while(this.exportQueue.length) {
-            const requests = new Map(this.exportQueue.splice(0, this.exportChunkSize).map(request => [request.id, request]));
-            const records = await this.lookupByIds(requests.keys());
-            progressTotal += records.size;
+            // datapacks is flushed each chunk, so dedup against already-exported ids up front; the Map
+            // (keyed by id) also collapses any duplicate requests within the chunk.
+            const requests = new Map(this.exportQueue.splice(0, chunkSize)
+                .filter(request => !exportedIds.has(request.id))
+                .map(request => [request.id, request]));
 
+            if (requests.size === 0) {
+                continue;
+            }
+                
+            const records = await this.lookupByIds(requests.keys());
+
+            const chunkRoots: ExportDatapack[] = [];
             await forEachAsyncParallel(records, async ([id, data]) => {
                 if (options?.cancellationToken?.isCancellationRequested) {
                     return;
@@ -249,6 +307,7 @@ export class DatapackExporter {
 
                 if (!data) {
                     this.logger.warn(`No data found for id ${id}, skipping export`);
+                    progress.report(1, 'failed', id);
                     return;
                 }
 
@@ -256,31 +315,55 @@ export class DatapackExporter {
                     const context = requests.get(id);
                     await this.buildDatapack(data, context ?? {});
                 } catch (error) {
-                    if (this.failOnError) {
+                    if (options?.failOnError) {
                         throw error;
                     }
                     this.logger.error(`Error exporting ${id}:`, error);
                 }
-                
-                const datapack = this.datapacks[id];
-                datapack && results.push(datapack);
 
-                options?.onProgress?.({
-                    id,
-                    status: datapack ? 'completed' : 'failed',
-                    sourceKey: datapack?.data?.VlocityRecordSourceKey,
-                    progress: ++progressCount,
-                    total: progressTotal
-                });
+                const datapack = this.datapacks.get(id);
+                datapack && chunkRoots.push(datapack);
+
+                progress.report(1, datapack ? 'completed' : 'failed', id, datapack?.data?.VlocityRecordSourceKey);
             }, this.exportParallelism);
 
-            await this.resolveEmbeddedObjects();
+            // Fully resolve the chunk before releasing it. Embedded objects, deferred lookups and
+            // generated source keys are all datapack-local (a root and its whole subtree are built in
+            // one chunk), so the chunk can be finalized, emitted and dropped on its own. The scans in
+            // resolveDeferredLookups/finalizeGeneratedSourceKeys are naturally scoped to the chunk
+            // because earlier chunks have already been flushed from `datapacks`.
+            await this.resolveEmbeddedObjects(options);
             await this.finalizeDatapacks();
+            await this.resolveDeferredLookups(options);
+            this.finalizeGeneratedSourceKeys();
+
+            // Records discovered for export include the embedded children built this chunk and any
+            // related dependencies just enqueued by exportRelatedObjects; fold both into the total.
+            progress.discover(this.datapacks.keys());
+            this.exportQueue.forEach(request => progress.discover(request.id));
+            const embeddedCount = this.datapacks.size - chunkRoots.length;
+            if (embeddedCount > 0) {
+                const lastRoot = chunkRoots[chunkRoots.length - 1];
+                progress.report(embeddedCount, 'completed', lastRoot?.id, lastRoot?.data.VlocityRecordSourceKey);
+            }
+
+            const chunkResults = chunkRoots.map(datapack => this.asExportResult(datapack));
+            if (options?.onResults) {
+                await options.onResults(chunkResults);
+            } else {
+                results.push(...chunkResults);
+            }
+
+            // Release the chunk. sourceKeyById/generatedSourceKeys are only consumed within the chunk
+            // that produced them (a later chunk re-resolves what it needs), so they are cleared too;
+            // cross-chunk links survive via the cheap matchingKeys cache and exportedIds.
+            Iterable.forEach(this.datapacks.keys(), id => exportedIds.add(id));
+            this.datapacks.clear();
+            this.sourceKeyById.clear();
+            this.generatedSourceKeys.clear();
         };
 
-        await this.resolveDeferredLookups();
-        this.finalizeGeneratedSourceKeys();
-        return results.map(datapack => this.asExportResult(datapack));
+        return results;
     }
 
     private enqueueExport(input: string[] | string | ExportRequest | ExportRequest[], context?: ExportContext) {
@@ -308,28 +391,11 @@ export class DatapackExporter {
         return {
             parentKeys: Object.entries(datapack.foreignKeys).map(([key, id]) => ({ key, id })),
             datapack: datapack.data,
-            relatedDatapacks: [],
-            //relatedDatapacks: [...this.collectRelatedDatapacks(datapack).values()].map(item => this.asExportResult(item)),
             sourceKey: datapack.data.VlocityRecordSourceKey,
             datapackType: datapack.datapackType,
             objectType: datapack.objectType,
             scope: datapack.scope
         };
-    }
-
-    private collectRelatedDatapacks(datapack: ExportDatapack, collected = new Map<string, ExportDatapack>()): Map<string, ExportDatapack> {
-        const uniqueIds = new Set(Object.values(datapack.foreignKeys));
-        for (const id of uniqueIds) {
-            if (collected.has(id)) {
-                continue;
-            }
-            const related = this.datapacks[id];
-            if (related) {
-                collected.set(id, related);
-                //this.collectRelatedDatapacks(related, collected);
-            };
-        }
-        return collected;
     }
 
     private expand(exportResults: ExportResult[] = [], context?: DatapackExportOptions): DatapackExpandResult[] {
@@ -341,7 +407,6 @@ export class DatapackExporter {
                     datapackType: exportResult.datapackType,
                 })
             );
-            expanded.push(...this.expand(exportResult.relatedDatapacks ?? [], context));
         }
         return expanded;
     }
@@ -357,9 +422,10 @@ export class DatapackExporter {
             return this.buildLookup(context.parent!, record.Id, 'VlocityMatchingKeyObject', describe.name);
         }
 
-        if (this.datapacks[record.Id]) {
+        const existing = this.datapacks.get(record.Id);
+        if (existing) {
             // Don't export the same object twice
-            return this.datapacks[record.Id].data;
+            return existing.data;
         }
 
         // Top-level datapacks must resolve to a matching-key based source key; an auto-generated
@@ -391,10 +457,13 @@ export class DatapackExporter {
             sourceKeys: {
                 [matchingKey]: record.Id
             },
+            idToSourceKey: {
+                [record.Id]: matchingKey
+            },
             foreignKeys: {}
         };
 
-        this.datapacks[record.Id] = datapack;
+        this.datapacks.set(record.Id, datapack);
 
         await this.exportObjectFields(datapack, record, context);
         await this.exportEmbeddedObjects(datapack, context);
@@ -475,6 +544,7 @@ export class DatapackExporter {
             scope: context.scope,
             maxDepth: (context.maxDepth ?? this.maxExportDepth) - 1,
             suppressNulls: context.suppressNulls,
+            failOnError: context.failOnError,
             embedded: false,
         });
     }
@@ -497,7 +567,7 @@ export class DatapackExporter {
                     }
                 }
             } catch (e) {
-                if (this.failOnError) {
+                if (context?.failOnError) {
                     throw e;
                 }
                 this.logger.error(`Error exporting embedded object for ${datapack.objectType}:`, e);
@@ -529,7 +599,7 @@ export class DatapackExporter {
      * query and the results grouped back to each parent datapack. Building the children queues their own
      * embedded objects, which are drained as the next wave until no deferred lookups remain.
      */
-    private async resolveEmbeddedObjects() {
+    private async resolveEmbeddedObjects(options?: ExportProcessOptions) {
         while (this.deferredEmbedded.length) {
             const wave = this.deferredEmbedded.splice(0);
             for (const [objectType, entries] of Object.entries(groupBy(wave, entry => entry.objectType))) {
@@ -553,22 +623,26 @@ export class DatapackExporter {
                     if (records.length === 0) {
                         return;
                     }
+
                     // Build each child independently so one failure (e.g. a non-unique matching key) skips
                     // just that subtree unless failOnError aborts the whole export.
                     const children = (await mapAsync(records, async record => {
                         try {
                             return await this.buildEmbeddedSObject(entry.datapack, record, entry.context);
                         } catch (error) {
-                            if (this.failOnError) {
+                            if (options?.failOnError) {
                                 throw error;
                             }
                             this.logger.error(`Error exporting embedded ${entry.objectType} (${record.Id ?? record.id}) for ${entry.datapack.objectType}:`, error);
                             return undefined;
                         }
                     })).filter(child => child != null);
+
+                    children.forEach(child => entry.datapack.data[entry.name] = child);
                     if (children.length) {
                         entry.datapack.data[entry.name] = children;
                     }
+
                 }, this.exportParallelism);
             }
         }
@@ -630,7 +704,10 @@ export class DatapackExporter {
 
         if (options?.recursive) {
             for (const id of Object.keys(datapack.children)) {
-                this.processFieldValues(this.datapacks[id], { recursive: true });
+                const child = this.datapacks.get(id);
+                if (child) {
+                    this.processFieldValues(child, { recursive: true });
+                }
             }
         }
     }
@@ -662,7 +739,7 @@ export class DatapackExporter {
     }
 
     private getSourceKeyById(datapack: ExportDatapack, id: string) {
-        return Object.entries(datapack.sourceKeys).find(([, recordId]) => recordId === id)?.[0];
+        return datapack.idToSourceKey[id];
     }
 
     private convertToMatchingObject(ref: VlocityDatapackReference): VlocityDatapackMatchingReference {
@@ -705,7 +782,8 @@ export class DatapackExporter {
             parent: datapack,
             embedded: true,
             suppressNulls: context.suppressNulls,
-            maxDepth: context.maxDepth
+            maxDepth: context.maxDepth,
+            failOnError: context.failOnError
         });
         return this.addReference(datapack, id, sobjectPack);
     }
@@ -766,7 +844,7 @@ export class DatapackExporter {
      */
     private addLocalReference(datapack: ExportDatapack, id: string, type: VlocityDatapackReferenceType) {
         const sourceKey = this.getSourceKeyById(this.getDatapackRoot(datapack), id);
-        const referencedDatapack = this.datapacks[id];
+        const referencedDatapack = this.datapacks.get(id);
         if (!sourceKey || !referencedDatapack) {
             return undefined;
         }
@@ -838,6 +916,7 @@ export class DatapackExporter {
         }
 
         datapack.sourceKeys[child.VlocityRecordSourceKey] = refId;
+        datapack.idToSourceKey[refId] = child.VlocityRecordSourceKey;
         datapack.children[refId] = child;
         return child;
     }
@@ -853,6 +932,7 @@ export class DatapackExporter {
         }
 
         datapack.sourceKeys[child.VlocityRecordSourceKey] = refId;
+        datapack.idToSourceKey[refId] = child.VlocityRecordSourceKey;
         return child;
     }
 
@@ -1066,7 +1146,7 @@ export class DatapackExporter {
         } as VlocityDatapackReference;
     }
 
-    private async resolveDeferredLookups() {
+    private async resolveDeferredLookups(options?: ExportProcessOptions) {
         if (this.deferredLookups.size === 0) {
             return;
         }
@@ -1085,16 +1165,24 @@ export class DatapackExporter {
                 return;
             }
 
-            const refType = reference.VlocityDataPackType;
-            const matchingKeyObject = await this.buildMatchingKeyObject(deferred.datapack, refType, record, false);
-            const sourceKey = matchingKeyObject[VlocityDatapackSourceKey[refType]];
-            if (sourceKey) {
-                this.sourceKeyById.set(deferred.id, sourceKey);
-            }
+            try {
+                const refType = reference.VlocityDataPackType;
+                const matchingKeyObject = await this.buildMatchingKeyObject(deferred.datapack, refType, record, false);
+                const sourceKey = matchingKeyObject[VlocityDatapackSourceKey[refType]];
+                if (sourceKey) {
+                    this.sourceKeyById.set(deferred.id, sourceKey);
+                }
 
-            // Preserve object identity because the placeholder object is already assigned
-            // into exported datapack fields and reference maps.
-            this.replaceReference(reference, matchingKeyObject);
+                // Preserve object identity because the placeholder object is already assigned
+                // into exported datapack fields and reference maps.
+                this.replaceReference(reference, matchingKeyObject);
+            } catch (error) {
+                if (options?.failOnError) {
+                    throw error;
+                }
+                // Leave the placeholder reference in place, same as the unresolved-record case above.
+                this.logger.warn(`Unable to resolve matching key reference ${deferred.id}:`, error);
+            }
         }, this.exportParallelism);
 
         this.normalizeForeignKeys();
@@ -1108,13 +1196,13 @@ export class DatapackExporter {
     }
 
     private normalizeForeignKeys() {
-        for (const datapack of Object.values(this.datapacks)) {
+        for (const datapack of this.datapacks.values()) {
             // Foreign keys are kept as sourceKey -> Id. Deferred lookup placeholders may
             // temporarily add Id -> Id entries; convert those to source keys once known,
             // and drop dependencies that resolve to source keys embedded in this datapack.
             const foreignKeys = {};
             for (const [foreignKey, id] of Object.entries(datapack.foreignKeys)) {
-                const sourceKey = this.datapacks[id]?.data.VlocityRecordSourceKey ?? this.sourceKeyById.get(id);
+                const sourceKey = this.datapacks.get(id)?.data.VlocityRecordSourceKey ?? this.sourceKeyById.get(id);
                 if (sourceKey && !(sourceKey in datapack.sourceKeys)) {
                     foreignKeys[sourceKey] = id;
                 } else if (!sourceKey && !this.getSourceKeyById(datapack, id)) {
@@ -1132,7 +1220,7 @@ export class DatapackExporter {
      * and unreferenced ones drop their source key entirely (the deploy side synthesizes one).
      */
     private finalizeGeneratedSourceKeys() {
-        const generated = Object.values(this.datapacks).filter(datapack => datapack.generatedSourceKey);
+        const generated = [...this.datapacks.values()].filter(datapack => datapack.generatedSourceKey);
         const referenced = this.collectReferencedSourceKeys();
 
         for (const datapack of generated) {
@@ -1153,7 +1241,7 @@ export class DatapackExporter {
 
     private collectReferencedSourceKeys(): Set<string> {
         const referenced = new Set<string>();
-        for (const datapack of Object.values(this.datapacks)) {
+        for (const datapack of this.datapacks.values()) {
             visitObject(datapack.data, (key, value) => {
                 if (typeof value === 'string' && (key === 'VlocityMatchingRecordSourceKey' || key === 'VlocityLookupRecordSourceKey')) {
                     referenced.add(value);
@@ -1167,7 +1255,11 @@ export class DatapackExporter {
         const sourceKey = datapack.data.VlocityRecordSourceKey;
         delete (datapack.data as Record<string, any>).VlocityRecordSourceKey;
         for (let owner: ExportDatapack | undefined = datapack; owner; owner = owner.parent) {
+            const id = owner.sourceKeys[sourceKey];
             delete owner.sourceKeys[sourceKey];
+            if (id !== undefined) {
+                delete owner.idToSourceKey[id];
+            }
         }
         this.generatedSourceKeys.delete(sourceKey);
     }
@@ -1175,7 +1267,7 @@ export class DatapackExporter {
     private replaceSourceKey(currentSourceKey: string, newSourceKey: string) {
         // Source keys are copied into maps and reference objects, so changing the
         // SObject field alone is not enough.
-        for (const datapack of Object.values(this.datapacks)) {
+        for (const datapack of this.datapacks.values()) {
             for (const target of [datapack.data, datapack.references]) {
                 visitObject(target, (key, value, owner) => {
                     if (value === currentSourceKey) {
@@ -1183,17 +1275,21 @@ export class DatapackExporter {
                     }
                 });
             }
-            for (const map of [datapack.sourceKeys, datapack.foreignKeys]) {
-                if (currentSourceKey in map) {
-                    map[newSourceKey] = map[currentSourceKey];
-                    delete map[currentSourceKey];
-                }
+            if (currentSourceKey in datapack.sourceKeys) {
+                const id = datapack.sourceKeys[currentSourceKey];
+                datapack.sourceKeys[newSourceKey] = id;
+                delete datapack.sourceKeys[currentSourceKey];
+                datapack.idToSourceKey[id] = newSourceKey;
+            }
+            if (currentSourceKey in datapack.foreignKeys) {
+                datapack.foreignKeys[newSourceKey] = datapack.foreignKeys[currentSourceKey];
+                delete datapack.foreignKeys[currentSourceKey];
             }
         }
 
-        for (const [key, sourceKey] of Object.entries(this.matchingKeys)) {
+        for (const [key, sourceKey] of this.matchingKeys) {
             if (sourceKey === currentSourceKey) {
-                this.matchingKeys[key] = newSourceKey;
+                this.matchingKeys.set(key, newSourceKey);
             }
         }
 
@@ -1226,8 +1322,9 @@ export class DatapackExporter {
 
         // Use cached matching key if available
         const matchingKeyEntry = [scope, data['id']].filter(p => p).join('/');
-        if (this.matchingKeys[matchingKeyEntry]) {
-            return this.matchingKeys[matchingKeyEntry];
+        const cachedMatchingKey = this.matchingKeys.get(matchingKeyEntry);
+        if (cachedMatchingKey) {
+            return cachedMatchingKey;
         }
 
         // If matching key fields are empty use auto-generated matching key
@@ -1242,19 +1339,19 @@ export class DatapackExporter {
         // A defined matching key must uniquely identify the record; a collision means the matching
         // key fields are wrong for this object, so fail instead of silently generating a key.
         const matchingKey = [ describe.name, this.buildMatchingKey(matchingKeyFields, data, scope) ].join('/');
-        const isUnique = Object.values(this.matchingKeys).filter(key => key === matchingKey).length === 0;
-        if (!isUnique) {
+        if (this.usedMatchingKeys.has(matchingKey)) {
             throw new Error(`Matching key "${matchingKey}" is not unique for ${describe.name} (${data['id']}) -- check the matching key fields [${matchingKeyFields.join(', ')}]`);
         }
 
-        this.matchingKeys[matchingKeyEntry] = matchingKey;
+        this.matchingKeys.set(matchingKeyEntry, matchingKey);
+        this.usedMatchingKeys.add(matchingKey);
         return matchingKey;
     }
 
     private buildMatchingKey(fields: string[], data: object, scope?: string) {
         return fields.map((field) =>{
             const value = data[field] ?? null;
-            const matchingKey = this.matchingKeys[[scope, value].filter(p => p).join('/')];
+            const matchingKey = this.matchingKeys.get([scope, value].filter(p => p).join('/'));
             return matchingKey ?? value;
         }).join('/');
     }
@@ -1262,16 +1359,17 @@ export class DatapackExporter {
     private getAutoMatchingKey(describe: DescribeSObjectResult, id: string, scope?: string) {
         // Use cached matching key if available
         const matchingKeyEntry = [scope, describe.name, id].filter(p => p).join('/');
-        if (this.matchingKeys[matchingKeyEntry]) {
-            this.generatedSourceKeys.set(this.matchingKeys[matchingKeyEntry], id);
-            return this.matchingKeys[matchingKeyEntry];
+        const cachedMatchingKey = this.matchingKeys.get(matchingKeyEntry);
+        if (cachedMatchingKey) {
+            this.generatedSourceKeys.set(cachedMatchingKey, id);
+            return cachedMatchingKey;
         }
 
         // Temporary key used while references are being built. It is replaced by
         // a content hash before results are returned.
         const matchingKey = this.autoGeneratedSourceKey(describe.name, calculateHash([scope, describe.name, id].filter(p => p).join('/')));
         this.generatedSourceKeys.set(matchingKey, id);
-        this.matchingKeys[matchingKeyEntry] = matchingKey;
+        this.matchingKeys.set(matchingKeyEntry, matchingKey);
         return matchingKey;
     }
 
