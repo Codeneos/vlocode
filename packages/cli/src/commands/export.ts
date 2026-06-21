@@ -2,25 +2,28 @@ import { join } from 'path';
 import * as fs from 'fs-extra';
 
 import { Logger, LogManager } from '@vlocode/core';
-import { DatapackExpandResult, DatapackExportDefinitionStore, DatapackExporter } from '@vlocode/vlocity-deploy';
+import { DatapackExpandResult, DatapackExportDefinitionStore, DatapackExporter, type DatapackExportProgress } from '@vlocode/vlocity-deploy';
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
 import { SalesforceService } from '@vlocode/salesforce';
 import { getErrorMessage } from '@vlocode/util';
 import { DatapackExportFileLoader, type DatapackExportFile } from '../datapackExportFileLoader';
+import { ExportProgressReporter } from '../progress';
 
 type DatapackExportResult = Awaited<ReturnType<DatapackExporter['exportObject']>>[number];
 
 type ExportCommandOptions = {
-    exportDefinitions?: string;
+    definitions?: string;
     expand?: boolean;
     query?: string;
     file?: string;
-    folder?: string;
+    output?: string;
     depth?: number;
-    datapackType?: string;
+    type?: string;
     suppressNulls?: boolean;
+    failOnError?: boolean;
+    progress?: boolean;
 };
 
 type ExportDefaults = {
@@ -29,6 +32,7 @@ type ExportDefaults = {
     folder: string;
     maxDepth?: number;
     suppressNulls?: boolean;
+    failOnError?: boolean;
 };
 
 type ExportRequest = ExportDefaults & {
@@ -65,37 +69,45 @@ export default class extends SalesforceCommand {
     static options = [
         ...SalesforceCommand.options,
         new Option(
-            '-d, --export-definitions <file>', 
-            'path of the YAML or JSON file containing the export definitions that define how objects are exported'
+            '--definitions <file>',
+            'path to the YAML or JSON file defining how objects are expanded into datapack files'
         ).argParser(existingFile('definitions file')),
         new Option(
             '-f, --file <file>',
-            'path to a YAML export file with datapack export queries'
+            'path to a YAML export manifest with datapack export queries'
         ).argParser(existingFile('export file')).conflicts('query'),
         new Option(
             '-e, --expand',
-            'expand the datapack once exported into separate files according to the export definitions'
+            'expand the exported datapack into separate files according to the definitions'
         ).default(false),
         new Option(
-            '-q, --query <query-string>',
-            'specify the query to use to export the objects instead of using the object ID'
+            '-q, --query <soql>',
+            'SOQL query selecting the records to export instead of passing object IDs'
         ).conflicts('file'),
         new Option(
-            '-t, --datapack-type <type>',
+            '-t, --type <type>',
             'datapack type to use when exporting IDs or a single query'
         ),
         new Option(
-            '--folder <folder>',
+            '-o, --output <dir>',
             'folder where exported datapacks are written'
         ).default('./'),
         new Option(
-            '--depth <depth>',
+            '-d, --depth <n>',
             'dependency export depth; use -1 to include all dependencies'
         ).argParser(parseDepth),
         new Option(
             '--suppress-nulls',
             'suppress null SObject field values from exported datapacks'
-        ).default(false)
+        ).default(false),
+        new Option(
+            '--fail-on-error',
+            'fail the export if an error occurs while exporting a datapack'
+        ).default(false),
+        new Option(
+            '--no-progress',
+            'disable the interactive progress bar and use plain forward-printing output'
+        )
     ];
 
     private readonly exportFileLoader = new DatapackExportFileLoader();
@@ -109,7 +121,7 @@ export default class extends SalesforceCommand {
         const argIds = Array.isArray(ids) ? ids : [];
         const exportFile = options.file ? await this.loadExportFile(options.file) : undefined;
 
-        await this.loadExportDefinitions(options.exportDefinitions ?? exportFile?.exportDefinitions);
+        await this.loadExportDefinitions(options.definitions ?? exportFile?.exportDefinitions);
 
         const requests = exportFile
             ? await this.getRequestsFromFile(exportFile, options, argIds)
@@ -126,16 +138,29 @@ export default class extends SalesforceCommand {
         );
         const exporter = this.container.new(DatapackExporter);
         const expandedOutputFiles: ExpandedOutputFiles = new Map();
+        const progress = new ExportProgressReporter({
+            logger: this.logger,
+            totalBatches: requests.length,
+            rootDatapacks: datapackCount,
+            enabled: options.progress === false ? false : undefined
+        });
 
-        for (const request of requests) {
-            await this.exportRequest(exporter, request, expandedOutputFiles);
+        progress.start();
+        try {
+            for (const [index, request] of requests.entries()) {
+                progress.beginBatch(index, request.datapackType, request.ids.length);
+                await this.exportRequest(exporter, request, expandedOutputFiles, progress);
+                progress.endBatch();
+            }
+            progress.succeed();
+        } finally {
+            // Restore the terminal even when the export throws; the CLI reports the error itself.
+            progress.stop();
         }
-
-        this.logger.info('Datapack export completed');
     }
 
     private async getRequestsFromFile(exportFile: DatapackExportFile, defaults: ExportCommandOptions, ids: string[]) {
-        if (ids.length || defaults.query || defaults.datapackType) {
+        if (ids.length || defaults.query || defaults.type) {
             throw new Error('Use either a YAML export file or object IDs/query/datapack type, not both');
         }
 
@@ -164,7 +189,7 @@ export default class extends SalesforceCommand {
         }
 
         if (options.query) {
-            ids = await this.getIdsFromQuery(options.query, options.datapackType);
+            ids = await this.getIdsFromQuery(options.query, options.type);
         }
 
         if (!ids.length) {
@@ -179,11 +204,18 @@ export default class extends SalesforceCommand {
         }];
     }
 
-    private async exportRequest(exporter: DatapackExporter, request: ExportRequest, expandedOutputFiles: ExpandedOutputFiles) {
+    private async exportRequest(
+        exporter: DatapackExporter,
+        request: ExportRequest,
+        expandedOutputFiles: ExpandedOutputFiles,
+        progress: ExportProgressReporter
+    ) {
         const context = {
             datapackType: request.datapackType,
             maxDepth: request.maxDepth,
-            suppressNulls: request.suppressNulls
+            suppressNulls: request.suppressNulls,
+            failOnError: request.failOnError,
+            onProgress: (update: DatapackExportProgress) => progress.report(update)
         };
 
         if (request.expand) {
@@ -202,11 +234,12 @@ export default class extends SalesforceCommand {
 
     private getExportDefaults(options: ExportCommandOptions, overrides: Partial<ExportDefaults> = {}): ExportDefaults {
         return {
-            datapackType: overrides.datapackType ?? options.datapackType,
+            datapackType: overrides.datapackType ?? options.type,
             expand: overrides.expand ?? Boolean(options.expand),
-            folder: overrides.folder ?? options.folder ?? './',
+            folder: overrides.folder ?? options.output ?? './',
             maxDepth: overrides.maxDepth ?? this.normalizeDepth(options.depth),
-            suppressNulls: overrides.suppressNulls ?? Boolean(options.suppressNulls)
+            suppressNulls: overrides.suppressNulls ?? Boolean(options.suppressNulls),
+            failOnError: overrides.failOnError ?? Boolean(options.failOnError)
         };
     }
 
@@ -246,7 +279,7 @@ export default class extends SalesforceCommand {
         for (const fileName of filesWritten) {
             expandedOutputFiles.set(fileName, result.sourceKey);
         }
-        this.logger.info(`Wrote ${filesWritten.length} file${filesWritten.length === 1 ? '' : 's'} for ${result.sourceKey}`);
+        this.logger.verbose(`Wrote ${filesWritten.length} file${filesWritten.length === 1 ? '' : 's'} for ${result.sourceKey}`);
     }
 
     private assertNoExpandedOutputCollision(result: DatapackExpandResult, folder: string, expandedOutputFiles: ExpandedOutputFiles) {
@@ -279,7 +312,7 @@ export default class extends SalesforceCommand {
 
         try {
             await fs.outputFile(fileName, data);
-            this.logger.info(`Output file: ${fileName}`);
+            this.logger.verbose(`Output file: ${fileName}`);
         } catch (err) {
             this.logger.warn(`Failed to write file ${fileName}: ${getErrorMessage(err)}`);
         }
