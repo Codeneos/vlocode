@@ -515,6 +515,46 @@ describe('DatapackExporter', () => {
         expect(results[0].datapack.Children__r).toHaveLength(1);
     });
 
+    it('counts embedded children in the reported progress total', async () => {
+        const parentD = 'a00000000000001AAA';
+        const { exporter } = createExporter({
+            matchingKeyFieldsByType: { Parent__c: ['Name'], Child__c: ['Name'] },
+            describes: {
+                Parent__c: {
+                    name: 'Parent__c',
+                    fields: [{ name: 'Id', referenceTo: [] }, { name: 'Name', referenceTo: [] }],
+                    childRelationships: []
+                },
+                Child__c: {
+                    name: 'Child__c',
+                    fields: [
+                        { name: 'Id', referenceTo: [] },
+                        { name: 'Name', referenceTo: [] },
+                        { name: 'Parent__c', referenceTo: ['Parent__c'] }
+                    ],
+                    childRelationships: []
+                }
+            },
+            records: [
+                { Id: parentD, __type: 'Parent__c', Name: 'P' },
+                { Id: 'a01000000000001AAA', __type: 'Child__c', Name: 'C1', Parent__c: parentD },
+                { Id: 'a01000000000002AAA', __type: 'Child__c', Name: 'C2', Parent__c: parentD }
+            ],
+            embeddedObjects: item => item.objectType === 'Parent__c'
+                ? [{ name: 'Children__r', objectType: 'Child__c', filter: { Parent__c: '{Parent__c:Id}' } }]
+                : []
+        });
+
+        const updates: Array<{ progress: number; total: number }> = [];
+        await exporter.exportObject(parentD, { maxDepth: 0, onProgress: (u: any) => updates.push({ progress: u.progress, total: u.total }) });
+
+        // total starts at 1 root and grows to include the 2 embedded children once discovered.
+        expect(updates[0].total).toBe(1);
+        const last = updates[updates.length - 1];
+        expect(last.total).toBe(3);
+        expect(last.progress).toBe(3);
+    });
+
     it('gives referenced embedded auto-generated records a cheap path source key', async () => {
         const parentD = 'a00000000000001AAA';
         const ruleD = 'a01000000000001AAA';
@@ -616,9 +656,10 @@ describe('DatapackExporter', () => {
             references: {},
             foreignKeys: {},
             sourceKeys: {},
+            idToSourceKey: {},
             data: {}
         };
-        exporter.datapacks[datapack.id] = datapack;
+        exporter.datapacks.set(datapack.id, datapack);
 
         const reference = await exporter.buildLookup(datapack, relatedId, 'VlocityLookupMatchingKeyObject', 'Related__c');
 
@@ -650,12 +691,13 @@ describe('DatapackExporter', () => {
         const datapack = {
             id: 'a00000000000001AAA',
             sourceKeys: {},
+            idToSourceKey: {},
             foreignKeys: {
                 [unresolvedId]: unresolvedId,
                 'Already__c/Resolved': alreadyResolvedId
             }
         };
-        (exporter as any).datapacks[datapack.id] = datapack;
+        (exporter as any).datapacks.set(datapack.id, datapack);
         (exporter as any).sourceKeyById.set(unresolvedId, 'Related__c/Related');
 
         (exporter as any).normalizeForeignKeys();
@@ -801,9 +843,9 @@ describe('DatapackExporter', () => {
             VlocityRecordSObjectType: 'Related__c',
             VlocityRecordSourceKey: 'Related__c/Related'
         });
-        expect(exporter.datapacks[relatedId].parent).toBeUndefined();
-        expect(exporter.datapacks[rootId].children).not.toHaveProperty(relatedId);
-        expect(exporter.datapacks[rootId].sourceKeys).not.toHaveProperty('Related__c/Related');
+        // Related is exported as its own top-level datapack (separate expand call above), referenced by
+        // the root via lookup rather than embedded inside it.
+        expect(rootDatapack).not.toHaveProperty('Related__c');
         expect(result).toHaveLength(2);
         await result[0].writeToFilesystem('/tmp/out');
         await result[1].writeToFilesystem('/tmp/out');
@@ -833,6 +875,9 @@ describe('DatapackExporter', () => {
             foreignKeys: {},
             sourceKeys: {
                 'Parent__c/Parent': 'a00000000000001AAA'
+            },
+            idToSourceKey: {
+                'a00000000000001AAA': 'Parent__c/Parent'
             },
             dependencyDepth: 0
         };
