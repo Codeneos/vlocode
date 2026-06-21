@@ -2,8 +2,9 @@ import { readdirSync, readFileSync } from 'fs';
 import * as path from 'path';
 
 import { Command, Option } from 'commander';
-import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter } from '@vlocode/core';
+import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter, FileWriter } from '@vlocode/core';
 import { getErrorMessage } from '@vlocode/util';
+import { ProgressAwareLogWriter } from './progress';
 
 // // @ts-ignore
 const buildInfo: Record<string, string> = {
@@ -21,27 +22,68 @@ class CLI {
 
     private static readonly isVerbose = process.argv.includes('-v') || process.argv.includes('--verbose');
     private static readonly isDebug = process.argv.includes('--debug');
+    private static readonly logFile = CLI.getArgValue('--log-file') ?? CLI.defaultLogFile();
+    private static readonly logLevel = CLI.parseLogLevel(CLI.getArgValue('--log-level'));
 
     private readonly program: Command;
     private readonly logger = LogManager.get(CLI.programName);
 
     static readonly options = [
         new Option('-v, --verbose', 'enable more detailed verbose logging').default(false),
-        new Option('--debug', 'print call stack when an unhandled error occurs').default(false)
+        new Option('--debug', 'print call stack when an unhandled error occurs').default(false),
+        new Option('--log-file <path>', 'append logs as NDJSON to the specified file'),
+        new Option('--log-level <level>', 'set the log level, overrides -v/--debug')
+            .choices(Object.keys(LogLevel).filter(key => isNaN(Number(key))))
     ];
 
+    /**
+     * Read the value of a valued argument directly from `process.argv`, supporting both
+     * `--flag value` and `--flag=value` forms. Used to configure logging before commander parses.
+     */
+    private static getArgValue(name: string) : string | undefined {
+        const index = process.argv.findIndex(arg => arg === name || arg.startsWith(`${name}=`));
+        if (index === -1) {
+            return undefined;
+        }
+        const arg = process.argv[index];
+        return arg.includes('=') ? arg.slice(arg.indexOf('=') + 1) : process.argv[index + 1];
+    }
+
+    /**
+     * Default log file used when `--log-file` is not provided: a NDJSON file named after the
+     * invoked command and the current timestamp, in a git-ignored `.vlocode/logs` folder under
+     * the current working directory.
+     */
+    private static defaultLogFile() : string {
+        const command = process.argv.slice(2).find(arg => !arg.startsWith('-')) ?? CLI.programName;
+        const timestamp = new Date().toISOString().replace(/:/g, '-');
+        return path.join(process.cwd(), '.vlocode', 'logs', `${command}-${timestamp}.log`);
+    }
+
+    private static parseLogLevel(level: string | undefined) : LogLevel | undefined {
+        if (level === undefined) {
+            return undefined;
+        }
+        const parsed = LogLevel[level as keyof typeof LogLevel];
+        return typeof parsed === 'number' ? parsed : undefined;
+    }
+
     static {
-        // Init global logging
+        // Init global logging. The console writer is wrapped so that, while an interactive progress
+        // bar is rendering, all log output is routed above the bar instead of corrupting it.
         if (CLI.isVerbose || CLI.isDebug) {
-            LogManager.registerWriter(new FancyConsoleWriter());
-            if (CLI.isDebug) {
-                LogManager.setGlobalLogLevel(LogLevel.debug);
-            } else {
-                LogManager.setGlobalLogLevel(LogLevel.verbose);
-            }
+            LogManager.registerWriter(new ProgressAwareLogWriter(new FancyConsoleWriter()));
+            LogManager.setGlobalLogLevel(CLI.isDebug ? LogLevel.debug : LogLevel.verbose);
         } else {
-            LogManager.registerWriter(new ConsoleWriter());
+            LogManager.registerWriter(new ProgressAwareLogWriter(new ConsoleWriter()));
             LogManager.setGlobalLogLevel(LogLevel.info);
+        }
+        if (CLI.logFile) {
+            LogManager.registerWriter(new FileWriter(CLI.logFile));
+        }
+        // An explicit --log-level always wins over the -v/--debug derived level
+        if (CLI.logLevel !== undefined) {
+            LogManager.setGlobalLogLevel(CLI.logLevel);
         }
         container.registerProvider(Logger, (receiver) => {
             if (receiver?.name === 'default') {
@@ -82,7 +124,11 @@ class CLI {
     }
 
     private init(options: any) {
-        if (options.debug === true) {
+        const logLevel = CLI.parseLogLevel(options.logLevel);
+        if (logLevel !== undefined) {
+            LogManager.setGlobalLogLevel(logLevel);
+            getErrorMessage.defaults.includeStack = options.debug === true || options.verbose === true;
+        } else if (options.debug === true) {
             LogManager.setGlobalLogLevel(LogLevel.debug);
             getErrorMessage.defaults.includeStack = true;
         } else if (options.verbose === true) {
