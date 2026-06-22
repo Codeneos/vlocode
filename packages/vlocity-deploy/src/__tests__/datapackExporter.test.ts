@@ -555,7 +555,7 @@ describe('DatapackExporter', () => {
         expect(last.progress).toBe(3);
     });
 
-    it('gives referenced embedded auto-generated records a cheap path source key', async () => {
+    it('keeps auto-generated source keys on referenced embedded records and strips unreferenced ones', async () => {
         const parentD = 'a00000000000001AAA';
         const ruleD = 'a01000000000001AAA';
         const conditionD = 'a02000000000001AAA';
@@ -607,9 +607,9 @@ describe('DatapackExporter', () => {
         const rule = parent.Rules__r[0];
         const condition = parent.Conditions__r[0];
 
-        // Rule is referenced by the condition -> gets a cheap, datapack-local path key.
-        expect(rule.VlocityRecordSourceKey).toBe('Parent__c/Parent A/Rule__c/0');
-        expect(condition.Rule__c.VlocityMatchingRecordSourceKey).toBe('Parent__c/Parent A/Rule__c/0');
+        // Rule is referenced by the condition -> keeps its auto-generated source key.
+        expect(rule.VlocityRecordSourceKey).toMatch(/^Rule__c\/auto-generated\/[0-9a-f]+$/);
+        expect(condition.Rule__c.VlocityMatchingRecordSourceKey).toBe(rule.VlocityRecordSourceKey);
         // Condition is referenced by nothing -> key stripped.
         expect(condition).not.toHaveProperty('VlocityRecordSourceKey');
     });
