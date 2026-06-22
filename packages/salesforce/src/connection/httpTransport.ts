@@ -167,6 +167,14 @@ export class HttpTransport implements Transport {
      */
     static enableResponseLogging = false;
 
+    /**
+     * Process-wide count of HTTP requests sent to Salesforce across all transport instances.
+     * Incremented on every round-trip (including retries and redirects). Intended as a lightweight,
+     * read-only metric for progress reporting; consumers that need a per-operation figure should
+     * snapshot it before the operation and use the delta.
+     */
+    static requestCount = 0;
+
     constructor(
         options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,
         private readonly logger: ILogger = LogManager.get(HttpTransport)
@@ -197,6 +205,7 @@ export class HttpTransport implements Transport {
     public httpRequest(info: HttpRequestInfo, options?: object): Promise<HttpResponse>;
     public httpRequest(info: HttpRequestInfo, options?: object, retryCount?: number): Promise<HttpResponse>;
     public httpRequest(info: HttpRequestInfo, options?: object, retryCount = 0): Promise<HttpResponse> {
+        HttpTransport.requestCount++;
         const url = this.parseUrl(info.url);
         this.logger.debug('%s %s', info.method, url.pathname);
         const timer = new Timer();
