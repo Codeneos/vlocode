@@ -6,7 +6,7 @@ import { DatapackExpandResult, DatapackExportDefinitionStore, DatapackExporter, 
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
-import { SalesforceService } from '@vlocode/salesforce';
+import { HttpTransport, SalesforceService } from '@vlocode/salesforce';
 import { getErrorMessage } from '@vlocode/util';
 import { DatapackExportFileLoader, type DatapackExportFile } from '../datapackExportFileLoader';
 import { ExportProgressReporter } from '../progress';
@@ -138,18 +138,20 @@ export default class extends SalesforceCommand {
         );
         const exporter = this.container.new(DatapackExporter);
         const expandedOutputFiles: ExpandedOutputFiles = new Map();
+        const prunedFolders = new Set<string>();
         const progress = new ExportProgressReporter({
             logger: this.logger,
             totalBatches: requests.length,
             rootDatapacks: datapackCount,
-            enabled: options.progress === false ? false : undefined
+            enabled: options.progress === false ? false : undefined,
+            apiCalls: () => HttpTransport.requestCount
         });
 
         progress.start();
         try {
             for (const [index, request] of requests.entries()) {
                 progress.beginBatch(index, request.datapackType, request.ids.length);
-                await this.exportRequest(exporter, request, expandedOutputFiles, progress);
+                await this.exportRequest(exporter, request, expandedOutputFiles, prunedFolders, progress);
                 progress.endBatch();
             }
             progress.succeed();
@@ -208,6 +210,7 @@ export default class extends SalesforceCommand {
         exporter: DatapackExporter,
         request: ExportRequest,
         expandedOutputFiles: ExpandedOutputFiles,
+        prunedFolders: Set<string>,
         progress: ExportProgressReporter
     ) {
         const context = {
@@ -221,14 +224,14 @@ export default class extends SalesforceCommand {
         if (request.expand) {
             const results = await exporter.exportObjectAndExpand(request.ids, context);
             for (const result of results) {
-                await this.writeExpandedDatapack(result, request.folder, expandedOutputFiles);
+                await this.writeExpandedDatapack(result, request.folder, expandedOutputFiles, prunedFolders);
             }
             return;
         }
 
         const results = await exporter.exportObject(request.ids, context);
         for (const result of results) {
-            await this.writeExportTree(result, request.folder);
+            await this.writeConsolidatedDatapack(result, request.folder, expandedOutputFiles, prunedFolders);
         }
     }
 
@@ -265,16 +268,9 @@ export default class extends SalesforceCommand {
         return ids;
     }
 
-    private async writeExportTree(result: DatapackExportResult, folder: string) {
-        await this.writeConsolidatedDatapack(result, folder);
-
-        for (const related of result.relatedDatapacks ?? []) {
-            await this.writeExportTree(related, folder);
-        }
-    }
-
-    private async writeExpandedDatapack(result: DatapackExpandResult, folder: string, expandedOutputFiles: ExpandedOutputFiles) {
+    private async writeExpandedDatapack(result: DatapackExpandResult, folder: string, expandedOutputFiles: ExpandedOutputFiles, prunedFolders: Set<string>) {
         this.assertNoExpandedOutputCollision(result, folder, expandedOutputFiles);
+        await this.pruneFolder(join(folder, result.folder), prunedFolders);
         const filesWritten = await result.writeToFilesystem(folder);
         for (const fileName of filesWritten) {
             expandedOutputFiles.set(fileName, result.sourceKey);
@@ -296,9 +292,43 @@ export default class extends SalesforceCommand {
         }
     }
 
-    private async writeConsolidatedDatapack(result: DatapackExportResult, folder: string) {
-        const baseName = result.datapack.name ?? result.datapack.Name ?? result.sourceKey.replace(/[/\\:]/g, '_');
-        await this.writeFile([folder, `${baseName}_DataPack.json`], result.datapack);
+    private async writeConsolidatedDatapack(result: DatapackExportResult, folder: string, consolidatedOutputFiles: ExpandedOutputFiles, prunedFolders: Set<string>) {
+        // The source key is unique per datapack, so it disambiguates the output as a folder; the file
+        // itself keeps the human-readable Name (falling back to the source key when the record has none).
+        const datapackFolder = (result.sourceKey ?? 'datapack').replace(/[/\\:]/g, '_');
+        const fileName = `${(result.datapack.Name ?? datapackFolder).replace(/[/\\:]/g, '_')}_DataPack.json`;
+        const outputFolder = join(folder, datapackFolder);
+        const outputFile = join(outputFolder, fileName);
+
+        const existingSourceKey = consolidatedOutputFiles.get(outputFile);
+        if (existingSourceKey && existingSourceKey !== result.sourceKey) {
+            throw new Error(
+                `Consolidated export path collision: ${outputFile}\n` +
+                `  existing: ${existingSourceKey}\n` +
+                `  current:  ${result.sourceKey}`
+            );
+        }
+
+        await this.pruneFolder(outputFolder, prunedFolders);
+        await this.writeFile(outputFile, result.datapack);
+        consolidatedOutputFiles.set(outputFile, result.sourceKey);
+    }
+
+    /**
+     * Remove a datapack's output folder once per export run before its files are (re)written so stale
+     * files from a previous export don't linger. Tracked in `prunedFolders` so a folder shared by
+     * several datapacks in the same run is cleared only on first write, not between siblings.
+     */
+    private async pruneFolder(folder: string, prunedFolders: Set<string>) {
+        if (prunedFolders.has(folder)) {
+            return;
+        }
+        prunedFolders.add(folder);
+        try {
+            await fs.remove(folder);
+        } catch (err) {
+            this.logger.warn(`Failed to clear output folder ${folder}: ${getErrorMessage(err)}`);
+        }
     }
 
     public async writeFile(fileName: string | string[], data: object | string | Buffer) {

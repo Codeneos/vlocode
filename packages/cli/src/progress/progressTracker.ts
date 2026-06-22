@@ -171,6 +171,13 @@ export class ProgressTracker {
 }
 
 /**
+ * Format an integer count with thousands separators, e.g. `1284` → `1,284`.
+ */
+export function formatCount(value: number): string {
+    return Math.round(value).toLocaleString('en-US');
+}
+
+/**
  * Format a per-second rate compactly: one decimal below 10, whole numbers above.
  */
 export function formatRate(rate: number): string {

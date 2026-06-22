@@ -75,7 +75,8 @@ class CLI {
             LogManager.registerWriter(new ProgressAwareLogWriter(new FancyConsoleWriter()));
             LogManager.setGlobalLogLevel(CLI.isDebug ? LogLevel.debug : LogLevel.verbose);
         } else {
-            LogManager.registerWriter(new ProgressAwareLogWriter(new ConsoleWriter()));
+            // Non-verbose: print just the message, no timestamp/level/category prefix.
+            LogManager.registerWriter(new ProgressAwareLogWriter(new ConsoleWriter(false)));
             LogManager.setGlobalLogLevel(LogLevel.info);
         }
         if (CLI.logFile) {
