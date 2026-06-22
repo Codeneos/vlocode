@@ -97,10 +97,10 @@ export class DatapackLookupService implements DatapackDependencyResolver {
     /**
      * Bulk lookup of records in Salesforce using the current matching key configuration;
      * @param datapackRecords Array of Records to lookup; note the index of the datapackRecords corresponds to the index in the result array
+     * @param cancelToken Optional cancellation token to abort the org lookups
      * @returns Array with all IDs found in Salesforce; array index matches the order of the datapackRecords as provided
      */
-    public async lookupIds(datapackRecords: DatapackDeploymentRecord[], cancelToken?: CancellationToken): Promise<Array<string | undefined>>;
-    public async lookupIds(datapackRecords: DatapackDeploymentRecord[]): Promise<Array<string | undefined>> {
+    public async lookupIds(datapackRecords: DatapackDeploymentRecord[], cancelToken?: CancellationToken): Promise<Array<string | undefined>> {
         const lookupResults = new Array<string | undefined>();
 
         // Determine matching keys per object
@@ -158,7 +158,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         }
 
         // execute lookup
-        const records = await this.lookupMultiple(lookupRequests);
+        const records = await this.lookupMultiple(lookupRequests, cancelToken);
 
         // map record results back to lookup requests
         // Track which lookup requests resolved to each matched record ID so duplicate matches can be
@@ -207,7 +207,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
      * @param lookups lookup requests
      * @returns Array with all matched records or undefined when no matches found
      */
-    private async lookupMultiple(lookups: { sobjectType: string, filter: object }[]): Promise<Array<Array<string> | undefined>> {
+    private async lookupMultiple(lookups: { sobjectType: string, filter: object }[], cancelToken?: CancellationToken): Promise<Array<Array<string> | undefined>> {
         const lookupResults = new Array<string[] | undefined>();
 
         if (lookups.some(lookup => !lookup.filter || !Object.keys(lookup.filter).length)) {
@@ -215,6 +215,10 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         }
 
         for (const [sobjectType, entries] of Object.entries(groupBy(lookups.entries(), ([,entry]) => entry.sobjectType))) {
+            if (cancelToken?.isCancellationRequested) {
+                break;
+            }
+
             // Build filters
             const distinctFilters = [...unique(entries, ([,{ filter }]) => JSON.stringify(filter), ([,{ filter }]) => filter)];
 
@@ -222,7 +226,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             const fields = distinctFilters.reduce<Set<string>>((acc, filter) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set([ 'Id' ]));
 
             // lookup records
-            const records = await this.salesforce.data.lookup(sobjectType, distinctFilters, [...fields], undefined);
+            const records = await this.salesforce.data.lookup(sobjectType, distinctFilters, [...fields], undefined, cancelToken);
 
             // map record results back to lookup requests
             //
@@ -273,14 +277,16 @@ export class DatapackLookupService implements DatapackDependencyResolver {
                 }
 
                 if (!matchedLookups.length) {
-                    console.error('You found a BUG in the lookup resolution, share below information to help find a solution:')
-                    console.error(`Record not matched:`, JSON.stringify(record, undefined, 2));
-                    console.error(`Lookups requested:`, JSON.stringify(entries.map(([,{ filter }]) => filter), undefined, 2));
-                    process.exit();
+                    // The query is generated from the lookup filters, so every returned record is expected to match
+                    // at least one request. If it doesn't (e.g. a namespace/case edge case in fieldEquals) skip the
+                    // record instead of aborting the host process.
+                    this.distinctLogger.warn(`Some queried ${sobjectType} records could not be mapped back to a lookup filter; this may indicate a matching key configuration issue`);
+                    this.logger.verbose(`Unmatched ${sobjectType} record (${record.Id}); requested filters: ${JSON.stringify(entries.map(([,{ filter }]) => filter))}`);
+                    continue;
                 }
 
                 for (const [ index ] of matchedLookups) {
-                    (lookupResults[index] ?? (lookupResults[index] = [])).push(record.Id);                    
+                    (lookupResults[index] ?? (lookupResults[index] = [])).push(record.Id);
                 }
             }
         }
