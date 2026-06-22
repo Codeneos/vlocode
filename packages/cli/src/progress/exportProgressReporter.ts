@@ -1,16 +1,16 @@
 import chalk from 'chalk';
 import logSymbols from 'log-symbols';
 
-import { Logger, LogLevel, LogManager } from '@vlocode/core';
+import { Logger, LogEntry, LogLevel, LogManager } from '@vlocode/core';
 import type { DatapackExportProgress } from '@vlocode/vlocity-deploy';
 
 import { ProgressBar } from './progressBar';
-import { ProgressTracker } from './progressTracker';
+import { formatCount, ProgressTracker } from './progressTracker';
+import { clearProgressLogSink, setProgressLogSink } from './progressLogWriter';
 
 export interface ExportProgressOptions {
     /**
-     * Logger used for the non-interactive (forward-printing) fallback and as the destination for
-     * the final summary line in CI.
+     * Logger used for the non-interactive (forward-printing) fallback and the final summary in CI.
      */
     logger: Logger;
     /**
@@ -31,11 +31,16 @@ export interface ExportProgressOptions {
      * Stream the bar renders to; defaults to `process.stdout`.
      */
     stream?: NodeJS.WriteStream;
+    /**
+     * Returns the cumulative number of Salesforce API calls made so far (e.g.
+     * `HttpTransport.requestCount`). When provided, the reporter shows the delta since the export
+     * started as a live "API calls" figure. Omit to hide the figure.
+     */
+    apiCalls?: () => number;
 }
 
-/** Emit a forward-printed progress line at most once per 10% gained or 15s of silence. */
-const FORWARD_MILESTONE_STEP = 10;
-const FORWARD_SILENCE_MS = 15000;
+/** Cap on how many problem messages are retained for the end-of-run dump. */
+const MAX_COLLECTED_PROBLEMS = 20;
 
 /**
  * Determine whether the given stream supports an interactive, redrawing progress bar.
@@ -52,29 +57,37 @@ export function detectInteractive(stream: NodeJS.WriteStream = process.stdout): 
 }
 
 /**
- * Bridges the {@link DatapackExporter} progress callbacks to a user-facing progress display.
+ * Bridges the {@link DatapackExporter} progress callbacks to a user-facing progress display and
+ * keeps the live view compact.
  *
- * This reporter is a thin adapter: it owns no progress math. All figures live in a single
- * {@link ProgressTracker} that is shared with the {@link ProgressBar} (interactive) and read back
- * for the forward-printing fallback (CI/CD, piped output, verbose logging), so both modes show
- * identical numbers. The reporter only translates export events — batch boundaries, the running
- * datapack type and source key — into tracker updates and decides *when* to emit.
+ * In interactive mode it renders a multi-line {@link ProgressBar} (a gauge plus a live stats line)
+ * and installs a {@link ProgressLogSink} that intercepts log output: warnings and errors are
+ * *counted* and surfaced as a running tally on the bar instead of scrolling past, then summarised —
+ * with a capped list of messages — once the export finishes. Routine logs are dropped from the live
+ * view entirely. Nothing is lost: sibling writers (e.g. a `--log-file`) still receive every entry.
  *
- * The exporter reports progress per batch with a `total` that grows as dependencies are discovered;
- * the tracker accumulates committed batches and floors the total at the known root count.
+ * In non-interactive mode it forward-prints throttled progress and lets log output through as usual,
+ * while still tallying problems for the final summary.
  */
 export class ExportProgressReporter {
 
     private readonly logger: Logger;
+    private readonly stream: NodeJS.WriteStream;
     private readonly totalBatches: number;
+    private readonly rootDatapacks: number;
     private readonly tracker: ProgressTracker;
     private readonly bar?: ProgressBar;
+    private readonly apiCalls?: () => number;
 
+    private apiCallBaseline = 0;
     private batchIndex = 0;
     private batchType?: string;
     private lastSourceKey?: string;
-    private failures = 0;
     private finished = false;
+
+    private errorCount = 0;
+    private warnCount = 0;
+    private readonly problems: string[] = [];
 
     /** Forward-printing throttle state for non-interactive output. */
     private lastLoggedMilestone = -1;
@@ -82,7 +95,10 @@ export class ExportProgressReporter {
 
     constructor(options: ExportProgressOptions) {
         this.logger = options.logger;
+        this.stream = options.stream ?? process.stdout;
         this.totalBatches = options.totalBatches;
+        this.rootDatapacks = options.rootDatapacks;
+        this.apiCalls = options.apiCalls;
         this.tracker = new ProgressTracker({ label: 'Exporting', minTotal: options.rootDatapacks });
         const interactive = options.enabled ?? detectInteractive(options.stream);
         if (interactive) {
@@ -102,8 +118,11 @@ export class ExportProgressReporter {
     }
 
     public start() {
+        setProgressLogSink(this.handleLog);
+        this.apiCallBaseline = this.apiCalls?.() ?? 0;
         if (this.bar) {
-            this.bar.start();
+            // Pass a thunk so the block (incl. the live API-call count) re-evaluates on every redraw.
+            this.bar.start({ details: () => this.composeDetails() });
         } else {
             this.tracker.start();
         }
@@ -117,10 +136,9 @@ export class ExportProgressReporter {
         this.batchType = datapackType;
         this.lastSourceKey = undefined;
         this.tracker.label = datapackType ? `Exporting ${datapackType}` : 'Exporting';
-        this.tracker.message = this.batchIndicator();
 
         if (this.bar) {
-            this.bar.refresh();
+            this.refreshBar();
         } else if (this.totalBatches > 1) {
             this.logger.info(
                 `Exporting batch ${index + 1}/${this.totalBatches}: ${idCount} ` +
@@ -133,18 +151,13 @@ export class ExportProgressReporter {
      * Consume a progress event emitted by the exporter for the current batch.
      */
     public report(progress: DatapackExportProgress) {
-        if (progress.status === 'failed') {
-            this.failures++;
-        }
         if (progress.sourceKey) {
             this.lastSourceKey = progress.sourceKey;
         }
-
         this.tracker.report(progress.progress, progress.total);
-        this.tracker.message = this.batchIndicator();
 
         if (this.bar) {
-            this.bar.refresh();
+            this.refreshBar();
         } else {
             this.logProgress();
         }
@@ -158,52 +171,135 @@ export class ExportProgressReporter {
     }
 
     /**
-     * Print the success summary and tear down the bar.
+     * Print the success summary, tear down the bar and dump any collected problems.
      */
     public succeed() {
         if (this.finished) {
             return;
         }
         this.finished = true;
+        clearProgressLogSink(this.handleLog);
+
         const count = this.tracker.value;
+        const apiCalls = this.apiCallsMade();
         const summary = `Exported ${count} datapack${count === 1 ? '' : 's'} in ${this.tracker.elapsedText}` +
-            (this.failures ? `, ${this.failures} failed` : '');
+            (apiCalls ? ` · ${formatCount(apiCalls)} API calls` : '') +
+            this.problemSuffix();
         if (this.bar) {
             this.bar.stop(`${chalk.green(logSymbols.success)} ${summary}`);
+            this.dumpProblems();
         } else {
             this.logger.info(`${logSymbols.success} ${summary}`);
         }
     }
 
     /**
-     * Tear down the bar without printing a summary. Safe to call multiple times; used to restore the
-     * terminal when the export fails (the caller reports the error itself).
+     * Tear down the bar without printing a success summary; still surfaces collected problems. Safe
+     * to call multiple times. Used to restore the terminal when the export fails (the caller reports
+     * the error itself).
      */
     public stop() {
         if (this.finished) {
             return;
         }
         this.finished = true;
-        this.bar?.stop();
+        clearProgressLogSink(this.handleLog);
+        if (this.bar) {
+            this.bar.stop();
+            this.dumpProblems();
+        }
     }
 
-    private batchIndicator(): string {
-        const parts: string[] = [];
+    /**
+     * Sink for the {@link ProgressAwareLogWriter}: tally warnings/errors, retain a capped sample of
+     * messages and keep them out of the live view. Returns `true` (consumed) only while a bar is
+     * rendering — in non-interactive mode it counts but lets the console writer print as usual.
+     */
+    private handleLog = (entry: LogEntry, format: () => string): boolean => {
+        const isProblem = entry.level >= LogLevel.warn;
+        if (isProblem) {
+            if (entry.level >= LogLevel.error) {
+                this.errorCount++;
+            } else {
+                this.warnCount++;
+            }
+            if (this.problems.length < MAX_COLLECTED_PROBLEMS) {
+                this.problems.push(format());
+            }
+        }
+
+        if (!this.bar) {
+            return false;
+        }
+        if (isProblem) {
+            this.refreshBar();
+        }
+        return true;
+    };
+
+    private refreshBar() {
+        // Details are supplied to the bar as a thunk, so only the trailing item needs pushing here;
+        // the stats line re-evaluates itself on the next redraw.
+        this.bar?.update({ message: this.lastSourceKey ?? '' });
+    }
+
+    private composeDetails(): string[] {
+        const stats = [`${this.tracker.value} datapacks`];
         if (this.totalBatches > 1) {
-            parts.push(`batch ${this.batchIndex + 1}/${this.totalBatches}`);
+            stats.push(`batch ${this.batchIndex + 1}/${this.totalBatches}`);
         }
-        if (this.lastSourceKey) {
-            parts.push(this.lastSourceKey);
+        stats.push(`${this.rootDatapacks} records`);
+        if (this.apiCalls) {
+            stats.push(`${formatCount(this.apiCallsMade())} API calls`);
         }
-        return parts.join(' · ');
+
+        const lines = [stats.join('  ·  ')];
+        if (this.errorCount || this.warnCount) {
+            lines.push(this.problemTally().join('  ·  '));
+        }
+        return lines;
+    }
+
+    private apiCallsMade(): number {
+        return this.apiCalls ? this.apiCalls() - this.apiCallBaseline : 0;
+    }
+
+    private problemTally(): string[] {
+        const parts: string[] = [];
+        if (this.errorCount) {
+            parts.push(`${this.errorCount} error${this.errorCount === 1 ? '' : 's'}`);
+        }
+        if (this.warnCount) {
+            parts.push(`${this.warnCount} warning${this.warnCount === 1 ? '' : 's'}`);
+        }
+        return parts;
+    }
+
+    private problemSuffix(): string {
+        const tally = this.problemTally();
+        return tally.length ? ` · ${tally.join(', ')}` : '';
+    }
+
+    private dumpProblems() {
+        if (!this.problems.length) {
+            return;
+        }
+        const total = this.errorCount + this.warnCount;
+        this.stream.write(`\n${chalk.yellow(`${total} problem${total === 1 ? '' : 's'} logged during export:`)}\n`);
+        for (const problem of this.problems) {
+            this.stream.write(`  ${problem}\n`);
+        }
+        if (total > this.problems.length) {
+            this.stream.write(chalk.dim(`  … and ${total - this.problems.length} more (use --log-file to capture all)\n`));
+        }
     }
 
     private logProgress() {
-        // Forward-only consoles can't redraw, so throttle to one line per milestone (or after a
-        // period of silence) to stay informative without flooding CI logs.
-        const milestone = this.tracker.milestone(FORWARD_MILESTONE_STEP);
+        const milestone = this.tracker.milestone(10);
         const now = Date.now();
-        if (milestone === this.lastLoggedMilestone && now - this.lastLogTime < FORWARD_SILENCE_MS) {
+        // Forward-only consoles can't redraw, so throttle to one line per 10% milestone (or after a
+        // period of silence) to stay informative without flooding CI logs.
+        if (milestone === this.lastLoggedMilestone && now - this.lastLogTime < 15000) {
             return;
         }
         this.lastLoggedMilestone = milestone;

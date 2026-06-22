@@ -164,10 +164,32 @@ describe('ProgressBar', () => {
         bar.stop();
         expect(bar.isActive).toBe(false);
     });
+
+    it('renders caller-supplied detail lines beneath the gauge', () => {
+        const { stream, output } = fakeStream();
+        const bar = new ProgressBar({ stream, total: 10, refreshIntervalMs: 1_000_000 });
+
+        bar.start({ value: 5, details: ['5 datapacks  ·  3 records'] });
+        bar.stop();
+
+        expect(output()).toContain('5 datapacks  ·  3 records');
+    });
+
+    it('redraws a multi-line block in place (moves the cursor up the block height)', () => {
+        const { stream, output } = fakeStream();
+        const bar = new ProgressBar({ stream, total: 10, refreshIntervalMs: 1_000_000 });
+
+        bar.start({ value: 1, details: ['line one', 'line two'] });
+        bar.update({ value: 2 });
+        bar.stop();
+
+        // gauge + 2 detail lines = 3 rows, so a redraw returns the cursor up 2 lines
+        expect(output()).toContain('\x1B[2A');
+    });
 });
 
 describe('ProgressAwareLogWriter', () => {
-    it('routes log output through the active bar and falls back to the inner writer otherwise', () => {
+    it('routes important output above the active bar and falls back to the inner writer otherwise', () => {
         const { stream, chunks } = fakeStream();
         const innerWrites: string[] = [];
         const inner = {
@@ -176,22 +198,41 @@ describe('ProgressAwareLogWriter', () => {
         };
         const writer = new ProgressAwareLogWriter(inner);
 
-        // no active bar → delegates to the inner writer unchanged
+        // no active bar → delegates to the inner writer unchanged, at any level
         writer.write(logEntry('before'));
         expect(innerWrites).toContain('before');
 
         const bar = new ProgressBar({ stream, total: 4, refreshIntervalMs: 1_000_000 });
         bar.start({ value: 1 });
-        writer.write(logEntry('during', LogLevel.error));
+        writer.write(logEntry('routine info', LogLevel.info));
+        writer.write(logEntry('a warning', LogLevel.error));
         bar.stop();
 
-        // while the bar runs the formatted line is printed above it, not via the inner writer
-        expect(chunks).toContain('[fmt] during\n');
-        expect(innerWrites).not.toContain('during');
+        // warnings/errors surface above the bar; routine info is kept out of the live view entirely
+        expect(chunks).toContain('[fmt] a warning\n');
+        expect(chunks.join('')).not.toContain('routine info');
+        expect(innerWrites).not.toContain('a warning');
+        expect(innerWrites).not.toContain('routine info');
 
         // after stop → back to the inner writer
         writer.write(logEntry('after'));
         expect(innerWrites).toContain('after');
+    });
+
+    it('honours a custom minLevelWhileActive', () => {
+        const { stream, chunks } = fakeStream();
+        const inner = {
+            write: () => { /* not exercised here */ },
+            format: (entry: any) => `[fmt] ${entry.message}`
+        };
+        const writer = new ProgressAwareLogWriter(inner, { minLevelWhileActive: LogLevel.debug });
+
+        const bar = new ProgressBar({ stream, total: 4, refreshIntervalMs: 1_000_000 });
+        bar.start({ value: 1 });
+        writer.write(logEntry('shown because threshold is debug', LogLevel.info));
+        bar.stop();
+
+        expect(chunks).toContain('[fmt] shown because threshold is debug\n');
     });
 });
 
@@ -218,17 +259,22 @@ describe('ExportProgressReporter (non-interactive)', () => {
         expect(lines.some(line => /Exported 4 datapacks/.test(line))).toBe(true);
     });
 
-    it('reports the number of failed datapacks in the summary', () => {
+    it('counts errors logged during the export and folds them into the summary', () => {
         const { logger, lines } = fakeLogger();
         const reporter = new ExportProgressReporter({ logger, totalBatches: 1, rootDatapacks: 1, enabled: false });
+        const writer = new ProgressAwareLogWriter({
+            write: () => { /* non-interactive: still printed by the console writer */ },
+            format: (entry: any) => `[fmt] ${entry.message}`
+        });
 
         reporter.start();
         reporter.beginBatch(0, 'Product2', 1);
-        reporter.report({ id: 'a', status: 'failed', progress: 1, total: 1 });
+        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 1 });
+        writer.write(logEntry('Error exporting a0X: boom', LogLevel.error));
         reporter.endBatch();
         reporter.succeed();
 
-        expect(lines.some(line => /Exported 1 datapack in .*, 1 failed/.test(line))).toBe(true);
+        expect(lines.some(line => /Exported 1 datapack in .*· 1 error/.test(line))).toBe(true);
     });
 });
 
@@ -248,5 +294,50 @@ describe('ExportProgressReporter (interactive)', () => {
 
         expect(output()).toContain('50%');
         expect(output()).toContain('Exported 1 datapack');
+    });
+
+    it('shows a live, growing API-call count from the supplied counter', () => {
+        const { stream, output } = fakeStream();
+        const { logger } = fakeLogger();
+        let calls = 100;
+        const reporter = new ExportProgressReporter({
+            logger, totalBatches: 1, rootDatapacks: 2, enabled: true, stream, apiCalls: () => calls
+        });
+
+        reporter.start();    // baseline snapshot = 100
+        reporter.beginBatch(0, 'Product2', 2);
+        calls = 142;         // 42 calls into the export
+        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 2 });
+        calls = 384;         // 284 by the time it finishes
+        reporter.endBatch();
+        reporter.succeed();
+
+        expect(output()).toContain('42 API calls');    // live, mid-export
+        expect(output()).toContain('284 API calls');   // final summary
+    });
+
+    it('counts problems and dumps them once at the end instead of scrolling them above the bar', () => {
+        const { stream, output } = fakeStream();
+        const { logger } = fakeLogger();
+        const reporter = new ExportProgressReporter({ logger, totalBatches: 1, rootDatapacks: 2, enabled: true, stream });
+        const inner = {
+            write: () => { throw new Error('inner.write must not run while the bar is active'); },
+            format: (entry: any) => `[fmt] ${entry.message}`
+        };
+        const writer = new ProgressAwareLogWriter(inner);
+
+        reporter.start();
+        reporter.beginBatch(0, 'Product2', 2);
+        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 2 });
+        writer.write(logEntry('Error exporting a0X: boom', LogLevel.error));
+        writer.write(logEntry('No data found for id a0Y', LogLevel.warn));
+        reporter.endBatch();
+        reporter.succeed();
+
+        const out = output();
+        expect(out).toContain('problems logged during export');
+        expect(out).toContain('[fmt] Error exporting a0X: boom');
+        expect(out).toContain('1 error');
+        expect(out).toContain('Exported 1 datapack');
     });
 });

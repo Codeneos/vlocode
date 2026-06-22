@@ -5,14 +5,14 @@ import { ProgressTracker } from './progressTracker';
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 const HIDE_CURSOR = '\x1B[?25l';
 const SHOW_CURSOR = '\x1B[?25h';
-const CLEAR_LINE = '\r\x1B[K';
+const CLEAR_DOWN = '\x1B[0J';
 // eslint-disable-next-line no-control-regex -- matching the ANSI escape (ESC) is the point
 const ANSI_PATTERN = /\x1B\[[0-9;]*m/g;
 
 /**
- * The progress bar currently rendering to the terminal, if any. A single bar owns the bottom line
- * at a time; {@link getActiveProgressBar} lets log writers route their output through it so log
- * lines appear cleanly above the bar instead of corrupting it. See {@link ProgressAwareLogWriter}.
+ * The progress bar currently rendering to the terminal, if any. A single bar owns the bottom of the
+ * screen at a time; {@link getActiveProgressBar} lets log writers route their output through it so
+ * the live display stays intact. See {@link ProgressAwareLogWriter}.
  */
 let activeProgressBar: ProgressBar | undefined;
 
@@ -42,14 +42,20 @@ export interface ProgressBarState {
      */
     total?: number;
     /**
-     * Short label rendered in front of the bar, e.g. the name of the running operation.
+     * Short label rendered in front of the gauge, e.g. the name of the running operation.
      */
     label?: string;
     /**
-     * Free-form trailing text (e.g. the item currently being processed). Truncated to fit the
-     * terminal width.
+     * Free-form trailing text on the gauge line (e.g. the item currently being processed). Truncated
+     * to fit the terminal width.
      */
     message?: string;
+    /**
+     * Extra summary lines rendered, indented, beneath the gauge. The whole block is redrawn in place,
+     * so these can be updated freely. Each line is truncated to one terminal row. Pass a function to
+     * have it re-evaluated on every redraw (e.g. to surface a continuously-changing counter).
+     */
+    details?: string[] | (() => string[]);
 }
 
 export interface ProgressBarOptions extends ProgressBarState {
@@ -64,7 +70,7 @@ export interface ProgressBarOptions extends ProgressBarState {
      */
     tracker?: ProgressTracker;
     /**
-     * Width of the bar gauge in characters. Defaults to 24.
+     * Width of the gauge in characters. Defaults to 24.
      */
     barWidth?: number;
     /**
@@ -75,12 +81,12 @@ export interface ProgressBarOptions extends ProgressBarState {
 }
 
 /**
- * Renders an animated single-line progress bar that sticks to the bottom of the terminal.
+ * Renders an animated, multi-line progress block that sticks to the bottom of the terminal: a gauge
+ * line plus any number of caller-supplied summary lines. The whole block is redrawn in place on each
+ * tick, so the summary lines act as a live, compact dashboard rather than scrolling output.
  *
- * While active, the bar registers itself as {@link getActiveProgressBar the active bar}; a
- * {@link ProgressAwareLogWriter} installed on the logging framework then funnels every log entry
- * through {@link ProgressBar.log}, so all logger output (info, warnings, errors) is printed cleanly
- * *above* the bar and the bar is redrawn beneath it. The rest of the code keeps logging normally.
+ * While active, the bar registers itself as {@link getActiveProgressBar the active bar} so a
+ * {@link ProgressAwareLogWriter} can keep ordinary log output from corrupting the display.
  *
  * The bar is a pure renderer: all progress figures come from its {@link ProgressTracker}. Deciding
  * whether a terminal is interactive enough to show a bar is left to the caller (see
@@ -93,9 +99,11 @@ export class ProgressBar {
     private readonly barWidth: number;
     private readonly refreshIntervalMs: number;
 
+    private details: string[] | (() => string[]) = [];
     private spinnerFrame = 0;
     private active = false;
     private barOnScreen = false;
+    private renderedLines = 0;
 
     private timer?: ReturnType<typeof setInterval>;
     private readonly restoreOnExit = () => this.restoreCursor();
@@ -111,6 +119,9 @@ export class ProgressBar {
                 this.tracker.message = options.message;
             }
         }
+        if (options.details !== undefined) {
+            this.details = options.details;
+        }
     }
 
     public get isActive() {
@@ -118,8 +129,7 @@ export class ProgressBar {
     }
 
     /**
-     * Show the bar and start animating. Hides the cursor and registers as the active bar so log
-     * output is routed above it.
+     * Show the bar and start animating. Hides the cursor and registers as the active bar.
      */
     public start(state?: ProgressBarState) {
         if (this.active) {
@@ -137,7 +147,7 @@ export class ProgressBar {
     }
 
     /**
-     * Update the underlying tracker and redraw. No-op when the bar is not active.
+     * Update the underlying tracker/details and redraw. No-op when the bar is not active.
      */
     public update(state: ProgressBarState) {
         if (!this.active) {
@@ -148,29 +158,29 @@ export class ProgressBar {
     }
 
     /**
-     * Redraw from the current tracker state. Use this after mutating a shared tracker directly.
+     * Redraw from the current tracker/details state. Use this after mutating a shared tracker.
      */
     public refresh() {
         this.render();
     }
 
     /**
-     * Print a line above the live bar, then redraw the bar beneath it. When the bar is not active
-     * the line is written as-is. This is the entry point used by {@link ProgressAwareLogWriter}.
+     * Print a line above the live block, then redraw the block beneath it. When the bar is not active
+     * the line is written as-is.
      */
     public log(line: string) {
         if (!this.active) {
             this.stream.write(`${line}\n`);
             return;
         }
-        this.eraseBar();
+        this.eraseBlock();
         this.writeRaw(`${line}\n`);
         this.render();
     }
 
     /**
-     * Stop animating, erase the bar and restore the terminal. Optionally prints a final line in the
-     * place where the bar was.
+     * Stop animating, erase the block and restore the terminal. Optionally prints a final line where
+     * the block was.
      */
     public stop(finalLine?: string) {
         if (!this.active) {
@@ -183,7 +193,7 @@ export class ProgressBar {
             clearInterval(this.timer);
             this.timer = undefined;
         }
-        this.eraseBar();
+        this.eraseBlock();
         this.active = false;
         clearActiveProgressBar(this);
         process.removeListener('exit', this.restoreOnExit);
@@ -204,6 +214,9 @@ export class ProgressBar {
         if (state.message !== undefined) {
             this.tracker.message = state.message;
         }
+        if (state.details !== undefined) {
+            this.details = state.details;
+        }
     }
 
     private tick() {
@@ -215,19 +228,43 @@ export class ProgressBar {
         if (!this.active) {
             return;
         }
-        this.writeRaw(CLEAR_LINE + this.compose());
+        const block = this.composeBlock();
+        this.writeRaw(this.cursorToBlockStart() + CLEAR_DOWN + block.join('\n'));
+        this.renderedLines = block.length;
         this.barOnScreen = true;
     }
 
-    private eraseBar() {
-        if (this.barOnScreen) {
-            this.writeRaw(CLEAR_LINE);
-            this.barOnScreen = false;
+    private eraseBlock() {
+        if (!this.barOnScreen) {
+            return;
         }
+        this.writeRaw(this.cursorToBlockStart() + CLEAR_DOWN);
+        this.barOnScreen = false;
+        this.renderedLines = 0;
     }
 
-    private compose(): string {
+    /**
+     * Escape sequence that returns the cursor from the end of the last rendered line back to column 0
+     * of the block's first line, ready for a clear-and-redraw.
+     */
+    private cursorToBlockStart(): string {
+        if (!this.barOnScreen || this.renderedLines <= 1) {
+            return '\r';
+        }
+        return `\x1B[${this.renderedLines - 1}A\r`;
+    }
+
+    private composeBlock(): string[] {
         const columns = this.stream.columns ?? 80;
+        const block = [this.composeGauge(columns)];
+        const details = typeof this.details === 'function' ? this.details() : this.details;
+        for (const detail of details) {
+            block.push(`   ${chalk.dim(truncate(detail, Math.max(0, columns - 3)))}`);
+        }
+        return block;
+    }
+
+    private composeGauge(columns: number): string {
         const spinner = chalk.cyan(SPINNER_FRAMES[this.spinnerFrame]);
         const gauge = this.tracker.indeterminate ? this.renderIndeterminate() : this.renderGauge(this.tracker.ratio);
 
