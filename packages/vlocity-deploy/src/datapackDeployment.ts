@@ -690,8 +690,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId && !rec.isSkipped)], cancelToken);
     }
 
-    private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken): Promise<void>;
-    private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>): Promise<void> {
+    private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken): Promise<void> {
+        if (cancelToken?.isCancellationRequested) {
+            return;
+        }
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
         const resolutionQueue = Iterable.transform(datapacks.values(), {
             filter: datapack => datapack.hasUnresolvedDependencies,
