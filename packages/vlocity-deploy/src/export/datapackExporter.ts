@@ -638,7 +638,6 @@ export class DatapackExporter {
                         }
                     })).filter(child => child != null);
 
-                    children.forEach(child => entry.datapack.data[entry.name] = child);
                     if (children.length) {
                         entry.datapack.data[entry.name] = children;
                     }
@@ -658,13 +657,14 @@ export class DatapackExporter {
         this.pendingFinalize = [];
 
         for (const { datapack, context } of pending) {
-            if (context.embedded) {
-                this.processFieldValues(datapack);
-            } else {
+            if (!context.embedded) {
                 this.updateLookupReferences(datapack);
                 this.updateForeignKeys(datapack);
-                this.processFieldValues(datapack, { recursive: true });
             }
+
+            // Every datapack (root and embedded child) has its own pendingFinalize entry, so each is
+            // processed exactly once here -- no need to also recurse into children from the root.
+            this.processFieldValues(datapack);
 
             const maxDepth = context.maxDepth ?? this.maxExportDepth;
             if (!context.embedded && maxDepth > 0) {
@@ -692,22 +692,13 @@ export class DatapackExporter {
         return { ...embeddedObject, objectType: relationship.childSObject, filter }
     }
 
-    private processFieldValues(datapack: ExportDatapack, options?: { recursive?: boolean }) {
+    private processFieldValues(datapack: ExportDatapack) {
         // Process fields
         for (const field of this.definitions.getFieldsWith(datapack, 'processor')) {
             try {
                 datapack.data[field.name] = this.evalProcessor(field.processor, datapack.data[field.name], datapack);
             } catch (e) {
                 this.logger.error(`Error processing field ${field.name} on ${datapack.schema.name}`, e);
-            }
-        }
-
-        if (options?.recursive) {
-            for (const id of Object.keys(datapack.children)) {
-                const child = this.datapacks.get(id);
-                if (child) {
-                    this.processFieldValues(child, { recursive: true });
-                }
             }
         }
     }
@@ -759,10 +750,6 @@ export class DatapackExporter {
         }
         return datapack;
     }
-
-    // private buildInternalLookup(datapack: ExportDatapack, id: string, context: ExportContext) {
-    //     return this.buildLookup(datapack, id, 'VlocityMatchingKeyObject');
-    // }
 
     private async buildSObject(datapack: ExportDatapack, id: string, context: ExportContext) {
         const data = await this.lookupById(id);
@@ -857,20 +844,6 @@ export class DatapackExporter {
         } as VlocityDatapackReference);
     }
 
-    // private shouldExportRelatedLookup(datapack: ExportDatapack, type: VlocityDatapackType) {
-    //     return type === 'VlocityLookupMatchingKeyObject' && datapack.dependencyDepth < this.maxExportDepth;
-    // }
-
-    // private async buildRelatedDatapack(datapack: ExportDatapack, data: Record<string, any>) {
-    //     const relatedDatapack = await this.buildDatapack(data, {
-    //         scope: datapack.scope,
-    //         currentDepth: datapack.dependencyDepth + 1
-    //     });
-    //     if (relatedDatapack?.VlocityDataPackType === 'SObject') {
-    //         this.addKnownSourceKey(datapack, data.id, relatedDatapack);
-    //     }
-    // }
-
     private addReference(datapack: ExportDatapack, refId: string, ref: VlocityDatapackLookupReference): VlocityDatapackLookupReference;
     private addReference(datapack: ExportDatapack, refId: string, ref: null): null;
     private addReference(datapack: ExportDatapack, refId: string, ref: VlocityDatapackReference) : VlocityDatapackReference;
@@ -894,10 +867,7 @@ export class DatapackExporter {
         if (!(refId in datapack.references)) {
             datapack.references[refId] = ref;
             this.logger.debug(`Added reference ${refId} to ${datapack.objectType}`);
-        } 
-        /*else {
-            this.logger.info(`Duplicate reference detected for id ${refId} on ${datapack.objectType}`);
-        }*/
+        }
         return datapack.references[refId];
     }
 
@@ -918,21 +888,6 @@ export class DatapackExporter {
         datapack.sourceKeys[child.VlocityRecordSourceKey] = refId;
         datapack.idToSourceKey[refId] = child.VlocityRecordSourceKey;
         datapack.children[refId] = child;
-        return child;
-    }
-
-    private addKnownSourceKey(datapack: ExportDatapack, refId: string, child: VlocityDatapackSObject): VlocityDatapackSObject {
-        if (datapack.parent) {
-            child = this.addKnownSourceKey(datapack.parent, refId, child);
-        }
-
-        const currentRefId = datapack.sourceKeys[child.VlocityRecordSourceKey];
-        if (currentRefId && currentRefId !== refId) {
-            throw new Error(`Source key conflict for "${child.VlocityRecordSourceKey}" on ${datapack.objectType}: ${refId} <> ${currentRefId}`);
-        }
-
-        datapack.sourceKeys[child.VlocityRecordSourceKey] = refId;
-        datapack.idToSourceKey[refId] = child.VlocityRecordSourceKey;
         return child;
     }
 
@@ -1092,25 +1047,6 @@ export class DatapackExporter {
         return false;
     }
     
-    // embeddedObjects:
-    //     vlocity_cmt__ObjectFieldAttribute__c:
-    //     objectType: vlocity_cmt__ObjectFieldAttribute__c
-    //     filter:
-    //         - vlocity_cmt__ObjectClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-    //           vlocity_cmt__SubClassId__c: null
-    //         - vlocity_cmt__SubClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-    //     vlocity_cmt__AttributeBinding__c:
-    //     objectType: vlocity_cmt__AttributeBinding__c
-    //     filter:
-    //         vlocity_cmt__ObjectClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-    //     vlocity_cmt__AttributeAssignment__c:
-    //     objectType: vlocity_cmt__AttributeAssignment__c
-    //     filter:
-    //         vlocity_cmt__ObjectId__c: '{vlocity_cmt__ObjectClass__c:Id}'
-    //         vlocity_cmt__AttributeId__c:
-    //             op: '!='
-    //             value: null
-
     private async buildMatchingKeyObject(datapack: ExportDatapack, refType: 'VlocityMatchingKeyObject', data: Record<string, any>): Promise<VlocityDatapackMatchingReference>;
     private async buildMatchingKeyObject(datapack: ExportDatapack, refType: 'VlocityLookupMatchingKeyObject', data: Record<string, any>): Promise<VlocityDatapackLookupReference>;
     private async buildMatchingKeyObject(datapack: ExportDatapack, refType: VlocityDatapackReferenceType, data: Record<string, any>, deferLookups?: boolean): Promise<VlocityDatapackReference>;
@@ -1216,26 +1152,15 @@ export class DatapackExporter {
     /**
      * Finalize source keys for generated records. Only embedded records can be generated — top-level
      * datapacks require a matching key (enforced in buildDatapack). Embedded generated records are only
-     * referenced from within their own datapack, so referenced ones get a cheap datapack-local path key
-     * and unreferenced ones drop their source key entirely (the deploy side synthesizes one).
+     * referenced from within their own datapack: referenced ones keep their auto-generated source key,
+     * unreferenced ones drop it entirely (the deploy side synthesizes one).
      */
     private finalizeGeneratedSourceKeys() {
-        const generated = [...this.datapacks.values()].filter(datapack => datapack.generatedSourceKey);
         const referenced = this.collectReferencedSourceKeys();
-
-        for (const datapack of generated) {
-            if (!referenced.has(datapack.data.VlocityRecordSourceKey)) {
+        for (const datapack of this.datapacks.values()) {
+            if (datapack.generatedSourceKey && !referenced.has(datapack.data.VlocityRecordSourceKey)) {
                 this.stripSourceKey(datapack);
             }
-        }
-
-        // Remaining (referenced) records get `<rootSourceKey>/<ObjectType>/<index>`, ordered by Id so
-        // the index is stable across runs against the same org.
-        const referencedGenerated = generated.filter(datapack => datapack.data.VlocityRecordSourceKey);
-        const byRootType = groupBy(referencedGenerated, datapack => `${this.getDatapackRoot(datapack).data.VlocityRecordSourceKey}/${datapack.objectType}`);
-        for (const [pathPrefix, members] of Object.entries(byRootType)) {
-            members.sort((a, b) => a.id.localeCompare(b.id));
-            members.forEach((datapack, index) => this.replaceSourceKey(datapack.data.VlocityRecordSourceKey, `${pathPrefix}/${index}`));
         }
     }
 
@@ -1262,48 +1187,6 @@ export class DatapackExporter {
             }
         }
         this.generatedSourceKeys.delete(sourceKey);
-    }
-
-    private replaceSourceKey(currentSourceKey: string, newSourceKey: string) {
-        // Source keys are copied into maps and reference objects, so changing the
-        // SObject field alone is not enough.
-        for (const datapack of this.datapacks.values()) {
-            for (const target of [datapack.data, datapack.references]) {
-                visitObject(target, (key, value, owner) => {
-                    if (value === currentSourceKey) {
-                        owner[key] = newSourceKey;
-                    }
-                });
-            }
-            if (currentSourceKey in datapack.sourceKeys) {
-                const id = datapack.sourceKeys[currentSourceKey];
-                datapack.sourceKeys[newSourceKey] = id;
-                delete datapack.sourceKeys[currentSourceKey];
-                datapack.idToSourceKey[id] = newSourceKey;
-            }
-            if (currentSourceKey in datapack.foreignKeys) {
-                datapack.foreignKeys[newSourceKey] = datapack.foreignKeys[currentSourceKey];
-                delete datapack.foreignKeys[currentSourceKey];
-            }
-        }
-
-        for (const [key, sourceKey] of this.matchingKeys) {
-            if (sourceKey === currentSourceKey) {
-                this.matchingKeys.set(key, newSourceKey);
-            }
-        }
-
-        for (const [id, sourceKey] of this.sourceKeyById) {
-            if (sourceKey === currentSourceKey) {
-                this.sourceKeyById.set(id, newSourceKey);
-            }
-        }
-
-        const generatedRecordId = this.generatedSourceKeys.get(currentSourceKey);
-        if (generatedRecordId) {
-            this.generatedSourceKeys.delete(currentSourceKey);
-            this.generatedSourceKeys.set(newSourceKey, generatedRecordId);
-        }
     }
 
     private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string) {
@@ -1365,8 +1248,9 @@ export class DatapackExporter {
             return cachedMatchingKey;
         }
 
-        // Temporary key used while references are being built. It is replaced by
-        // a content hash before results are returned.
+        // Content-less key derived from the record id, used when no matching key can be determined.
+        // It is only valid for embedded records: referenced ones keep it, unreferenced ones have it
+        // stripped in finalizeGeneratedSourceKeys (top-level datapacks reject a generated key).
         const matchingKey = this.autoGeneratedSourceKey(describe.name, calculateHash([scope, describe.name, id].filter(p => p).join('/')));
         this.generatedSourceKeys.set(matchingKey, id);
         this.matchingKeys.set(matchingKeyEntry, matchingKey);
