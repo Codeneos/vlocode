@@ -4,7 +4,7 @@ import * as yaml from 'js-yaml';
 import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
-import { filterAsyncParallel, getErrorMessage, getObjectProperty, singleFlight } from '@vlocode/util';
+import { filterAsyncParallel, getErrorMessage, getObjectProperty, removeNamespacePrefix, singleFlight } from '@vlocode/util';
 import { QueryConditionBuilder, QueryParser, type SalesforceQueryData } from '@vlocode/salesforce';
 import { DatapackInfoService, DatapackTypeDefinition, DatapackTypeDefinitions } from '@vlocode/vlocity';
 import {
@@ -135,9 +135,26 @@ export class DatapackDefinitionRegistry {
     private getDatapackTypeDefinitions(definitions: Record<string, DatapackExportDefinition>): DatapackTypeDefinition[] {
         return Object.entries(definitions)
             .filter(([, definition]) => !definition.dependent)
-            .map(([datapackType, definition]) => {
-                return this.toDatapackTypeDefinition(datapackType, definition);
-            });
+            .map(([datapackType, definition]) => this.resolveDatapackTypeDefinition(datapackType, definition));
+    }
+
+    /**
+     * Resolves a DatapackTypeDefinition for the given datapack type and export definition.
+     * Uses the static DatapackTypeDefinitions when a match exists (preserving grouping,
+     * displayName, matchingKey, and full field list), falling back to YAML-derived definition.
+     */
+    private resolveDatapackTypeDefinition(datapackType: string, exportDefinition: DatapackExportDefinition): DatapackTypeDefinition {
+        const staticEntry = DatapackTypeDefinitions[datapackType];
+        if (staticEntry) {
+            const allStatic = Array.isArray(staticEntry) ? staticEntry : [staticEntry];
+            const match = allStatic.find(def =>
+                removeNamespacePrefix(def.source.sobjectType) === removeNamespacePrefix(exportDefinition.objectType)
+            );
+            if (match) {
+                return { ...match, exportMode: 'direct' };
+            }
+        }
+        return this.toDatapackTypeDefinition(datapackType, exportDefinition);
     }
 
     private async loadCustomDefinitions() {
