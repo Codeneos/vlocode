@@ -8,6 +8,8 @@ import 'monaco-editor/esm/vs/editor/contrib/parameterHints/browser/parameterHint
 import 'monaco-editor/esm/vs/editor/contrib/suggest/browser/suggestController.js';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution.js';
 
+import { readClipboardText, writeClipboardText } from '../../utils/webview-clipboard';
+
 type MonacoGlobal = typeof globalThis & {
     MonacoEnvironment?: monaco.Environment;
 };
@@ -169,14 +171,19 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
         this.themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
         this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
-        this.editor.onDidChangeModelContent(() => {
+        const contentDisposable = this.editor.onDidChangeModelContent(() => {
             if (!this.readOnly() && !this.applyingExternalValue) {
                 this.valueChange.emit(this.editor?.getValue() ?? '');
             }
         });
+        const keyDisposable = this.editor.onKeyDown(event => {
+            void this.handleClipboardShortcut(event).catch(() => undefined);
+        });
 
         this.editorReady.emit(this.editor);
         this.destroyRef.onDestroy(() => {
+            contentDisposable.dispose();
+            keyDisposable.dispose();
             const model = this.editor?.getModel();
             if (model) {
                 monaco.editor.setModelMarkers(model, this.markerOwner(), []);
@@ -187,6 +194,56 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
             this.themeObserver = undefined;
         });
     }
+
+    private async handleClipboardShortcut(event: monaco.IKeyboardEvent) {
+        const editor = this.editor;
+        if (!editor || !usesPrimaryModifier(event) || event.altKey) {
+            return;
+        }
+
+        const key = event.browserEvent.key.toLowerCase();
+        if (key === 'c' || key === 'x') {
+            await this.copySelection(editor, event, key === 'x');
+        } else if (key === 'v') {
+            await this.pasteClipboardText(editor, event);
+        }
+    }
+
+    private async copySelection(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent, cut: boolean) {
+        const model = editor.getModel();
+        const selections = editor.getSelections()?.filter(selection => !selection.isEmpty()) ?? [];
+        if (!model || selections.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        await writeClipboardText(selections.map(selection => model.getValueInRange(selection)).join('\n'));
+        if (!cut || this.readOnly()) {
+            return;
+        }
+
+        editor.executeEdits('clipboard', selections.map(selection => ({ range: selection, text: '' })));
+    }
+
+    private async pasteClipboardText(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent) {
+        if (this.readOnly()) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const text = await readClipboardText();
+        if (text) {
+            editor.trigger('keyboard', 'paste', { text });
+        }
+    }
+}
+
+function usesPrimaryModifier(event: monaco.IKeyboardEvent) {
+    return event.metaKey || event.ctrlKey;
 }
 
 export { monaco };

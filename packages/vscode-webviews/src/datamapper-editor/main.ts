@@ -6,6 +6,7 @@ import { VlocodeDialogComponent } from '../shared/components/dialog/dialog.compo
 import { VlocodeEditorHeaderComponent } from '../shared/components/editor-header/editor-header.component';
 import { VlocodeEmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
 import { getErrorMessage } from '../shared/utils/object';
+import { registerWebviewApi, type WebviewApi } from '../shared/utils/webview-clipboard';
 import { ExtractPanelComponent } from './app/components/extract-panel/extract-panel.component';
 import { FormulaPanelComponent } from './app/components/formula-panel/formula-panel.component';
 import { LoadObjectsPanelComponent } from './app/components/load-objects-panel/load-objects-panel.component';
@@ -184,6 +185,7 @@ export class AppComponent {
     ]));
 
     constructor() {
+        registerWebviewApi(this.vscode as WebviewApi | undefined);
         window.addEventListener('message', event => this.handleMessage(event.data as ExtensionToWebviewMessage));
         effect(() => this.requestFieldsForCurrentObjects());
         if (this.vscode) {
