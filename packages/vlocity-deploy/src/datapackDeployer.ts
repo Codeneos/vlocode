@@ -39,6 +39,15 @@ export class DatapackDeployer {
     @inject(DatapackDeploymentSpecRegistry) private readonly specRegistry: DatapackDeploymentSpecRegistry;
 
     /**
+     * Deployment-scoped spec instances. The registry yields freshly (lazily) instantiated specs on every
+     * call, so we materialize them once per deployer -- which is created per deployment -- and reuse them
+     * across every spec-function invocation. This lets specs that hold per-deployment state (e.g.
+     * {@link MatchingFieldsSpec} caching `matching-keys.json`) initialize once instead of re-running for
+     * every datapack.
+     */
+    private materializedSpecs?: { filter: DatapackFilter; spec: DatapackDeploymentSpec }[];
+
+    /**
      * List of Vlocity global identifier field names that need verification after deployment.
      * These fields may be modified by Vlocity triggers during deployment, requiring
      * additional verification and potential updates to ensure data consistency.
@@ -322,8 +331,16 @@ export class DatapackDeployer {
      * @param eventType Event/function type to run
      * @param options Options for executing the spec (args, ignoreErrors, errorSeverity)
      */
+    /**
+     * Materialize the registry specs once for this deployment and reuse the same (lazily instantiated)
+     * instances for every spec-function call, so stateful specs initialize a single time.
+     */
+    private getDeploymentSpecs() {
+        return this.materializedSpecs ??= [...this.specRegistry.getSpecs()];
+    }
+
     private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(eventType: T, options: DeploymentSpecExecuteOptions<Parameters<E>>) {
-        for (const { spec, filter } of this.specRegistry.getSpecs()) {
+        for (const { spec, filter } of this.getDeploymentSpecs()) {
             const specFunction = spec?.[eventType];
             const specParams = [ ...options.args ];
 

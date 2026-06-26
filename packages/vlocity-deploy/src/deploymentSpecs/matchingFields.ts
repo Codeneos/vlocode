@@ -11,7 +11,7 @@ type MatchingKeysCollection = Record<string, string[]>;
 export class MatchingFieldsSpec implements DatapackDeploymentSpec {
 
     private overridesFiles = 'matching-keys.json';
-    private initialized = false;
+    private initialization?: Promise<void>;
 
     private matchingKeyFields: Record<MatchingKeysCollectionType, MatchingKeysCollection>  = {
         overrides: {
@@ -83,15 +83,17 @@ export class MatchingFieldsSpec implements DatapackDeploymentSpec {
         }
     }
 
-    private async initializeMatchingKeys() {
-        if (this.initialized) {
-            return;
-        }
+    private initializeMatchingKeys() {
+        // Memoize on the promise so concurrent afterRecordConversion calls (records are converted in
+        // parallel) share a single load of matching-keys.json instead of each re-reading the file.
+        return this.initialization ??= this.loadMatchingKeys();
+    }
+
+    private async loadMatchingKeys() {
         this.matchingKeyFields = {
             defaults: this.normalizeMatchingKeys(this.matchingKeyFields.defaults),
             overrides: await this.loadOverrides(this.overridesFiles)
         };
-        this.initialized = true;
     }
 
      private async loadOverrides(path: string) {        
