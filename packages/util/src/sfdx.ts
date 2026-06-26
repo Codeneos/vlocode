@@ -1,5 +1,6 @@
 import open from 'open';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
 import { deepClone, deepCompare, merge } from './object';
@@ -26,6 +27,8 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
 interface FileSystem {
     readFile(path: string): Promise<Buffer>;
     writeFile(path: string, data: Buffer): Promise<void>;
+    mkdir?(path: string, options?: { recursive?: boolean }): Promise<unknown>;
+    createDirectory?(path: string): Promise<unknown>;
 }
 
 /**\
@@ -497,9 +500,7 @@ export namespace sfdx {
         let configPath: string | undefined;
         let limit = options.limit ?? 2;
 
-        if (folderPath.endsWith(defaultConfigPath)) {
-            folderPath = folderPath.slice(0, -defaultConfigPath.length);
-        }
+        folderPath = normalizeConfigFolderPath(folderPath);
 
         while(limit-- > 0) {
             try {
@@ -535,7 +536,8 @@ export namespace sfdx {
         config: Partial<T>, 
         options: { fs: FileSystem, replace?: boolean } = { fs: fs }
     ) : Promise<boolean> {
-        const currentConfig = await getConfig(folderPath, { fs: options.fs });
+        const configFolderPath = normalizeConfigFolderPath(folderPath);
+        const currentConfig = await getConfig(configFolderPath, { fs: options.fs });
         const newConfig = (!currentConfig?.config || options.replace) ? config 
             : merge(deepClone(currentConfig?.config ?? {}), config);
 
@@ -543,9 +545,27 @@ export namespace sfdx {
             return false;
         }
 
-        const configPath = currentConfig?.path ?? `${folderPath}/${defaultConfigPath}`;
+        const configPath = currentConfig?.path ?? `${configFolderPath}/${defaultConfigPath}`;
+        if (!currentConfig?.path) {
+            await createDirectory(options.fs, path.dirname(configPath));
+        }
         await options.fs.writeFile(configPath, Buffer.from(JSON.stringify(newConfig, undefined, 2)));
         return true
+    }
+
+    function normalizeConfigFolderPath(folderPath: string): string {
+        if (folderPath.replace(/\\/g, '/').endsWith(defaultConfigPath)) {
+            return folderPath.slice(0, -defaultConfigPath.length).replace(/[\\/]+$/, '');
+        }
+        return folderPath;
+    }
+
+    async function createDirectory(fileSystem: FileSystem, directoryPath: string): Promise<void> {
+        if (fileSystem.mkdir) {
+            await fileSystem.mkdir(directoryPath, { recursive: true });
+        } else if (fileSystem.createDirectory) {
+            await fileSystem.createDirectory(directoryPath);
+        }
     }
 
     export async function removeOrg(username: string) {
