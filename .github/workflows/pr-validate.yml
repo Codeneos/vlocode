@@ -4,8 +4,11 @@ name: PR Validate
 #   1. the code compiles (full workspace build)
 #   2. the unit tests pass
 #   3. basic static code analysis (CodeQL)
-# Runs independently of the full CI pipeline (ci.yml) so it also works on
-# fork PRs where SonarCloud's SONAR_TOKEN secret is not available.
+# The build + unit-test job is secret-free and runs on fork PRs too,
+# unlike ci.yml's SonarCloud step which needs the SONAR_TOKEN secret. The
+# CodeQL job only runs for same-repo PRs, because uploading results to code
+# scanning needs `security-events: write`, which GITHUB_TOKEN does not grant
+# for pull_request runs originating from forks.
 
 on:
   pull_request:
@@ -49,6 +52,9 @@ jobs:
   static-analysis:
     name: Static Analysis (CodeQL)
     runs-on: ubuntu-latest
+    # Skip on fork PRs: GITHUB_TOKEN is read-only there, so the SARIF upload
+    # to code scanning would fail. Same-repo PRs and manual runs still run it.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
     permissions:
       contents: read
