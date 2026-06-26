@@ -13,7 +13,7 @@ interface ApexClassDeclaration {
 @injectable()
 export class ApexWorkspaceIndex {
     public async remoteActionClassNames(): Promise<string[]> {
-        const files = await vscode.workspace.findFiles('**/classes/**/*.cls', '**/{node_modules,.git}/**');
+        const files = await this.files();
         const declarations = (await Promise.all(files.map(uri => this.classDeclaration(uri))))
             .filter((declaration): declaration is ApexClassDeclaration => declaration !== undefined);
         const declarationsByName = new Map(declarations.map(declaration => [this.typeName(declaration.name), declaration]));
@@ -21,6 +21,21 @@ export class ApexWorkspaceIndex {
             .filter(declaration => this.isRemoteActionClass(declaration, declarationsByName))
             .map(declaration => declaration.name)
             .sort((a, b) => a.localeCompare(b));
+    }
+
+    public async uriForName(name: string): Promise<vscode.Uri | undefined> {
+        const candidateNames = new Set(this.typeNames(name));
+        if (!candidateNames.size) {
+            return undefined;
+        }
+        const matches = (await this.files())
+            .filter(uri => candidateNames.has(path.basename(uri.fsPath, '.cls').toLowerCase()))
+            .sort((a, b) => a.fsPath.localeCompare(b.fsPath));
+        return matches[0];
+    }
+
+    private async files(): Promise<vscode.Uri[]> {
+        return vscode.workspace.findFiles('**/classes/**/*.cls', '**/{node_modules,.git}/**');
     }
 
     private async classDeclaration(uri: vscode.Uri): Promise<ApexClassDeclaration | undefined> {
@@ -61,6 +76,12 @@ export class ApexWorkspaceIndex {
 
     private typeName(reference: string): string {
         return reference.trim().replace(/\s+/g, '').split('.').pop()?.toLowerCase() ?? '';
+    }
+
+    private typeNames(reference: string): string[] {
+        const name = this.typeName(reference);
+        const withoutNamespace = name.replace(/^[a-z]\w*__(?=.)/, '');
+        return [...new Set([name, withoutNamespace].filter(Boolean))];
     }
 
     private stripComments(source: string): string {

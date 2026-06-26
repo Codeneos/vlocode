@@ -3,6 +3,7 @@ export type RuntimeShape = 'managed' | 'standard';
 export type LeftTab = 'outline' | 'add' | 'problems';
 export type InspectorTab = 'settings' | 'conditions' | 'io' | 'failure' | 'json';
 export type DropPosition = 'before' | 'after' | 'inside';
+export type ReferenceKind = 'apexClass' | 'dataMapper';
 
 export interface IntegrationProcedureHeader {
     active?: boolean;
@@ -67,6 +68,7 @@ export type WebviewToExtensionMessage =
     | { type: 'refresh' }
     | { type: 'openSalesforce' }
     | { type: 'viewSource' }
+    | { type: 'openReference'; kind: ReferenceKind; name: string }
     | { type: 'layout'; layout: IntegrationProcedureLayout };
 
 export interface FlowRow {
@@ -165,6 +167,11 @@ export interface MapEntriesChange {
 export interface PropertyValueChange {
     field: string;
     value: unknown;
+}
+
+export interface ReferenceOpen {
+    kind: ReferenceKind;
+    name: string;
 }
 
 export const EMPTY_MODEL: IntegrationProcedureModel = {
