@@ -565,6 +565,9 @@ importers:
       '@types/fs-extra':
         specifier: ^11
         version: 11.0.4
+      '@types/js-yaml':
+        specifier: ^4.0.2
+        version: 4.0.9
       '@types/luxon':
         specifier: ^3.3.0
         version: 3.7.1

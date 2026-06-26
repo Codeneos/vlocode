@@ -477,7 +477,7 @@ vlo-key-value-map-editor {
     &__row {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) max-content;
-        align-items: end;
+        align-items: center;
         gap: 10px;
 
         > input {
@@ -487,13 +487,9 @@ vlo-key-value-map-editor {
 }
 
 .vlocode-formula-input {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    position: relative;
+    display: block;
     min-width: 0;
-
-    &--with-button {
-        grid-template-columns: minmax(0, 1fr) 32px;
-    }
 
     &__control {
         @include control;
@@ -501,22 +497,38 @@ vlo-key-value-map-editor {
     }
 
     &--with-button &__control {
-        border-right-color: transparent;
-        border-radius: $radius-control 0 0 $radius-control;
+        padding-left: 34px;
     }
 
     &__button {
-        @include button;
+        appearance: none;
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        z-index: 1;
         display: inline-grid;
         place-items: center;
-        min-height: 30px;
-        border-left: 0;
-        border-radius: 0 $radius-control $radius-control 0;
+        width: 24px;
+        height: calc(100% - 6px);
+        border: 0;
+        border-radius: 4px;
         padding: 0;
-        color: var(--vscode-textLink-foreground);
+        color: $desc;
+        background: transparent;
+        cursor: pointer;
         font-family: var(--vscode-editor-font-family, monospace);
+        font-size: 12px;
         font-style: italic;
         font-weight: 700;
+        line-height: 1;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--vscode-foreground);
+            background: $surface-hover;
+            outline: 1px solid $focus;
+            outline-offset: -1px;
+        }
     }
 
     &__dialog-body {
@@ -536,9 +548,9 @@ vlo-key-value-map-editor {
     }
 
     &__formula {
-        min-width: 0;
         height: min(300px, calc(100vh - 320px));
         min-height: 180px;
+        min-width: 0;
 
         vlo-formula-editor,
         vlo-monaco-editor,
