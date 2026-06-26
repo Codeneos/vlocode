@@ -1,0 +1,71 @@
+name: PR Validate
+
+# Lightweight, secret-free gate for pull requests:
+#   1. the code compiles (full workspace build)
+#   2. the unit tests pass
+#   3. basic static code analysis (CodeQL)
+# Runs independently of the full CI pipeline (ci.yml) so it also works on
+# fork PRs where SonarCloud's SONAR_TOKEN secret is not available.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Compile (build all packages)
+        run: pnpm build
+
+      - name: Unit tests
+        run: pnpm jest --ci --verbose -i
+
+      - name: Upload test results (junit)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-validate-test-results
+          path: coverage/junit.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  static-analysis:
+    name: Static Analysis (CodeQL)
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
