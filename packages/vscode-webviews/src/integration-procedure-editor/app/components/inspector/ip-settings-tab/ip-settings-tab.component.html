@@ -12,30 +12,52 @@
         <span>Active</span>
     </label>
     @if (selected.type === 'Remote Action') {
-        <label class="ip-field">
+        <div class="ip-field">
             <span>Remote Class</span>
-            <vlo-autocomplete-input
-                [value]="propertyValue('remoteClass')"
-                [suggestions]="apexClassOptions()"
-                [commitOnInput]="false"
-                ariaLabel="Remote class"
-                (valueChange)="propertyChange.emit({ field: 'remoteClass', value: $event })" />
-        </label>
+            <div class="ip-reference-field">
+                <vlo-autocomplete-input
+                    [value]="propertyValue('remoteClass')"
+                    [suggestions]="apexClassOptions()"
+                    [commitOnInput]="false"
+                    ariaLabel="Remote class"
+                    (valueChange)="propertyChange.emit({ field: 'remoteClass', value: $event })" />
+                <button
+                    type="button"
+                    class="ip-icon-button"
+                    title="Open Apex class"
+                    aria-label="Open Apex class"
+                    [disabled]="!propertyValue('remoteClass').trim()"
+                    (click)="openReference('apexClass', propertyValue('remoteClass'))">
+                    <span class="codicon codicon-link-external" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
         <label class="ip-field">
             <span>Remote Method</span>
             <input [value]="propertyValue('remoteMethod')" (input)="propertyChange.emit({ field: 'remoteMethod', value: inputValue($event) })" />
         </label>
         <vlo-key-value-map-editor title="Remote Options" [entries]="entries('remoteOptions')" (entriesChange)="emitMapEntries('remoteOptions', $event)" />
     } @else if (isDataMapperAction(selected.type)) {
-        <label class="ip-field">
+        <div class="ip-field">
             <span>Data Mapper Name</span>
-            <vlo-autocomplete-input
-                [value]="propertyValue('bundle')"
-                [suggestions]="dataMapperOptions()"
-                [commitOnInput]="false"
-                ariaLabel="Data Mapper name"
-                (valueChange)="propertyChange.emit({ field: 'bundle', value: $event })" />
-        </label>
+            <div class="ip-reference-field">
+                <vlo-autocomplete-input
+                    [value]="propertyValue('bundle')"
+                    [suggestions]="dataMapperOptions()"
+                    [commitOnInput]="false"
+                    ariaLabel="Data Mapper name"
+                    (valueChange)="propertyChange.emit({ field: 'bundle', value: $event })" />
+                <button
+                    type="button"
+                    class="ip-icon-button"
+                    title="Open Data Mapper"
+                    aria-label="Open Data Mapper"
+                    [disabled]="!propertyValue('bundle').trim()"
+                    (click)="openReference('dataMapper', propertyValue('bundle'))">
+                    <span class="codicon codicon-link-external" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
         <label class="ip-switch">
             <input type="checkbox" [checked]="propertyChecked('ignoreCache')" (change)="propertyChange.emit({ field: 'ignoreCache', value: inputChecked($event) })" />
             <span>Ignore cache</span>

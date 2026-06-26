@@ -36,11 +36,13 @@ import {
     type MapEntriesChange,
     type Problem,
     type PropertyValueChange,
+    type ReferenceOpen,
     type WebviewToExtensionMessage
 } from './app/models/integration-procedure.model';
 import { asRecord, dataRaptorInputParameters as getDataRaptorInputParameters, isRecord, setObjectValue, stringifyValue } from './app/models/property-set';
 import { validateModel } from './app/models/validation';
 import { getErrorMessage } from '../shared/utils/object';
+import { registerWebviewApi, type WebviewApi } from '../shared/utils/webview-clipboard';
 
 declare const acquireVsCodeApi: undefined | (() => VsCodeApi);
 
@@ -164,6 +166,7 @@ export class AppComponent {
     protected readonly navigationCollapsed = computed(() => this.layout().leftCollapsed);
 
     constructor() {
+        registerWebviewApi(this.vscode as WebviewApi | undefined);
         const handleWindowMessage = (event: MessageEvent) => this.handleMessage(event.data as ExtensionToWebviewMessage);
         window.addEventListener('message', handleWindowMessage);
         this.destroyRef.onDestroy(() => {
@@ -213,6 +216,14 @@ export class AppComponent {
 
     protected viewSource() {
         this.vscode?.postMessage({ type: 'viewSource' });
+    }
+
+    protected openReference(reference: ReferenceOpen) {
+        this.vscode?.postMessage({
+            type: 'openReference',
+            kind: reference.kind,
+            name: reference.name
+        });
     }
 
     protected toggleNavigationSidebar() {

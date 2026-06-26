@@ -11,7 +11,8 @@ import type {
     IntegrationProcedureElement,
     IntegrationProcedureModel,
     MapEntriesChange,
-    PropertyValueChange
+    PropertyValueChange,
+    ReferenceOpen
 } from '../../../models/integration-procedure.model';
 import type { monaco } from '../../../../../shared/components/monaco-editor/monaco-editor.component';
 import { IpConditionsTabComponent } from '../ip-conditions-tab/ip-conditions-tab.component';
@@ -62,6 +63,7 @@ export class IpInspectorComponent {
     readonly mapEntriesChange = output<MapEntriesChange>();
     readonly procedurePropertyChange = output<PropertyValueChange>();
     readonly propertyChange = output<PropertyValueChange>();
+    readonly referenceOpen = output<ReferenceOpen>();
     readonly resizeKeydown = output<KeyboardEvent>();
     readonly resizeStart = output<PointerEvent>();
     readonly toggleCollapsed = output<void>();

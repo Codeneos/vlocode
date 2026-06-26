@@ -13,7 +13,9 @@ import type {
     IntegrationProcedureElement,
     IntegrationProcedureModel,
     MapEntriesChange,
-    PropertyValueChange
+    PropertyValueChange,
+    ReferenceOpen,
+    ReferenceKind
 } from '../../../models/integration-procedure.model';
 import { mapEntries, stringifyValue } from '../../../models/property-set';
 
@@ -39,6 +41,7 @@ export class IpSettingsTabComponent {
     readonly headerFieldChange = output<HeaderFieldChange>();
     readonly mapEntriesChange = output<MapEntriesChange>();
     readonly propertyChange = output<PropertyValueChange>();
+    readonly referenceOpen = output<ReferenceOpen>();
 
     protected readonly inputChecked = inputChecked;
     protected readonly inputValue = inputValue;
@@ -50,6 +53,13 @@ export class IpSettingsTabComponent {
 
     protected emitMapEntries(mapName: string, entries: VlocodeKeyValueEntry[]) {
         this.mapEntriesChange.emit({ mapName, entries });
+    }
+
+    protected openReference(kind: ReferenceKind, name: string) {
+        const trimmedName = name.trim();
+        if (trimmedName) {
+            this.referenceOpen.emit({ kind, name: trimmedName });
+        }
     }
 
     protected propertyChecked(field: string) {

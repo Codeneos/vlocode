@@ -185,11 +185,16 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
     }
 
     protected override async handleEditorMessage({ message }: EditorMessageContext<IntegrationProcedureModel, LoadedDocument>): Promise<boolean> {
-        if (message.type !== 'layout') {
-            return false;
+        switch (message.type) {
+            case 'layout':
+                await this.context.globalState.update(LAYOUT_STATE_KEY, this.getLayoutState(message.layout));
+                return true;
+            case 'openReference':
+                await this.openReference(message.kind, message.name);
+                return true;
+            default:
+                return false;
         }
-        await this.context.globalState.update(LAYOUT_STATE_KEY, this.getLayoutState(message.layout));
-        return true;
     }
 
     protected override getDeployCommand(document: LoadedDocument) {
@@ -220,6 +225,30 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
 
     private async openSourceView(uri?: vscode.Uri) {
         await this.openSourceWith('No Integration Procedure file is active.', uri);
+    }
+
+    private async openReference(kind: unknown, name: unknown): Promise<void> {
+        const referenceName = typeof name === 'string' ? name.trim() : '';
+        if (!referenceName) {
+            return;
+        }
+        if (kind === 'dataMapper') {
+            const uri = await this.dataMappers.uriForName(referenceName);
+            if (uri) {
+                await vscode.commands.executeCommand(VlocodeCommand.openDataMapperEditor, uri);
+                return;
+            }
+            void vscode.window.showWarningMessage(`Data Mapper "${referenceName}" was not found in the workspace.`);
+            return;
+        }
+        if (kind === 'apexClass') {
+            const uri = await this.apexClasses.uriForName(referenceName);
+            if (uri) {
+                await vscode.window.showTextDocument(uri, { preview: false });
+                return;
+            }
+            void vscode.window.showWarningMessage(`Apex class "${referenceName}" was not found in the workspace.`);
+        }
     }
 
     protected override async loadDocument(uri: vscode.Uri, text: string): Promise<LoadedDocument> {
