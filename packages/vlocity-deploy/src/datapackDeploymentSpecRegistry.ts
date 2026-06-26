@@ -40,10 +40,14 @@ export class DatapackDeploymentSpecRegistry {
     }
 
     /**
-     * Standard iterator to iterate over the specs in this registry and the global registry.
-     * @returns Iterable
+     * Create a fresh (lazily instantiated) spec instance for every registered spec, paired with its filter.
+     *
+     * Each call constructs new instances for type-registered specs -- the registry does not cache them.
+     * Callers that invoke spec hooks repeatedly (e.g. across deployment events) should materialize the
+     * result once and reuse it so specs holding per-deployment state initialize a single time.
+     * @returns Iterable of filter/spec pairs
      */
-    public *getSpecs() {
+    public *createSpecs() {
         for (const spec of this.specs) {
             yield {
                 filter: spec.filter, 
