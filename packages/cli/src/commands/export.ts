@@ -223,15 +223,19 @@ export default class extends SalesforceCommand {
 
         if (request.expand) {
             const results = await exporter.exportObjectAndExpand(request.ids, context);
+            let written = 0;
             for (const result of results) {
                 await this.writeExpandedDatapack(result, request.folder, expandedOutputFiles, prunedFolders);
+                progress.report({ phase: 'write', progress: ++written, total: results.length, sourceKey: result.sourceKey });
             }
             return;
         }
 
         const results = await exporter.exportObject(request.ids, context);
+        let written = 0;
         for (const result of results) {
             await this.writeConsolidatedDatapack(result, request.folder, expandedOutputFiles, prunedFolders);
+            progress.report({ phase: 'write', progress: ++written, total: results.length, sourceKey: result.sourceKey });
         }
     }
 
