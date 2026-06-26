@@ -12,8 +12,8 @@
     (dragover)="cardDragOver.emit($event)"
     (drop)="cardDrop.emit($event)"
     (dragend)="cardDragEnd.emit($event)">
-    <header class="vlo-designer-card__header">
-        <button type="button" class="vlo-designer-card__toggle" [attr.aria-expanded]="expanded()" [attr.aria-label]="toggleLabel()" (click)="toggleExpanded()">
+    <header class="vlo-designer-card__header" [attr.aria-label]="toggleLabel()" (click)="toggleExpandedFromHeader($event)">
+        <button type="button" class="vlo-designer-card__toggle" [attr.aria-expanded]="expanded()" [attr.aria-label]="toggleLabel()" (click)="toggleExpanded($event)">
             <span class="codicon" [class.codicon-chevron-down]="expanded()" [class.codicon-chevron-right]="!expanded()" aria-hidden="true"></span>
         </button>
         <span [ngClass]="['vlo-designer-card__icon', 'codicon', 'codicon-' + icon()]" aria-hidden="true"></span>

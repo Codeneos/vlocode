@@ -11,7 +11,11 @@ body { min-width: 320px; overflow-x: hidden; }
 button, input, select, textarea { font: inherit; }
 
 .dm-shell {
-    width: 100vw; min-height: 100vh; margin-inline: calc(50% - 50vw); background: $editor;
+    width: 100vw; min-height: 100vh; margin-inline: calc(50% - 50vw);
+    background:
+        radial-gradient(circle at 0 0, color-mix(in srgb, #{$panel} 24%, transparent) 1px, transparent 1.5px),
+        color-mix(in srgb, #{$editor} 96%, #{$surface});
+    background-size: 24px 24px, auto;
     &--center { display: grid; place-items: center; padding: 24px; }
 }
 
@@ -65,11 +69,13 @@ button, input, select, textarea { font: inherit; }
 .dm-flow {
     position: relative; width: min(960px, calc(100% - 40px)); margin: 36px auto; padding: 28px 0 60px;
 
-    &::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%); background: $panel-strong; }
+    &::before { content: ""; position: absolute; z-index: 0; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%); background: $panel-strong; }
+    > vlo-designer-card { position: relative; z-index: 1; }
     &__start, &__end, &__add {
         position: relative; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; margin: 0 auto; border-radius: 50%;
     }
     &__start, &__end { border: 4px solid $panel-strong; background: $surface; box-shadow: $shadow-subtle; }
+    &__start { margin-bottom: 24px; }
     &__end { margin-top: 12px; }
     &__insert { position: relative; z-index: 2; display: grid; place-items: center; height: 56px; margin: 0; }
     &__add {
@@ -250,6 +256,19 @@ vlo-monaco-editor,
         }
     }
     &__debug-table-wrap { overflow: auto; min-height: 0; }
+    &__debug-log {
+        display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; min-height: 0;
+    }
+    &__warnings {
+        display: grid; gap: 6px; max-height: 116px; overflow: auto;
+        padding: 8px 10px; border-bottom: 1px solid $panel;
+        background: color-mix(in srgb, var(--vscode-inputValidation-warningBackground, #{$surface-alt}) 42%, #{$surface});
+    }
+    &__warning {
+        display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 7px; align-items: start;
+        color: var(--vscode-inputValidation-warningForeground, var(--vscode-foreground)); font-size: 12px; line-height: 1.35;
+        .codicon { color: var(--vscode-notificationsWarningIcon-foreground, var(--vscode-editorWarning-foreground)); line-height: 1.35; }
+    }
     &__debug-table {
         width: 100%; border-collapse: collapse; table-layout: fixed;
         th, td { border-bottom: 1px solid $panel; padding: 7px 10px; text-align: left; vertical-align: top; }
