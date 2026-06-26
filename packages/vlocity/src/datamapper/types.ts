@@ -126,11 +126,43 @@ export type DataMapperQueryRunner = OmniStudioFormulaQueryRunner;
 
 export type DataMapperFunctionRegistry = OmniStudioFormulaFunctionRegistry;
 
+export type DataMapperExecutionWarningCode =
+    | 'fieldValidationFailed'
+    | 'formulaEvaluationFailed'
+    | 'invalidField'
+    | 'invalidFormula'
+    | 'unresolvedFilter';
+
+export interface DataMapperExecutionWarning {
+    readonly code: DataMapperExecutionWarningCode;
+    readonly message: string;
+    readonly objectName?: string;
+    readonly fieldName?: string;
+    readonly outputPath?: string;
+    readonly sequence?: number;
+    readonly expression?: string;
+}
+
+export interface DataMapperFieldValidationContext {
+    readonly objectName: string;
+    readonly fieldName: string;
+    readonly outputPath: string;
+    readonly sequence: number;
+}
+
+export type DataMapperFieldValidator = (
+    objectName: string,
+    fieldName: string,
+    context: DataMapperFieldValidationContext
+) => boolean | Promise<boolean>;
+
 export interface DataMapperExecutionOptions {
     queryRunner?: DataMapperQueryRunner;
     functionRegistry?: DataMapperFunctionRegistry;
     timezone?: string;
     now?: Date | (() => Date);
+    validateField?: DataMapperFieldValidator;
+    onWarning?: (warning: DataMapperExecutionWarning) => void;
 }
 
 export interface DataMapperFormulaContext extends OmniStudioFormulaContext {

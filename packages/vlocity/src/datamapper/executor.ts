@@ -13,6 +13,7 @@ import type {
     DataMapperDefinition,
     DataMapperExecutionOptions,
     DataMapperExecutionPlan,
+    DataMapperExecutionWarning,
     DataMapperExtractGroup,
     DataMapperFormulaStep,
     DataMapperItem,
@@ -39,10 +40,28 @@ interface OutputContainer {
     readonly children: Map<string, OutputContainer>;
 }
 
+interface BuiltExtractQuery {
+    readonly soql: string;
+    readonly invalidFields: readonly string[];
+}
+
+interface FilterValueResolution {
+    readonly values: unknown[];
+    readonly reference?: string;
+    readonly unresolved?: boolean;
+}
+
+interface WhereResult {
+    readonly where: string;
+    readonly skip: boolean;
+}
+
+const formulaEvaluationFailed = Symbol('formulaEvaluationFailed');
+
 export class DataMapperExecutor {
     private readonly formulas = new OmniStudioFormulaEvaluator();
 
-    public buildExecutionPlan(definition: DataMapperDefinition): DataMapperExecutionPlan {
+    public buildExecutionPlan(definition: DataMapperDefinition, options: Pick<DataMapperExecutionOptions, 'onWarning'> = {}): DataMapperExecutionPlan {
         const data = this.getDefinitionData(definition);
         const type = String(data.Type ?? data.type ?? 'Extract').toLowerCase();
         const normalizedType = type.includes('load') ? 'load' : type.includes('transform') ? 'transform' : 'extract';
@@ -61,9 +80,20 @@ export class DataMapperExecutor {
                         dependencies: this.formulas.dependencies(item.formulaExpression!)
                     };
                 } catch (error) {
+                    if (options.onWarning) {
+                        this.warn(options, {
+                            code: 'invalidFormula',
+                            expression: item.formulaExpression,
+                            outputPath: item.formulaResultPath,
+                            sequence: item.formulaSequence,
+                            message: `Skipping invalid DataMapper formula "${item.formulaExpression}" for result path "${item.formulaResultPath}": ${getErrorMessage(error)}`
+                        });
+                        return;
+                    }
                     throw new Error(`Invalid DataMapper formula "${item.formulaExpression}" for result path "${item.formulaResultPath}": ${getErrorMessage(error)}`);
                 }
             })
+            .filter((formula): formula is DataMapperFormulaStep => !!formula)
             .sort((a, b) => a.sequence - b.sequence);
         const extractGroups = normalizedType === 'extract' ? this.createExtractGroups(items, formulas) : [];
         const mappings = items
@@ -89,7 +119,7 @@ export class DataMapperExecutor {
     }
 
     public async execute(definition: DataMapperDefinition, inputJson: unknown, options: DataMapperExecutionOptions = {}): Promise<unknown> {
-        const plan = this.buildExecutionPlan(definition);
+        const plan = this.buildExecutionPlan(definition, options);
         if (plan.type === 'load') {
             throw new Error('DataMapper Load execution is not supported because it requires Salesforce DML side effects');
         }
@@ -109,8 +139,12 @@ export class DataMapperExecutor {
         }
         const tree: SourceTree = { input: inputJson, roots: [] };
         for (const group of plan.extractGroups) {
-            const query = this.buildQuery(group, tree);
-            const records = await options.queryRunner.query(query);
+            const query = await this.buildQuery(group, tree, options);
+            if (!query) {
+                continue;
+            }
+            const records = await options.queryRunner.query(query.soql);
+            this.applyInvalidFieldNulls(records, query.invalidFields);
             this.attachExtractRecords(tree, group, records);
         }
         return tree;
@@ -135,6 +169,9 @@ export class DataMapperExecutor {
             const nodes = this.findNodes(sourceTree, nodePath);
             for (const node of nodes) {
                 const value = await this.evaluateFormula(formula, sourceTree, node, plan, options);
+                if (value === formulaEvaluationFailed) {
+                    continue;
+                }
                 if (fieldPath) {
                     if (plan.type === 'transform' && !nodePath.length) {
                         setDataMapperPathValue(node.record, fieldPath, value);
@@ -153,7 +190,7 @@ export class DataMapperExecutor {
         node: SourceNode,
         plan: DataMapperExecutionPlan,
         options: DataMapperExecutionOptions
-    ): Promise<unknown> {
+    ): Promise<unknown | typeof formulaEvaluationFailed> {
         try {
             return await this.formulas.evaluate(formula.expression, {
                 source: node.record,
@@ -164,6 +201,16 @@ export class DataMapperExecutor {
                 resolvePath: path => this.resolveFormulaPath(sourceTree, node, path, plan)
             });
         } catch (error) {
+            if (options.onWarning) {
+                this.warn(options, {
+                    code: 'formulaEvaluationFailed',
+                    expression: formula.expression,
+                    outputPath: formula.resultPath,
+                    sequence: formula.sequence,
+                    message: `DataMapper formula "${formula.expression}" failed for result path "${formula.resultPath}": ${getErrorMessage(error)}`
+                });
+                return formulaEvaluationFailed;
+            }
             throw new Error(`DataMapper formula "${formula.expression}" failed for result path "${formula.resultPath}": ${getErrorMessage(error)}`);
         }
     }
@@ -369,55 +416,139 @@ export class DataMapperExecutor {
         return getDataMapperPathValue(sourceTree.input, path);
     }
 
-    private buildQuery(group: DataMapperExtractGroup, sourceTree: SourceTree): string {
-        const fields = group.fields.length ? group.fields : ['Id'];
-        const where = this.buildWhere(group, sourceTree);
+    private async buildQuery(group: DataMapperExtractGroup, sourceTree: SourceTree, options: DataMapperExecutionOptions): Promise<BuiltExtractQuery | undefined> {
+        const { fields, invalidFields } = await this.resolveQueryFields(group, options);
+        const where = this.buildWhere(group, sourceTree, options);
+        if (where.skip) {
+            return;
+        }
         const orderBy = group.conditions.find(condition => condition.operator === 'ORDER BY')?.value;
         const limit = group.conditions.find(condition => condition.operator === 'LIMIT')?.value;
         const offset = group.conditions.find(condition => condition.operator === 'OFFSET')?.value;
-        return [
-            `SELECT ${fields.join(', ')}`,
-            `FROM ${group.objectName}`,
-            where ? `WHERE ${where}` : '',
-            orderBy ? `ORDER BY ${orderBy}` : '',
-            limit ? `LIMIT ${Number(limit)}` : '',
-            offset ? `OFFSET ${Number(offset)}` : ''
-        ].filter(Boolean).join(' ');
+        return {
+            soql: [
+                `SELECT ${fields.join(', ')}`,
+                `FROM ${group.objectName}`,
+                where.where ? `WHERE ${where.where}` : '',
+                orderBy ? `ORDER BY ${orderBy}` : '',
+                limit ? `LIMIT ${Number(limit)}` : '',
+                offset ? `OFFSET ${Number(offset)}` : ''
+            ].filter(Boolean).join(' '),
+            invalidFields
+        };
     }
 
-    private buildWhere(group: DataMapperExtractGroup, sourceTree: SourceTree): string {
+    private buildWhere(group: DataMapperExtractGroup, sourceTree: SourceTree, options: DataMapperExecutionOptions): WhereResult {
         const conditions = group.conditions.filter(condition => !isSpecialFilter(condition.operator) && condition.fieldName);
         const groups = new Map<number, string[]>();
         for (const condition of conditions) {
-            const values = uniqueValues(this.resolveFilterValues(condition.value, sourceTree));
+            const resolution = this.resolveFilterValues(condition.value, sourceTree);
+            const values = uniqueValues(resolution.values);
+            if (resolution.unresolved || (resolution.reference && !values.length && !isNullOperator(condition.operator))) {
+                this.warn(options, {
+                    code: 'unresolvedFilter',
+                    objectName: group.objectName,
+                    fieldName: condition.fieldName,
+                    outputPath: group.outputPath,
+                    sequence: group.sequence,
+                    message: `Skipping ${group.objectName} extract step ${group.sequence} because filter ${condition.fieldName} references unresolved path "${resolution.reference}".`
+                });
+                return { where: '', skip: true };
+            }
             const expression = formatCondition(condition.fieldName!, condition.operator, values);
             const current = groups.get(condition.filterGroup) ?? [];
             current.push(expression);
             groups.set(condition.filterGroup, current);
         }
-        return [...groups.values()].map(groupConditions =>
-            groupConditions.length > 1 ? `(${groupConditions.join(' AND ')})` : groupConditions[0]
-        ).join(' OR ');
+        return {
+            where: [...groups.values()].map(groupConditions =>
+                groupConditions.length > 1 ? `(${groupConditions.join(' AND ')})` : groupConditions[0]
+            ).join(' OR '),
+            skip: false
+        };
     }
 
-    private resolveFilterValues(value: string | undefined, sourceTree: SourceTree): unknown[] {
+    private resolveFilterValues(value: string | undefined, sourceTree: SourceTree): FilterValueResolution {
         if (!value) {
-            return [undefined];
+            return { values: [undefined] };
         }
-        if (isQuoted(value)) {
-            return [value.slice(1, -1)];
+        const normalizedValue = value.trim();
+        if (isQuoted(normalizedValue)) {
+            return { values: [normalizedValue.slice(1, -1)] };
         }
-        const constant = resolveDataMapperConstant(value);
+        const constant = resolveDataMapperConstant(normalizedValue);
         if (constant.resolved) {
-            return [constant.value];
+            return { values: [constant.value] };
         }
-        const path = splitDataMapperPath(value);
+        const path = splitDataMapperPath(normalizedValue);
         const matchingGroupPath = this.findKnownSourcePath(sourceTree, path);
         if (matchingGroupPath.length) {
             const fieldPath = joinDataMapperPath(path.slice(matchingGroupPath.length));
-            return this.findNodes(sourceTree, matchingGroupPath).map(node => getRecordFieldValue(node.record, fieldPath));
+            return {
+                values: this.findNodes(sourceTree, matchingGroupPath).map(node => getRecordFieldValue(node.record, fieldPath)),
+                reference: normalizedValue
+            };
         }
-        return [getDataMapperPathValue(sourceTree.input, value) ?? value];
+        const inputValue = getDataMapperPathValue(sourceTree.input, normalizedValue);
+        if (inputValue !== undefined) {
+            return { values: [inputValue], reference: normalizedValue };
+        }
+        if (looksLikeDataMapperReference(normalizedValue)) {
+            return { values: [], reference: normalizedValue, unresolved: true };
+        }
+        return { values: [normalizedValue] };
+    }
+
+    private async resolveQueryFields(group: DataMapperExtractGroup, options: DataMapperExecutionOptions): Promise<{ fields: string[]; invalidFields: string[] }> {
+        const requestedFields = group.fields.length ? group.fields : ['Id'];
+        if (!options.validateField) {
+            return { fields: requestedFields, invalidFields: [] };
+        }
+
+        const fields = new Array<string>();
+        const invalidFields = new Array<string>();
+        for (const fieldName of requestedFields) {
+            try {
+                if (await options.validateField(group.objectName, fieldName, {
+                    objectName: group.objectName,
+                    fieldName,
+                    outputPath: group.outputPath,
+                    sequence: group.sequence
+                })) {
+                    fields.push(fieldName);
+                    continue;
+                }
+                invalidFields.push(fieldName);
+                this.warn(options, {
+                    code: 'invalidField',
+                    objectName: group.objectName,
+                    fieldName,
+                    outputPath: group.outputPath,
+                    sequence: group.sequence,
+                    message: `Skipping invalid field "${fieldName}" on ${group.objectName}; preview will resolve it as null.`
+                });
+            } catch (error) {
+                fields.push(fieldName);
+                this.warn(options, {
+                    code: 'fieldValidationFailed',
+                    objectName: group.objectName,
+                    fieldName,
+                    outputPath: group.outputPath,
+                    sequence: group.sequence,
+                    message: `Could not validate field "${fieldName}" on ${group.objectName}: ${getErrorMessage(error)}`
+                });
+            }
+        }
+
+        return { fields: fields.length ? fields : ['Id'], invalidFields };
+    }
+
+    private applyInvalidFieldNulls(records: Record<string, unknown>[], invalidFields: readonly string[]): void {
+        for (const record of records) {
+            for (const field of invalidFields) {
+                setRecordFieldValue(record, field, null);
+            }
+        }
     }
 
     private attachExtractRecords(tree: SourceTree, group: DataMapperExtractGroup, records: Record<string, unknown>[]): void {
@@ -645,6 +776,10 @@ export class DataMapperExecutor {
     private isExtractionItem(item: NormalizedDataMapperItem) {
         return (!!item.inputObjectName || Number(item.inputObjectQuerySequence || 0) > 0) && !item.formulaExpression && item.outputObjectName !== 'Formula';
     }
+
+    private warn(options: Pick<DataMapperExecutionOptions, 'onWarning'>, warning: DataMapperExecutionWarning): void {
+        options.onWarning?.(warning);
+    }
 }
 
 function numberOrUndefined(value: unknown): number | undefined {
@@ -668,6 +803,10 @@ function toRecord(value: unknown): Record<string, unknown> {
 
 function isSpecialFilter(operator: string) {
     return ['LIMIT', 'OFFSET', 'ORDER BY'].includes(operator.toUpperCase());
+}
+
+function isNullOperator(operator: string) {
+    return ['IS NULL', 'IS NOT NULL'].includes(operator.toUpperCase());
 }
 
 function normalizeFilterOperator(operator: string | undefined) {
@@ -765,6 +904,10 @@ function formatSoqlValue(value: unknown): string {
 
 function isQuoted(value: string) {
     return (value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'));
+}
+
+function looksLikeDataMapperReference(value: string) {
+    return value.includes(':') || /\|\d+$|\|n$/i.test(value);
 }
 
 function setPath(target: Record<string, unknown>, path: string, value: unknown, listFormat: boolean): void {

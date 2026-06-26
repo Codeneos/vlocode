@@ -73,6 +73,25 @@ describe('DataMapperFormulaEvaluator', () => {
         })).toThrow('Invalid DataMapper formula "IF(true" for result path "result"');
     });
 
+    it('can report invalid execution plan formulas as warnings', () => {
+        const executor = new DataMapperExecutor();
+        const warnings = new Array<unknown>();
+        const plan = executor.buildExecutionPlan({
+            Type: 'Transform',
+            OmniDataTransformItem: [formula('IF(true', 'result', 1)]
+        }, {
+            onWarning: warning => warnings.push(warning)
+        });
+
+        expect(plan.formulas).toHaveLength(0);
+        expect(warnings).toEqual([
+            expect.objectContaining({
+                code: 'invalidFormula',
+                message: expect.stringContaining('Skipping invalid DataMapper formula "IF(true"')
+            })
+        ]);
+    });
+
     it('evaluates documented string, list, JSON and date functions', async () => {
         const evaluator = new DataMapperFormulaEvaluator();
         const context = {
@@ -317,6 +336,160 @@ describe('DataMapperExecutor', () => {
         expect(queries[0]).toContain('Id IN (\'A1\', \'A2\')');
         expect(queries[0]).toContain('ParentId = null');
         expect(queries[0]).toContain('Name LIKE \'%Acme%\'');
+    });
+
+    it('skips extract queries when a path-shaped filter reference is unresolved', async () => {
+        const mapper: DataMapperDefinition = {
+            Type: 'Extract',
+            InputType: 'JSON',
+            OutputType: 'JSON',
+            OmniDataTransformItem: [
+                extract(
+                    'QuoteLinerelationship__c',
+                    'QuoteLineItemId__c',
+                    'SBQQ__Quote__c:SBQQ__QuoteLine__c:Id',
+                    'SBQQ__Quote__c:SBQQ__QuoteLine__c:QuoteLinerelationship__c',
+                    3
+                ),
+                map(
+                    'SBQQ__Quote__c:SBQQ__QuoteLine__c:QuoteLinerelationship__c:Role__c',
+                    'relationships:role'
+                )
+            ]
+        };
+        const queries = new Array<string>();
+        const warnings = new Array<unknown>();
+
+        const result = await new DataMapperExecutor().execute(mapper, {}, {
+            queryRunner: {
+                async query(query) {
+                    queries.push(query);
+                    return [];
+                }
+            },
+            onWarning: warning => warnings.push(warning)
+        });
+
+        expect(queries).toHaveLength(0);
+        expect(result).toEqual({});
+        expect(warnings).toEqual([
+            expect.objectContaining({
+                code: 'unresolvedFilter',
+                fieldName: 'QuoteLineItemId__c',
+                objectName: 'QuoteLinerelationship__c',
+                message: expect.stringContaining('SBQQ__Quote__c:SBQQ__QuoteLine__c:Id')
+            })
+        ]);
+    });
+
+    it('keeps quoted path-shaped filter values as constants', async () => {
+        const mapper: DataMapperDefinition = {
+            Type: 'Extract',
+            InputType: 'JSON',
+            OutputType: 'JSON',
+            OmniDataTransformItem: [
+                extract(
+                    'QuoteLinerelationship__c',
+                    'QuoteLineItemId__c',
+                    '"SBQQ__Quote__c:SBQQ__QuoteLine__c:Id"',
+                    'QuoteLinerelationship__c',
+                    1
+                )
+            ]
+        };
+        const queries = new Array<string>();
+
+        await new DataMapperExecutor().execute(mapper, {}, {
+            queryRunner: {
+                async query(query) {
+                    queries.push(query);
+                    return [];
+                }
+            }
+        });
+
+        expect(queries[0]).toContain('WHERE QuoteLineItemId__c = \'SBQQ__Quote__c:SBQQ__QuoteLine__c:Id\'');
+    });
+
+    it('filters invalid extracted fields from SOQL and resolves them as null for formulas', async () => {
+        const mapper: DataMapperDefinition = {
+            Type: 'Extract',
+            InputType: 'JSON',
+            OutputType: 'JSON',
+            IsNullInputsIncludedInOutput: true,
+            OmniDataTransformItem: [
+                extract(
+                    'QuoteLinerelationship__c',
+                    'QuoteLineItemId__c',
+                    '"QL1"',
+                    'QuoteLinerelationship__c',
+                    1
+                ),
+                formula(
+                    'QuoteLinerelationship__c:RelatedQuoteLineItemId__r.Role__c',
+                    'QuoteLinerelationship__c:Role__c',
+                    1
+                ),
+                map('QuoteLinerelationship__c:Role__c', 'relationships:role')
+            ]
+        };
+        const queries = new Array<string>();
+        const warnings = new Array<unknown>();
+
+        const result = await new DataMapperExecutor().execute(mapper, {}, {
+            queryRunner: {
+                async query(query) {
+                    queries.push(query);
+                    return [{ Id: 'R1', QuoteLineItemId__c: 'QL1' }];
+                }
+            },
+            validateField: (_objectName, fieldName) => fieldName !== 'RelatedQuoteLineItemId__r.Role__c',
+            onWarning: warning => warnings.push(warning)
+        });
+
+        expect(queries[0]).toContain('SELECT Id, QuoteLineItemId__c FROM QuoteLinerelationship__c');
+        expect(queries[0]).not.toContain('RelatedQuoteLineItemId__r.Role__c');
+        expect(result).toEqual({
+            relationships: [{
+                role: null
+            }]
+        });
+        expect(warnings).toEqual([
+            expect.objectContaining({
+                code: 'invalidField',
+                fieldName: 'RelatedQuoteLineItemId__r.Role__c',
+                objectName: 'QuoteLinerelationship__c'
+            })
+        ]);
+    });
+
+    it('reports formula evaluation failures as warnings when a warning sink is provided', async () => {
+        const mapper: DataMapperDefinition = {
+            Type: 'Transform',
+            InputType: 'JSON',
+            OutputType: 'JSON',
+            OmniDataTransformItem: [
+                formula('UNKNOWN(account:name)', 'account:bad', 1),
+                map('account:bad', 'customer:bad')
+            ]
+        };
+        const warnings = new Array<unknown>();
+
+        const result = await new DataMapperExecutor().execute(mapper, {
+            account: {
+                name: 'Acme'
+            }
+        }, {
+            onWarning: warning => warnings.push(warning)
+        });
+
+        expect(result).toEqual({});
+        expect(warnings).toEqual([
+            expect.objectContaining({
+                code: 'formulaEvaluationFailed',
+                expression: 'UNKNOWN(account:name)'
+            })
+        ]);
     });
 
     it('executes extract mappers with hierarchical output and formula-created children', async () => {

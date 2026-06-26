@@ -22,6 +22,7 @@ export class PreviewPanelComponent {
     readonly runPreview = output<void>();
 
     protected readonly queryCount = computed(() => this.debug()?.queries.length ?? 0);
+    protected readonly warningCount = computed(() => this.debug()?.warnings?.length ?? 0);
     protected readonly resultCount = computed(() => this.debug()?.queries.reduce((total, query) => total + query.resultCount, 0) ?? 0);
     protected readonly totalDuration = computed(() => this.formatDuration(this.debug()?.totalDurationMs ?? 0));
 
