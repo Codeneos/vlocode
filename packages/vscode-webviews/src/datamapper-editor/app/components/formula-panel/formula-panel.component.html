@@ -49,12 +49,6 @@
                             (valueChange)="updateFormula(item, 'FormulaResultPath', $event)" />
                     </label>
 
-                    <div class="dm-form-grid">
-                        <label class="dm-field">
-                            <span>Sequence</span>
-                            <input type="number" min="1" [disabled]="item.IsDisabled === true" [ngModel]="item.FormulaSequence || $index + 1" (ngModelChange)="updateFormula(item, 'FormulaSequence', $event)">
-                        </label>
-                    </div>
                 </div>
             </vlo-designer-card>
             <div class="dm-flow__insert">
