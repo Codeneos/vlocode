@@ -336,7 +336,7 @@ export class DatapackDeployer {
      * instances for every spec-function call, so stateful specs initialize a single time.
      */
     private getDeploymentSpecs() {
-        return this.materializedSpecs ??= [...this.specRegistry.getSpecs()];
+        return this.materializedSpecs ??= [...this.specRegistry.createSpecs()];
     }
 
     private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(eventType: T, options: DeploymentSpecExecuteOptions<Parameters<E>>) {
