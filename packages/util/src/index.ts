@@ -21,6 +21,8 @@ export * from './iterable';
 export * from './lazy';
 export * from './object';
 export * from './observer';
+export * from './progressBar';
+export * from './progressTracker';
 export * from './task';
 export * from './reflect';
 export * from './salesforce';

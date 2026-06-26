@@ -2,11 +2,40 @@ import chalk from 'chalk';
 import logSymbols from 'log-symbols';
 
 import { Logger, LogEntry, LogLevel, LogManager } from '@vlocode/core';
-import type { DatapackExportProgress } from '@vlocode/vlocity-deploy';
+import { formatCount, ProgressBar, ProgressTracker, Timer } from '@vlocode/util';
 
-import { ProgressBar } from './progressBar';
-import { formatCount, ProgressTracker } from './progressTracker';
-import { clearProgressLogSink, setProgressLogSink } from './progressLogWriter';
+import { clearLogInterceptor, setLogInterceptor } from './progressLogWriter';
+
+/**
+ * Pipeline phase a progress update belongs to. `export`/`expand` are reported by the exporter;
+ * `write` is reported by the command as it writes datapacks to disk.
+ */
+export type ExportProgressPhase = 'export' | 'expand' | 'write';
+
+const PHASE_LABELS: Record<ExportProgressPhase, string> = {
+    export: 'Exporting',
+    expand: 'Expanding',
+    write: 'Writing'
+};
+
+/** Verb used for the finalizing sub-counter shown on the detail line. */
+const FINALIZING_VERB: Record<'expand' | 'write', string> = {
+    expand: 'expanding',
+    write: 'writing'
+};
+
+/**
+ * A progress update for the reporter. The exporter's `DatapackExportProgress` (phase `export`/
+ * `expand`) is assignable to this; the command additionally emits `write` updates.
+ */
+export interface ExportProgressEvent {
+    phase: ExportProgressPhase;
+    progress: number;
+    total: number;
+    sourceKey?: string;
+    status?: 'completed' | 'failed';
+    id?: string;
+}
 
 export interface ExportProgressOptions {
     /**
@@ -18,8 +47,8 @@ export interface ExportProgressOptions {
      */
     totalBatches: number;
     /**
-     * Number of top-level datapacks requested. Used as a lower bound for the total since the
-     * exporter discovers additional dependencies while running.
+     * Number of top-level datapacks requested. Used as a lower bound for the export-phase total
+     * since the exporter discovers additional dependencies while running.
      */
     rootDatapacks: number;
     /**
@@ -57,17 +86,21 @@ export function detectInteractive(stream: NodeJS.WriteStream = process.stdout): 
 }
 
 /**
- * Bridges the {@link DatapackExporter} progress callbacks to a user-facing progress display and
- * keeps the live view compact.
+ * Bridges the {@link DatapackExporter} progress callbacks (and the command's write loop) to a
+ * user-facing progress display, and keeps the live view compact.
  *
- * In interactive mode it renders a multi-line {@link ProgressBar} (a gauge plus a live stats line)
- * and installs a {@link ProgressLogSink} that intercepts log output: warnings and errors are
- * *counted* and surfaced as a running tally on the bar instead of scrolling past, then summarised —
- * with a capped list of messages — once the export finishes. Routine logs are dropped from the live
- * view entirely. Nothing is lost: sibling writers (e.g. a `--log-file`) still receive every entry.
+ * A single {@link ProgressBar} is driven by the **export** phase — the network-bound bulk of the
+ * work — so the gauge and ETA reflect that. Export's progress accounting can drift slightly below
+ * 100% at the very end (the exporter discovers dependencies it then dedupes), so the moment the
+ * first non-export (`expand`/`write`) update arrives the gauge is snapped to 100%: it never sticks
+ * just under the line. The follow-on expand/write phases — which would otherwise leave the bar
+ * looking done while it churns — are surfaced as a moving sub-counter on the detail line
+ * (`writing 380/412`) plus a phase label, so the tail clearly keeps moving.
  *
- * In non-interactive mode it forward-prints throttled progress and lets log output through as usual,
- * while still tallying problems for the final summary.
+ * It also installs a {@link LogInterceptor}: warnings and errors are counted, surfaced as a live
+ * tally (interactive) and summarised — with a capped list of messages — once the export finishes,
+ * instead of scrolling past. While the bar renders, intercepted logs are kept out of the live view;
+ * nothing is lost, sibling writers (e.g. a `--log-file`) still receive every entry.
  */
 export class ExportProgressReporter {
 
@@ -78,13 +111,20 @@ export class ExportProgressReporter {
     private readonly tracker: ProgressTracker;
     private readonly bar?: ProgressBar;
     private readonly apiCalls?: () => number;
+    private readonly runTimer = new Timer();
 
-    private apiCallBaseline = 0;
+    private currentPhase: ExportProgressPhase = 'export';
+    private finalizing?: { phase: 'expand' | 'write'; progress: number; total: number };
+    private currentBatchType?: string;
     private batchIndex = 0;
-    private batchType?: string;
     private lastSourceKey?: string;
     private finished = false;
 
+    /** Cumulative number of datapacks exported across all batches (committed at end of each export phase). */
+    private exportedTotal = 0;
+    private exportCommitted = false;
+
+    private apiCallBaseline = 0;
     private errorCount = 0;
     private warnCount = 0;
     private readonly problems: string[] = [];
@@ -99,7 +139,7 @@ export class ExportProgressReporter {
         this.totalBatches = options.totalBatches;
         this.rootDatapacks = options.rootDatapacks;
         this.apiCalls = options.apiCalls;
-        this.tracker = new ProgressTracker({ label: 'Exporting', minTotal: options.rootDatapacks });
+        this.tracker = new ProgressTracker({ label: 'Exporting' });
         const interactive = options.enabled ?? detectInteractive(options.stream);
         if (interactive) {
             this.bar = new ProgressBar({ stream: options.stream, tracker: this.tracker });
@@ -111,15 +151,18 @@ export class ExportProgressReporter {
     }
 
     /**
-     * Number of datapacks exported so far, including dependencies discovered during the export.
+     * Number of datapacks exported so far, including dependencies discovered during the export and
+     * the export phase currently in flight.
      */
     public get exportedCount() {
-        return this.tracker.value;
+        const inFlight = this.currentPhase === 'export' && !this.exportCommitted ? this.tracker.value : 0;
+        return this.exportedTotal + inFlight;
     }
 
     public start() {
-        setProgressLogSink(this.handleLog);
+        setLogInterceptor(this.handleLog);
         this.apiCallBaseline = this.apiCalls?.() ?? 0;
+        this.runTimer.reset();
         if (this.bar) {
             // Pass a thunk so the block (incl. the live API-call count) re-evaluates on every redraw.
             this.bar.start({ details: () => this.composeDetails() });
@@ -129,12 +172,18 @@ export class ExportProgressReporter {
     }
 
     /**
-     * Mark the start of a new export batch. `datapackType` and `idCount` are used for labelling.
+     * Mark the start of a new export batch and re-seed the gauge for its export phase. `datapackType`
+     * and `idCount` are used for labelling and as the export-phase lower bound.
      */
     public beginBatch(index: number, datapackType: string | undefined, idCount: number) {
         this.batchIndex = index;
-        this.batchType = datapackType;
+        this.currentBatchType = datapackType;
+        this.currentPhase = 'export';
+        this.finalizing = undefined;
+        this.exportCommitted = false;
         this.lastSourceKey = undefined;
+        this.lastLoggedMilestone = -1;
+        this.tracker.reset(idCount);
         this.tracker.label = datapackType ? `Exporting ${datapackType}` : 'Exporting';
 
         if (this.bar) {
@@ -148,13 +197,17 @@ export class ExportProgressReporter {
     }
 
     /**
-     * Consume a progress event emitted by the exporter for the current batch.
+     * Consume a progress event for the current batch.
      */
-    public report(progress: DatapackExportProgress) {
-        if (progress.sourceKey) {
-            this.lastSourceKey = progress.sourceKey;
+    public report(event: ExportProgressEvent) {
+        if (event.sourceKey) {
+            this.lastSourceKey = event.sourceKey;
         }
-        this.tracker.report(progress.progress, progress.total);
+        if (event.phase === 'export') {
+            this.tracker.report(event.progress, event.total);
+        } else {
+            this.enterFinalizing(event.phase, event.progress, event.total);
+        }
 
         if (this.bar) {
             this.refreshBar();
@@ -164,10 +217,10 @@ export class ExportProgressReporter {
     }
 
     /**
-     * Commit the current batch's progress into the running totals.
+     * Commit the current batch's export count into the running total.
      */
     public endBatch() {
-        this.tracker.commitBatch();
+        this.commitExportCount();
     }
 
     /**
@@ -178,11 +231,12 @@ export class ExportProgressReporter {
             return;
         }
         this.finished = true;
-        clearProgressLogSink(this.handleLog);
+        clearLogInterceptor(this.handleLog);
+        this.commitExportCount();
 
-        const count = this.tracker.value;
+        const count = this.exportedTotal;
         const apiCalls = this.apiCallsMade();
-        const summary = `Exported ${count} datapack${count === 1 ? '' : 's'} in ${this.tracker.elapsedText}` +
+        const summary = `Exported ${formatCount(count)} datapack${count === 1 ? '' : 's'} in ${this.runTimer.toString('seconds')}` +
             (apiCalls ? ` · ${formatCount(apiCalls)} API calls` : '') +
             this.problemSuffix();
         if (this.bar) {
@@ -203,10 +257,37 @@ export class ExportProgressReporter {
             return;
         }
         this.finished = true;
-        clearProgressLogSink(this.handleLog);
+        clearLogInterceptor(this.handleLog);
         if (this.bar) {
             this.bar.stop();
             this.dumpProblems();
+        }
+    }
+
+    /**
+     * Handle the first (and subsequent) non-export updates: snap the gauge to 100% on the transition
+     * out of `export` (so it never sticks just below the line), relabel, and record the sub-counter.
+     */
+    private enterFinalizing(phase: 'expand' | 'write', progress: number, total: number) {
+        if (this.currentPhase === 'export') {
+            this.commitExportCount();
+            const completeTotal = this.tracker.total;
+            this.tracker.report(completeTotal, completeTotal);
+        }
+        if (this.currentPhase !== phase) {
+            this.currentPhase = phase;
+            this.tracker.label = this.currentBatchType ? `${PHASE_LABELS[phase]} ${this.currentBatchType}` : PHASE_LABELS[phase];
+            if (!this.bar) {
+                this.logger.info(`${this.tracker.label}: ${formatCount(total)} datapack${total === 1 ? '' : 's'}`);
+            }
+        }
+        this.finalizing = { phase, progress, total };
+    }
+
+    private commitExportCount() {
+        if (this.currentPhase === 'export' && !this.exportCommitted) {
+            this.exportedTotal += this.tracker.value;
+            this.exportCommitted = true;
         }
     }
 
@@ -244,16 +325,19 @@ export class ExportProgressReporter {
     }
 
     private composeDetails(): string[] {
-        const stats = [`${this.tracker.value} datapacks`];
+        const stats = [`${formatCount(this.exportedCount)} datapacks`];
         if (this.totalBatches > 1) {
             stats.push(`batch ${this.batchIndex + 1}/${this.totalBatches}`);
         }
-        stats.push(`${this.rootDatapacks} records`);
+        stats.push(`${formatCount(this.rootDatapacks)} records`);
         if (this.apiCalls) {
             stats.push(`${formatCount(this.apiCallsMade())} API calls`);
         }
 
         const lines = [stats.join('  ·  ')];
+        if (this.finalizing) {
+            lines.push(`${FINALIZING_VERB[this.finalizing.phase]} ${formatCount(this.finalizing.progress)}/${formatCount(this.finalizing.total)}`);
+        }
         if (this.errorCount || this.warnCount) {
             lines.push(this.problemTally().join('  ·  '));
         }
@@ -295,6 +379,10 @@ export class ExportProgressReporter {
     }
 
     private logProgress() {
+        // Finalizing phases are announced once in enterFinalizing; only the export gauge is throttled.
+        if (this.currentPhase !== 'export') {
+            return;
+        }
         const milestone = this.tracker.milestone(10);
         const now = Date.now();
         // Forward-only consoles can't redraw, so throttle to one line per 10% milestone (or after a
@@ -306,6 +394,6 @@ export class ExportProgressReporter {
         this.lastLogTime = now;
 
         const batchInfo = this.totalBatches > 1 ? ` [batch ${this.batchIndex + 1}/${this.totalBatches}]` : '';
-        this.logger.info(`Export progress${batchInfo}: ${this.tracker.summary()}`);
+        this.logger.info(`${this.tracker.label}${batchInfo}: ${this.tracker.summary()}`);
     }
 }

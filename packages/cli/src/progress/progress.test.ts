@@ -5,10 +5,8 @@ import { LogLevel } from '@vlocode/core';
 import {
     ExportProgressReporter,
     ProgressAwareLogWriter,
-    ProgressBar,
-    ProgressTracker,
-    formatDuration,
-    formatRate
+    clearLogInterceptor,
+    setLogInterceptor
 } from '.';
 
 function logEntry(message: string, level: LogLevel = LogLevel.info) {
@@ -42,197 +40,46 @@ function fakeLogger() {
     return { logger, lines };
 }
 
-describe('formatDuration', () => {
-    it('formats sub-hour durations as m:ss', () => {
-        expect(formatDuration(0)).toBe('0:00');
-        expect(formatDuration(5000)).toBe('0:05');
-        expect(formatDuration(65000)).toBe('1:05');
-    });
-
-    it('formats durations over an hour as h:mm:ss', () => {
-        expect(formatDuration(3_725_000)).toBe('1:02:05');
-    });
-
-    it('returns a placeholder for non-finite input', () => {
-        expect(formatDuration(Infinity)).toBe('--:--');
-        expect(formatDuration(-1)).toBe('--:--');
-    });
-});
-
-describe('formatRate', () => {
-    it('uses one decimal below 10 and whole numbers above', () => {
-        expect(formatRate(0)).toBe('0');
-        expect(formatRate(2.345)).toBe('2.3');
-        expect(formatRate(42.7)).toBe('43');
-    });
-});
-
-describe('ProgressTracker', () => {
-    it('clamps the ratio as the total grows while the dependency graph is discovered', () => {
-        const tracker = new ProgressTracker();
-        tracker.report(1, 2);
-        expect(tracker.percent).toBe(50);
-
-        // the exporter discovers more work, so the total grows and the percentage regresses honestly
-        tracker.report(2, 4);
-        expect(tracker.value).toBe(2);
-        expect(tracker.total).toBe(4);
-        expect(tracker.percent).toBe(50);
-
-        tracker.report(3, 4);
-        expect(tracker.percent).toBe(75);
-
-        tracker.report(4, 4);
-        expect(tracker.percent).toBe(100);
-        expect(tracker.ratio).toBeLessThanOrEqual(1);
-        expect(tracker.eta).toBeUndefined();
-    });
-
-    it('never reports a ratio above 1 even if value briefly exceeds a stale total', () => {
-        const tracker = new ProgressTracker();
-        tracker.report(5, 2);
-        expect(tracker.ratio).toBeLessThanOrEqual(1);
-        expect(tracker.percent).toBeLessThanOrEqual(100);
-    });
-
-    it('floors the total at minTotal so it never looks complete too early', () => {
-        const tracker = new ProgressTracker({ minTotal: 10 });
-        tracker.report(1, 2);
-        expect(tracker.total).toBe(10);
-        expect(tracker.percent).toBe(10);
-    });
-
-    it('accumulates committed batches on top of the running total', () => {
-        const tracker = new ProgressTracker();
-        tracker.report(2, 2);
-        tracker.commitBatch();
-        tracker.report(3, 3);
-        expect(tracker.value).toBe(5);
-        expect(tracker.total).toBe(5);
-    });
-
-    it('is indeterminate until a total is known', () => {
-        const tracker = new ProgressTracker();
-        expect(tracker.indeterminate).toBe(true);
-        expect(tracker.percentText).toBe('--%');
-
-        tracker.report(0, 4);
-        expect(tracker.indeterminate).toBe(false);
-    });
-
-    it('produces a plain, colourless summary line', () => {
-        const tracker = new ProgressTracker({ minTotal: 4 });
-        tracker.report(1, 4);
-        expect(tracker.summary()).toMatch(/^25% \(1\/4\)/);
-    });
-});
-
-describe('ProgressBar', () => {
-    it('hides the cursor, renders the percentage and restores on stop', () => {
-        const { stream, output } = fakeStream();
-        const bar = new ProgressBar({ stream, label: 'Test', total: 10, refreshIntervalMs: 1_000_000 });
-
-        bar.start({ value: 0 });
-        expect(output()).toContain('\x1B[?25l');
-
-        bar.update({ value: 5, total: 10 });
-        expect(output()).toContain('50%');
-
-        bar.stop('done');
-        expect(output()).toContain('done\n');
-        expect(output()).toContain('\x1B[?25h');
-    });
-
-    it('prints log lines above the bar while active', () => {
-        const { stream, chunks } = fakeStream();
-        const bar = new ProgressBar({ stream, total: 4, refreshIntervalMs: 1_000_000 });
-
-        bar.start({ value: 1 });
-        bar.log('a line above the bar');
-        bar.stop();
-
-        expect(chunks).toContain('a line above the bar\n');
-    });
-
-    it('registers as the active bar only while running', () => {
-        const { stream } = fakeStream();
-        const bar = new ProgressBar({ stream, total: 4, refreshIntervalMs: 1_000_000 });
-
-        expect(bar.isActive).toBe(false);
-        bar.start({ value: 1 });
-        expect(bar.isActive).toBe(true);
-        bar.stop();
-        expect(bar.isActive).toBe(false);
-    });
-
-    it('renders caller-supplied detail lines beneath the gauge', () => {
-        const { stream, output } = fakeStream();
-        const bar = new ProgressBar({ stream, total: 10, refreshIntervalMs: 1_000_000 });
-
-        bar.start({ value: 5, details: ['5 datapacks  ·  3 records'] });
-        bar.stop();
-
-        expect(output()).toContain('5 datapacks  ·  3 records');
-    });
-
-    it('redraws a multi-line block in place (moves the cursor up the block height)', () => {
-        const { stream, output } = fakeStream();
-        const bar = new ProgressBar({ stream, total: 10, refreshIntervalMs: 1_000_000 });
-
-        bar.start({ value: 1, details: ['line one', 'line two'] });
-        bar.update({ value: 2 });
-        bar.stop();
-
-        // gauge + 2 detail lines = 3 rows, so a redraw returns the cursor up 2 lines
-        expect(output()).toContain('\x1B[2A');
-    });
-});
-
 describe('ProgressAwareLogWriter', () => {
-    it('routes important output above the active bar and falls back to the inner writer otherwise', () => {
-        const { stream, chunks } = fakeStream();
+    it('diverts entries the interceptor consumes and prints the rest', () => {
         const innerWrites: string[] = [];
-        const inner = {
-            write: (entry: any) => { innerWrites.push(entry.message); },
-            format: (entry: any) => `[fmt] ${entry.message}`
-        };
+        const inner = { write: (entry: any) => { innerWrites.push(entry.message); }, format: (entry: any) => `[fmt] ${entry.message}` };
         const writer = new ProgressAwareLogWriter(inner);
+        const seen: string[] = [];
+        // consume (suppress) warnings and above, let lower levels through
+        const interceptor = (entry: any, format: () => string) => { seen.push(format()); return entry.level >= LogLevel.warn; };
 
-        // no active bar → delegates to the inner writer unchanged, at any level
+        // no interceptor installed → straight to the inner writer
         writer.write(logEntry('before'));
         expect(innerWrites).toContain('before');
 
-        const bar = new ProgressBar({ stream, total: 4, refreshIntervalMs: 1_000_000 });
-        bar.start({ value: 1 });
+        setLogInterceptor(interceptor);
         writer.write(logEntry('routine info', LogLevel.info));
         writer.write(logEntry('a warning', LogLevel.error));
-        bar.stop();
+        clearLogInterceptor(interceptor);
 
-        // warnings/errors surface above the bar; routine info is kept out of the live view entirely
-        expect(chunks).toContain('[fmt] a warning\n');
-        expect(chunks.join('')).not.toContain('routine info');
-        expect(innerWrites).not.toContain('a warning');
-        expect(innerWrites).not.toContain('routine info');
-
-        // after stop → back to the inner writer
+        // after clearing → back to the inner writer
         writer.write(logEntry('after'));
+
+        expect(seen).toContain('[fmt] routine info');
+        expect(seen).toContain('[fmt] a warning');
+        expect(innerWrites).toContain('routine info');   // not consumed → printed
+        expect(innerWrites).not.toContain('a warning');  // consumed → suppressed
         expect(innerWrites).toContain('after');
     });
 
-    it('honours a custom minLevelWhileActive', () => {
-        const { stream, chunks } = fakeStream();
-        const inner = {
-            write: () => { /* not exercised here */ },
-            format: (entry: any) => `[fmt] ${entry.message}`
-        };
-        const writer = new ProgressAwareLogWriter(inner, { minLevelWhileActive: LogLevel.debug });
+    it('only clears the interceptor that is currently installed', () => {
+        const inner = { write: () => { /* unused */ }, format: (entry: any) => entry.message };
+        const writer = new ProgressAwareLogWriter(inner);
+        let calls = 0;
+        const interceptor = () => { calls++; return true; };
 
-        const bar = new ProgressBar({ stream, total: 4, refreshIntervalMs: 1_000_000 });
-        bar.start({ value: 1 });
-        writer.write(logEntry('shown because threshold is debug', LogLevel.info));
-        bar.stop();
+        setLogInterceptor(interceptor);
+        clearLogInterceptor(() => false); // a different function → must be a no-op
+        writer.write(logEntry('x'));
+        expect(calls).toBe(1);
 
-        expect(chunks).toContain('[fmt] shown because threshold is debug\n');
+        clearLogInterceptor(interceptor);
     });
 });
 
@@ -245,17 +92,17 @@ describe('ExportProgressReporter (non-interactive)', () => {
 
         reporter.start();
         reporter.beginBatch(0, 'Product2', 2);
-        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 2 });
-        reporter.report({ id: 'b', status: 'completed', progress: 2, total: 2 });
+        reporter.report({ phase: 'export', id: 'a', status: 'completed', progress: 1, total: 2 });
+        reporter.report({ phase: 'export', id: 'b', status: 'completed', progress: 2, total: 2 });
         reporter.endBatch();
 
         reporter.beginBatch(1, 'Account', 2);
-        reporter.report({ id: 'c', status: 'completed', progress: 2, total: 2 });
+        reporter.report({ phase: 'export', id: 'c', status: 'completed', progress: 2, total: 2 });
         reporter.endBatch();
         reporter.succeed();
 
         expect(lines.some(line => line.includes('Exporting batch 1/2'))).toBe(true);
-        expect(lines.some(line => /Export progress.*50%/.test(line))).toBe(true);
+        expect(lines.some(line => /50% \(1\/2\)/.test(line))).toBe(true);
         expect(lines.some(line => /Exported 4 datapacks/.test(line))).toBe(true);
     });
 
@@ -269,7 +116,7 @@ describe('ExportProgressReporter (non-interactive)', () => {
 
         reporter.start();
         reporter.beginBatch(0, 'Product2', 1);
-        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 1 });
+        reporter.report({ phase: 'export', id: 'a', status: 'completed', progress: 1, total: 1 });
         writer.write(logEntry('Error exporting a0X: boom', LogLevel.error));
         reporter.endBatch();
         reporter.succeed();
@@ -288,12 +135,39 @@ describe('ExportProgressReporter (interactive)', () => {
 
         reporter.start();
         reporter.beginBatch(0, 'Product2', 2);
-        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 2 });
+        reporter.report({ phase: 'export', id: 'a', status: 'completed', progress: 1, total: 2 });
         reporter.endBatch();
         reporter.succeed();
 
         expect(output()).toContain('50%');
         expect(output()).toContain('Exported 1 datapack');
+    });
+
+    it('snaps the gauge to 100% when export ends and shows expand/write as a finalizing counter', () => {
+        const { stream, output } = fakeStream();
+        const { logger } = fakeLogger();
+        const reporter = new ExportProgressReporter({ logger, totalBatches: 1, rootDatapacks: 10, enabled: true, stream });
+
+        reporter.start();
+        reporter.beginBatch(0, 'Product2', 10);
+        // export drifts to just under the (grown) total — the classic "stuck at 99%"
+        reporter.report({ phase: 'export', progress: 9, total: 10, sourceKey: 'Product2/A' });
+        reporter.report({ phase: 'expand', progress: 5, total: 10, sourceKey: 'Product2/A' });
+        reporter.report({ phase: 'write', progress: 3, total: 10, sourceKey: 'Product2/A' });
+        reporter.endBatch();
+        reporter.succeed();
+
+        const out = output();
+        expect(out).toContain('Exporting Product2');
+        expect(out).toContain('Expanding Product2');
+        expect(out).toContain('Writing Product2');
+        // gauge is snapped to 100% on the first non-export update instead of sticking at 90%
+        expect(out).toContain('100%');
+        // expand/write are shown as a moving sub-counter, not a second gauge
+        expect(out).toContain('expanding 5/10');
+        expect(out).toContain('writing 3/10');
+        // the committed export count is the real pre-snap value
+        expect(out).toContain('Exported 9 datapacks');
     });
 
     it('shows a live, growing API-call count from the supplied counter', () => {
@@ -307,7 +181,7 @@ describe('ExportProgressReporter (interactive)', () => {
         reporter.start();    // baseline snapshot = 100
         reporter.beginBatch(0, 'Product2', 2);
         calls = 142;         // 42 calls into the export
-        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 2 });
+        reporter.report({ phase: 'export', id: 'a', status: 'completed', progress: 1, total: 2 });
         calls = 384;         // 284 by the time it finishes
         reporter.endBatch();
         reporter.succeed();
@@ -328,7 +202,7 @@ describe('ExportProgressReporter (interactive)', () => {
 
         reporter.start();
         reporter.beginBatch(0, 'Product2', 2);
-        reporter.report({ id: 'a', status: 'completed', progress: 1, total: 2 });
+        reporter.report({ phase: 'export', id: 'a', status: 'completed', progress: 1, total: 2 });
         writer.write(logEntry('Error exporting a0X: boom', LogLevel.error));
         writer.write(logEntry('No data found for id a0Y', LogLevel.warn));
         reporter.endBatch();

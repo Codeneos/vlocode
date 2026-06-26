@@ -1,33 +1,41 @@
-import chalk from 'chalk';
-
 import { ProgressTracker } from './progressTracker';
 
-const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const HIDE_CURSOR = '\x1B[?25l';
-const SHOW_CURSOR = '\x1B[?25h';
-const CLEAR_DOWN = '\x1B[0J';
+const ESC = '\x1B';
+const HIDE_CURSOR = `${ESC}[?25l`;
+const SHOW_CURSOR = `${ESC}[?25h`;
+const CLEAR_DOWN = `${ESC}[0J`;
+const RESET = `${ESC}[0m`;
 // eslint-disable-next-line no-control-regex -- matching the ANSI escape (ESC) is the point
 const ANSI_PATTERN = /\x1B\[[0-9;]*m/g;
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 /**
- * The progress bar currently rendering to the terminal, if any. A single bar owns the bottom of the
- * screen at a time; {@link getActiveProgressBar} lets log writers route their output through it so
- * the live display stays intact. See {@link ProgressAwareLogWriter}.
+ * Decide whether ANSI colour should be emitted for a stream, honouring the de-facto `NO_COLOR` and
+ * `FORCE_COLOR` conventions and otherwise falling back to whether the stream is a TTY.
  */
-let activeProgressBar: ProgressBar | undefined;
-
-export function getActiveProgressBar(): ProgressBar | undefined {
-    return activeProgressBar;
-}
-
-function setActiveProgressBar(bar: ProgressBar): void {
-    activeProgressBar = bar;
-}
-
-function clearActiveProgressBar(bar: ProgressBar): void {
-    if (activeProgressBar === bar) {
-        activeProgressBar = undefined;
+function colorSupported(stream: NodeJS.WriteStream): boolean {
+    const { FORCE_COLOR, NO_COLOR } = process.env;
+    if (FORCE_COLOR !== undefined && FORCE_COLOR !== '0' && FORCE_COLOR !== '') {
+        return true;
     }
+    if (NO_COLOR !== undefined && NO_COLOR !== '') {
+        return false;
+    }
+    return stream.isTTY === true;
+}
+
+/** Minimal, dependency-free ANSI colouring; a no-op when colour is disabled. */
+class AnsiPainter {
+    constructor(private readonly enabled: boolean) { }
+    private paint(code: number, text: string) {
+        return this.enabled ? `${ESC}[${code}m${text}${RESET}` : text;
+    }
+    public readonly bold = (text: string) => this.paint(1, text);
+    public readonly dim = (text: string) => this.paint(2, text);
+    public readonly cyan = (text: string) => this.paint(36, text);
+    public readonly green = (text: string) => this.paint(32, text);
+    public readonly white = (text: string) => this.paint(37, text);
+    public readonly gray = (text: string) => this.paint(90, text);
 }
 
 export interface ProgressBarState {
@@ -37,8 +45,7 @@ export interface ProgressBarState {
     value?: number;
     /**
      * Total number of units of work. May grow over time when the total is not known up-front; the
-     * underlying {@link ProgressTracker} treats the total as a moving target and clamps the visual
-     * ratio to 100%.
+     * underlying {@link ProgressTracker} treats the total as a moving target and clamps the ratio.
      */
     total?: number;
     /**
@@ -60,13 +67,14 @@ export interface ProgressBarState {
 
 export interface ProgressBarOptions extends ProgressBarState {
     /**
-     * Stream to render to; defaults to `process.stdout`. The stream is expected to be a TTY; the
-     * caller is responsible for deciding whether interactive rendering is appropriate.
+     * Stream to render to; defaults to `process.stdout`. The stream is expected to be a TTY — the
+     * caller is responsible for deciding whether interactive rendering is appropriate (see
+     * {@link ProgressBar.isInteractive}).
      */
     stream?: NodeJS.WriteStream;
     /**
      * Tracker to render. When omitted a standalone tracker is created from the seed state. Pass an
-     * existing tracker to share one model between the bar and another consumer (e.g. a reporter).
+     * existing tracker to share one model between the bar and another consumer.
      */
     tracker?: ProgressTracker;
     /**
@@ -81,16 +89,26 @@ export interface ProgressBarOptions extends ProgressBarState {
 }
 
 /**
- * Renders an animated, multi-line progress block that sticks to the bottom of the terminal: a gauge
- * line plus any number of caller-supplied summary lines. The whole block is redrawn in place on each
- * tick, so the summary lines act as a live, compact dashboard rather than scrolling output.
+ * An animated, multi-line progress bar that sticks to the bottom of a terminal: a gauge line (with
+ * spinner, percentage, count, throughput and ETA/elapsed) plus any number of caller-supplied summary
+ * lines. The whole block is redrawn in place on each tick, so the summary lines act as a live, compact
+ * dashboard rather than scrolling output.
  *
- * While active, the bar registers itself as {@link getActiveProgressBar the active bar} so a
- * {@link ProgressAwareLogWriter} can keep ordinary log output from corrupting the display.
+ * The bar is a pure renderer over a {@link ProgressTracker} — it carries no global state, so multiple
+ * independent bars can exist (though only one should own a given stream at a time). It uses raw ANSI
+ * escapes and has no third-party dependencies; colour is auto-detected from the stream and honours
+ * `NO_COLOR`/`FORCE_COLOR`.
  *
- * The bar is a pure renderer: all progress figures come from its {@link ProgressTracker}. Deciding
- * whether a terminal is interactive enough to show a bar is left to the caller (see
- * {@link ExportProgressReporter}).
+ * @example
+ * ```typescript
+ * const bar = new ProgressBar({ label: 'Building', total: files.length });
+ * bar.start();
+ * for (const [i, file] of files.entries()) {
+ *     await build(file);
+ *     bar.update({ value: i + 1, message: file });
+ * }
+ * bar.stop('✔ Build complete');
+ * ```
  */
 export class ProgressBar {
 
@@ -98,6 +116,7 @@ export class ProgressBar {
     private readonly tracker: ProgressTracker;
     private readonly barWidth: number;
     private readonly refreshIntervalMs: number;
+    private readonly paint: AnsiPainter;
 
     private details: string[] | (() => string[]) = [];
     private spinnerFrame = 0;
@@ -112,6 +131,7 @@ export class ProgressBar {
         this.stream = options.stream ?? process.stdout;
         this.barWidth = options.barWidth ?? 24;
         this.refreshIntervalMs = options.refreshIntervalMs ?? 120;
+        this.paint = new AnsiPainter(colorSupported(this.stream));
         this.tracker = options.tracker ?? new ProgressTracker({ label: options.label });
         if (!options.tracker) {
             this.tracker.report(options.value, options.total);
@@ -129,7 +149,15 @@ export class ProgressBar {
     }
 
     /**
-     * Show the bar and start animating. Hides the cursor and registers as the active bar.
+     * Whether the target stream is a TTY, i.e. whether an animated bar makes sense at all. Callers
+     * typically also consider CI/verbose-logging conditions before choosing to render one.
+     */
+    public get isInteractive() {
+        return this.stream.isTTY === true;
+    }
+
+    /**
+     * Show the bar and start animating. Hides the cursor and begins the refresh loop.
      */
     public start(state?: ProgressBarState) {
         if (this.active) {
@@ -138,7 +166,6 @@ export class ProgressBar {
         this.applyState(state);
         this.tracker.start();
         this.active = true;
-        setActiveProgressBar(this);
         this.writeRaw(HIDE_CURSOR);
         process.once('exit', this.restoreOnExit);
         this.timer = setInterval(() => this.tick(), this.refreshIntervalMs);
@@ -195,7 +222,6 @@ export class ProgressBar {
         }
         this.eraseBlock();
         this.active = false;
-        clearActiveProgressBar(this);
         process.removeListener('exit', this.restoreOnExit);
         if (finalLine) {
             this.stream.write(`${finalLine}\n`);
@@ -251,7 +277,7 @@ export class ProgressBar {
         if (!this.barOnScreen || this.renderedLines <= 1) {
             return '\r';
         }
-        return `\x1B[${this.renderedLines - 1}A\r`;
+        return `${ESC}[${this.renderedLines - 1}A\r`;
     }
 
     private composeBlock(): string[] {
@@ -259,30 +285,30 @@ export class ProgressBar {
         const block = [this.composeGauge(columns)];
         const details = typeof this.details === 'function' ? this.details() : this.details;
         for (const detail of details) {
-            block.push(`   ${chalk.dim(truncate(detail, Math.max(0, columns - 3)))}`);
+            block.push(`   ${this.paint.dim(truncate(detail, Math.max(0, columns - 3)))}`);
         }
         return block;
     }
 
     private composeGauge(columns: number): string {
-        const spinner = chalk.cyan(SPINNER_FRAMES[this.spinnerFrame]);
+        const spinner = this.paint.cyan(SPINNER_FRAMES[this.spinnerFrame]);
         const gauge = this.tracker.indeterminate ? this.renderIndeterminate() : this.renderGauge(this.tracker.ratio);
 
         const segments = [
             spinner,
-            this.tracker.label && chalk.bold(this.tracker.label),
+            this.tracker.label && this.paint.bold(this.tracker.label),
             gauge,
-            chalk.green(this.tracker.percentText.padStart(4)),
-            chalk.white(this.tracker.countText),
-            chalk.dim(this.tracker.rateText),
-            this.tracker.etaText && chalk.dim(this.tracker.etaText)
+            this.paint.green(this.tracker.percentText.padStart(4)),
+            this.paint.white(this.tracker.countText),
+            this.paint.dim(this.tracker.rateText),
+            this.paint.dim(this.tracker.timeText)
         ].filter(Boolean) as string[];
 
         let line = segments.join('  ');
         if (this.tracker.message) {
             const room = columns - visibleLength(line) - 3;
             if (room > 4) {
-                line += `${chalk.dim('  · ')}${chalk.gray(truncate(this.tracker.message, room))}`;
+                line += `${this.paint.dim('  · ')}${this.paint.gray(truncate(this.tracker.message, room))}`;
             }
         }
         return line;
@@ -290,17 +316,17 @@ export class ProgressBar {
 
     private renderGauge(ratio: number): string {
         const filled = Math.round(ratio * this.barWidth);
-        return chalk.dim('▕') +
-            chalk.cyan('█'.repeat(filled)) +
-            chalk.gray('░'.repeat(this.barWidth - filled)) +
-            chalk.dim('▏');
+        return this.paint.dim('▕') +
+            this.paint.cyan('█'.repeat(filled)) +
+            this.paint.gray('░'.repeat(this.barWidth - filled)) +
+            this.paint.dim('▏');
     }
 
     private renderIndeterminate(): string {
         const position = this.spinnerFrame % this.barWidth;
         const cells = Array.from({ length: this.barWidth }, (_, index) =>
-            index === position ? chalk.cyan('█') : chalk.gray('░'));
-        return `${chalk.dim('▕')}${cells.join('')}${chalk.dim('▏')}`;
+            index === position ? this.paint.cyan('█') : this.paint.gray('░'));
+        return `${this.paint.dim('▕')}${cells.join('')}${this.paint.dim('▏')}`;
     }
 
     /**
@@ -312,7 +338,6 @@ export class ProgressBar {
             return;
         }
         this.active = false;
-        clearActiveProgressBar(this);
         this.stream.write(SHOW_CURSOR);
     }
 
@@ -322,7 +347,7 @@ export class ProgressBar {
 }
 
 /**
- * Visible length of a string, ignoring ANSI color escape codes.
+ * Visible length of a string, ignoring ANSI colour escape codes.
  */
 function visibleLength(text: string): number {
     return text.replace(ANSI_PATTERN, '').length;
