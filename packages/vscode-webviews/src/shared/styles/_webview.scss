@@ -319,14 +319,14 @@ vlo-designer-card {
         border-bottom: 1px solid $panel;
         border-radius: $radius-surface $radius-surface 0 0;
         background: $surface-alt;
-        cursor: grab;
+        cursor: pointer;
 
         > div {
             min-width: 0;
         }
 
         &:active {
-            cursor: grabbing;
+            cursor: pointer;
         }
     }
 
@@ -385,16 +385,30 @@ vlo-designer-card {
     }
 
     &__icon {
-        flex: 0 0 auto;
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 40px;
         width: 40px;
         height: 40px;
         border-radius: $radius-surface;
         color: var(--vscode-button-foreground);
         font-size: 22px;
+        line-height: 1;
         background: var(--vscode-button-background);
 
         &.codicon[class*='codicon-'] {
-            @include centered-codicon(22px);
+            display: inline-grid;
+            place-items: center;
+            width: 40px;
+            height: 40px;
+            font-size: 22px;
+            line-height: 1;
+
+            &::before {
+                display: block;
+                font-size: 22px;
+                line-height: 1;
+            }
         }
     }
 

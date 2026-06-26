@@ -29,11 +29,23 @@ export class VlocodeDesignerCardComponent {
 
     protected readonly expanded = signal(false);
 
-    protected toggleExpanded() {
+    protected toggleExpanded(event?: MouseEvent) {
+        event?.stopPropagation();
         this.expanded.update(expanded => !expanded);
+    }
+
+    protected toggleExpandedFromHeader(event: MouseEvent) {
+        if (this.isInteractiveHeaderTarget(event.target)) {
+            return;
+        }
+        this.toggleExpanded(event);
     }
 
     protected toggleLabel() {
         return `${this.expanded() ? 'Collapse' : 'Expand'} ${this.toggleName()}`;
+    }
+
+    private isInteractiveHeaderTarget(target: EventTarget | null) {
+        return target instanceof Element && !!target.closest('.vlo-designer-card__actions, button, a, input, select, textarea, [role="button"]');
     }
 }
