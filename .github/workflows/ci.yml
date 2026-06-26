@@ -34,6 +34,10 @@ jobs:
         run: pnpm lint -o eslint-report.json --format json || true
 
       - name: SonarQube Scan
+        # secrets.SONAR_TOKEN is not exposed to fork/Dependabot PRs, so skip
+        # Sonar there (build + tests still give a green signal). Runs on
+        # same-repo PRs and on pushes to main.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: SonarSource/sonarqube-scan-action@v7
         env:
           GITHUB_TOKEN: ${{ github.token }}
