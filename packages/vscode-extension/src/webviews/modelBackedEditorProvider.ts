@@ -252,8 +252,32 @@ export abstract class ModelBackedEditorProvider<
             case 'viewSource':
                 await vscode.commands.executeCommand('vscode.openWith', document.data.uri, 'default', { preview: false });
                 return true;
+            case 'clipboard':
+                await this.handleClipboardMessage(webviewPanel.webview, message);
+                return true;
             default:
                 return false;
+        }
+    }
+
+    private async handleClipboardMessage(webview: vscode.Webview, message: EditorMessage<TModel>): Promise<void> {
+        const requestId = typeof message.requestId === 'string' ? message.requestId : undefined;
+        if (!requestId) {
+            return;
+        }
+        try {
+            if (message.operation === 'read') {
+                webview.postMessage({ type: 'clipboardResponse', requestId, text: await vscode.env.clipboard.readText() });
+                return;
+            }
+            if (message.operation === 'write') {
+                await vscode.env.clipboard.writeText(typeof message.text === 'string' ? message.text : '');
+                webview.postMessage({ type: 'clipboardResponse', requestId });
+                return;
+            }
+            webview.postMessage({ type: 'clipboardResponse', requestId, error: 'Unsupported clipboard operation.' });
+        } catch (error) {
+            webview.postMessage({ type: 'clipboardResponse', requestId, error: getErrorMessage(error) });
         }
     }
 
