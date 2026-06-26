@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, Iterable, mapAsync, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
+import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, Iterable, mapAsync, mapAsyncParallel, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -50,10 +50,19 @@ interface DeferredEmbedded {
     readonly objectType: string;
     readonly filter: Record<string, any> | Record<string, any>[];
     readonly limit?: number;
+    readonly sortFields?: string[];
     readonly context: ExportContext;
 }
 
+/**
+ * Phase of the export pipeline a progress update belongs to. `export` covers querying and building
+ * datapacks; `expand` covers expanding them into their file structure. Writing to disk is driven by
+ * the caller and is not reported here.
+ */
+export type DatapackExportPhase = 'export' | 'expand';
+
 export interface DatapackExportProgress {
+    readonly phase: DatapackExportPhase;
     readonly id: string;
     readonly sourceKey?: string;
     readonly status: 'completed' | 'failed';
@@ -157,7 +166,7 @@ class ExportProgressTracker {
     /** Mark `count` records finished and emit a progress update. */
     public report(count: number, status: 'completed' | 'failed', id = '', sourceKey?: string) {
         this.completed += count;
-        this.onProgress?.({ id, sourceKey, status, progress: this.completed, total: this.discovered.size });
+        this.onProgress?.({ phase: 'export', id, sourceKey, status, progress: this.completed, total: this.discovered.size });
     }
 }
 
@@ -193,9 +202,12 @@ export class DatapackExporter {
         'DeveloperName'
     ];
 
-    private readonly ignoredObjects = [
-        'RecordType', 'User', 'Group', 'GroupMember'
-    ];
+    private readonly standardObjects = {
+        'RecordType': [ 'DeveloperName' ], 
+        'User': [ 'Username' ],
+        'Group': [ 'DeveloperName' ],
+        'GroupMember': []
+    };
 
     private lookupCache = new Map<string, Record<string, any> | null>();
     private datapacks = new Map<string, ExportDatapack>();
@@ -407,13 +419,22 @@ export class DatapackExporter {
                     datapackType: exportResult.datapackType,
                 })
             );
+            context?.onProgress?.({
+                phase: 'expand',
+                id: exportResult.sourceKey,
+                sourceKey: exportResult.sourceKey,
+                status: 'completed',
+                progress: expanded.length,
+                total: exportResults.length
+            });
         }
         return expanded;
     }
 
     private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null> {
         const describe = await this.salesforce.schema.describeSObjectById(record.Id);
-        const matchingKey = await this.getMatchingKey(describe, record, context.scope);
+        const datapackType = context.datapackType ?? this.inferDatapackType(describe.name, context?.scope);
+        const matchingKey = await this.getMatchingKey(describe, record, context.scope, datapackType, { allowGeneratedKey: context.embedded === true });
         const exportStack = this.getExportPath(context.parent);
         this.logger.verbose(`Build ${describe.name} (${record.Id}) datapack: ${matchingKey}`);
 
@@ -435,10 +456,9 @@ export class DatapackExporter {
             throw new Error(`Cannot export ${describe.name} (${record.Id}): top-level datapacks require a matching key but none could be determined`);
         }
 
-        const type = context.datapackType ?? this.inferDatapackType(describe.name, context?.scope);
         const datapack: ExportDatapack = {
             id: record.Id,
-            datapackType: type,
+            datapackType,
             objectType: describe.name,
             normalizedObjectType: removeNamespacePrefix(describe.name),
             scope: context?.scope,
@@ -483,19 +503,24 @@ export class DatapackExporter {
     }
 
     private async exportObjectFields(datapack: ExportDatapack, record: Record<string, any>, context: ExportContext) {
-        // Set datapack fields
-        await forEachAsyncParallel(datapack.schema.fields, async (field) => {
+        // Field values are resolved in parallel (some require lookups/embedded builds) but assigned in a
+        // deterministic, stable order so re-exports don't churn the datapack output. Fields are sorted by
+        // name to match the alphabetical ordering the expander applies to the top-level datapack, keeping
+        // nested embedded-record fields (which the expander does not re-sort) consistent and stable.
+        const fields = [...datapack.schema.fields].sort((a, b) => a.name.localeCompare(b.name));
+        const resolved = await mapAsyncParallel(fields, async (field) => {
             let value = record[field.name];
 
-            if (this.ignoreField(datapack.schema, field, datapack.scope)) {
-                return;
+            if (this.ignoreField(datapack, field)) {
+                return undefined;
             }
 
             // Export as reference
             if (field.referenceTo?.length && value) {
-                if (value.startsWith('005')) {
-                    // Hack: always ignore user references
-                    return;
+                if (value.startsWith('005') && !field.name.endsWith('__c')) {
+                    // Hack: ignore standard user references (e.g. OwnerId), but keep custom (__c)
+                    // user lookup fields so they are exported as matching-key references.
+                    return undefined;
                 }
 
                 if (this.definitions.isEmbeddedObject(datapack, field.name)) {
@@ -510,12 +535,17 @@ export class DatapackExporter {
             // Generated source keys are content hashes; omit null SObject fields
             // so optional fields do not make generated output noisy.
             if (value === null && (context.suppressNulls === true || datapack.generatedSourceKey)) {
-                return;
+                return undefined;
             }
 
-            // Set datapack field
-            this.setDatapackField(datapack, field.name, value);
+            return { fieldName: field.name, value };
         }, this.exportParallelism);
+
+        for (const field of resolved) {
+            if (field) {
+                this.setDatapackField(datapack, field.fieldName, field.value);
+            }
+        }
     }
 
     private setDatapackField(datapack: ExportDatapack, fieldName: string, value: any) {
@@ -553,15 +583,15 @@ export class DatapackExporter {
         // Export embedded objects
         for (const embeddedObject of this.definitions.getEmbeddedObjects(datapack)) {
             try {
-                const { name, objectType, filter, limit } = this.resolveEmbeddedLookup(datapack, embeddedObject);
+                const { name, objectType, filter, limit, sortFields } = this.resolveEmbeddedLookup(datapack, embeddedObject);
 
                 // Object filters (and arrays of object clauses) are deferred so the child records for all
                 // parents in the chunk can be looked up in a single batched query (see resolveEmbeddedObjects).
                 // Only raw SOQL string filters cannot be grouped back per parent and are resolved inline.
                 if (this.isBatchableFilter(filter)) {
-                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, context });
+                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, sortFields, context });
                 } else {
-                    const records = await this.lookupWithFilter(objectType, filter, limit);
+                    const records = this.sortRecords(await this.lookupWithFilter(objectType, filter, limit), sortFields);
                     if (records.length) {
                         datapack.data[name] = await mapAsync(records, record => this.buildEmbeddedSObject(datapack, record, context));
                     }
@@ -575,7 +605,7 @@ export class DatapackExporter {
         }
     }
 
-    private resolveEmbeddedLookup(datapack: ExportDatapack, embeddedObject: { name: string } & (ObjectFilter | ObjectRelationship)) {
+    private resolveEmbeddedLookup(datapack: ExportDatapack, embeddedObject: { name: string, sortFields?: string[] } & (ObjectFilter | ObjectRelationship)) {
         const objectFilter = 'relationshipName' in embeddedObject
             ? this.getObjectFilterFromRelationship(datapack, embeddedObject)
             : embeddedObject;
@@ -586,7 +616,42 @@ export class DatapackExporter {
         }
 
         this.logger.verbose(`Lookup ${objectFilter.objectType} (${datapack.objectType}) using filter:`, filter);
-        return { name: embeddedObject.name, objectType: objectFilter.objectType, filter, limit: objectFilter.limit };
+        return { name: embeddedObject.name, objectType: objectFilter.objectType, filter, limit: objectFilter.limit, sortFields: embeddedObject.sortFields };
+    }
+
+    /**
+     * Sort records by the configured sortFields, falling back to Id, so embedded/related record arrays
+     * are deterministic across exports -- Salesforce query order (especially batched OR queries) is not
+     * guaranteed stable. Returns a new sorted array and does not mutate the input.
+     */
+    private sortRecords<T extends Record<string, any>>(records: T[], sortFields?: string[]): T[] {
+        const fields = sortFields?.length ? sortFields : ['Id'];
+        return [...records].sort((a, b) => {
+            for (const field of fields) {
+                const compare = this.compareFieldValues(a[field], b[field]);
+                if (compare !== 0) {
+                    return compare;
+                }
+            }
+            return 0;
+        });
+    }
+
+    private compareFieldValues(a: unknown, b: unknown): number {
+        if (a === b) {
+            return 0;
+        }
+        // Sort nullish values last so they don't shuffle around between exports.
+        if (a === undefined || a === null) {
+            return 1;
+        }
+        if (b === undefined || b === null) {
+            return -1;
+        }
+        if (typeof a === 'number' && typeof b === 'number') {
+            return a - b;
+        }
+        return String(a).localeCompare(String(b));
     }
 
     private isBatchableFilter(filter: unknown): filter is Record<string, any> | Record<string, any>[] {
@@ -618,8 +683,10 @@ export class DatapackExporter {
                 });
 
                 await forEachAsyncParallel(entries, async (entry, entryIndex) => {
-                    // Limit is applied client-side; the batched OR query cannot enforce a per-parent limit.
-                    const records = [...recordsByEntry[entryIndex].values()].slice(0, entry.limit || undefined);
+                    // Sort before applying the limit so a stable, deterministic subset is kept. Limit is
+                    // applied client-side; the batched OR query cannot enforce a per-parent limit.
+                    const records = this.sortRecords([...recordsByEntry[entryIndex].values()], entry.sortFields)
+                        .slice(0, entry.limit || undefined);
                     if (records.length === 0) {
                         return;
                     }
@@ -902,7 +969,7 @@ export class DatapackExporter {
 
         if (
             lookup.VlocityDataPackType === "VlocityLookupMatchingKeyObject" && 
-            !this.ignoredObjects.includes(lookup.VlocityRecordSObjectType)
+            !this.standardObjects[lookup.VlocityRecordSObjectType]
         ) {
             const currentRefId = datapack.foreignKeys[lookup.VlocityLookupRecordSourceKey];
             if (currentRefId && currentRefId !== refId) {
@@ -1189,19 +1256,31 @@ export class DatapackExporter {
         this.generatedSourceKeys.delete(sourceKey);
     }
 
-    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string) {
+    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, datapackType?: string, options?: { allowGeneratedKey?: boolean }) {
         if (!data['id']) {
             throw new Error('Missing id field in data');
         }
 
-        const autoGenerate = this.definitions.isAutoGeneratedMatchingKey({ objectType: describe.name, scope });
+        // Auto-generated (content-less) matching keys are only valid for embedded records. Top-level
+        // datapacks must resolve to a real, unique matching key, so we fail here instead of silently
+        // falling back to a generated key.
+        const allowGeneratedKey = options?.allowGeneratedKey ?? true;
+
+        // Referenced objects (lookups) are resolved without an explicit datapack type; infer it from
+        // the SObject type so datapack-type-scoped config (e.g. autoGeneratedMatchingKey) still applies.
+        datapackType ??= this.inferDatapackType(describe.name, scope);
+
+        const autoGenerate = this.definitions.isAutoGeneratedMatchingKey({ datapackType, objectType: describe.name, scope });
         if (autoGenerate) {
+            if (!allowGeneratedKey) {
+                throw new Error(`Cannot export ${describe.name} (${data['id']}): configured with an auto-generated matching key, which is not allowed for top-level datapacks -- define matchingKeyFields for ${describe.name}`);
+            }
             return this.getAutoMatchingKey(describe, data['id'], scope);
         }
 
         // Avoid async operations after checking for a cached entry to avoid
         // non-deterministic behavior when multiple requests are made for the same object
-        const matchingKeyFields = await this.getMatchingFields(describe, scope);
+        const matchingKeyFields = await this.getMatchingFields(describe, scope, datapackType);
 
         // Use cached matching key if available
         const matchingKeyEntry = [scope, data['id']].filter(p => p).join('/');
@@ -1210,9 +1289,12 @@ export class DatapackExporter {
             return cachedMatchingKey;
         }
 
-        // If matching key fields are empty use auto-generated matching key
+        // If matching key fields are empty fall back to an auto-generated key (embedded records only).
         const allFieldsEmpty = matchingKeyFields.every(field => data[field] === '' || data[field] === undefined || data[field] === null);
         if (allFieldsEmpty) {
+            if (!allowGeneratedKey) {
+                throw new Error(`Cannot export ${describe.name} (${data['id']}): all matching key fields [${matchingKeyFields.join(', ')}] are empty and auto-generated matching keys are not allowed for top-level datapacks`);
+            }
             if (matchingKeyFields.length > 0) {
                 this.logger.warn(`${data['id']} (${describe.name}) all matching key fields [${matchingKeyFields.join(',')}] empty -- using auto-generated matching key instead`);
             }
@@ -1261,7 +1343,8 @@ export class DatapackExporter {
         return `${objectType}/auto-generated/${hash}`;
     }
 
-    private ignoreField(type: DescribeSObjectResult, field: Field, scope?: string) {
+    private ignoreField(datapack: ExportDatapack, field: Field) {
+        const type = datapack.schema;
         if (field.autoNumber || field.calculated) {
             this.logger.debug(`Ignore field ${field.name} on ${type.name} as it is auto-number or calculated`);
             return true;
@@ -1277,8 +1360,9 @@ export class DatapackExporter {
             return true;
         }
 
-        if (this.definitions.isFieldIgnored({ objectType: type.name, scope }, field.name)) {
-            this.logger.debug(`Ignore field ${field.name} on ${type.name} (scope: ${scope}) as it is explicitly ignored by config`);
+        const objectRef = { datapackType: datapack.datapackType, objectType: type.name, scope: datapack.scope };
+        if (this.definitions.isFieldIgnored(objectRef, field.name)) {
+            this.logger.debug(`Ignore field ${field.name} on ${type.name} (datapack: ${datapack.datapackType}, scope: ${datapack.scope}) as it is explicitly ignored by config`);
             return true;
         }
 
@@ -1300,8 +1384,13 @@ export class DatapackExporter {
         }
     }
 
-    private async getMatchingFields(type: DescribeSObjectResult, scope?: string) {
-        if (this.definitions.isAutoGeneratedMatchingKey({ objectType: type.name, scope })) {
+    private async getMatchingFields(type: DescribeSObjectResult, scope?: string, datapackType?: string) {
+        if (this.standardObjects[type.name]) {
+            return this.standardObjects[type.name];
+        }
+
+        datapackType ??= this.inferDatapackType(type.name, scope);
+        if (this.definitions.isAutoGeneratedMatchingKey({ datapackType, objectType: type.name, scope })) {
             return [];
         }
 
