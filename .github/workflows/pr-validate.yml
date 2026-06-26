@@ -6,12 +6,15 @@ name: PR Validate
 #   3. basic static code analysis (CodeQL)
 # The build + unit-test job is secret-free and runs on fork PRs too,
 # unlike ci.yml's SonarCloud step which needs the SONAR_TOKEN secret. The
-# CodeQL job only runs for same-repo PRs, because uploading results to code
-# scanning needs `security-events: write`, which GITHUB_TOKEN does not grant
-# for pull_request runs originating from forks.
+# CodeQL job only runs for same-repo PRs (uploading to code scanning needs
+# `security-events: write`, which GITHUB_TOKEN does not grant for fork PRs)
+# and on pushes to main, to keep the code-scanning baseline up to date so
+# that PR analysis only flags newly introduced alerts.
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch: {}
 
@@ -26,6 +29,10 @@ jobs:
   build-and-test:
     name: Build & Unit Tests
     runs-on: ubuntu-latest
+    # On push to main the full CI pipeline (ci.yml) already builds and tests,
+    # so skip here to avoid duplicate work; the CodeQL job still runs on push
+    # to refresh its baseline.
+    if: ${{ github.event_name != 'push' }}
 
     steps:
       - name: Checkout
@@ -66,12 +73,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           build-mode: none
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript-typescript'
