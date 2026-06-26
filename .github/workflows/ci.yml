@@ -34,6 +34,10 @@ jobs:
         run: pnpm lint -o eslint-report.json --format json || true
 
       - name: SonarQube Scan
+        # secrets.SONAR_TOKEN is not exposed to fork/Dependabot PRs, so skip
+        # Sonar there (build + tests still give a green signal). Runs on
+        # same-repo PRs and on pushes to main.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: SonarSource/sonarqube-scan-action@v7
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -59,3 +63,33 @@ jobs:
             eslint-report.json
           if-no-files-found: warn
           retention-days: 14
+
+  static-analysis:
+    name: Static Analysis (CodeQL)
+    runs-on: ubuntu-latest
+    # Free SAST, complementing the SonarQube scan above. Runs for same-repo
+    # PRs and on pushes to main (to keep the code-scanning baseline fresh).
+    # Skipped on fork PRs because the SARIF upload needs `security-events:
+    # write`, which GITHUB_TOKEN does not grant there, and on [skip-main-ci]
+    # release commits.
+    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip-main-ci]')) }}
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript-typescript'
