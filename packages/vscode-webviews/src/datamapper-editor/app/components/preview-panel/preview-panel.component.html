@@ -2,7 +2,7 @@
     <header class="dm-preview__top">
         <div>
             <h2>Preview</h2>
-            <p>{{ queryCount() }} queries · {{ resultCount() }} rows · {{ totalDuration() }}</p>
+            <p>{{ queryCount() }} queries · {{ resultCount() }} rows · {{ warningCount() }} warnings · {{ totalDuration() }}</p>
         </div>
         <button type="button" class="dm-button dm-button--primary" [disabled]="running() || !!inputError()" (click)="runPreview.emit()">
             <span class="codicon" [class.codicon-play]="!running()" [class.codicon-loading]="running()" [class.codicon-modifier-spin]="running()" aria-hidden="true"></span>
@@ -43,36 +43,48 @@
             <section class="dm-preview__pane dm-preview__pane--debug" aria-label="Preview query debug">
                 <header class="dm-preview__pane-header">
                     <h3>Debug</h3>
-                    <span>{{ queryCount() }} queries</span>
+                    <span>{{ queryCount() }} queries · {{ warningCount() }} warnings</span>
                 </header>
-                <div class="dm-preview__debug-table-wrap">
-                    <table class="dm-preview__debug-table">
-                        <thead>
-                            <tr>
-                                <th>SOQL</th>
-                                <th>Rows</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (query of debug()?.queries ?? []; track $index) {
-                                <tr [class.dm-preview__debug-row--error]="!!query.error">
-                                    <td>
-                                        <code>{{ query.soql }}</code>
-                                        @if (query.error) {
-                                            <small>{{ query.error }}</small>
-                                        }
-                                    </td>
-                                    <td>{{ query.resultCount }}</td>
-                                    <td>{{ formatDuration(query.durationMs) }}</td>
-                                </tr>
-                            } @empty {
-                                <tr>
-                                    <td colspan="3" class="dm-preview__debug-empty">No queries executed.</td>
-                                </tr>
+                <div class="dm-preview__debug-log">
+                    @if ((debug()?.warnings?.length ?? 0) > 0) {
+                        <div class="dm-preview__warnings" aria-label="Preview warnings">
+                            @for (warning of debug()?.warnings ?? []; track $index) {
+                                <div class="dm-preview__warning">
+                                    <span class="codicon codicon-warning" aria-hidden="true"></span>
+                                    <span>{{ warning.message }}</span>
+                                </div>
                             }
-                        </tbody>
-                    </table>
+                        </div>
+                    }
+                    <div class="dm-preview__debug-table-wrap">
+                        <table class="dm-preview__debug-table">
+                            <thead>
+                                <tr>
+                                    <th>SOQL</th>
+                                    <th>Rows</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (query of debug()?.queries ?? []; track $index) {
+                                    <tr [class.dm-preview__debug-row--error]="!!query.error">
+                                        <td>
+                                            <code>{{ query.soql }}</code>
+                                            @if (query.error) {
+                                                <small>{{ query.error }}</small>
+                                            }
+                                        </td>
+                                        <td>{{ query.resultCount }}</td>
+                                        <td>{{ formatDuration(query.durationMs) }}</td>
+                                    </tr>
+                                } @empty {
+                                    <tr>
+                                        <td colspan="3" class="dm-preview__debug-empty">No queries executed.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </div>

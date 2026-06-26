@@ -5,7 +5,7 @@ import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
 import { deepClone, getErrorMessage, isRecord } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
-import { DataMapperExecutor, DatapackInfoService, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition } from '@vlocode/vlocity';
+import { DataMapperExecutor, DatapackInfoService, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition, type DataMapperExecutionWarning } from '@vlocode/vlocity';
 import { MetadataConverter } from '@vlocode/vlocity-deploy';
 import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
 import { VlocodeContext } from '../lib/vlocodeContext';
@@ -67,6 +67,7 @@ interface DataMapperPreviewQuery {
 
 interface DataMapperPreviewDebug {
     queries: DataMapperPreviewQuery[];
+    warnings: DataMapperExecutionWarning[];
     totalDurationMs: number;
 }
 
@@ -125,7 +126,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 return true;
             }
             case 'preview': {
-                const debug: DataMapperPreviewDebug = { queries: [], totalDurationMs: 0 };
+                const debug: DataMapperPreviewDebug = { queries: [], warnings: [], totalDurationMs: 0 };
                 const start = Date.now();
                 try {
                     const output = await this.executePreview(message.model ?? document.data.model, message.input, debug);
@@ -171,6 +172,46 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
             ...model.header,
             OmniDataTransformItem: model.items
         };
+        const warningKeys = new Set<string>();
+        const onWarning = (warning: DataMapperExecutionWarning) => {
+            const key = [
+                warning.code,
+                warning.objectName,
+                warning.fieldName,
+                warning.outputPath,
+                warning.sequence,
+                warning.expression,
+                warning.message
+            ].join('\u001f');
+            if (!warningKeys.has(key)) {
+                warningKeys.add(key);
+                debug.warnings.push(warning);
+            }
+        };
+        const fieldValidationCache = new Map<string, Promise<boolean>>();
+        const validateField = (objectName: string, fieldName: string): Promise<boolean> => {
+            if (!this.service.isInitialized) {
+                return Promise.resolve(true);
+            }
+            const cacheKey = `${objectName}\u001f${fieldName}`.toLowerCase();
+            let validation = fieldValidationCache.get(cacheKey);
+            if (!validation) {
+                validation = this.service.salesforceService.schema
+                    .describeSObjectFieldPath(objectName, fieldName, false)
+                    .then(result => !!result)
+                    .catch(error => {
+                        onWarning({
+                            code: 'fieldValidationFailed',
+                            objectName,
+                            fieldName,
+                            message: `Could not validate field "${fieldName}" on ${objectName}: ${getErrorMessage(error)}`
+                        });
+                        return true;
+                    });
+                fieldValidationCache.set(cacheKey, validation);
+            }
+            return validation;
+        };
         const queryRunner = {
             query: async (soql: string): Promise<Record<string, unknown>[]> => {
                 const start = Date.now();
@@ -196,7 +237,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 }
             }
         };
-        return new DataMapperExecutor().execute(definition, input, { queryRunner });
+        return new DataMapperExecutor().execute(definition, input, { queryRunner, validateField, onWarning });
     }
 
     private getDataMapperKind(model: DataMapperModel) {

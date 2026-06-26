@@ -75,8 +75,19 @@ export interface DataMapperPreviewQuery {
     error?: string;
 }
 
+export interface DataMapperPreviewWarning {
+    code: string;
+    message: string;
+    objectName?: string;
+    fieldName?: string;
+    outputPath?: string;
+    sequence?: number;
+    expression?: string;
+}
+
 export interface DataMapperPreviewDebug {
     queries: DataMapperPreviewQuery[];
+    warnings: DataMapperPreviewWarning[];
     totalDurationMs: number;
 }
 
