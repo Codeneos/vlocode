@@ -431,6 +431,15 @@ vlo-designer-card {
     }
 }
 
+vlo-key-value-map-editor {
+    display: block;
+    min-width: 0;
+
+    + vlo-key-value-map-editor {
+        margin-top: 18px;
+    }
+}
+
 .vlocode-map-editor {
     display: grid;
     gap: 10px;
@@ -457,23 +466,32 @@ vlo-designer-card {
         align-items: end;
         gap: 10px;
 
-        > input,
-        .vlocode-map-editor__value > input {
+        > input {
             @include control;
         }
     }
+}
 
-    &__value {
-        display: grid;
+.vlocode-formula-input {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+
+    &--with-button {
         grid-template-columns: minmax(0, 1fr) 32px;
+    }
+
+    &__control {
+        @include control;
         min-width: 0;
     }
 
-    &__value > input {
+    &--with-button &__control {
+        border-right-color: transparent;
         border-radius: $radius-control 0 0 $radius-control;
     }
 
-    &__formula-button {
+    &__button {
         @include button;
         display: inline-grid;
         place-items: center;
@@ -490,10 +508,21 @@ vlo-designer-card {
     &__dialog-body {
         display: grid;
         gap: 12px;
-        min-width: min(720px, calc(100vw - 96px));
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+
+        .vlocode-field {
+            min-width: 0;
+
+            > input {
+                min-width: 0;
+            }
+        }
     }
 
     &__formula {
+        min-width: 0;
         height: min(300px, calc(100vh - 320px));
         min-height: 180px;
 
