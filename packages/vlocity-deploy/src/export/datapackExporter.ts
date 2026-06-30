@@ -203,7 +203,7 @@ export class DatapackExporter {
     ];
 
     private readonly standardObjects = {
-        'RecordType': [ 'DeveloperName' ], 
+        'RecordType': [ 'SobjectType', 'DeveloperName' ], 
         'User': [ 'Username' ],
         'Group': [ 'DeveloperName' ],
         'GroupMember': []
