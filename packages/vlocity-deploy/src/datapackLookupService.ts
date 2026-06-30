@@ -161,6 +161,17 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         const records = await this.lookupMultiple(lookupRequests);
 
         // map record results back to lookup requests
+        // Track which lookup requests resolved to each matched record ID so duplicate matches can be
+        // detected in O(1); the previous `Object.entries(lookupResults).filter(...)` rescanned all
+        // prior results for every matched record which is O(n^2) for large lookups.
+        const matchedRecordOwners = new Map<string, number[]>();
+        lookupResults.forEach((id, index) => {
+            if (id) {
+                const owners = matchedRecordOwners.get(id);
+                owners ? owners.push(index) : matchedRecordOwners.set(id, [ index ]);
+            }
+        });
+
         for (const [i, matchedRecords] of records.entries()) {
             const lookupRequest = lookupRequests[i];
             if (!matchedRecords?.length) {
@@ -172,13 +183,16 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             const matchedRecord = matchedRecords[0];
 
             // Validate that the matched record is not already matched by another lookup request
-            const otherMatches = Object.entries(lookupResults).filter(([,id]) => id === matchedRecord);
-            if (otherMatches.length) {
+            const otherOwners = matchedRecordOwners.get(matchedRecord);
+            if (otherOwners) {
                 lookupRequest.reportWarning(
                     `Record with ID (${matchedRecord}) matches multiple source keys: [${
-                        [ lookupRequest.record.sourceKey ].concat(otherMatches.map(([i]) => datapackRecords[i].sourceKey)).join(', ')
+                        [ lookupRequest.record.sourceKey ].concat(otherOwners.map(index => datapackRecords[index].sourceKey)).join(', ')
                     }]`
                 );
+                otherOwners.push(lookupRequest.index);
+            } else {
+                matchedRecordOwners.set(matchedRecord, [ lookupRequest.index ]);
             }
 
             this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.record.sourceKey, matchedRecord);
@@ -211,12 +225,52 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             const records = await this.salesforce.data.lookup(sobjectType, distinctFilters, [...fields], undefined);
 
             // map record results back to lookup requests
+            //
+            // Index the lookups by a normalized matching key so each queried record can be matched in
+            // (near) constant time instead of comparing every record against every lookup. This keeps
+            // large lookups (e.g. tens of thousands of CPQ_Rate_Table__c records) from pinning the CPU
+            // on the previous O(records * lookups) scan. Lookups whose values can match fuzzily (date
+            // equivalence in `fieldEquals`) cannot be indexed safely and are matched through a linear
+            // fallback so the matching behavior is preserved.
+            type LookupEntry = (typeof entries)[number];
+            const lookupIndex = new Map<string, LookupEntry[]>();
+            const indexShapes = new Map<string, string[]>();
+            const fuzzyLookups = new Array<LookupEntry>();
+
+            for (const entry of entries) {
+                const shape = Object.keys(entry[1].filter).sort();
+                const key = this.buildFilterMatchKey(entry[1].filter, shape);
+                if (key === undefined) {
+                    fuzzyLookups.push(entry);
+                } else if (lookupIndex.has(key)) {
+                    lookupIndex.get(key)!.push(entry);
+                } else {
+                    lookupIndex.set(key, [ entry ]);
+                    indexShapes.set(JSON.stringify(shape), shape);
+                }
+            }
+
             while (records.length) {
                 const record = records.shift()!;
-                const matchedLookups = entries.filter(([,{ filter }]) => {
-                    // Find all matching lookup requests
-                    return !Object.entries(filter).some(([field, value]) => !this.fieldEquals(record, field, value));
-                });
+
+                // collect candidate lookups via the index (constant-time) and always check fuzzy lookups,
+                // then verify each candidate with `fieldEquals` to preserve the exact matching semantics
+                const matchedLookups = new Array<LookupEntry>();
+                for (const shape of indexShapes.values()) {
+                    const candidates = lookupIndex.get(this.buildRecordMatchKey(record, shape));
+                    if (candidates) {
+                        for (const entry of candidates) {
+                            if (this.recordMatchesFilter(record, entry[1].filter)) {
+                                matchedLookups.push(entry);
+                            }
+                        }
+                    }
+                }
+                for (const entry of fuzzyLookups) {
+                    if (this.recordMatchesFilter(record, entry[1].filter)) {
+                        matchedLookups.push(entry);
+                    }
+                }
 
                 if (!matchedLookups.length) {
                     console.error('You found a BUG in the lookup resolution, share below information to help find a solution:')
@@ -232,6 +286,74 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         }
 
         return lookupResults;
+    }
+
+    /**
+     * Build a normalized matching key for a lookup filter so lookups can be indexed for fast record
+     * matching. Returns `undefined` when the filter cannot be indexed safely - i.e. it contains a
+     * non-string value or a value that {@link fieldEquals} could match fuzzily (a date-equivalent
+     * string) - in which case the caller falls back to a linear comparison for that lookup.
+     * @param filter Lookup filter
+     * @param fields Sorted list of the filter's field names
+     */
+    private buildFilterMatchKey(filter: object, fields: string[]): string | undefined {
+        const parts = new Array<[string, string]>();
+        for (const field of fields) {
+            const value = (filter as Record<string, unknown>)[field];
+            if (value === null || value === undefined || value === '') {
+                parts.push([ field, '' ]);
+            } else if (typeof value === 'string' && !this.isFuzzyMatchValue(value)) {
+                parts.push([ field, this.canonicalMatchValue(value) ]);
+            } else {
+                return undefined;
+            }
+        }
+        return JSON.stringify(parts);
+    }
+
+    /**
+     * Build the matching key for a queried record using the given fields; mirrors {@link buildFilterMatchKey}
+     * so a record and the lookup filter it satisfies produce the same key.
+     * @param record Queried record
+     * @param fields Sorted list of the filter's field names
+     */
+    private buildRecordMatchKey(record: object, fields: string[]): string {
+        const parts = new Array<[string, string]>();
+        for (const field of fields) {
+            const value: unknown = this.namespaceService.updateNamespace(field).split('.').reduce((o, p) => o?.[p], record);
+            if (value === null || value === undefined || value === '') {
+                parts.push([ field, '' ]);
+            } else if (typeof value === 'string') {
+                parts.push([ field, this.canonicalMatchValue(value) ]);
+            } else {
+                parts.push([ field, String(value) ]);
+            }
+        }
+        return JSON.stringify(parts);
+    }
+
+    /**
+     * Normalize a string to the canonical form used by {@link fieldEquals} for equality: 18-character
+     * Salesforce IDs are reduced to their 15-character form and other values are namespace normalized,
+     * lower cased and trimmed.
+     */
+    private canonicalMatchValue(value: string): string {
+        if (isSalesforceId(value)) {
+            return value.substring(0, 15);
+        }
+        return this.namespaceService.updateNamespace(value).toLowerCase().trim();
+    }
+
+    /**
+     * Returns `true` when the value could be matched fuzzily by {@link fieldEquals} (i.e. as a date) and
+     * therefore cannot be captured by an exact index.
+     */
+    private isFuzzyMatchValue(value: string): boolean {
+        return DateTime.fromISO(value).isValid;
+    }
+
+    private recordMatchesFilter(record: object, filter: object): boolean {
+        return !Object.entries(filter).some(([field, value]) => !this.fieldEquals(record, field, value));
     }
 
     /**
