@@ -176,14 +176,19 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
                 this.valueChange.emit(this.editor?.getValue() ?? '');
             }
         });
-        const keyDisposable = this.editor.onKeyDown(event => {
-            void this.handleClipboardShortcut(event).catch(() => undefined);
+        this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
+            void this.copySelection(this.editor!, false);
+        });
+        this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyX, () => {
+            void this.copySelection(this.editor!, true);
+        });
+        this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => {
+            void this.pasteClipboardText(this.editor!);
         });
 
         this.editorReady.emit(this.editor);
         this.destroyRef.onDestroy(() => {
             contentDisposable.dispose();
-            keyDisposable.dispose();
             const model = this.editor?.getModel();
             if (model) {
                 monaco.editor.setModelMarkers(model, this.markerOwner(), []);
@@ -195,21 +200,7 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
         });
     }
 
-    private async handleClipboardShortcut(event: monaco.IKeyboardEvent) {
-        const editor = this.editor;
-        if (!editor || !usesPrimaryModifier(event) || event.altKey) {
-            return;
-        }
-
-        const key = event.browserEvent.key.toLowerCase();
-        if (key === 'c' || key === 'x') {
-            await this.copySelection(editor, event, key === 'x');
-        } else if (key === 'v') {
-            await this.pasteClipboardText(editor, event);
-        }
-    }
-
-    private async copySelection(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent, cut: boolean) {
+    private async copySelection(editor: monaco.editor.IStandaloneCodeEditor, cut: boolean) {
         const model = editor.getModel();
         const selections = editor.getSelections() ?? [];
         if (!model || selections.length === 0) {
@@ -220,9 +211,6 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
             ? selections.filter(selection => !selection.isEmpty())
             : getFullLineRanges(model, selections);
 
-        event.preventDefault();
-        event.stopPropagation();
-
         await writeClipboardText(ranges.map(range => model.getValueInRange(range)).join(hasSelection ? '\n' : ''));
         if (!cut || this.readOnly()) {
             return;
@@ -231,23 +219,19 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
         editor.executeEdits('clipboard', ranges.map(range => ({ range, text: '' })));
     }
 
-    private async pasteClipboardText(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent) {
+    private async pasteClipboardText(editor: monaco.editor.IStandaloneCodeEditor) {
         if (this.readOnly()) {
             return;
         }
 
-        event.preventDefault();
-        event.stopPropagation();
-
         const text = await readClipboardText();
         if (text) {
-            editor.trigger('keyboard', 'paste', { text });
+            const selections = editor.getSelections() ?? [];
+            editor.pushUndoStop();
+            editor.executeEdits('clipboard', selections.map(selection => ({ range: selection, text })));
+            editor.pushUndoStop();
         }
     }
-}
-
-function usesPrimaryModifier(event: monaco.IKeyboardEvent) {
-    return event.metaKey || event.ctrlKey;
 }
 
 function getFullLineRanges(model: monaco.editor.ITextModel, selections: readonly monaco.Selection[]) {
