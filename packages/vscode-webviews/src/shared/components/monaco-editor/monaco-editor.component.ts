@@ -211,20 +211,24 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
 
     private async copySelection(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent, cut: boolean) {
         const model = editor.getModel();
-        const selections = editor.getSelections()?.filter(selection => !selection.isEmpty()) ?? [];
+        const selections = editor.getSelections() ?? [];
         if (!model || selections.length === 0) {
             return;
         }
+        const hasSelection = selections.some(selection => !selection.isEmpty());
+        const ranges = hasSelection
+            ? selections.filter(selection => !selection.isEmpty())
+            : getFullLineRanges(model, selections);
 
         event.preventDefault();
         event.stopPropagation();
 
-        await writeClipboardText(selections.map(selection => model.getValueInRange(selection)).join('\n'));
+        await writeClipboardText(ranges.map(range => model.getValueInRange(range)).join(hasSelection ? '\n' : ''));
         if (!cut || this.readOnly()) {
             return;
         }
 
-        editor.executeEdits('clipboard', selections.map(selection => ({ range: selection, text: '' })));
+        editor.executeEdits('clipboard', ranges.map(range => ({ range, text: '' })));
     }
 
     private async pasteClipboardText(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent) {
@@ -244,6 +248,32 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
 
 function usesPrimaryModifier(event: monaco.IKeyboardEvent) {
     return event.metaKey || event.ctrlKey;
+}
+
+function getFullLineRanges(model: monaco.editor.ITextModel, selections: readonly monaco.Selection[]) {
+    const lineNumbers = [...new Set(selections.map(selection => selection.positionLineNumber))]
+        .sort((left, right) => left - right);
+    const ranges = new Array<monaco.Range>();
+    let blockStart = lineNumbers[0];
+    let blockEnd = lineNumbers[0];
+    for (const lineNumber of lineNumbers.slice(1)) {
+        if (lineNumber === blockEnd + 1) {
+            blockEnd = lineNumber;
+        } else {
+            ranges.push(getFullLineRange(model, blockStart, blockEnd));
+            blockStart = lineNumber;
+            blockEnd = lineNumber;
+        }
+    }
+    ranges.push(getFullLineRange(model, blockStart, blockEnd));
+    return ranges;
+}
+
+function getFullLineRange(model: monaco.editor.ITextModel, startLine: number, endLine: number) {
+    if (endLine < model.getLineCount()) {
+        return new monaco.Range(startLine, 1, endLine + 1, 1);
+    }
+    return new monaco.Range(startLine, 1, endLine, model.getLineMaxColumn(endLine));
 }
 
 export { monaco };
