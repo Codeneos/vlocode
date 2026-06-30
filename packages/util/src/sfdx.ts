@@ -536,8 +536,11 @@ export namespace sfdx {
         config: Partial<T>, 
         options: { fs: FileSystem, replace?: boolean } = { fs: fs }
     ) : Promise<boolean> {
+        const directConfigPath = getDirectConfigPath(folderPath);
         const configFolderPath = normalizeConfigFolderPath(folderPath);
-        const currentConfig = await getConfig(configFolderPath, { fs: options.fs });
+        const currentConfig = directConfigPath
+            ? await getConfigFile<T>(directConfigPath, options.fs)
+            : await getConfig<T>(configFolderPath, { fs: options.fs });
         const newConfig = (!currentConfig?.config || options.replace) ? config 
             : merge(deepClone(currentConfig?.config ?? {}), config);
 
@@ -545,7 +548,7 @@ export namespace sfdx {
             return false;
         }
 
-        const configPath = currentConfig?.path ?? `${configFolderPath}/${defaultConfigPath}`;
+        const configPath = directConfigPath ?? currentConfig?.path ?? `${configFolderPath}/${defaultConfigPath}`;
         if (!currentConfig?.path) {
             await createDirectory(options.fs, path.dirname(configPath));
         }
@@ -554,10 +557,27 @@ export namespace sfdx {
     }
 
     function normalizeConfigFolderPath(folderPath: string): string {
-        if (folderPath.replace(/\\/g, '/').endsWith(defaultConfigPath)) {
+        if (getDirectConfigPath(folderPath)) {
             return folderPath.slice(0, -defaultConfigPath.length).replace(/[\\/]+$/, '');
         }
         return folderPath;
+    }
+
+    function getDirectConfigPath(folderPath: string): string | undefined {
+        return folderPath.replace(/\\/g, '/').endsWith(defaultConfigPath) ? folderPath : undefined;
+    }
+
+    async function getConfigFile<T extends object>(configPath: string, fileSystem: FileSystem): Promise<{ config: T, path: string } | undefined> {
+        try {
+            return {
+                config: JSON.parse((await fileSystem.readFile(configPath)).toString('utf8')),
+                path: configPath
+            };
+        } catch (err: any) {
+            if (err?.code !== 'ENOENT') {
+                throw err;
+            }
+        }
     }
 
     async function createDirectory(fileSystem: FileSystem, directoryPath: string): Promise<void> {

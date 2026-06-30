@@ -55,4 +55,33 @@ describe('sfdx config utilities', () => {
             defaultusername: 'direct@example.com'
         });
     });
+
+    it('does not fall back to a parent config for a missing direct sfdx-config path', async () => {
+        const files = new Map<string, Buffer>([
+            ['/workspace/.sfdx/sfdx-config.json', Buffer.from(JSON.stringify({ defaultusername: 'parent@example.com' }))]
+        ]);
+        const fileSystem = {
+            readFile: jest.fn(async (fileName: string) => {
+                const content = files.get(fileName);
+                if (!content) {
+                    throw enoent(fileName);
+                }
+                return content;
+            }),
+            writeFile: jest.fn(async (fileName: string, data: Buffer) => {
+                files.set(fileName, data);
+            }),
+            mkdir: jest.fn(async () => undefined)
+        };
+
+        await sfdx.setConfig('/workspace/project/.sfdx/sfdx-config.json', { defaultusername: 'child@example.com' }, { fs: fileSystem });
+
+        expect(fileSystem.writeFile).toHaveBeenCalledWith('/workspace/project/.sfdx/sfdx-config.json', expect.any(Buffer));
+        expect(JSON.parse(files.get('/workspace/project/.sfdx/sfdx-config.json')!.toString('utf8'))).toEqual({
+            defaultusername: 'child@example.com'
+        });
+        expect(JSON.parse(files.get('/workspace/.sfdx/sfdx-config.json')!.toString('utf8'))).toEqual({
+            defaultusername: 'parent@example.com'
+        });
+    });
 });

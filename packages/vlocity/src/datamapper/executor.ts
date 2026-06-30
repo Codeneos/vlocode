@@ -445,13 +445,17 @@ export class DataMapperExecutor {
             const resolution = this.resolveFilterValues(condition.value, sourceTree);
             const values = uniqueValues(resolution.values);
             if (resolution.unresolved || (resolution.reference && !values.length && !isNullOperator(condition.operator))) {
+                const message = `Filter ${condition.fieldName} references unresolved DataMapper path "${resolution.reference}".`;
+                if (!options.onWarning) {
+                    throw new Error(message);
+                }
                 this.warn(options, {
                     code: 'unresolvedFilter',
                     objectName: group.objectName,
                     fieldName: condition.fieldName,
                     outputPath: group.outputPath,
                     sequence: group.sequence,
-                    message: `Skipping ${group.objectName} extract step ${group.sequence} because filter ${condition.fieldName} references unresolved path "${resolution.reference}".`
+                    message: `Skipping ${group.objectName} extract step ${group.sequence} because ${message}`
                 });
                 return { where: '', skip: true };
             }
@@ -907,7 +911,23 @@ function isQuoted(value: string) {
 }
 
 function looksLikeDataMapperReference(value: string) {
-    return value.includes(':') || /\|\d+$|\|n$/i.test(value);
+    const path = splitDataMapperPath(value);
+    return path.some(isIndexedDataMapperPathSegment)
+        || (path.length >= 2 && path.every(isDataMapperPathSegment) && path.some(isStructuredDataMapperPathSegment));
+}
+
+function isIndexedDataMapperPathSegment(segment: string) {
+    return /\|(\d+|n)$/i.test(segment) && isDataMapperPathSegment(segment);
+}
+
+function isDataMapperPathSegment(segment: string) {
+    const name = segment.replace(/\|(\d+|n)$/i, '');
+    return /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/.test(name);
+}
+
+function isStructuredDataMapperPathSegment(segment: string) {
+    const name = segment.replace(/\|(\d+|n)$/i, '');
+    return name.includes('.') || /__(c|r)(\.|$)/i.test(name);
 }
 
 function setPath(target: Record<string, unknown>, path: string, value: unknown, listFormat: boolean): void {

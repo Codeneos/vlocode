@@ -382,6 +382,59 @@ describe('DataMapperExecutor', () => {
         ]);
     });
 
+    it('throws for unresolved path-shaped extract filters without a warning sink', async () => {
+        const mapper: DataMapperDefinition = {
+            Type: 'Extract',
+            InputType: 'JSON',
+            OutputType: 'JSON',
+            OmniDataTransformItem: [
+                extract(
+                    'QuoteLinerelationship__c',
+                    'QuoteLineItemId__c',
+                    'SBQQ__Quote__c:SBQQ__QuoteLine__c:Id',
+                    'SBQQ__Quote__c:SBQQ__QuoteLine__c:QuoteLinerelationship__c',
+                    3
+                )
+            ]
+        };
+        const queries = new Array<string>();
+
+        await expect(new DataMapperExecutor().execute(mapper, {}, {
+            queryRunner: {
+                async query(query) {
+                    queries.push(query);
+                    return [];
+                }
+            }
+        })).rejects.toThrow('Filter QuoteLineItemId__c references unresolved DataMapper path "SBQQ__Quote__c:SBQQ__QuoteLine__c:Id"');
+        expect(queries).toHaveLength(0);
+    });
+
+    it('keeps colon-containing filter literals as constants', async () => {
+        const mapper = DataMapperBuilder.extract()
+            .extractObject('Account', 'account')
+            .where('Website', 'Equals', 'https://example.com/account:a')
+            .where('Preferred_Time__c', 'Equals', '12:30')
+            .where('ExternalKey__c', 'Equals', 'tenant:region:code')
+            .done()
+            .map('account:Name', 'accounts:name')
+            .build();
+        const queries = new Array<string>();
+
+        await new DataMapperExecutor().execute(mapper, {}, {
+            queryRunner: {
+                async query(query) {
+                    queries.push(query);
+                    return [];
+                }
+            }
+        });
+
+        expect(queries[0]).toContain("Website = 'https://example.com/account:a'");
+        expect(queries[0]).toContain("Preferred_Time__c = '12:30'");
+        expect(queries[0]).toContain("ExternalKey__c = 'tenant:region:code'");
+    });
+
     it('keeps quoted path-shaped filter values as constants', async () => {
         const mapper: DataMapperDefinition = {
             Type: 'Extract',
