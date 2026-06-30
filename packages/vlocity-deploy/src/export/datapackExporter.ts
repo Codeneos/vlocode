@@ -1160,6 +1160,11 @@ export class DatapackExporter {
             return true;
         }
 
+        if (type.name === 'PricebookEntry' && field.name === 'CurrencyIsoCode') {
+            // Never ignore CurrencyIsoCode on PricebookEntry because it is required for multi-currency orgs
+            return false;
+        }
+
         if (DatapackExporter.UNWRITABLE_FIELDS.includes(field.name)) {
             this.logger.debug(`Ignore field ${field.name} on ${type.name} as it is unwriteable`);
             return true;
