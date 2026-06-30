@@ -40,14 +40,14 @@ jobs:
 
       - name: Fix permissions
         run: |
-          chmod -c -R +rX "docs/" | while read line; do
+          chmod -c -R +rX "typedoc/site/" | while read line; do
             echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/
+          path: typedoc/site/
 
   deploy:
     name: Deploy to GitHub Pages
