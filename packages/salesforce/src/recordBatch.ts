@@ -1,5 +1,5 @@
 import { LogManager } from '@vlocode/core';
-import { Timer, arrayMapPush, CancellationToken, groupBy, AwaitReturnType } from '@vlocode/util';
+import { Timer, arrayMapPush, CancellationToken, AwaitReturnType } from '@vlocode/util';
 import { RecordResult, BatchInfo } from 'jsforce';
 
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -48,6 +48,7 @@ export class RecordBatch {
 
     private readonly insert = new Map<string, { ref: string; data: any }[]>();
     private readonly update = new Map<string, { ref: string; data: any }[]>();
+    private readonly updateIds = new Map<string, Set<string>>();
     private progressReporter: BatchProgressCallback | undefined | null;
     private isExecuting: boolean = false;
 
@@ -284,15 +285,18 @@ export class RecordBatch {
 
     public addUpdate(type: string, data: any, id: string, ref?: string): this {
         data.Id = id;
-        arrayMapPush(this.update, type, { ref, data });
-        for (const [,records] of this.update) {
-            const unique = groupBy(records, record => record.data.Id);
-            for (const [id, records] of Object.entries(unique)) {
-                if (records.length > 1) {
-                    throw new Error(`Cannot update record ${id} multiple times in the same batch`);
-                }
-            }
+        // Track the IDs already queued for update per type so duplicates are detected in O(1);
+        // the previous full re-group of `this.update` on every add was O(n^2) over the batch size
+        // and pinned the CPU when building large update batches.
+        let seenIds = this.updateIds.get(type);
+        if (!seenIds) {
+            this.updateIds.set(type, seenIds = new Set());
         }
+        if (seenIds.has(id)) {
+            throw new Error(`Cannot update record ${id} multiple times in the same batch`);
+        }
+        seenIds.add(id);
+        arrayMapPush(this.update, type, { ref, data });
         this.recordCount++;
         return this;
     }
