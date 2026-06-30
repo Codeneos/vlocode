@@ -1,11 +1,20 @@
 {
     "entryPoints": [
-        "packages/core/src/index.ts",
-        "packages/util/src/index.ts",
-        "packages/salesforce/src/index.ts",
-        "packages/vlocity-deploy/src/index.ts",
-        "packages/vlocity/src/index.ts",
-        "packages/omniscript/src/index.ts"
+        "../packages/core/src/index.ts",
+        "../packages/util/src/index.ts",
+        "../packages/salesforce/src/index.ts",
+        "../packages/vlocity-deploy/src/index.ts",
+        "../packages/vlocity/src/index.ts",
+        "../packages/omniscript/src/index.ts"
+    ],
+    "projectDocuments": [
+        "../docs/README.md",
+        "../docs/concepts.md",
+        "../docs/cli.md",
+        "../docs/export.md",
+        "../docs/export-definitions.md",
+        "../docs/import.md",
+        "../docs/deployment-specs.md"
     ],
     "plugin": ["typedoc-plugin-rename-defaults"],
     "highlightLanguages": ["xml", "json", "typescript", "ts", "js", "javascript", "shell", "bash", "yaml", "yml"],
@@ -28,11 +37,11 @@
             "TokenReplacementPlugin": "#"
         }
     },
-    "externalPattern": ["packages/vscode-extension/**/*", "packages/cli/**/*"],
+    "externalPattern": ["../packages/vscode-extension/**/*", "../packages/cli/**/*"],
     "cname": "vlocode.curlybracket.nl",
-    "exclude": "*.test.ts",
+    "exclude": "**/*.test.ts",
     "readme": "SITE.md",
-    "out": "docs",
+    "out": "site",
     "hideGenerator": true,
     "excludePrivate": false,
     "excludeExternals": true,
