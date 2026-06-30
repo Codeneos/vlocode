@@ -450,6 +450,15 @@ export class DatapackDeploymentRecord {
     }
 
     /**
+     * Get all dependency field/reference pairs for this record in dependency declaration order;
+     * resolved and unresolved dependencies are both included.
+     * @returns Array with all dependency field/reference pairs
+     */
+    public getDependencyEntries(): { field: string, dependency: VlocityDatapackReference }[] {
+        return [...Iterable.map(this._dependencies, ([field, dependency]) => ({ field, dependency }))];
+    }
+
+    /**
      * Get embedded dependencies that are **not** resolved through lookup but instead are provided as part of the datapack.
      * These dependencies of datapack type **VlocityMatchingKeyObject**.
      * Does not included dependencies that are added through the {@link addDependency} function as these are not linked through a field.

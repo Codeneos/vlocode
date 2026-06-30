@@ -897,6 +897,27 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             filter: rec => (rec.isDeployed && rec.isUpdate) || (rec.recordId && rec.isSkipped)
         }));
 
+        // Index the not-yet-deployed records by the source keys they depend on so each deployed record
+        // can find its dependents in (near) constant time. The previous nested loop re-scanned every
+        // record in the deployment (a lazy filter over `this.records`) for every deployed record, making
+        // this O(records^2) and pinning the CPU on large deployments. Only the first dependency per
+        // source key is indexed to preserve the original `isDependentOn` first-match behavior.
+        const dependentsBySourceKey = new Map<string, Array<{ record: DatapackDeploymentRecord, field: string, dependency: VlocityDatapackReference }>>();
+        for (const dependent of this.records.values()) {
+            if (dependent.isDeployed || dependent.isSkipped) {
+                continue;
+            }
+            const seenSourceKeys = new Set<string>();
+            for (const { field, dependency } of dependent.getDependencyEntries()) {
+                const depSourceKey = dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey;
+                if (!depSourceKey || seenSourceKeys.has(depSourceKey)) {
+                    continue;
+                }
+                seenSourceKeys.add(depSourceKey);
+                arrayMapPush(dependentsBySourceKey, depSourceKey, { record: dependent, field, dependency });
+            }
+        }
+
         const deleteRecords = async (record?: DatapackDeploymentRecord) => {
             for (const [sobjectType, filters] of deleteFilters) {
                 const result = await this.salesforceService.deleteWhere(sobjectType, filters);
@@ -913,10 +934,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         };
 
         for (const [recordId, record] of recordsById.entries()) {
-            for (const undeployRecord of Iterable.filter(this.records.values(), r => !r.isDeployed && !r.isSkipped)) {
-                const dependency = undeployRecord.isDependentOn(record);
-                if (dependency && predicate({ ...dependency, dependentRecord: undeployRecord, record })) {
-                    setMapAdd(deleteFilters, undeployRecord.sobjectType, `${dependency.field} = '${recordId}'`);
+            for (const { record: undeployRecord, field, dependency } of dependentsBySourceKey.get(record.sourceKey) ?? []) {
+                if (predicate({ field, dependency, dependentRecord: undeployRecord, record })) {
+                    setMapAdd(deleteFilters, undeployRecord.sobjectType, `${field} = '${recordId}'`);
                 }
             }
 
