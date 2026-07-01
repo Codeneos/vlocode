@@ -291,6 +291,11 @@ export class DatapackExporter {
     private async processExportQueue(options?: ExportProcessOptions): Promise<ExportResult[]> {
         const results: ExportResult[] = [];
         const chunkSize = options?.chunkSize ?? this.exportChunkSize;
+        if (!Number.isInteger(chunkSize) || chunkSize < 1) {
+            // A non-positive chunk size would splice nothing off the queue, leaving processExportQueue
+            // to loop forever; reject it up front like chunkArray does.
+            throw new Error(`Export chunk size must be a positive integer but received ${chunkSize}`);
+        }
         const progress = new ExportProgressTracker(options?.onProgress);
         this.exportQueue.forEach(request => progress.discover(request.id));
 
@@ -508,11 +513,14 @@ export class DatapackExporter {
         // name to match the alphabetical ordering the expander applies to the top-level datapack, keeping
         // nested embedded-record fields (which the expander does not re-sort) consistent and stable.
         const fields = [...datapack.schema.fields].sort((a, b) => a.name.localeCompare(b.name));
-        const resolved = await mapAsyncParallel(fields, async (field) => {
+        // mapAsyncParallel resolves in completion order, so results are placed back at their `fields`
+        // index and assigned in that (sorted) order below to keep the datapack output stable.
+        const resolved = new Array<{ fieldName: string, value: any } | undefined>(fields.length);
+        await mapAsyncParallel(fields, async (field, index) => {
             let value = record[field.name];
 
             if (this.ignoreField(datapack, field)) {
-                return undefined;
+                return;
             }
 
             // Export as reference
@@ -520,7 +528,7 @@ export class DatapackExporter {
                 if (value.startsWith('005') && !field.name.endsWith('__c')) {
                     // Hack: ignore standard user references (e.g. OwnerId), but keep custom (__c)
                     // user lookup fields so they are exported as matching-key references.
-                    return undefined;
+                    return;
                 }
 
                 if (this.definitions.isEmbeddedObject(datapack, field.name)) {
@@ -535,10 +543,10 @@ export class DatapackExporter {
             // Generated source keys are content hashes; omit null SObject fields
             // so optional fields do not make generated output noisy.
             if (value === null && (context.suppressNulls === true || datapack.generatedSourceKey)) {
-                return undefined;
+                return;
             }
 
-            return { fieldName: field.name, value };
+            resolved[index] = { fieldName: field.name, value };
         }, this.exportParallelism);
 
         for (const field of resolved) {

@@ -409,7 +409,6 @@ npm install --global @vlocode/cli
 vlocode deploy ./datapacks \
   --user target-org \
   --delta \
-  --no-progress \
   --log-file ./artifacts/vlocode-deploy.log
 ```
 

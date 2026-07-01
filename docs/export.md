@@ -160,9 +160,10 @@ Key behaviours:
 
 ## Output layout
 
-**Consolidated** (default) — one file per datapack named `<Name>_DataPack.json`,
-written into the output folder. Related datapacks pulled in by `--depth` are
-written alongside.
+**Consolidated** (default) — each datapack is written to its own subfolder named
+after its (sanitized) source key: `<output>/<source-key>/<Name>_DataPack.json`. The
+per-datapack subfolder keeps datapacks that share the same `Name` from colliding.
+Related datapacks pulled in by `--depth` each get their own subfolder too.
 
 **Expanded** (`--expand`) — each datapack becomes a folder
 `<output>/<DatapackType>/<Name>/` containing a `_DataPack.json` plus separate
