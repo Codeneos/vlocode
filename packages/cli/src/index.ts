@@ -31,7 +31,7 @@ class CLI {
     static readonly options = [
         new Option('-v, --verbose', 'enable more detailed verbose logging').default(false),
         new Option('--debug', 'print call stack when an unhandled error occurs').default(false),
-        new Option('--log-file <path>', 'append logs as NDJSON to the specified file'),
+        new Option('--log-file <path>', 'override the default NDJSON log file location (logging is always enabled)'),
         new Option('--log-level <level>', 'set the log level, overrides -v/--debug')
             .choices(Object.keys(LogLevel).filter(key => isNaN(Number(key))))
     ];
