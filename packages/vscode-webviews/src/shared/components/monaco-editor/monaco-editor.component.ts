@@ -197,19 +197,17 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
 
     private async handleClipboardShortcut(event: monaco.IKeyboardEvent) {
         const editor = this.editor;
-        if (!editor || !usesPrimaryModifier(event) || event.altKey) {
+        if (!editor || !(event.ctrlKey || event.metaKey) || event.altKey) {
             return;
         }
-
-        const key = event.browserEvent.key.toLowerCase();
-        if (key === 'c' || key === 'x') {
-            await this.copySelection(editor, event, key === 'x');
-        } else if (key === 'v') {
+        if (event.keyCode === monaco.KeyCode.KeyC || event.keyCode === monaco.KeyCode.KeyX) {
+            this.copySelection(editor, event, event.keyCode === monaco.KeyCode.KeyX);
+        } else if (event.keyCode === monaco.KeyCode.KeyV) {
             await this.pasteClipboardText(editor, event);
         }
     }
 
-    private async copySelection(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent, cut: boolean) {
+    private copySelection(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent, cut: boolean) {
         const model = editor.getModel();
         const selections = editor.getSelections() ?? [];
         if (!model || selections.length === 0) {
@@ -223,12 +221,11 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
         event.preventDefault();
         event.stopPropagation();
 
-        await writeClipboardText(ranges.map(range => model.getValueInRange(range)).join(hasSelection ? '\n' : ''));
-        if (!cut || this.readOnly()) {
-            return;
+        // The clipboard text is read from the model before the cut edit, so the write can be fire-and-forget.
+        writeClipboardText(ranges.map(range => model.getValueInRange(range)).join(hasSelection ? '\n' : ''));
+        if (cut && !this.readOnly()) {
+            editor.executeEdits('clipboard', ranges.map(range => ({ range, text: '' })));
         }
-
-        editor.executeEdits('clipboard', ranges.map(range => ({ range, text: '' })));
     }
 
     private async pasteClipboardText(editor: monaco.editor.IStandaloneCodeEditor, event: monaco.IKeyboardEvent) {
@@ -241,13 +238,10 @@ export class VlocodeMonacoEditorComponent implements AfterViewInit {
 
         const text = await readClipboardText();
         if (text) {
+            // Route through Monaco's paste handler to preserve multi-cursor spread and paste-on-new-line.
             editor.trigger('keyboard', 'paste', { text });
         }
     }
-}
-
-function usesPrimaryModifier(event: monaco.IKeyboardEvent) {
-    return event.metaKey || event.ctrlKey;
 }
 
 function getFullLineRanges(model: monaco.editor.ITextModel, selections: readonly monaco.Selection[]) {
