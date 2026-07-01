@@ -2,9 +2,11 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
 import VlocityDatapackService, { ManifestEntry } from '../../lib/vlocity/vlocityDatapackService';
+import { DatapackDefinitionRegistry } from '../../lib/vlocity/datapackDefinitionRegistry';
 import { CommandBase } from '../../lib/commandBase';
-import { mapAsync, mapAsyncParallel } from '@vlocode/util';
-import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack, DatapackTypeDefinition, getDatapackTypeDefinition } from '@vlocode/vlocity';
+import { groupBy, mapAsync, mapAsyncParallel, removeNamespacePrefix } from '@vlocode/util';
+import { container } from '@vlocode/core';
+import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack, DatapackTypeDefinition, DatapackUtil, getDatapackTypeDefinition } from '@vlocode/vlocity';
 import { SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 
 
@@ -59,26 +61,101 @@ export abstract class DatapackCommand extends CommandBase {
      * Get Salesforce records for a specified list of datapacks.
      * @param datapacks Datapacks to get Salesforce record Ids for
      * @param options.showRecordSelection For records for which there are multiple options show a quick-pick-ui in vscode
+     * @param options.definitions Pre-resolved datapack type definition per datapack (see {@link resolveDatapackDefinitions});
+     *  determines the export/expand definition (scope + export mode) carried on the returned entries. Falls back to the
+     *  static datapack type definition when a datapack is not present in the map.
      * @returns List of datapacks and their associated salesforce records and record Ids
      */
-    protected async getSalesforceRecords(datapacks: VlocityDatapack[], options?: { showRecordSelection?: boolean }) {
+    protected async getSalesforceRecords(
+        datapacks: VlocityDatapack[],
+        options?: { showRecordSelection?: boolean; definitions?: Map<VlocityDatapack, DatapackTypeDefinition | undefined> }
+    ) {
+        const getDefinition = (datapack: VlocityDatapack) =>
+            options?.definitions?.get(datapack) ?? getDatapackTypeDefinition(datapack);
+
         const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) => {
-            const type = getDatapackTypeDefinition(datapacks[i]);
+            const type = getDefinition(datapacks[i]);
             if (!type) {
                 return matchedRecords[0];
             }
             return options?.showRecordSelection && matchedRecords.length > 1
-                ? this.showRecordSelection(matchedRecords, type) 
+                ? this.showRecordSelection(matchedRecords, type)
                 : this.getBestRecord(matchedRecords, type)
         });
 
-        return datapacks.map((datapack, i) => ({ 
-            datapack,
-            sobjectType: datapack.sobjectType,
-            datapackType: datapack.datapackType,
-            id: matchingRecords[i]?.Id,
-            values: matchingRecords[i]
-        }));
+        return datapacks.map((datapack, i) => {
+            const type = getDefinition(datapack);
+            return {
+                datapack,
+                sobjectType: datapack.sobjectType,
+                datapackType: datapack.datapackType,
+                id: matchingRecords[i]?.Id,
+                values: matchingRecords[i],
+                exportMode: type?.exportMode,
+                exportDefinitionScope: type?.scope
+            };
+        });
+    }
+
+    /**
+     * Resolve the datapack type definition to use for each of the specified datapacks using the same
+     * {@link DatapackDefinitionRegistry} as the datapack explorer, so refreshing/re-exporting from disk
+     * yields the same expand and export definitions (scope + export mode) as exporting from the explorer.
+     *
+     * When a datapack matches more than one definition the reference is ambiguous; with
+     * `options.promptOnAmbiguous` the user is asked to pick the type to use. Datapacks that share the
+     * same datapack type and SObject type are only asked about once and the choice is applied to all of
+     * them. Datapacks that resolve to a single (or no) definition are never prompted for.
+     *
+     * @returns A map of datapack to its resolved definition, or `undefined` when the user cancels a selection.
+     */
+    protected async resolveDatapackDefinitions(
+        datapacks: VlocityDatapack[],
+        options?: { promptOnAmbiguous?: boolean }
+    ): Promise<Map<VlocityDatapack, DatapackTypeDefinition | undefined> | undefined> {
+        const registry = container.get(DatapackDefinitionRegistry);
+        const resolved = new Map<VlocityDatapack, DatapackTypeDefinition | undefined>();
+
+        // Group by type + SObject so an ambiguous type is only presented to the user once.
+        const groups = groupBy(datapacks, datapack => `${datapack.datapackType}:${datapack.sobjectType}`);
+        for (const group of Object.values(groups)) {
+            const [ sample ] = group;
+            const matches = await registry.getMatchingDefinitions(sample);
+
+            let definition: DatapackTypeDefinition | undefined;
+            if (matches.length > 1 && options?.promptOnAmbiguous) {
+                definition = await this.showDatapackDefinitionSelection(sample, matches);
+                if (!definition) {
+                    return undefined; // selection cancelled
+                }
+            } else {
+                definition = matches[0]?.definition ?? getDatapackTypeDefinition(sample);
+            }
+
+            for (const datapack of group) {
+                resolved.set(datapack, definition);
+            }
+        }
+
+        return resolved;
+    }
+
+    private async showDatapackDefinitionSelection(
+        datapack: VlocityDatapack,
+        matches: Array<{ definition: DatapackTypeDefinition; collection: { label: string } }>
+    ): Promise<DatapackTypeDefinition | undefined> {
+        const selected = await vscode.window.showQuickPick(
+            matches.map(({ definition, collection }) => ({
+                label: `${definition.typeLabel} (${removeNamespacePrefix(definition.source.sobjectType)})`,
+                description: collection.label,
+                definition
+            })),
+            {
+                ignoreFocusOut: true,
+                placeHolder: `Multiple datapack types match ${DatapackUtil.getLabel(datapack)}; select the type to use`
+            }
+        );
+        return selected?.definition;
     }
 
     protected async showRecordSelection(records: SObjectRecord[], datapackType: DatapackTypeDefinition | undefined, placeHolder?: string) : Promise<SObjectRecord | undefined> {

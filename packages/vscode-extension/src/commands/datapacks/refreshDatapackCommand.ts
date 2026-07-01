@@ -31,10 +31,18 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
             return; // do datapacks found
         }
 
+        // Resolve the datapack type/definition for each datapack through the same registry the datapack
+        // explorer uses, so a refresh applies the same expand and export definition as an export. Prompt
+        // the user to pick when a datapack matches more than one definition; identical types are asked once.
+        const definitions = await this.resolveDatapackDefinitions(flatDatapackList, { promptOnAmbiguous: true });
+        if (definitions === undefined) {
+            return; // selection cancelled
+        }
+
         await this.vlocode.withActivity(progressTitle, async (progress, cancelToken) => {
             const results = await mapAsync(Object.entries(datapacksByProject),
                 async ([projectFolder, datapacks]) => {
-                    const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection: flatDatapackList.length > 1 });
+                    const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection: flatDatapackList.length > 1, definitions });
                     return this.exportDatapacks(exportEntries.filter(e => e.id), projectFolder, dependencyExportDepth, progress, cancelToken);
                 }
             );

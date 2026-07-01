@@ -4,7 +4,7 @@ import * as yaml from 'js-yaml';
 import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
-import { filterAsyncParallel, getErrorMessage, getObjectProperty, singleFlight } from '@vlocode/util';
+import { filterAsyncParallel, getErrorMessage, getObjectProperty, removeNamespacePrefix, singleFlight } from '@vlocode/util';
 import { QueryConditionBuilder, QueryParser, type SalesforceQueryData } from '@vlocode/salesforce';
 import { DatapackInfoService, DatapackTypeDefinition, DatapackTypeDefinitions } from '@vlocode/vlocity';
 import {
@@ -53,6 +53,29 @@ export class DatapackDefinitionRegistry {
             await this.reload();
         }
         return this.entries;
+    }
+
+    /**
+     * Find all loaded datapack type definitions that match the specified datapack reference by
+     * datapack type and—when provided—SObject type (compared namespace-insensitively). More than one
+     * result means the reference is ambiguous, for example when a custom definition overrides a
+     * standard one for the same datapack type and object.
+     * @param ref Datapack type and optional SObject type to match against.
+     * @returns Matching definitions together with the collection they originate from.
+     */
+    public async getMatchingDefinitions(
+        ref: { datapackType?: string; sobjectType?: string }
+    ): Promise<Array<{ definition: DatapackTypeDefinition; collection: DatapackDefinitionCollection }>> {
+        const normalizedSObject = ref.sobjectType ? removeNamespacePrefix(ref.sobjectType) : undefined;
+        const collections = await this.getDefinitionCollections();
+        return collections.flatMap(collection =>
+            collection.definitions
+                .filter(definition =>
+                    (!ref.datapackType || definition.datapackType === ref.datapackType) &&
+                    (!normalizedSObject || removeNamespacePrefix(definition.source.sobjectType) === normalizedSObject)
+                )
+                .map(definition => ({ definition, collection }))
+        );
     }
 
     public initialize(): vscode.Disposable {
