@@ -37,7 +37,7 @@ export interface SalesforceOAuthDetails {
  */
 export class JsForceConnectionProvider extends SalesforceConnectionProvider {
     #jsConnection: SalesforceConnection;
-    #version: string = '55.0';
+    #version: string = '66.0';
 
     /**
      * The client ID used in the request headers

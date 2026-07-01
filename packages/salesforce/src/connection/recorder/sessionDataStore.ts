@@ -115,7 +115,7 @@ export class SessionDataStore {
         if (!url.startsWith('http')) {
             url = `https://vlocode.curlybracket.nl${url.startsWith('/') ? url : `/${url}`}`;
         }
-        const parsedUrl = new URL(url.replaceAll('/{apiVersion}/', '/v55.0/'));
+        const parsedUrl = new URL(url.replaceAll('/{apiVersion}/', '/v66.0/'));
         const versionNormalizedPath = parsedUrl.pathname.replace(/\/v[0-9.]+\//ig, '/{apiVersion}/');
         return versionNormalizedPath + parsedUrl.search;
     }

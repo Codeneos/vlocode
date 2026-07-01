@@ -478,7 +478,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
             throw new Error(`Specified ID is not a Salesforce id: ${versionId}`);
         }
         const connection = await this.getJsForceConnection();
-        const response = await connection.request<string>(`/services/data/v55.0/sobjects/ContentVersion/${versionId}/VersionData`);
+        const response = await connection.request<string>(`/services/data/v{apiVersion}/sobjects/ContentVersion/${versionId}/VersionData`);
         return response;
     }
 
