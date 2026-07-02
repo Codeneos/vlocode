@@ -89,7 +89,10 @@ export class DatapackDeploymentRecord {
     }
 
     public get isSkipped(): boolean {
-        return this._datapackAction === DeploymentAction.Skip;
+        // Status based so records skipped through `setAction(DeploymentAction.Skip)` (which also
+        // sets the status) and records skipped by the deployment itself (unresolvable internal
+        // dependencies) are both reported as skipped
+        return this._status === DeploymentStatus.Skipped;
     }
 
     /**
