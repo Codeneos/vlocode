@@ -314,7 +314,9 @@ export class DatapackDeploymentRecord {
     private getGlobalKeyField() {
         const fieldNames = Object.keys(this.values);
         const caseNormalizedFields = fieldNames.map(field => field.toLowerCase());
-        const globalKeyFieldIndex = caseNormalizedFields.indexOf('globalkey__c') || caseNormalizedFields.findIndex(f => f.endsWith('globalkey__c'));
+        // Prefer an exact match and only then fall back to namespace-prefixed variants
+        const exactMatchIndex = caseNormalizedFields.indexOf('globalkey__c');
+        const globalKeyFieldIndex = exactMatchIndex >= 0 ? exactMatchIndex : caseNormalizedFields.findIndex(f => f.endsWith('__globalkey__c'));
         return globalKeyFieldIndex >= 0 ? fieldNames[globalKeyFieldIndex] : undefined;
     }
 
