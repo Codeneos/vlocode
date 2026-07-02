@@ -197,8 +197,16 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.validateRecordDependencies();
 
         let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
-        while (deployableRecords = this.getDeployableRecords()) {
+        while (!this.isCancelled && (deployableRecords = this.getDeployableRecords())) {
             await this.deployRecords(deployableRecords, cancelToken);
+        }
+
+        if (this.isCancelled) {
+            // Stop deploying without touching the statuses of records that were never attempted;
+            // marking them failed/skipped would misreport a cancellation as deployment errors
+            await this.emit('cancel', this, { hideExceptions: true, async: true });
+            this.logger.warn(`Deployment cancelled; deployed ${this.deployedRecordCount}/${this.totalRecordCount} records [${this.timer.stop().toString('seconds')}]`);
+            return;
         }
 
         this.writeDeploymentSummaryToLog(this.timer);
@@ -728,7 +736,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // prepare batch
         await this.resolveDatapackDependencies(datapackRecords, cancelToken);
-        if (!datapackRecords.size) {
+        if (!datapackRecords.size || cancelToken?.isCancellationRequested) {
+            // Check cancellation before updating any record status so records that are never
+            // attempted stay pending instead of being abandoned in-progress
             return;
         }
 
@@ -760,11 +770,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
             datapackRecord.updateStatus(DeploymentStatus.InProgress);
-        }
-
-        if (cancelToken?.isCancellationRequested) {
-            await this.emit('cancel', this, { hideExceptions: true, async: true });
-            return;
         }
 
         await this.emit('beforeRetryRecord', retriedRecords, { hideExceptions: true });
@@ -811,6 +816,16 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 });
             }
         } finally {
+            if (cancelToken?.isCancellationRequested) {
+                // Revert records the cancelled batch never processed back to pending so a cancelled
+                // deployment does not leave records stuck in-progress
+                for (const record of datapackRecords.values()) {
+                    if (record.status === DeploymentStatus.InProgress) {
+                        record.updateStatus(DeploymentStatus.Pending);
+                    }
+                }
+            }
+
             const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];
 
             for (const group of completedGroups) {
