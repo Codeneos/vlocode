@@ -876,12 +876,32 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.errors.push(datapackRecord);
     }
 
+    /**
+     * Record error status codes that are deterministic and will fail again when retried with the
+     * same data; retrying these only slows down the deployment. All other record errors (such as
+     * `UNABLE_TO_LOCK_ROW`) may be transient or caused by records deployed later in the same
+     * deployment and are retried up to {@link DatapackDeploymentOptions.maxRetries} times.
+     */
+    private static readonly nonRetryableStatusCodes = new Set([
+        'REQUIRED_FIELD_MISSING',
+        'INVALID_FIELD',
+        'INVALID_TYPE',
+        'INVALID_TYPE_ON_FIELD_IN_RECORD',
+        'INVALID_FIELD_FOR_INSERT_UPDATE',
+        'INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST',
+        'STRING_TOO_LONG',
+        'NUMBER_OUTSIDE_VALID_RANGE',
+        'MALFORMED_ID',
+        'INVALID_EMAIL_ADDRESS',
+        'JSON_PARSER_ERROR'
+    ]);
+
     private isRetryable(error: RecordError | Error | string): boolean {
         const isRecordError = typeof error === 'object' && 'fields' in error && 'statusCode' in error;
         if (!isRecordError) {
             return false;
         }
-        return true;
+        return !DatapackDeployment.nonRetryableStatusCodes.has(String(error.statusCode));
     }
 
     private handleProgressReport({ processed, total }) {
