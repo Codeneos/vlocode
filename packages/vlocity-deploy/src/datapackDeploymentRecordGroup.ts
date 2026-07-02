@@ -1,6 +1,6 @@
 import { count, groupBy } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from './datapackDeploymentRecord';
-import { DatapackkDeploymentState } from './datapackDeploymentStatus';
+import { DatapackDeploymentState } from './datapackDeploymentStatus';
 
 export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymentRecord> {
 
@@ -29,23 +29,23 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
     /**
      * Get the deployment group status based on the status of the individual records in teh group
      */
-    public get status(): DatapackkDeploymentState {
+    public get status(): DatapackDeploymentState {
         const stats = groupBy(this.records, (r) => r.status);
         if (stats[DeploymentStatus.InProgress] || stats[DeploymentStatus.Retry]) {
-            return DatapackkDeploymentState.InProgress;
+            return DatapackDeploymentState.InProgress;
         } else if (!stats[DeploymentStatus.Pending]) {
             // Record Statuses [Skipped, Failed, Deployed]
             if (!stats[DeploymentStatus.Failed]) {
                 // Record Statuses [Skipped, Deployed]
-                return DatapackkDeploymentState.Success;
+                return DatapackDeploymentState.Success;
             } else if (stats[DeploymentStatus.Deployed]) {
                 // Record Statuses [Skipped, Failed, Deployed]
-                return DatapackkDeploymentState.PartialSuccess;
+                return DatapackDeploymentState.PartialSuccess;
             }
             // Record Statuses [Skipped, Failed]
-            return DatapackkDeploymentState.Error;
+            return DatapackDeploymentState.Error;
         }
-        return DatapackkDeploymentState.Pending;
+        return DatapackDeploymentState.Pending;
     }
 
     /**

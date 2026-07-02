@@ -9,7 +9,7 @@ import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
 import { DatapackDeploymentError as Error } from './datapackDeploymentError';
 import { VlocityDatapackReference } from '@vlocode/vlocity';
-import { DatapackDeploymentDatapackStatus, DatapackDeploymentMessage, DatapackDeploymentStatus, DatapackkDeploymentState } from './datapackDeploymentStatus';
+import { DatapackDeploymentDatapackStatus, DatapackDeploymentMessage, DatapackDeploymentStatus, DatapackDeploymentState } from './datapackDeploymentStatus';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -293,7 +293,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 datapacks.set(datapackKey, {
                     datapack: datapackKey,
                     type: substringBefore(datapackKey, '/'),
-                    status: DatapackkDeploymentState.Error,
+                    status: DatapackDeploymentState.Error,
                     recordCount: 1,
                     failedCount: 1,
                     messages 
@@ -308,7 +308,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         const datapackValues = [...datapacks.values()];
         return {
             total: datapackValues.length,
-            status: DatapackkDeploymentState.summarize(datapackValues.map(result => result.status)),
+            status: DatapackDeploymentState.summarize(datapackValues.map(result => result.status)),
             datapacks: datapackValues,
         };
     }
@@ -858,11 +858,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];
 
             for (const group of completedGroups) {
-                if (group.status === DatapackkDeploymentState.Success) {
+                if (group.status === DatapackDeploymentState.Success) {
                     this.logger.info(`Deployed ${group.datapackKey}`);
-                } else if (group.status === DatapackkDeploymentState.PartialSuccess) {
+                } else if (group.status === DatapackDeploymentState.PartialSuccess) {
                     this.logger.warn(`Partially deployed ${group.datapackKey} (${group.size -group.failedCount}/${group.size})`);
-                } else if (group.status === DatapackkDeploymentState.Error) {
+                } else if (group.status === DatapackDeploymentState.Error) {
                     this.logger.error(`Failed ${group.datapackKey}; see errors`);
                 }
             }
