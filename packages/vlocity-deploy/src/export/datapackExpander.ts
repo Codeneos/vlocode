@@ -244,6 +244,15 @@ class DatapackFiles {
     ) { }
 
     public addFile(fileName: string, value: unknown) {
+        if (Object.hasOwn(this.files, fileName)) {
+            // Overwriting would silently drop the earlier value from the expanded datapack;
+            // this happens when the configured fileName format does not evaluate to a unique
+            // name for every value (e.g. expanded array items with identical field values)
+            throw new Error(
+                `Expanded file name collision in "${this.folder}": "${fileName}" resolves to the same file for multiple values; ` +
+                `use a fileName format that uniquely identifies each value`
+            );
+        }
         const data = this.getFileData(fileName, value);
         this.logger.verbose(`Write ${fileName} (${data.length} bytes)`);
         this.files[fileName] = data;
