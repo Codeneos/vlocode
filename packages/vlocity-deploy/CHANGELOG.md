@@ -4,6 +4,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
+
+### Bug Fixes
+
+* **datapack-exporter:** ensure CurrencyIsoCode is not ignored for PricebookEntry ([4afb725](https://github.com/Codeneos/vlocode/commit/4afb725491cf5a19c241d0d996b78b67184554de))
+* lookupIds drops the CancellationToken not allowing the lookup to cancel ([5d29aea](https://github.com/Codeneos/vlocode/commit/5d29aeab4b4df7f9fa2360b5df68b07bbd93a927))
+
+### Features
+
+* **datapack-deployment:** optimize dependency handling with indexed lookups for improved performance ([4be3e03](https://github.com/Codeneos/vlocode/commit/4be3e03a1c9c6b2356ff25f8763d8a1f2d51bcdc))
+* **datapack-lookup:** optimize record matching with indexed lookups and normalized keys ([e7e5fd1](https://github.com/Codeneos/vlocode/commit/e7e5fd1a96a78f398e6c1e0efba21205d9b28cbb))
+* **datapack:** add cancellation support for dependency resolution ([0d591ac](https://github.com/Codeneos/vlocode/commit/0d591ac30918cde660276f24bfd1268b98f19cd6))
+* **export:** reference-aware source keys, strict matching keys ([18134b4](https://github.com/Codeneos/vlocode/commit/18134b4b2af10412562ff1e9de84667784837961))
+
+### Performance Improvements
+
+* **export:** batch embedded child lookups across the chunk ([8130115](https://github.com/Codeneos/vlocode/commit/8130115ec6db2e6d0d527b55b21cbd84ec904bbd))
+
 ## [2.2.1](https://github.com/Codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
 
 ### Features

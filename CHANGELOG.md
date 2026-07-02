@@ -4,6 +4,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.3.0](https://github.com/codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
+
+### Bug Fixes
+
+* address PR review feedback ([ef9de82](https://github.com/codeneos/vlocode/commit/ef9de828d8e216e6adf1c991369c046c1fd3db73))
+* **datamapper:** warn instead of failing preview ([68cb098](https://github.com/codeneos/vlocode/commit/68cb098cc31109c2ed94ca01b6a0e58be136fc05))
+* **datapack-exporter:** ensure CurrencyIsoCode is not ignored for PricebookEntry ([4afb725](https://github.com/codeneos/vlocode/commit/4afb725491cf5a19c241d0d996b78b67184554de))
+* lookupIds drops the CancellationToken not allowing the lookup to cancel ([5d29aea](https://github.com/codeneos/vlocode/commit/5d29aeab4b4df7f9fa2360b5df68b07bbd93a927))
+* **record-batch:** optimize addUpdate method to track unique IDs and prevent duplicates ([bf40a4c](https://github.com/codeneos/vlocode/commit/bf40a4cef805f285c81ab688ff639539f497f486))
+* **util:** create missing sfdx config on org switch ([0c866fd](https://github.com/codeneos/vlocode/commit/0c866fd7384673ef0eaa1c9348397c23fbfc82b5))
+* Vlocode CLI uses old API version ([a382df4](https://github.com/codeneos/vlocode/commit/a382df4a7c011bd59e890e8135280d37a82c9c26))
+* **webviews:** bridge Monaco clipboard shortcuts ([832f7ff](https://github.com/codeneos/vlocode/commit/832f7ffa14c6fe9b4a85501b406f96155fb8cad9))
+* **webviews:** polish designer layout styling ([8717229](https://github.com/codeneos/vlocode/commit/8717229daf8291c18e5d62d36faf1c73c47fae83))
+
+### Features
+
+* add new file wrirter for logging to a file as NDJSON ([6e2bb7d](https://github.com/codeneos/vlocode/commit/6e2bb7da7ae7ee59c65efba1c3f78636aa3d2080))
+* beafify the export command console output when running in an interactive non-CI term context ([37d5f79](https://github.com/codeneos/vlocode/commit/37d5f79c9fd05a29ffb845b42bd7973436cac56d))
+* **datapack-deployment:** optimize dependency handling with indexed lookups for improved performance ([4be3e03](https://github.com/codeneos/vlocode/commit/4be3e03a1c9c6b2356ff25f8763d8a1f2d51bcdc))
+* **datapack-lookup:** optimize record matching with indexed lookups and normalized keys ([e7e5fd1](https://github.com/codeneos/vlocode/commit/e7e5fd1a96a78f398e6c1e0efba21205d9b28cbb))
+* **datapack:** add cancellation support for dependency resolution ([0d591ac](https://github.com/codeneos/vlocode/commit/0d591ac30918cde660276f24bfd1268b98f19cd6))
+* export and refresh commands use custom definitions ([83845f4](https://github.com/codeneos/vlocode/commit/83845f413cab334b1e8574bca88f6d1a4b22d3c8))
+* **export:** reference-aware source keys, strict matching keys ([18134b4](https://github.com/codeneos/vlocode/commit/18134b4b2af10412562ff1e9de84667784837961))
+* **http:** add request count for tracking HTTP requests across instances ([2b2b15b](https://github.com/codeneos/vlocode/commit/2b2b15be2d6ebdc8482b99cc98938441f48fb367))
+* improve export command using progress bar ([f7ad6c9](https://github.com/codeneos/vlocode/commit/f7ad6c9d3a50ef1a4b93464b3b0783bfef415e93))
+* **ip-editor:** open referenced mapper and class files ([d5b0daf](https://github.com/codeneos/vlocode/commit/d5b0daf98f5a7ee54f4d5959de852bb14e32108d))
+* support complex filters in a multi lookup ([f202410](https://github.com/codeneos/vlocode/commit/f2024100fac88050d83b6660ad899f8de945610e))
+
+### Performance Improvements
+
+* **export:** batch embedded child lookups across the chunk ([8130115](https://github.com/codeneos/vlocode/commit/8130115ec6db2e6d0d527b55b21cbd84ec904bbd))
+
 ## [2.2.1](https://github.com/codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
 
 ### Features

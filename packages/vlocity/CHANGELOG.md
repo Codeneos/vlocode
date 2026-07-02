@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
+
+### Bug Fixes
+
+* address PR review feedback ([ef9de82](https://github.com/Codeneos/vlocode/commit/ef9de828d8e216e6adf1c991369c046c1fd3db73))
+* **datamapper:** warn instead of failing preview ([68cb098](https://github.com/Codeneos/vlocode/commit/68cb098cc31109c2ed94ca01b6a0e58be136fc05))
+
 ## [2.2.1](https://github.com/Codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
 
 **Note:** Version bump only for package @vlocode/vlocity

@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
+
+### Features
+
+* beafify the export command console output when running in an interactive non-CI term context ([37d5f79](https://github.com/Codeneos/vlocode/commit/37d5f79c9fd05a29ffb845b42bd7973436cac56d))
+* improve export command using progress bar ([f7ad6c9](https://github.com/Codeneos/vlocode/commit/f7ad6c9d3a50ef1a4b93464b3b0783bfef415e93))
+
 ## [2.2.1](https://github.com/Codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
 
 ### Features

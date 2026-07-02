@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
+
+### Bug Fixes
+
+* **record-batch:** optimize addUpdate method to track unique IDs and prevent duplicates ([bf40a4c](https://github.com/Codeneos/vlocode/commit/bf40a4cef805f285c81ab688ff639539f497f486))
+* Vlocode CLI uses old API version ([a382df4](https://github.com/Codeneos/vlocode/commit/a382df4a7c011bd59e890e8135280d37a82c9c26))
+
+### Features
+
+* **http:** add request count for tracking HTTP requests across instances ([2b2b15b](https://github.com/Codeneos/vlocode/commit/2b2b15be2d6ebdc8482b99cc98938441f48fb367))
+* support complex filters in a multi lookup ([f202410](https://github.com/Codeneos/vlocode/commit/f2024100fac88050d83b6660ad899f8de945610e))
+
 ## [2.2.1](https://github.com/Codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
 
 **Note:** Version bump only for package @vlocode/salesforce

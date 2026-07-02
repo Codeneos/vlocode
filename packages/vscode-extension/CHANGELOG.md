@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.3.0](https://github.com/codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
+
+### Bug Fixes
+
+* **datamapper:** warn instead of failing preview ([68cb098](https://github.com/codeneos/vlocode/commit/68cb098cc31109c2ed94ca01b6a0e58be136fc05))
+* **webviews:** bridge Monaco clipboard shortcuts ([832f7ff](https://github.com/codeneos/vlocode/commit/832f7ffa14c6fe9b4a85501b406f96155fb8cad9))
+
+### Features
+
+* export and refresh commands use custom definitions ([83845f4](https://github.com/codeneos/vlocode/commit/83845f413cab334b1e8574bca88f6d1a4b22d3c8))
+* **ip-editor:** open referenced mapper and class files ([d5b0daf](https://github.com/codeneos/vlocode/commit/d5b0daf98f5a7ee54f4d5959de852bb14e32108d))
+
 ## [2.2.1](https://github.com/codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
 
 **Note:** Version bump only for package vlocode

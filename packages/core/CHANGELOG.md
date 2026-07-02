@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
+
+### Features
+
+* add new file wrirter for logging to a file as NDJSON ([6e2bb7d](https://github.com/Codeneos/vlocode/commit/6e2bb7da7ae7ee59c65efba1c3f78636aa3d2080))
+
 ## [2.2.1](https://github.com/Codeneos/vlocode/compare/v2.2.0...v2.2.1) (2026-06-12)
 
 **Note:** Version bump only for package @vlocode/core
