@@ -177,11 +177,14 @@ export class DatapackDeployer {
             }
 
             for (const result of orgData.values()) {
+                // Only verify fields the datapack actually sets (expected !== undefined); fields absent
+                // from the datapack are org-managed (e.g. trigger-generated global keys) and must not be
+                // reported as mismatches. Null and undefined org values are treated as equal.
                 const mismatchedFieldData = fields.map(field => ({
                     field: field.name,
                     actual: result[field.name],
                     expected: deployedData.get(result.Id)?.values[field.name]
-                })).filter(comp => comp.actual !== comp.expected);
+                })).filter(comp => comp.expected !== undefined && (comp.actual ?? null) !== (comp.expected ?? null));
 
                 if (mismatchedFieldData.length) {
                     const update = mismatchedFieldData.reduce((acc, mismatch) => Object.assign(acc, {
