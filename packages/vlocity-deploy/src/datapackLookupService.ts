@@ -254,9 +254,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
                 }
             }
 
-            while (records.length) {
-                const record = records.shift()!;
-
+            for (const record of records) {
                 // collect candidate lookups via the index (constant-time) and always check fuzzy lookups,
                 // then verify each candidate with `fieldEquals` to preserve the exact matching semantics
                 const matchedLookups = new Array<LookupEntry>();
