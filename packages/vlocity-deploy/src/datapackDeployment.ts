@@ -500,10 +500,13 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private validateRecordDependencies() {
+        // Share the resolution cache across all records so cycle detection is O(records + dependencies)
+        // instead of re-exploring every distinct dependency path for each record
+        const resolved = new Map<string, string[] | false>();
         for (const record of this.records.values() ) {
-            const depedency = this.hasCircularDependencies(record);
-            if (depedency) {
-                record.setFailed(`Circular dependency detected: ${depedency.join('->')}`);
+            const dependency = this.hasCircularDependencies(record, resolved);
+            if (dependency) {
+                record.setFailed(`Circular dependency detected: ${dependency.join('->')}`);
             }
         }
     }
@@ -538,26 +541,52 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return false;
     }
 
-    private hasCircularDependencies(record: DatapackDeploymentRecord, graph = Array<string>()): Array<string> | false {
-        if (!graph.length) {
-            graph.push(record.sourceKey);
+    /**
+     * Detect whether the dependency chain of a record loops back on itself. Returns the dependency
+     * path from the record into the detected cycle, or `false` when the chain is cycle free.
+     *
+     * Results are memoized in `resolved` so repeated checks (and shared sub-chains) resolve in
+     * constant time; pass the same map across calls to keep the overall complexity linear in the
+     * number of records and dependencies instead of exponential in the number of distinct paths.
+     * @param record Record to check
+     * @param resolved Memoized results per record source key; a `string[]` is the path into a cycle
+     * @param active Source keys on the current DFS path used to detect when a chain loops back
+     */
+    private hasCircularDependencies(
+        record: DatapackDeploymentRecord,
+        resolved = new Map<string, string[] | false>(),
+        active = new Set<string>()
+    ): Array<string> | false {
+        const known = resolved.get(record.sourceKey);
+        if (known !== undefined) {
+            return known;
         }
 
-        for(const key of record.getDependencySourceKeys()) {
-            if (graph.includes(key)) {
-                return [...graph, key];
-            }
-
-            const depedency = this.records.get(key);
-            if (!depedency) {
-                continue;
-            }
-
-            const stack = this.hasCircularDependencies(depedency, [ ...graph, depedency.sourceKey ]);
-            if (stack) {
-                return stack;
-            }
+        if (active.has(record.sourceKey)) {
+            // The dependency chain loops back to a record on the current path
+            return [ record.sourceKey ];
         }
+
+        active.add(record.sourceKey);
+        try {
+            for (const key of record.getDependencySourceKeys()) {
+                const dependency = this.records.get(key);
+                if (!dependency) {
+                    continue;
+                }
+
+                const cycle = this.hasCircularDependencies(dependency, resolved, active);
+                if (cycle) {
+                    const path = [ record.sourceKey, ...cycle ];
+                    resolved.set(record.sourceKey, path);
+                    return path;
+                }
+            }
+        } finally {
+            active.delete(record.sourceKey);
+        }
+
+        resolved.set(record.sourceKey, false);
         return false;
     }
 
