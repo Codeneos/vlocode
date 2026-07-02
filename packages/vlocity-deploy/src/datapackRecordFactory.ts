@@ -66,13 +66,13 @@ export class DatapackRecordFactory {
             if (typeof value === 'object' && value !== null) {
                 // handle lookups and embedded datapacks
                 for (const item of Array.isArray(value) ? value : [ value ]) {
-                    if (item.VlocityDataPackType === 'SObject') {
+                    if (item?.VlocityDataPackType === 'SObject') {
                         // Embedded datapack
                         const embeddedDatapack = new VlocityDatapack(datapack.datapackType, item, { key: datapack.key });
                         const embeddedRecords = await this.createRecords(embeddedDatapack);
                         records.push(...embeddedRecords);
-                    } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
-                        if (!field && field !== null) {
+                    } else if (item?.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
+                        if (!field) {
                             this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                             continue;
                         }
@@ -82,19 +82,19 @@ export class DatapackRecordFactory {
                             continue;
                         }
                         record.addLookup(field.name, item);
-                    } else if (item.VlocityDataPackType) {
+                    } else if (item?.VlocityDataPackType) {
                         this.reportWarning(record, `Unsupported datapack type ${item.VlocityDataPackType}`);
-                    } else {
-                        if (!field) {
-                            this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name} (check)`);
-                            continue;
-                        }
+                    } else if (!field) {
+                        this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
+                    } else if (!(field.name in record.values)) {
+                        // Plain (array) value without datapack references; convert and store the
+                        // full value once instead of re-converting it for every array item
                         record.values[field.name] = this.convertValue(value, field);
                     }
                 }
             } else {
                 // make sure the field exists
-                if (!field && field !== null) {
+                if (!field) {
                     this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                     continue;
                 }
