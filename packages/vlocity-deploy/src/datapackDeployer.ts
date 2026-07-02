@@ -330,11 +330,6 @@ export class DatapackDeployer {
     }
 
     /**
-     * Run a datapack spec function and await the result
-     * @param eventType Event/function type to run
-     * @param options Options for executing the spec (args, ignoreErrors, errorSeverity)
-     */
-    /**
      * Materialize the registry specs once for this deployment and reuse the same (lazily instantiated)
      * instances for every spec-function call, so stateful specs initialize a single time.
      */
@@ -342,6 +337,11 @@ export class DatapackDeployer {
         return this.materializedSpecs ??= [...this.specRegistry.createSpecs()];
     }
 
+    /**
+     * Run a datapack spec function and await the result
+     * @param eventType Event/function type to run
+     * @param options Options for executing the spec (args, ignoreErrors, errorSeverity)
+     */
     private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(eventType: T, options: DeploymentSpecExecuteOptions<Parameters<E>>) {
         for (const { spec, filter } of this.getDeploymentSpecs()) {
             const specFunction = spec?.[eventType];

@@ -44,7 +44,7 @@ export async function deploy(input: string | string[], options: DatapackDeployOp
     } else if (options.sfdxUser) {
         localContainer.add(new SfdxConnectionProvider(options.sfdxUser, undefined), { provides: [ SalesforceConnectionProvider ] });
     } else {
-        throw new Error('Set either set options.sfdxUser -or- options.jsforceConnection otherwise');
+        throw new Error('Either options.sfdxUser or options.jsforceConnection must be set to connect to Salesforce');
     }
 
     // Setup dependencies

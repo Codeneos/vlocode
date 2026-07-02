@@ -1002,8 +1002,8 @@ export class DatapackExporter {
             value,
             logger: this.logger
         };
-        const prossorFn = new Function(...Object.keys(context), processor);
-        return prossorFn(...Object.values(context));
+        const processorFn = new Function(...Object.keys(context), processor);
+        return processorFn(...Object.values(context));
     }
 
     // Converts an Object filter to a lookup filter
