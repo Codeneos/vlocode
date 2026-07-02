@@ -31,7 +31,7 @@ export class DatapackExportDefinitionValidator {
      */
     public async validateAll(definitions: DatapackExportDefinitionStore) {
         const errors = new Array<ExportDefinitionError>();
-        for (const config of definitions.objectDefintions()) {
+        for (const config of definitions.objectDefinitions()) {
             errors.push(...await this.validate(config));
         }
         return errors;
