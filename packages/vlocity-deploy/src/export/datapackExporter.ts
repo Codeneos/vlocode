@@ -754,13 +754,17 @@ export class DatapackExporter {
             throw new Error(`Relationship ${embeddedObject.relationshipName} not found on ${datapack.objectType}`);
         }
 
+        // Always constrain the lookup by the relationship field; the configured filter is optional
+        // and only narrows the related records further
         let filter = embeddedObject.filter;
         if (typeof filter === 'string' && filter.length > 0) {
             filter = `${filter} AND ${relationship.field} = '${datapack.id}'`;
-        } else if (typeof filter === 'object') {
-             filter = {
+        } else if (Array.isArray(filter)) {
+            filter = filter.map(clause => ({ [relationship.field]: datapack.id, ...clause }));
+        } else {
+            filter = {
                 [relationship.field]: datapack.id,
-                ...filter
+                ...(typeof filter === 'object' ? filter : undefined)
             };
         }
 
