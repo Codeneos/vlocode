@@ -82,17 +82,12 @@ export class DeferredDependencyResolver implements DatapackDependencyResolver {
     }
 
     private enqueueProcessing() {
-        if (this.lookupProcessing) {
+        if (this.lookupProcessing || this.lookupQueueTimer) {
+            // Queued requests are picked up by the already running drain loop or the already
+            // scheduled timer; rescheduling the timer here would postpone processing on every
+            // new request and could starve the queue under a steady stream of lookups
             return;
         }
-
-        if (this.lookupQueueTimer) {
-            clearTimeout(this.lookupQueueTimer);
-            this.lookupQueueTimer = undefined;
-        }
-
-        if (!this.lookupQueueTimer) {
-            this.lookupQueueTimer = setTimeout(() => void this.processLookupQueue(), this.lookupWaitTime);
-        }
+        this.lookupQueueTimer = setTimeout(() => void this.processLookupQueue(), this.lookupWaitTime);
     }
 }
