@@ -11,6 +11,20 @@ This is the monorepo root for all _@vlocode_ packages and the Vlocode VSCode ext
 -   [**Vlocode**](packages/vscode-extension) - Vlocode VSCode extension
 -   [**@vlocode/cli**](packages/cli) - Vlocode Standalone DataPack deployment CLI
 
+## Documentation
+
+Guides for exporting and importing (deploying) Vlocity DataPacks live in the [documentation](documentation) folder:
+
+-   [**Overview**](docs/README.md) - what datapacks are and how the docs fit together
+-   [**Concepts**](docs/concepts.md) - source keys, matching keys, references and dependencies
+-   [**CLI reference**](docs/cli.md) - installing, authenticating and running the `vlocode` CLI
+-   [**Exporting datapacks**](docs/export.md) - the `vlocode export` command and export pipeline
+-   [**Building export definitions**](docs/export-definitions.md) - authoring the export-definition YAML
+-   [**Importing / deploying datapacks**](docs/import.md) - the `vlocode deploy` command and deployment pipeline
+-   [**Customizing deployment with specs**](docs/deployment-specs.md) - extending export and import
+
+API reference documentation is generated with TypeDoc and published at [vlocode.curlybracket.nl](https://vlocode.curlybracket.nl).
+
 ## Setup development environment
 
 Vlocode uses `pnpm` as package manager and lerna release manager. To setup a developer environment for Vlocode you should always use the latest LTS version of node with corepack. VScode is the preferred IDE for developing and debugging.

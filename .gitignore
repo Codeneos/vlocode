@@ -15,7 +15,7 @@ packages/*/out
 /packages/cli/dist
 *.tgz
 *.tsbuildinfo
-/docs
+/typedoc/site
 /packages/*/coverage
 /packages/apex/src/grammar/*.interp
 /packages/apex/src/grammar/*.tokens

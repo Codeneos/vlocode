@@ -337,6 +337,352 @@ describe('DatapackExporter', () => {
         expect(matchingKeys.getMatchingKeyDefinition).not.toHaveBeenCalled();
     });
 
+    it('resolves lookup ids in matching key fields to the referenced record matching key', async () => {
+        const productId = '01t000000000001AAA';
+        const pricebookId = '01s000000000001AAA';
+        const entryId = '01u000000000001AAA';
+        const describes = {
+            Product2: {
+                name: 'Product2',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'ProductCode', referenceTo: [] }
+                ],
+                childRelationships: []
+            },
+            Pricebook2: {
+                name: 'Pricebook2',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] }
+                ],
+                childRelationships: []
+            },
+            PricebookEntry: {
+                name: 'PricebookEntry',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'CurrencyIsoCode', referenceTo: [] },
+                    { name: 'Pricebook2Id', referenceTo: ['Pricebook2'] },
+                    { name: 'Product2Id', referenceTo: ['Product2'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter } = createExporter({
+            matchingKeyFieldsByType: {
+                Product2: ['ProductCode'],
+                Pricebook2: ['Name'],
+                PricebookEntry: ['Pricebook2Id', 'CurrencyIsoCode', 'Product2Id']
+            },
+            describes,
+            records: [
+                { Id: productId, __type: 'Product2', ProductCode: 'ASES-1000725' },
+                { Id: pricebookId, __type: 'Pricebook2', Name: 'CPQ Price Book' },
+                { Id: entryId, __type: 'PricebookEntry', CurrencyIsoCode: 'USD', Pricebook2Id: pricebookId, Product2Id: productId }
+            ],
+            embeddedObjects: item => item.objectType === 'Product2'
+                ? [{ name: 'PricebookEntries', objectType: 'PricebookEntry', filter: { Product2Id: '{Product2:Id}' } }]
+                : []
+        });
+
+        const results = await exporter.exportObject(productId, { maxDepth: 0 });
+        const entry = results[0].datapack.PricebookEntries[0];
+
+        // The Pricebook2 is not part of the export graph when the entry's key is built; its matching
+        // key must still be resolved instead of baking the raw (org-specific) record id into the key.
+        expect(entry.VlocityRecordSourceKey).toBe('PricebookEntry/Pricebook2/CPQ Price Book/USD/Product2/ASES-1000725');
+    });
+
+    it('keeps the raw record id when a referenced record in a matching key cannot be resolved', async () => {
+        const productId = '01t000000000001AAA';
+        const pricebookId = '01s000000000001AAA';
+        const entryId = '01u000000000001AAA';
+        const describes = {
+            Product2: {
+                name: 'Product2',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'ProductCode', referenceTo: [] }
+                ],
+                childRelationships: []
+            },
+            PricebookEntry: {
+                name: 'PricebookEntry',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'CurrencyIsoCode', referenceTo: [] },
+                    { name: 'Pricebook2Id', referenceTo: ['Pricebook2'] },
+                    { name: 'Product2Id', referenceTo: ['Product2'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter } = createExporter({
+            matchingKeyFieldsByType: {
+                Product2: ['ProductCode'],
+                PricebookEntry: ['Pricebook2Id', 'CurrencyIsoCode', 'Product2Id']
+            },
+            describes,
+            records: [
+                { Id: productId, __type: 'Product2', ProductCode: 'ASES-1000725' }
+            ]
+        });
+
+        const result = await exporter.getMatchingKey(describes.PricebookEntry, {
+            id: entryId,
+            Id: entryId,
+            CurrencyIsoCode: 'USD',
+            Pricebook2Id: pricebookId,
+            Product2Id: productId
+        });
+
+        // The pricebook record does not exist; the product is resolved by lookup.
+        expect(result).toBe(`PricebookEntry/${pricebookId}/USD/Product2/ASES-1000725`);
+    });
+
+    it('breaks circular matching key references by falling back to the record id', async () => {
+        const aId = 'a00000000000001AAA';
+        const bId = 'a01000000000001AAA';
+        const describes = {
+            A__c: {
+                name: 'A__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Ref__c', referenceTo: ['B__c'] }
+                ],
+                childRelationships: []
+            },
+            B__c: {
+                name: 'B__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Ref__c', referenceTo: ['A__c'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter } = createExporter({
+            matchingKeyFieldsByType: {
+                A__c: ['Ref__c', 'Name'],
+                B__c: ['Ref__c', 'Name']
+            },
+            describes,
+            records: [
+                { Id: aId, __type: 'A__c', Name: 'A', Ref__c: bId },
+                { Id: bId, __type: 'B__c', Name: 'B', Ref__c: aId }
+            ]
+        });
+
+        const result = await exporter.getMatchingKey(describes.A__c, { id: aId, Id: aId, Name: 'A', Ref__c: bId });
+
+        // B's key embeds the raw id of A because A is still being resolved when B needs it.
+        expect(result).toBe(`A__c/B__c/${aId}/B/A`);
+    });
+
+    it('computes the same matching key for concurrent requests of the same record', async () => {
+        const parentId = 'a00000000000001AAA';
+        const childId = 'a01000000000001AAA';
+        const describes = {
+            Parent__c: {
+                name: 'Parent__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] }
+                ],
+                childRelationships: []
+            },
+            Child__c: {
+                name: 'Child__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Parent__c', referenceTo: ['Parent__c'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter } = createExporter({
+            matchingKeyFieldsByType: {
+                Parent__c: ['Name'],
+                Child__c: ['Parent__c', 'Name']
+            },
+            describes,
+            records: [
+                { Id: parentId, __type: 'Parent__c', Name: 'Parent' }
+            ]
+        });
+        const data = { id: childId, Id: childId, Name: 'Child', Parent__c: parentId };
+
+        // Both computations pass the cache check before either finishes; the same record resolving
+        // to the same key twice must not be reported as a matching key collision.
+        const [first, second] = await Promise.all([
+            exporter.getMatchingKey(describes.Child__c, data),
+            exporter.getMatchingKey(describes.Child__c, data)
+        ]);
+
+        expect(first).toBe('Child__c/Parent__c/Parent/Child');
+        expect(second).toBe(first);
+    });
+
+    it('keeps the raw id for references to records with auto-generated matching keys', async () => {
+        const refId = 'a00000000000001AAA';
+        const recordId = 'a01000000000001AAA';
+        const describes = {
+            Generated__c: {
+                name: 'Generated__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] }
+                ],
+                childRelationships: []
+            },
+            Record__c: {
+                name: 'Record__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Ref__c', referenceTo: ['Generated__c'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter } = createExporter({
+            autoGeneratedObjects: ['Generated__c'],
+            matchingKeyFieldsByType: {
+                Record__c: ['Ref__c', 'Name']
+            },
+            describes,
+            records: [
+                { Id: refId, __type: 'Generated__c', Name: 'Generated' }
+            ]
+        });
+
+        const result = await exporter.getMatchingKey(describes.Record__c, { id: recordId, Id: recordId, Name: 'Rec', Ref__c: refId });
+
+        // Auto-generated keys only identify a record within its own export; never embed them.
+        expect(result).toBe(`Record__c/${refId}/Rec`);
+    });
+
+    it('prefetches matching key references for a chunk in a single batched lookup', async () => {
+        const recordAId = 'a00000000000001AAA';
+        const recordBId = 'a00000000000002AAA';
+        const targetAId = 'a01000000000001AAA';
+        const targetBId = 'a01000000000002AAA';
+        const describes = {
+            Record__c: {
+                name: 'Record__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] },
+                    { name: 'Ref__c', referenceTo: ['Target__c'] }
+                ],
+                childRelationships: []
+            },
+            Target__c: {
+                name: 'Target__c',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter, salesforce } = createExporter({
+            matchingKeyFieldsByType: {
+                Record__c: ['Ref__c', 'Name'],
+                Target__c: ['Name']
+            },
+            describes,
+            records: [
+                { Id: recordAId, __type: 'Record__c', Name: 'One', Ref__c: targetAId },
+                { Id: recordBId, __type: 'Record__c', Name: 'Two', Ref__c: targetBId },
+                { Id: targetAId, __type: 'Target__c', Name: 'A' },
+                { Id: targetBId, __type: 'Target__c', Name: 'B' }
+            ]
+        });
+
+        const results = await exporter.exportObject([recordAId, recordBId], { maxDepth: 0 });
+        const sourceKeys = results.map(result => result.sourceKey).sort();
+
+        expect(sourceKeys).toStrictEqual([
+            'Record__c/Target__c/A/One',
+            'Record__c/Target__c/B/Two'
+        ]);
+        // One batched query for the chunk roots and one for their matching key references;
+        // resolving keys and deferred lookups must not issue additional per-record queries.
+        expect(salesforce.data.lookupById).toHaveBeenCalledTimes(2);
+        expect(salesforce.data.lookupById).toHaveBeenNthCalledWith(2, [targetAId, targetBId]);
+    });
+
+    it('prefetches matching key references of embedded children per wave in a single batched lookup', async () => {
+        const productAId = '01t000000000001AAA';
+        const productBId = '01t000000000002AAA';
+        const pricebookAId = '01s000000000001AAA';
+        const pricebookBId = '01s000000000002AAA';
+        const describes = {
+            Product2: {
+                name: 'Product2',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'ProductCode', referenceTo: [] }
+                ],
+                childRelationships: []
+            },
+            Pricebook2: {
+                name: 'Pricebook2',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'Name', referenceTo: [] }
+                ],
+                childRelationships: []
+            },
+            PricebookEntry: {
+                name: 'PricebookEntry',
+                fields: [
+                    { name: 'Id', referenceTo: [] },
+                    { name: 'CurrencyIsoCode', referenceTo: [] },
+                    { name: 'Pricebook2Id', referenceTo: ['Pricebook2'] },
+                    { name: 'Product2Id', referenceTo: ['Product2'] }
+                ],
+                childRelationships: []
+            }
+        };
+        const { exporter, salesforce } = createExporter({
+            matchingKeyFieldsByType: {
+                Product2: ['ProductCode'],
+                Pricebook2: ['Name'],
+                PricebookEntry: ['Pricebook2Id', 'CurrencyIsoCode', 'Product2Id']
+            },
+            describes,
+            records: [
+                { Id: productAId, __type: 'Product2', ProductCode: 'CODE-1' },
+                { Id: productBId, __type: 'Product2', ProductCode: 'CODE-2' },
+                { Id: pricebookAId, __type: 'Pricebook2', Name: 'PB One' },
+                { Id: pricebookBId, __type: 'Pricebook2', Name: 'PB Two' },
+                { Id: '01u000000000001AAA', __type: 'PricebookEntry', CurrencyIsoCode: 'USD', Pricebook2Id: pricebookAId, Product2Id: productAId },
+                { Id: '01u000000000002AAA', __type: 'PricebookEntry', CurrencyIsoCode: 'USD', Pricebook2Id: pricebookBId, Product2Id: productBId }
+            ],
+            embeddedObjects: item => item.objectType === 'Product2'
+                ? [{ name: 'PricebookEntries', objectType: 'PricebookEntry', filter: { Product2Id: '{Product2:Id}' } }]
+                : []
+        });
+
+        const results = await exporter.exportObject([productAId, productBId], { maxDepth: 0 });
+        const byKey = new Map(results.map(result => [result.sourceKey, result.datapack]));
+
+        expect(byKey.get('Product2/CODE-1')!.PricebookEntries[0].VlocityRecordSourceKey)
+            .toBe('PricebookEntry/Pricebook2/PB One/USD/Product2/CODE-1');
+        expect(byKey.get('Product2/CODE-2')!.PricebookEntries[0].VlocityRecordSourceKey)
+            .toBe('PricebookEntry/Pricebook2/PB Two/USD/Product2/CODE-2');
+        // One batched query for the chunk roots and one for the embedded children's matching key
+        // references; the parent products resolve from cache and are not fetched again.
+        expect(salesforce.data.lookupById).toHaveBeenCalledTimes(2);
+        expect(salesforce.data.lookupById).toHaveBeenNthCalledWith(2, [pricebookAId, pricebookBId]);
+    });
+
     it('blocks top-level datapacks that have no matching key', async () => {
         const describe = {
             name: 'Generated__c',

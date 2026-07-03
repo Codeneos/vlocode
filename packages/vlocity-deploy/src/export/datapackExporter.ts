@@ -212,8 +212,14 @@ export class DatapackExporter {
     private lookupCache = new Map<string, Record<string, any> | null>();
     private datapacks = new Map<string, ExportDatapack>();
     private matchingKeys = new Map<string, string>();
-    /** Set of assigned matching keys for O(1) uniqueness checks (mirrors the matched values of {@link matchingKeys}). */
-    private usedMatchingKeys = new Set<string>();
+    /**
+     * Owner record id per assigned matching key for O(1) uniqueness checks (reverse of {@link matchingKeys}).
+     * Keyed by matching key so re-computing the same record's key concurrently is idempotent while a
+     * second record resolving to the same key is detected as a collision.
+     */
+    private matchingKeyOwners = new Map<string, string>();
+    /** Memoized {@link getMatchingFields} resolutions keyed by object type, scope and datapack type. */
+    private matchingFieldsCache = new Map<string, Promise<string[]>>();
     /**
      * Current generated source key to Salesforce record id. Keys start as
      * deterministic temporary values and are rewritten after the export graph is
@@ -315,6 +321,12 @@ export class DatapackExporter {
             }
                 
             const records = await this.lookupByIds(requests.keys());
+
+            // Warm the caches for records referenced from matching key fields in one batched lookup
+            // so building the chunk does not fan out into a single-record query per reference.
+            await this.prefetchMatchingKeyReferences([...records.entries()]
+                .filter(([, data]) => !!data)
+                .map(([id, data]) => ({ record: data!, scope: requests.get(id)?.scope, datapackType: requests.get(id)?.datapackType })));
 
             const chunkRoots: ExportDatapack[] = [];
             await forEachAsyncParallel(records, async ([id, data]) => {
@@ -690,11 +702,19 @@ export class DatapackExporter {
                     }
                 });
 
+                // Sort before applying the limit so a stable, deterministic subset is kept. Limit is
+                // applied client-side; the batched OR query cannot enforce a per-parent limit.
+                const recordsPerEntry = entries.map((entry, entryIndex) =>
+                    this.sortRecords([...recordsByEntry[entryIndex].values()], entry.sortFields)
+                        .slice(0, entry.limit || undefined));
+
+                // Warm the caches for records referenced from the children's matching key fields in one
+                // batched lookup so building the children does not fan out into per-record queries.
+                await this.prefetchMatchingKeyReferences(entries.flatMap((entry, entryIndex) =>
+                    recordsPerEntry[entryIndex].map(record => ({ record, scope: entry.datapack.scope }))));
+
                 await forEachAsyncParallel(entries, async (entry, entryIndex) => {
-                    // Sort before applying the limit so a stable, deterministic subset is kept. Limit is
-                    // applied client-side; the batched OR query cannot enforce a per-parent limit.
-                    const records = this.sortRecords([...recordsByEntry[entryIndex].values()], entry.sortFields)
-                        .slice(0, entry.limit || undefined);
+                    const records = recordsPerEntry[entryIndex];
                     if (records.length === 0) {
                         return;
                     }
@@ -1173,6 +1193,12 @@ export class DatapackExporter {
         this.deferredLookups.clear();
         const records = await this.lookupByIds(new Set(deferredLookups.map(([, lookup]) => lookup.id)));
 
+        // Warm the caches for second-level references so the eager per-field lookups in
+        // buildMatchingKeyObject resolve from cache instead of issuing individual queries.
+        await this.prefetchMatchingKeyReferences(deferredLookups
+            .map(([, deferred]) => ({ record: records.get(deferred.id)!, scope: deferred.datapack.scope }))
+            .filter(item => !!item.record));
+
         await forEachAsyncParallel(deferredLookups, async ([reference, deferred]) => {
             const record = records.get(deferred.id);
             if (!record) {
@@ -1268,7 +1294,7 @@ export class DatapackExporter {
         this.generatedSourceKeys.delete(sourceKey);
     }
 
-    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, datapackType?: string, options?: { allowGeneratedKey?: boolean }) {
+    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, datapackType?: string, options?: { allowGeneratedKey?: boolean, resolving?: Set<string> }) {
         if (!data['id']) {
             throw new Error('Missing id field in data');
         }
@@ -1290,8 +1316,9 @@ export class DatapackExporter {
             return this.getAutoMatchingKey(describe, data['id'], scope);
         }
 
-        // Avoid async operations after checking for a cached entry to avoid
-        // non-deterministic behavior when multiple requests are made for the same object
+        // Matching keys are deterministic: reference fields resolve to the referenced record's
+        // matching key, so concurrent resolutions of the same record compute the same key and
+        // the cache updates below are idempotent.
         const matchingKeyFields = await this.getMatchingFields(describe, scope, datapackType);
 
         // Use cached matching key if available
@@ -1313,24 +1340,129 @@ export class DatapackExporter {
             return this.getAutoMatchingKey(describe, data['id'], scope);
         }
 
+        // Track the ids in the current resolution chain so reference fields that (indirectly) point
+        // back to a record that is still being resolved fall back to the raw id instead of recursing forever.
+        const resolving = options?.resolving ?? new Set<string>();
+        resolving.add(data['id']);
+
         // A defined matching key must uniquely identify the record; a collision means the matching
         // key fields are wrong for this object, so fail instead of silently generating a key.
-        const matchingKey = [ describe.name, this.buildMatchingKey(matchingKeyFields, data, scope) ].join('/');
-        if (this.usedMatchingKeys.has(matchingKey)) {
+        const matchingKey = [ describe.name, await this.buildMatchingKey(describe, matchingKeyFields, data, scope, resolving) ].join('/');
+        const owner = this.matchingKeyOwners.get(matchingKey);
+        if (owner !== undefined && owner !== data['id']) {
             throw new Error(`Matching key "${matchingKey}" is not unique for ${describe.name} (${data['id']}) -- check the matching key fields [${matchingKeyFields.join(', ')}]`);
         }
 
         this.matchingKeys.set(matchingKeyEntry, matchingKey);
-        this.usedMatchingKeys.add(matchingKey);
+        this.matchingKeyOwners.set(matchingKey, data['id']);
         return matchingKey;
     }
 
-    private buildMatchingKey(fields: string[], data: object, scope?: string) {
-        return fields.map((field) =>{
-            const value = data[field] ?? null;
-            const matchingKey = this.matchingKeys.get([scope, value].filter(p => p).join('/'));
-            return matchingKey ?? value;
-        }).join('/');
+    /**
+     * Build the matching key value for a record by joining the values of the matching key fields.
+     * Reference fields resolve to the matching key of the referenced record so source keys are
+     * deterministic and portable across orgs instead of depending on which records happened to
+     * have their matching key computed earlier in the export.
+     */
+    private async buildMatchingKey(describe: DescribeSObjectResult, fields: string[], data: object, scope: string | undefined, resolving: Set<string>) {
+        const values: unknown[] = [];
+        for (const fieldName of fields) {
+            let value = data[fieldName] ?? null;
+            if (value && typeof value === 'string') {
+                const field = await this.salesforce.schema.describeSObjectField(describe.name, fieldName, false);
+                if (field?.referenceTo?.length) {
+                    value = await this.getReferencedMatchingKey(value, scope, resolving) ?? value;
+                }
+            }
+            values.push(value);
+        }
+        return values.join('/');
+    }
+
+    /**
+     * Resolve the matching key of a record referenced from a matching key field. Returns `undefined`
+     * when the referenced record cannot be found, resolves to an auto-generated key or is part of a
+     * circular reference chain; the caller falls back to the raw record id in those cases.
+     */
+    private async getReferencedMatchingKey(id: string, scope: string | undefined, resolving: Set<string>): Promise<string | undefined> {
+        const cachedMatchingKey = this.matchingKeys.get([scope, id].filter(p => p).join('/'));
+        if (cachedMatchingKey) {
+            return cachedMatchingKey;
+        }
+
+        if (resolving.has(id)) {
+            this.logger.warn(`Circular matching key reference for ${id} -- using the record id instead`);
+            return undefined;
+        }
+
+        const record = await this.lookupById(id);
+        if (!record) {
+            this.logger.warn(`Referenced record ${id} in matching key cannot be resolved -- using the record id instead`);
+            return undefined;
+        }
+
+        const describe = await this.salesforce.schema.describeSObjectById(id);
+        const matchingKey = await this.getMatchingKey(describe, record, scope, undefined, { resolving });
+
+        // Auto-generated keys are content-less and only identify a record within its own export;
+        // keep the raw id rather than embedding a generated key into another record's key.
+        if (this.generatedSourceKeys.get(matchingKey) === id) {
+            return undefined;
+        }
+        return matchingKey;
+    }
+
+    /**
+     * Warm the lookup and matching key caches for records referenced from matching key fields.
+     * Reference fields resolve to the referenced record's matching key (see {@link buildMatchingKey});
+     * without warming, every cache miss while building a chunk fans out into a single-record query.
+     * Each level of uncached referenced records is fetched in one batched lookup instead, following
+     * the reference chain until no new records are discovered.
+     */
+    private async prefetchMatchingKeyReferences(items: Array<{ record: Record<string, any>, scope?: string, datapackType?: string }>) {
+        while (items.length) {
+            const pending = new Map<string, string | undefined>();
+            for (const { record, scope, datapackType } of items) {
+                try {
+                    await this.collectMatchingKeyReferences(record, scope, datapackType, pending);
+                } catch (error) {
+                    // Prefetching is an optimization; resolution errors surface with proper
+                    // failOnError handling when the datapack itself is built.
+                    this.logger.debug(`Error collecting matching key references:`, error);
+                }
+            }
+
+            if (pending.size === 0) {
+                return;
+            }
+
+            const fetched = await this.lookupByIds(pending.keys());
+            items = [...pending]
+                .map(([id, scope]) => ({ record: fetched.get(id)!, scope }))
+                .filter(item => !!item.record);
+        }
+    }
+
+    private async collectMatchingKeyReferences(record: Record<string, any>, scope: string | undefined, datapackType: string | undefined, pending: Map<string, string | undefined>) {
+        const id = record.Id ?? record.id;
+        if (!id) {
+            return;
+        }
+        const describe = await this.salesforce.schema.describeSObjectById(id);
+        for (const fieldName of await this.getMatchingFields(describe, scope, datapackType)) {
+            const value = record[fieldName];
+            if (!value || typeof value !== 'string') {
+                continue;
+            }
+            const field = await this.salesforce.schema.describeSObjectField(describe.name, fieldName, false);
+            if (!field?.referenceTo?.length) {
+                continue;
+            }
+            if (this.matchingKeys.has([scope, value].filter(p => p).join('/')) || this.lookupCache.get(value) !== undefined) {
+                continue;
+            }
+            pending.set(value, scope);
+        }
     }
 
     private getAutoMatchingKey(describe: DescribeSObjectResult, id: string, scope?: string) {
@@ -1396,7 +1528,19 @@ export class DatapackExporter {
         }
     }
 
-    private async getMatchingFields(type: DescribeSObjectResult, scope?: string, datapackType?: string) {
+    private getMatchingFields(type: DescribeSObjectResult, scope?: string, datapackType?: string): Promise<string[]> {
+        // Memoized per type/scope/datapack type: matching fields are static for the duration of a run
+        // while this is called for every record, twice when matching key references are prefetched.
+        const cacheKey = [type.name, scope, datapackType].join('/');
+        let matchingFields = this.matchingFieldsCache.get(cacheKey);
+        if (!matchingFields) {
+            matchingFields = this.resolveMatchingFields(type, scope, datapackType);
+            this.matchingFieldsCache.set(cacheKey, matchingFields);
+        }
+        return matchingFields;
+    }
+
+    private async resolveMatchingFields(type: DescribeSObjectResult, scope?: string, datapackType?: string) {
         if (this.standardObjects[type.name]) {
             return this.standardObjects[type.name];
         }
