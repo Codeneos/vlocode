@@ -9,7 +9,10 @@ import { vscodeCommand } from '../../lib/commandRouter';
 @vscodeCommand(VlocodeCommand.refreshDatapack, { focusLog: true  })
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
 
-    public execute(...args: any[]) : Promise<void> {
+    public async execute(...args: any[]) : Promise<void> {
+        // A refresh re-exports the datapack from the org using the same export/expand definitions as an
+        // export, so reload them from disk first to avoid running against definitions cached at start.
+        await this.reloadDefinitions();
         return this.refreshDatapacks(args[1] || [args[0] || this.currentOpenDocument]);
     }
 

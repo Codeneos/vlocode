@@ -8,7 +8,7 @@ import VlocityDatapackService from './vlocityDatapackService';
 import { count, Iterable } from '@vlocode/util';
 import VlocodeConfiguration from '../vlocodeConfiguration';
 
-@injectable()
+@injectable.transient()
 export class VlocodeDirectDeployment implements VlocityDeploy {
 
     constructor(

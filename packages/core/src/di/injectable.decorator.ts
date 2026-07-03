@@ -16,6 +16,7 @@ export interface DependencyOptions extends Partial<ServiceOptions> {
 export interface InjectableDecorator {
     /**
      * Decorates a class as injectable, registering it with the DI container.
+     * @default LifecyclePolicy.singleton when no lifecycle is specified.
      * @param options Optional dependency options, such as lifecycle and provided services.
      * @returns A class decorator function.
      */

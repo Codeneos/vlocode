@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as constants from '../../constants';
 
-import { groupBy, pluralize } from '@vlocode/util';
+import { getErrorMessage, groupBy, pluralize } from '@vlocode/util';
 import { DatapackCommand } from './datapackCommand';
 import { QueryBuilder, SObjectRecord } from '@vlocode/salesforce';
 import { container } from '@vlocode/core';
@@ -20,10 +20,25 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     public async execute(...args: any[]) : Promise<void>  {
+        // Reload datapack definitions so the export uses the current export-definitions from disk
+        // instead of definitions cached at extension start; the Datapacks explorer only reloads on its
+        // refresh action, so an export triggered after editing the definition files would otherwise
+        // run against stale definitions.
+        await this.reloadDefinitions();
+
         if (args.length > 0) {
             return this.exportObjects(args.filter(this.isExportableObjectEntry.bind(this)));
         }
         return this.exportWizard();
+    }
+
+    protected async reloadDefinitions() {
+        try {
+            await container.get(DatapackDefinitionRegistry).reload();
+        } catch (err) {
+            // A failed reload should not block the export; fall back to the already-loaded definitions.
+            this.logger.warn(`Failed to reload datapack definitions before export: ${getErrorMessage(err)}`);
+        }
     }
 
     protected isExportableObjectEntry(obj: any) : boolean {
