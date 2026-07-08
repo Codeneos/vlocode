@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+// Production launcher. `@oclif/core` is an external runtime dependency (not bundled) so it is
+// the single shared instance used by both this launcher and the command bundle (dist/cli.mjs).
+import { execute } from '@oclif/core'
+
+await execute({ dir: import.meta.url })

@@ -1,0 +1,12 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "module": "es2022",
+        "moduleResolution": "bundler",
+        "outDir": "dist",
+        "declaration": false,
+        "noEmit": true,
+        "allowImportingTsExtensions": true
+    },
+    "include": ["src/**/*", "../../build/**/*.ts", "tsdown.config.mts"]
+}

@@ -1,0 +1,107 @@
+{
+    "name": "@vlocode/cli-oclif",
+    "version": "2.2.1",
+    "description": "Hyper fast Salesforce/Vlocity CLI (oclif) — datapack & metadata deployment",
+    "keywords": [
+        "Vlocity",
+        "Salesforce",
+        "Datapacks",
+        "Metadata",
+        "Deployment",
+        "oclif"
+    ],
+    "type": "module",
+    "bin": {
+        "vlocode-next": "./bin/run"
+    },
+    "main": "dist/cli.mjs",
+    "exports": "./dist/cli.mjs",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "files": [
+        "/bin",
+        "/dist",
+        "/oclif.manifest.json"
+    ],
+    "oclif": {
+        "bin": "vlocode",
+        "dirname": "vlocode",
+        "commands": {
+            "strategy": "explicit",
+            "target": "./dist/cli.mjs",
+            "identifier": "COMMANDS"
+        },
+        "topicSeparator": " ",
+        "plugins": [
+            "@oclif/plugin-help"
+        ],
+        "topics": {
+            "datapack": {
+                "description": "Deploy, export and convert Vlocity/OmniStudio datapacks"
+            },
+            "metadata": {
+                "description": "Deploy and validate Salesforce metadata"
+            },
+            "omniscript": {
+                "description": "Activate OmniScripts and deploy their LWC components"
+            },
+            "data": {
+                "description": "Export, create and delete Salesforce records"
+            },
+            "apex": {
+                "description": "Apex tooling"
+            },
+            "salesforce": {
+                "description": "Salesforce org utilities"
+            },
+            "deploy": {
+                "description": "Run multi-stage deployment pipelines"
+            }
+        }
+    },
+    "scripts": {
+        "clean": "shx rm -rf ./dist ./oclif.manifest.json './*.tgz'",
+        "build": "tsdown -c tsdown.config.mts",
+        "watch": "tsdown -c tsdown.config.mts --watch",
+        "manifest": "oclif manifest",
+        "gendocs": "oclif readme --readme-path=README.md",
+        "prepack": "pnpm run clean && pnpm run build && oclif manifest",
+        "postpack": "shx rm -f oclif.manifest.json",
+        "lint": "eslint src"
+    },
+    "dependencies": {
+        "@oclif/core": "^4.11.11",
+        "@oclif/multi-stage-output": "^0.8.44",
+        "@oclif/plugin-help": "^6.2.53"
+    },
+    "devDependencies": {
+        "@types/fs-extra": "^11",
+        "@types/js-yaml": "^4.0.2",
+        "@types/node": "^24",
+        "@vlocode/apex": "workspace:*",
+        "@vlocode/core": "workspace:*",
+        "@vlocode/omniscript": "workspace:*",
+        "@vlocode/salesforce": "workspace:*",
+        "@vlocode/util": "workspace:*",
+        "@vlocode/vlocity": "workspace:*",
+        "@vlocode/vlocity-deploy": "workspace:*",
+        "chalk": "^4.1.2",
+        "fs-extra": "^11",
+        "isomorphic-git": "^1.30.1",
+        "js-yaml": "^4.1.0",
+        "log-symbols": "^4.0.0",
+        "oclif": "^4.23.24",
+        "shx": "^0.3.4",
+        "strip-ansi": "^7.1.0",
+        "tsdown": "0.20.3",
+        "tsx": "^4.19.4",
+        "typescript": "catalog:"
+    },
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
+    "license": "MIT",
+    "publisher": "curlybracket"
+}

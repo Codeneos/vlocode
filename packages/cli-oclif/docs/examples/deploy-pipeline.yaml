@@ -1,0 +1,81 @@
+# vlocode deploy pipeline — run with:  vlocode deploy run deploy-pipeline.yaml -u my-org
+#
+# A pipeline is an ordered list of stages, each dispatched directly to the native
+# vlocode engines. Stage types:
+#   metadata | datapack | apex | batch | createRecords | deleteRecords | destruct
+name: full-release
+description: Multi-stage Salesforce metadata + Vlocity datapack release
+
+org:
+  user: my-release-org           # optional; overridden by --user/--instance on the command
+variables:
+  metaRoot: ./src
+tokens:                          # token replacements applied to metadata stage sources
+  API_ENDPOINT: https://api.example.com
+
+continueOnError: false           # pipeline default: fail-fast. --continue-on-error overrides.
+defaults:
+  testLevel: NoTestRun           # merged into every stage unless overridden
+  ignoreWarnings: true
+
+stages:
+  # 1 — Foundation metadata (schema + security) before anything references it
+  - name: Schema & security
+    type: metadata
+    sources: [ "${metaRoot}/objects", "${metaRoot}/permissionsets" ]
+
+  # 2 — Inline Apex: disable Vlocity triggers before the data-heavy stages
+  - name: Disable triggers
+    type: apex
+    source: |
+      vlocity_cmt.TriggerSetup.disableAllTriggers();
+    continueOnError: true          # per-stage override of the pipeline default
+
+  # 3 — Apex, triggers, flows — run local tests + emit reports
+  - name: Apex & automation
+    type: metadata
+    sources: [ "${metaRoot}/classes", "${metaRoot}/triggers", "${metaRoot}/flows" ]
+    testLevel: RunLocalTests
+    testReport: ./reports/junit.xml
+    testCoverageReport: ./reports/coverage.xml
+
+  # 4 — Vlocity building blocks, then OmniScripts (strict order), then product catalog (delta)
+  - name: Vlocity building blocks
+    type: datapack
+    sources: [ vlocity/DataRaptor, vlocity/IntegrationProcedure, vlocity/VlocityUILayout ]
+    options: { maxRetries: 2 }
+  - name: OmniScripts & FlexCards
+    type: datapack
+    sources: [ vlocity/OmniScript, vlocity/VlocityCard ]
+    options: { strictOrder: true }
+  - name: Product catalog
+    type: datapack
+    sources: [ vlocity/Product2, vlocity/PriceList ]
+    options: { deltaCheck: true }
+
+  # 5 — Seed custom-setting config (sandboxes only)
+  - name: Seed org config
+    type: createRecords
+    object: OrgSetting__c
+    when: { orgType: Sandbox }
+    records:
+      - Name: FeatureFlags
+        Value__c: enabled
+
+  # 6 — Clean stale integration logs
+  - name: Purge stale logs
+    type: deleteRecords
+    soql: SELECT Id FROM Integration_Log__c WHERE CreatedDate < LAST_N_DAYS:30
+    continueOnError: true
+
+  # 7 — Re-enable triggers, then remove a deprecated component (sandboxes only)
+  - name: Enable triggers
+    type: apex
+    source: |
+      vlocity_cmt.TriggerSetup.enableAllTriggers();
+  - name: Remove deprecated class
+    type: destruct
+    components: [ ApexClass/DeprecatedHelper ]
+    when:
+      orgType: Sandbox
+      sandboxName: [ "dev*", qa ]
