@@ -62,6 +62,7 @@ export default class extends SalesforceCommand {
             'For any error that occurs while loading and converting a datapack to records the deployment will exit without making changes to the org. ' +
             'You can ignore these errors and continue deploying the datapacks that were loaded without errors by setting this option.'
         ).default(false),
+        SalesforceCommand.matchingKeysOption,
     ];
 
     private prefixFormat = {
@@ -83,6 +84,8 @@ export default class extends SalesforceCommand {
         if (!datapacks.length) {
             return;
         }
+
+        this.applyMatchingKeyOptions(options);
 
         // get options from command line
         const deployOptions: DatapackDeploymentOptions = {

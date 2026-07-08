@@ -1,6 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
-import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, DatapackMatchingKeyService } from "@vlocode/vlocity";
+import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey } from "@vlocode/vlocity";
+import { MatchingKeyService } from "../matchingKeyService";
 import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, Iterable, mapAsync, mapAsyncParallel, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
@@ -198,16 +199,12 @@ export class DatapackExporter {
         'ConnectionSentId'
     ];
 
-    private readonly autoMatchingKeyFields = [
-        'DeveloperName'
-    ];
-
-    private readonly standardObjects = {
-        'RecordType': [ 'SobjectType', 'DeveloperName' ], 
-        'User': [ 'Username' ],
-        'Group': [ 'DeveloperName' ],
-        'GroupMember': []
-    };
+    /**
+     * Standard setup objects that are never exported as datapacks; lookups to these objects are kept
+     * as matching key references without tracking them as foreign keys. Their matching key fields
+     * are defined by the {@link MatchingKeyService} built-in defaults.
+     */
+    private readonly standardObjects = new Set([ 'RecordType', 'User', 'Group', 'GroupMember' ]);
 
     private lookupCache = new Map<string, Record<string, any> | null>();
     private datapacks = new Map<string, ExportDatapack>();
@@ -218,8 +215,6 @@ export class DatapackExporter {
      * second record resolving to the same key is detected as a collision.
      */
     private matchingKeyOwners = new Map<string, string>();
-    /** Memoized {@link getMatchingFields} resolutions keyed by object type, scope and datapack type. */
-    private matchingFieldsCache = new Map<string, Promise<string[]>>();
     /**
      * Current generated source key to Salesforce record id. Keys start as
      * deterministic temporary values and are rewritten after the export graph is
@@ -258,7 +253,7 @@ export class DatapackExporter {
         private readonly salesforce: SalesforceService,
         @inject.new({ type: 'data', queryCache: false }) 
         private readonly data: SalesforceDataService,
-        private readonly datapackMatchingKeys: DatapackMatchingKeyService,
+        private readonly matchingKeyService: MatchingKeyService,
         private readonly logger: Logger,
     ) {
         this.logger = logger.distinct();
@@ -326,7 +321,7 @@ export class DatapackExporter {
             // so building the chunk does not fan out into a single-record query per reference.
             await this.prefetchMatchingKeyReferences([...records.entries()]
                 .filter(([, data]) => !!data)
-                .map(([id, data]) => ({ record: data!, scope: requests.get(id)?.scope, datapackType: requests.get(id)?.datapackType })));
+                .map(([id, data]) => ({ record: data!, scope: requests.get(id)?.scope })));
 
             const chunkRoots: ExportDatapack[] = [];
             await forEachAsyncParallel(records, async ([id, data]) => {
@@ -451,7 +446,7 @@ export class DatapackExporter {
     private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null> {
         const describe = await this.salesforce.schema.describeSObjectById(record.Id);
         const datapackType = context.datapackType ?? this.inferDatapackType(describe.name, context?.scope);
-        const matchingKey = await this.getMatchingKey(describe, record, context.scope, datapackType, { allowGeneratedKey: context.embedded === true });
+        const matchingKey = await this.getMatchingKey(describe, record, context.scope, { allowGeneratedKey: context.embedded === true });
         const exportStack = this.getExportPath(context.parent);
         this.logger.verbose(`Build ${describe.name} (${record.Id}) datapack: ${matchingKey}`);
 
@@ -1001,7 +996,7 @@ export class DatapackExporter {
 
         if (
             lookup.VlocityDataPackType === "VlocityLookupMatchingKeyObject" && 
-            !this.standardObjects[lookup.VlocityRecordSObjectType]
+            !this.standardObjects.has(lookup.VlocityRecordSObjectType)
         ) {
             const currentRefId = datapack.foreignKeys[lookup.VlocityLookupRecordSourceKey];
             if (currentRefId && currentRefId !== refId) {
@@ -1155,7 +1150,7 @@ export class DatapackExporter {
         }
 
         const describe = await this.salesforce.schema.describeSObjectById(data.id);
-        const fields = await this.getMatchingFields(describe, datapack.scope);
+        const fields = (await this.matchingKeyService.getMatchingKey(describe.name)).fields;
         const matchingKeyObject = {};
 
         for (const fieldName of fields) {
@@ -1294,7 +1289,7 @@ export class DatapackExporter {
         this.generatedSourceKeys.delete(sourceKey);
     }
 
-    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, datapackType?: string, options?: { allowGeneratedKey?: boolean, resolving?: Set<string> }) {
+    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, options?: { allowGeneratedKey?: boolean, resolving?: Set<string> }) {
         if (!data['id']) {
             throw new Error('Missing id field in data');
         }
@@ -1304,22 +1299,17 @@ export class DatapackExporter {
         // falling back to a generated key.
         const allowGeneratedKey = options?.allowGeneratedKey ?? true;
 
-        // Referenced objects (lookups) are resolved without an explicit datapack type; infer it from
-        // the SObject type so datapack-type-scoped config (e.g. autoGeneratedMatchingKey) still applies.
-        datapackType ??= this.inferDatapackType(describe.name, scope);
-
-        const autoGenerate = this.definitions.isAutoGeneratedMatchingKey({ datapackType, objectType: describe.name, scope });
-        if (autoGenerate) {
-            if (!allowGeneratedKey) {
-                throw new Error(`Cannot export ${describe.name} (${data['id']}): configured with an auto-generated matching key, which is not allowed for top-level datapacks -- define matchingKeyFields for ${describe.name}`);
-            }
-            return this.getAutoMatchingKey(describe, data['id'], scope);
-        }
-
         // Matching keys are deterministic: reference fields resolve to the referenced record's
         // matching key, so concurrent resolutions of the same record compute the same key and
         // the cache updates below are idempotent.
-        const matchingKeyFields = await this.getMatchingFields(describe, scope, datapackType);
+        const matchingKeyFields = (await this.matchingKeyService.getMatchingKey(describe.name)).fields;
+        if (!matchingKeyFields.length) {
+            // Key-less object: either explicitly configured as such or no matching key could be determined
+            if (!allowGeneratedKey) {
+                throw new Error(`Cannot export ${describe.name} (${data['id']}): no matching key fields, which is not allowed for top-level datapacks -- define matchingKeyFields for ${describe.name}`);
+            }
+            return this.getAutoMatchingKey(describe, data['id'], scope);
+        }
 
         // Use cached matching key if available
         const matchingKeyEntry = [scope, data['id']].filter(p => p).join('/');
@@ -1364,7 +1354,7 @@ export class DatapackExporter {
      * deterministic and portable across orgs instead of depending on which records happened to
      * have their matching key computed earlier in the export.
      */
-    private async buildMatchingKey(describe: DescribeSObjectResult, fields: string[], data: object, scope: string | undefined, resolving: Set<string>) {
+    private async buildMatchingKey(describe: DescribeSObjectResult, fields: ReadonlyArray<string>, data: object, scope: string | undefined, resolving: Set<string>) {
         const values: unknown[] = [];
         for (const fieldName of fields) {
             let value = data[fieldName] ?? null;
@@ -1402,7 +1392,7 @@ export class DatapackExporter {
         }
 
         const describe = await this.salesforce.schema.describeSObjectById(id);
-        const matchingKey = await this.getMatchingKey(describe, record, scope, undefined, { resolving });
+        const matchingKey = await this.getMatchingKey(describe, record, scope, { resolving });
 
         // Auto-generated keys are content-less and only identify a record within its own export;
         // keep the raw id rather than embedding a generated key into another record's key.
@@ -1419,12 +1409,12 @@ export class DatapackExporter {
      * Each level of uncached referenced records is fetched in one batched lookup instead, following
      * the reference chain until no new records are discovered.
      */
-    private async prefetchMatchingKeyReferences(items: Array<{ record: Record<string, any>, scope?: string, datapackType?: string }>) {
+    private async prefetchMatchingKeyReferences(items: Array<{ record: Record<string, any>, scope?: string }>) {
         while (items.length) {
             const pending = new Map<string, string | undefined>();
-            for (const { record, scope, datapackType } of items) {
+            for (const { record, scope } of items) {
                 try {
-                    await this.collectMatchingKeyReferences(record, scope, datapackType, pending);
+                    await this.collectMatchingKeyReferences(record, scope, pending);
                 } catch (error) {
                     // Prefetching is an optimization; resolution errors surface with proper
                     // failOnError handling when the datapack itself is built.
@@ -1443,13 +1433,13 @@ export class DatapackExporter {
         }
     }
 
-    private async collectMatchingKeyReferences(record: Record<string, any>, scope: string | undefined, datapackType: string | undefined, pending: Map<string, string | undefined>) {
+    private async collectMatchingKeyReferences(record: Record<string, any>, scope: string | undefined, pending: Map<string, string | undefined>) {
         const id = record.Id ?? record.id;
         if (!id) {
             return;
         }
         const describe = await this.salesforce.schema.describeSObjectById(id);
-        for (const fieldName of await this.getMatchingFields(describe, scope, datapackType)) {
+        for (const fieldName of (await this.matchingKeyService.getMatchingKey(describe.name)).fields) {
             const value = record[fieldName];
             if (!value || typeof value !== 'string') {
                 continue;
@@ -1526,92 +1516,6 @@ export class DatapackExporter {
                 // Ignore errors when not valid JSON
             }
         }
-    }
-
-    private getMatchingFields(type: DescribeSObjectResult, scope?: string, datapackType?: string): Promise<string[]> {
-        // Memoized per type/scope/datapack type: matching fields are static for the duration of a run
-        // while this is called for every record, twice when matching key references are prefetched.
-        const cacheKey = [type.name, scope, datapackType].join('/');
-        let matchingFields = this.matchingFieldsCache.get(cacheKey);
-        if (!matchingFields) {
-            matchingFields = this.resolveMatchingFields(type, scope, datapackType);
-            this.matchingFieldsCache.set(cacheKey, matchingFields);
-        }
-        return matchingFields;
-    }
-
-    private async resolveMatchingFields(type: DescribeSObjectResult, scope?: string, datapackType?: string) {
-        if (this.standardObjects[type.name]) {
-            return this.standardObjects[type.name];
-        }
-
-        datapackType ??= this.inferDatapackType(type.name, scope);
-        if (this.definitions.isAutoGeneratedMatchingKey({ datapackType, objectType: type.name, scope })) {
-            return [];
-        }
-
-        const matchingFields = this.definitions.getMatchingKeyFields({ objectType: type.name, scope });
-        if (matchingFields.length > 0) {
-            return this.validateFieldList(type, matchingFields);
-        }
-
-        if (!scope) {
-            for (const field of this.autoMatchingKeyFields) {
-                if (type.fields.some(f => f.name === field)) {
-                    return [ field ];
-                }
-            }
-
-            const nameField = type.fields.find(field => field.nameField && !field.autoNumber && !field.calculated);
-            if (nameField) {
-                return [ nameField.name ];
-            }
-        }
-
-        const sfMatchingKey = (await this.datapackMatchingKeys.getMatchingKeyDefinition(type.name)).fields;
-        if (sfMatchingKey.length > 0) {
-            this.logger.debug(`Using Vlocity DR Matching keys for: ${type.name}`);
-            return this.validateFieldList(type, sfMatchingKey);
-        }
-
-        const detectedFields = this.guessMatchingFields(type);
-        if (detectedFields.length > 0) {
-            this.logger.warn(`No matching fields defined for ${type.name} -- using fields: [${detectedFields}]`);
-        } else {
-            this.logger.warn(`No matching fields defined for ${type.name} -- using auto-generated matching keys`);
-        }
-        return detectedFields;
-    }
-
-    private validateFieldList(type: DescribeSObjectResult, fields: string[]) {
-        for (const field of fields) {
-            if (!type.fields.find(f => f.name === field)) {
-                throw new Error(`Matching field ${field} not found on ${type.name}`);
-            }
-        }
-        return fields;
-    }
-
-    private guessMatchingFields(type: DescribeSObjectResult) {
-        const uniqueFields = type.fields.filter(field => field.unique && !field.autoNumber && field.createable && field.updateable);
-        const requiredUniqueField = uniqueFields.find(field => field.nillable === false);
-
-        if (requiredUniqueField) {
-            return [ requiredUniqueField.name ];
-        }
-
-        // Iterate over the auto matching key fields and return the first field that exists on the object
-        for (const field of this.autoMatchingKeyFields) {
-            if (type.fields.find(f => f.name === field)) {
-                return [ field ];
-            }
-        }
-
-        if (uniqueFields.length > 0) {
-            return uniqueFields.map(field => field.name).sort((a, b) => a.localeCompare(b));
-        }
-
-        return [];
     }
 
     private async lookupWithFilter(objectType: string, filter: LookupFilter, limit?: number) {

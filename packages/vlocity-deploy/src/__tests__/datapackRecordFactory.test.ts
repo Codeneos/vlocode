@@ -6,8 +6,9 @@ import datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
 import { SalesforceConnectionProvider, SalesforceService, SchemaDataStore } from '@vlocode/salesforce';
-import { VlocityDatapack, VlocityNamespaceService, DatapackMatchingKeyService, VlocityMatchingKey } from '@vlocode/vlocity';
+import { VlocityDatapack, VlocityNamespaceService } from '@vlocode/vlocity';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
+import { MatchingKeyService, VlocityMatchingKey } from '../matchingKeyService';
 
 describe('datapackRecordFactory', () => {
     function mockConnectionProvider(results: any[]) {
@@ -23,14 +24,14 @@ describe('datapackRecordFactory', () => {
         } as any) as SalesforceConnectionProvider;
     }
 
-    function mockMatchingKeyService() {
+    function mockMatchingKeyService(fields: string[] = [ 'Name' ]) {
         return ({
-            getMatchingKeyDefinition: (obj: string) => ({
+            getMatchingKey: async (obj: string): Promise<VlocityMatchingKey> => ({
                 sobjectType: obj,
-                fields: [ 'Name' ],
+                fields,
                 returnField: 'Id',
-            }) as VlocityMatchingKey
-        } as any) as DatapackMatchingKeyService;
+            })
+        } as any) as MatchingKeyService;
     }
 
     function mockSalesforceService(schema: SchemaDataStore) {
@@ -55,7 +56,7 @@ describe('datapackRecordFactory', () => {
         testContainer.use(new VlocityNamespaceService('vlocity_cmt'));
         testContainer.use(schema);
         testContainer.use(mockSalesforceService(schema), SalesforceService);
-        testContainer.use(mockMatchingKeyService(), DatapackMatchingKeyService);
+        testContainer.use(mockMatchingKeyService(), MatchingKeyService);
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
         const sut = testContainer.new(DatapackRecordFactory);
@@ -175,6 +176,29 @@ describe('datapackRecordFactory', () => {
         });
     });
 
+    it('fails the top-level record but not embedded records when no matching key can be determined', async () => {
+        // Arrange
+        const schemaDataFile = path.join(__dirname, './data/schema.json');
+        const testContainer = container.create();
+        const schema = await new SchemaDataStore().loadFromFile(schemaDataFile);
+
+        testContainer.use(mockConnectionProvider([]), SalesforceConnectionProvider);
+        testContainer.use(new VlocityNamespaceService('vlocity_cmt'));
+        testContainer.use(schema);
+        testContainer.use(mockSalesforceService(schema), SalesforceService);
+        testContainer.use(mockMatchingKeyService([]), MatchingKeyService);
+
+        const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
+        const sut = testContainer.new(DatapackRecordFactory);
+
+        // Act
+        const records = await sut.createRecords(datapack);
+
+        // Assert -- the top-level record requires a matching key while embedded records are insert-only
+        expect(records[0].isFailed).toBe(true);
+        expect(records.slice(1).every(record => !record.isFailed)).toBe(true);
+    });
+
     it('should stringify convert JSON object', async () => {
         // Arrange
         const testContainer = container.create();
@@ -239,7 +263,7 @@ describe('datapackRecordFactory', () => {
         testContainer.add(new VlocityNamespaceService('vlocity_cmt'));
         testContainer.add(schema, { provides: [ SchemaDataStore ] });
         testContainer.add(mockSalesforceService(schema), { provides: [ SalesforceService ] });
-        testContainer.add(mockMatchingKeyService(), { provides: [ DatapackMatchingKeyService ] });
+        testContainer.add(mockMatchingKeyService(), { provides: [ MatchingKeyService ] });
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
         const sut = testContainer.new(DatapackRecordFactory);

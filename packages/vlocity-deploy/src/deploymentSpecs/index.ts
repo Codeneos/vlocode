@@ -24,7 +24,6 @@ export * from './omniDataTransform';
 export * from './decisionMatrix';
 
 // Multi purpose specs
-export * from './matchingFields';
 export * from './recordTypeVisibility';
 
 // Salesforce Contracts

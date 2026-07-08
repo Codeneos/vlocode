@@ -15,6 +15,7 @@ import {
 } from '@vlocode/vlocity-deploy';
 
 import VlocodeService from '../vlocodeService';
+import { getWorkspaceFileCandidates } from '../workspaceFiles';
 import { ConfigurationManager } from '../config';
 
 const customDatapackDefinitionsFile = 'datapack-definitions.yaml';
@@ -235,7 +236,7 @@ export class DatapackDefinitionRegistry {
     }
 
     private async getConfiguredCustomDefinitionFile(label: string, file: string) {
-        for (const candidate of this.getConfiguredDefinitionFileCandidates(file)) {
+        for (const candidate of getWorkspaceFileCandidates(file)) {
             const definition = await this.getCustomDefinitionFile(label, candidate);
             if (definition) {
                 return definition;
@@ -264,19 +265,6 @@ export class DatapackDefinitionRegistry {
                 label.trim(),
                 file.trim()
             ]);
-    }
-
-    private getConfiguredDefinitionFileCandidates(file: string) {
-        if (path.isAbsolute(file)) {
-            return [ file ];
-        }
-
-        const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
-        if (!workspaceFolders.length) {
-            return [ path.resolve(file) ];
-        }
-
-        return workspaceFolders.map(workspace => path.join(workspace.uri.fsPath, file));
     }
 
     private getCustomRootId(label: string) {

@@ -33,6 +33,7 @@ export default abstract class VlocodeConfiguration extends BaseConfiguration {
     projectPath?: string;
     customJobOptionsYaml?: string;
     customExportDefinitionFiles?: CustomExportDefinitionFiles;
+    matchingKeyFiles?: string[];
     parallelLimit?: number;
     deployOnSave: boolean;
     autoActivate: boolean;

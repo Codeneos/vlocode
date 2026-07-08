@@ -1,11 +1,12 @@
 
 import { SalesforceService, Field, NamespaceService } from '@vlocode/salesforce';
 import { Logger, injectable } from '@vlocode/core';
-import { isSalesforceId } from '@vlocode/util';
+import { getErrorMessage, isSalesforceId } from '@vlocode/util';
 import { DateTime } from 'luxon';
 import { DATAPACK_RESERVED_FIELDS, RECORD_TYPE_FIELD } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
-import { VlocityDatapack, DatapackMatchingKeyService } from '@vlocode/vlocity';
+import { VlocityDatapack } from '@vlocode/vlocity';
+import { MatchingKeyService } from './matchingKeyService';
 import { randomUUID } from 'crypto';
 
 @injectable()
@@ -21,7 +22,7 @@ export class DatapackRecordFactory {
     constructor(
         private readonly namespaceService: NamespaceService,
         private readonly salesforce: SalesforceService,
-        private readonly matchingKeyService: DatapackMatchingKeyService,
+        private readonly matchingKeyService: MatchingKeyService,
         private readonly logger: Logger) {
     }
 
@@ -32,16 +33,36 @@ export class DatapackRecordFactory {
     // List<Object> dataSetObjects = (List<Object>)JSON.deserializeUntyped('CURRENT_DATA_PACKS_CONTEXT_DATA');
 
     public async createRecords(datapack: VlocityDatapack) : Promise<DatapackDeploymentRecord[]> {
+        const records = await this.createDatapackRecords(datapack);
+        const rootRecord = records[0];
+        if (!rootRecord.isFailed && !rootRecord.upsertFields?.length) {
+            // Key-less embedded records are always inserted; the root record of a datapack requires a
+            // matching key to avoid duplicating the whole datapack on every deployment
+            rootRecord.setFailed(
+                `No matching key fields configured for ${rootRecord.sobjectType}; ` +
+                `top-level datapacks require a matching key -- configure matching key fields in a matching key file or export definition`
+            );
+        }
+        return records;
+    }
+
+    private async createDatapackRecords(datapack: VlocityDatapack) : Promise<DatapackDeploymentRecord[]> {
         const sobject = await this.salesforce.schema.describeSObject(datapack.sobjectType, false);
         if (!sobject) {
             // Invalid Sobject name check
             throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
         }
 
-        const matchingKey = await this.getMatchingKeyDefinition(datapack);
-        const sourceKey = this.getDatapackSourceKey(datapack); 
-        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key, matchingKey?.fields);
+        const sourceKey = this.getDatapackSourceKey(datapack);
+        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
         const records : Array<typeof record> = [ record ];
+
+        try {
+            record.upsertFields = [ ...(await this.matchingKeyService.getMatchingKey(sobject.name)).fields ];
+        } catch (err) {
+            // Fail only this record; other records in the deployment can still deploy
+            record.setFailed(getErrorMessage(err));
+        }
 
         for (const [key, value] of datapack.entries().filter(([key]) => !key.includes('.'))) {
             const field = await this.salesforce.schema.describeSObjectField(sobject.name, key, false);
@@ -69,7 +90,7 @@ export class DatapackRecordFactory {
                     if (item?.VlocityDataPackType === 'SObject') {
                         // Embedded datapack
                         const embeddedDatapack = new VlocityDatapack(datapack.datapackType, item, { key: datapack.key });
-                        const embeddedRecords = await this.createRecords(embeddedDatapack);
+                        const embeddedRecords = await this.createDatapackRecords(embeddedDatapack);
                         records.push(...embeddedRecords);
                     } else if (item?.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
                         if (!field) {
@@ -128,16 +149,6 @@ export class DatapackRecordFactory {
         // some objects do not have a source key - generate a unique key so we can deploy them
         const primaryKey = datapack.globalKey || `Generated/${randomUUID()}`;
         return `${datapack.sobjectType}/${primaryKey}`;
-    }
-
-    private async getMatchingKeyDefinition(datapack: { datapackType?: string, sobjectType: string }) {
-        if (datapack.datapackType) {
-            const datapackMatchingKey = await this.matchingKeyService.getMatchingKeyDefinition(datapack.datapackType);
-            if (datapackMatchingKey.sobjectType === datapack.sobjectType) {
-                return datapackMatchingKey
-            }
-        }
-        return this.matchingKeyService.getMatchingKeyDefinition(datapack.sobjectType);
     }
 
     // eslint-disable-next-line complexity

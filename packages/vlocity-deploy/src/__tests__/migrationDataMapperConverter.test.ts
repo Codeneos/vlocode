@@ -33,7 +33,7 @@ describe('MigrationDataMapperConverter', () => {
             })
         };
         const matchingKeys = {
-            getMatchingKeyDefinition: jest.fn(async () => ({
+            getMatchingKey: jest.fn(async () => ({
                 sobjectType: 'vlocity_cmt__CalculationProcedure__c',
                 fields: options?.matchingKeyFields ?? [],
                 returnField: 'Id'
@@ -165,6 +165,6 @@ describe('MigrationDataMapperConverter', () => {
                 '%vlocity_namespace%__SubType__c'
             ]
         });
-        expect(matchingKeys.getMatchingKeyDefinition).toHaveBeenCalledWith('vlocity_cmt__CalculationProcedure__c');
+        expect(matchingKeys.getMatchingKey).toHaveBeenCalledWith('vlocity_cmt__CalculationProcedure__c');
     });
 });

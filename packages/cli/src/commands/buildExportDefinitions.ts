@@ -3,9 +3,9 @@ import { join } from 'path';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
 import { Logger, LogManager } from '@vlocode/core';
-import { DatapacksExpandDefinitionAccessor, MigrationDataMapperConverter, DatapacksExpandDefinition } from '@vlocode/vlocity-deploy';
+import { DatapacksExpandDefinitionAccessor, MigrationDataMapperConverter, DatapacksExpandDefinition, MatchingKeyService } from '@vlocode/vlocity-deploy';
 import { SalesforceService } from '@vlocode/salesforce';
-import { DatapackInfoService, DatapackMatchingKeyService } from '@vlocode/vlocity';
+import { DatapackInfoService } from '@vlocode/vlocity';
 
 import { Option } from '../command.js';
 import { SalesforceCommand } from '../salesforceCommand.js';
@@ -42,7 +42,7 @@ export default class extends SalesforceCommand {
         const converter = new MigrationDataMapperConverter(
             this.container.get(SalesforceService),
             this.container.get(DatapackInfoService),
-            this.container.get(DatapackMatchingKeyService),
+            this.container.get(MatchingKeyService),
             expandDefinition ? new DatapacksExpandDefinitionAccessor(expandDefinition) : undefined,
         );
 

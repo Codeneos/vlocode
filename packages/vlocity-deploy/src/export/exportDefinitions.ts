@@ -64,6 +64,10 @@ export interface DatapackExportDefinition extends ObjectFilter {
      */
     embeddedObjects?: Record<string, DatapackExportEmbeddedObject>;
     /**
+     * List of related objects that are exported as separate datapacks but are related to this object and should be included in the export.
+     */
+    relatedObjects?: ObjectFilter[];
+    /**
      * Optional object with specific export settings for fields in the object.
      */
     fields?: Record<string, ExportFieldDefinition>;

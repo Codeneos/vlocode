@@ -1,18 +1,14 @@
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
-import { DatapackExportQueries } from '../../lib/vlocity/datapackExportQueries';
 import { container } from '@vlocode/core';
 import { VlocityDatapack } from '@vlocode/vlocity';
+import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 
 import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';
 
 @vscodeCommand(VlocodeCommand.cloneDatapack)
 export default class CloneDatapackCommand extends DatapackCommand {
-
-    protected get exportQueries(): DatapackExportQueries {
-        return container.get(DatapackExportQueries);
-    }
 
     public execute(...args: any[]) : Promise<void> {
         return this.cloneDatapacks(args[1] || [args[0] || this.currentOpenDocument]);
@@ -29,10 +25,10 @@ export default class CloneDatapackCommand extends DatapackCommand {
     }
 
     protected async cloneDatapack(datapack: VlocityDatapack, options?: { updateGlobalKey?: boolean }) : Promise<any> {
-        const matchingFields = await this.exportQueries.getMatchingFields(datapack.datapackType);
+        const matchingFields = [ ...(await container.get(MatchingKeyService).getMatchingKey(datapack.sobjectType)).fields ];
         const datapackName = datapack.name || datapack.sourceKey;
 
-        if (!matchingFields) {
+        if (!matchingFields.length) {
             return vscode.window.showWarningMessage('The selected datapack does not have any matching fields');
         }
 

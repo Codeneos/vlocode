@@ -1,7 +1,6 @@
 export * from './datapack';
 export * from './datapackFileWriter';
 export * from './datapackInfoService';
-export * from './datapackMatchingKeyService';
 export * from './datapackLoader';
 export * from './datapackSource';
 export * from './datapackUtil';

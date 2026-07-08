@@ -1,6 +1,7 @@
 import { CachedFileSystemAdapter, container, NodeFileSystem } from '@vlocode/core';
 import { InteractiveConnectionProvider, SalesforceConnectionProvider, SfdxConnectionProvider, JsForceConnectionProvider, SalesforceConnection, ReplayTransport, SessionDataStore, HttpTransport, TransportRecorder } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 import { Command, Option } from './command';
 
 /**
@@ -16,6 +17,25 @@ export abstract class SalesforceCommand extends Command {
         new Option('--record-session', 'record the interaction with Salesforce to a session log which can be replayed later using the `--replay-session` command').conflicts('replay-session'),
         new Option('--replay-session <file>', 'load the specified session log previously recorded through the replay session option').conflicts('record-session'),
     ];
+
+    /**
+     * Option for commands that resolve matching keys (deploy and export) to load extra matching key files;
+     * apply with {@link applyMatchingKeyOptions}.
+     */
+    static matchingKeysOption = new Option('--matching-keys <files...>',
+        'one or more JSON or YAML files defining the matching key fields per SObject type, i.e: { "Product2": [ "ProductCode" ] }. ' +
+        'Matching keys from these files take precedence over matching keys defined in the org and in export definitions. ' +
+        'A matching-keys.json or matching-keys.yaml file in the current directory is always loaded when present.'
+    );
+
+    /**
+     * Register the matching key files from the `--matching-keys` option on the {@link MatchingKeyService}.
+     */
+    protected applyMatchingKeyOptions(options: { matchingKeys?: string[] }) {
+        if (options.matchingKeys?.length) {
+            this.container.get(MatchingKeyService).setMatchingKeyFiles(...options.matchingKeys);
+        }
+    }
 
     protected getConnection() {
         return this.container.get(SalesforceConnectionProvider).getJsForceConnection();

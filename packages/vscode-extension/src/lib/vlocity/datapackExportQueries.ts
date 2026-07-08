@@ -1,11 +1,12 @@
 import { injectable, inject, Logger } from "@vlocode/core";
 import { QueryBuilder, QueryService, SalesforceService, type FieldType } from "@vlocode/salesforce";
-import { DatapackTypeDefinitions, DatapackMatchingKeyService } from "@vlocode/vlocity";
+import { DatapackTypeDefinitions } from "@vlocode/vlocity";
+import { MatchingKeyService } from "@vlocode/vlocity-deploy";
 import { ObjectEntry } from './vlocityDatapackService';
 import { deepClone, removeNamespacePrefix } from '@vlocode/util';
 
 export interface DatapackExportMatchingKeyProvider {
-    getMatchingKeyDefinition(type: string): Promise<{ sobjectType: string; fields: string[]; returnField: string }>;
+    getMatchingKey(sobjectType: string): Promise<{ sobjectType: string; fields: readonly string[]; returnField: string }>;
 }
 
 export interface DatapackExportQueryField {
@@ -24,21 +25,9 @@ export interface DatapackExportQuerySalesforce {
 export class DatapackExportQueries {
 
     constructor(
-        @inject(DatapackMatchingKeyService) private readonly matchingKeys: DatapackExportMatchingKeyProvider,
+        @inject(MatchingKeyService) private readonly matchingKeys: DatapackExportMatchingKeyProvider,
         @inject(SalesforceService) private readonly salesforce: DatapackExportQuerySalesforce,
         private readonly logger: Logger) {
-    }
-
-    /**
-     * Get list of fields used for matching datapacks against Salesforce records. 
-     * @param datapackType Datapack type
-     * @returns List of fields as string array
-     */
-    public async getMatchingFields(datapackType: string, sobjectType?: string): Promise<string[]> {
-        const exportDefinition = this.getExportDefinition(datapackType, sobjectType);
-        const macthingKeys = exportDefinition?.matchingKey ?? 
-            await this.matchingKeys.getMatchingKeyDefinition(datapackType);
-        return macthingKeys.fields ?? [ 'Name' ];
     }
 
     /**
@@ -54,27 +43,27 @@ export class DatapackExportQueries {
                 fieldList: [ 'Id' ],
             }
         );
-        const matchingDefinition = await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
-        const macthingKey = matchingDefinition.fields.length ? matchingDefinition : (exportDefinition?.matchingKey ?? matchingDefinition);
+        const matchingKey = await this.matchingKeys.getMatchingKey(datapack.sobjectType);
+        const matchingFields = [ ...matchingKey.fields ];
         const nameField = await this.salesforce.schema.getNameField(datapack.sobjectType);
 
-        if (!macthingKey.fields.length && nameField) {
-            macthingKey.fields.push(nameField);
+        if (!matchingFields.length && nameField) {
+            matchingFields.push(nameField);
         } else if (nameField) {
             query.select(nameField);
         }
-        
-        if (macthingKey.returnField) {
-            query.select(macthingKey.returnField);
+
+        if (matchingKey.returnField) {
+            query.select(matchingKey.returnField);
         }
-        query.select(...macthingKey.fields); 
+        query.select(...matchingFields);
 
         if (datapack.id) {
             query.where.equals('Id', datapack.id);
         } else {
             const missingMatchingKeys = new Array<string>();
 
-            for (const field of macthingKey.fields) {
+            for (const field of matchingFields) {
                 const fieldDescribe = await this.salesforce.schema.describeSObjectFieldPath(query.sobjectType, field, false);
                 if (!fieldDescribe) {
                     this.logger.warn(`Unable to resolve field ${field} for ${datapack.datapackType} export query`);
@@ -86,21 +75,21 @@ export class DatapackExportQueries {
                 if (value !== undefined) {
                     const fullName = fieldDescribe.map(f => f.name).join('.');
                     query.where.and.condition(`${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`);
-                } else if (macthingKey.fields.includes(field)) {
+                } else {
                     missingMatchingKeys.push(field);
                 }
             }
 
-            if (!macthingKey.fields.length) {
+            if (!matchingFields.length) {
                 throw new Error(
                     `Unable to build an export query for ${
                         datapack.datapackType
                     }; no matching key fields are defined.`
                 );
-            } else if (macthingKey.fields.length && missingMatchingKeys.length === macthingKey.fields.length) {
+            } else if (missingMatchingKeys.length === matchingFields.length) {
                 throw new Error(
                     `Unable to build an export query for ${datapack.datapackType}; ` +
-                    `all matching key fields (${macthingKey.fields.join(', ')}) are undefined: ${
+                    `all matching key fields (${matchingFields.join(', ')}) are undefined: ${
                         JSON.stringify(datapack, undefined, 2)
                     }`
                 );

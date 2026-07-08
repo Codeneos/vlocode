@@ -1,5 +1,5 @@
 import { injectable } from "@vlocode/core";
-import { deepClone, removeNamespacePrefix } from "@vlocode/util";
+import { asArray, deepClone, normalizeSObjectTypeName, removeNamespacePrefix } from "@vlocode/util";
 import { DatapackExportDefinition, ExportFieldDefinition, DatapackExportEmbeddedObject } from "./exportDefinitions";
 
 export type ObjectRef = { datapackType?: string, objectType: string, scope?: string }
@@ -7,7 +7,6 @@ export type ObjectRef = { datapackType?: string, objectType: string, scope?: str
 type DatapackExportDefinitionStoreEntry = DatapackExportDefinition & {
     datapackType: string;
     scope?: string;
-    matchingKeyFields: string[];
 }
 
 type DatapackExportDefinitionMap = Record<string, DatapackExportDefinitionStoreEntry>;
@@ -23,10 +22,6 @@ const SOBJECT_TYPE = 'SObject';
 @injectable.singleton()
 export class DatapackExportDefinitionStore {
 
-    // private readonly mergeFields: Array<keyof DatapackExportDefinition> = [
-    //     'ignoreFields'
-    // ];
-
     /**
      * Scoped configuration for specific contexts such as Datapack types or other custom scopes.
      * The first level key represents the scope name and the second level key the Datapack type.
@@ -35,19 +30,15 @@ export class DatapackExportDefinitionStore {
         [GLOBAL_SCOPE]: {}
     };
 
-    private matchingKeyFields: Record<string | symbol,  Record<string, string[]>> = {};
-
     /**
      * Clears the configuration for a specific scope or all configurations if no scope is provided.
      */
     public clear(scope?: string) {
         if (!scope) {
             this.config = { [GLOBAL_SCOPE]: {} };
-            this.matchingKeyFields = {};
             return;
         } else {
             delete this.config[scope];
-            delete this.matchingKeyFields[scope];
         }
     }
 
@@ -74,12 +65,6 @@ export class DatapackExportDefinitionStore {
         }
     }
 
-    // /**
-    //  * Retrieves a definition from the DatapackExportDefinition object.
-    //  * @param item - The item from which to retrieve the value.
-    //  * @returns The DatapackExportDefinition for the specified item.
-    //  */
-    // public get(item: ObjectRef): DatapackExportDefinition;
     /**
      * Retrieves the value of a specific key from a given item in the DatapackExportDefinition.
      * @param item - The item from which to retrieve the value.
@@ -155,31 +140,14 @@ export class DatapackExportDefinitionStore {
      * @param definition - The configuration for the item.
      */
     public add(definition: DatapackExportDefinition, context: { datapackType?: string, scope?: string }) {
-        const scope = context.scope ?? GLOBAL_SCOPE;
         const datapackType = context.datapackType ?? definition.objectType;
-        const configStore = this.getDefinitionStore(context);
         const config = Object.assign(deepClone(definition), context);
-        configStore[datapackType] = config;
-
-        this.matchingKeyFields[scope] = this.matchingKeyFields[scope] ?? {};
-        this.matchingKeyFields[scope][definition.objectType] = config.matchingKeyFields ?? [];
+        if (config.matchingKeyFields !== undefined) {
+            // Normalize as loaded YAML definitions can specify a single field as scalar value
+            config.matchingKeyFields = asArray(config.matchingKeyFields).map(String);
+        }
+        this.getDefinitionStore(context)[datapackType] = config;
     }
-
-    // /**
-    //  * Retrieves the DatapackExportDefinition for the specified objectType and scope.
-    //  * If the definition does not exist, it creates a new one and stores it in the configuration store.
-    //  *
-    //  * @param objectType - The type of the object for which to retrieve the definition.
-    //  * @param scope - The scope of the definition. Can be undefined.
-    //  * @returns The DatapackExportDefinition for the specified objectType.
-    //  */
-    // private getDefinition(objectType: string, scope: string | undefined): DatapackExportDefinition {
-    //     const configStore = this.getDefinitionStore(scope);
-    //     if (!configStore[objectType]) {
-    //         configStore[objectType] = this.createConfig(objectType);
-    //     }
-    //     return configStore[objectType];
-    // }
 
     private getDefinitionStore(scope: string | undefined | { scope?: string | undefined }): Record<string, DatapackExportDefinition> {
         scope = typeof scope === 'string' ? scope : scope?.scope;
@@ -191,15 +159,6 @@ export class DatapackExportDefinitionStore {
         }
         return this.config[GLOBAL_SCOPE];
     }
-
-    // private createConfig(objectType: string, config?: Partial<DatapackExportDefinition>): DatapackExportDefinition {
-    //     return {
-    //         objectType,
-    //         name: config?.name ?? `SObject_${objectType}`,
-    //         matchingKeyFields: [],
-    //         ...config
-    //     };
-    // }
 
     public isFieldIgnored(item: ObjectRef, field: string) {
         const ignoreFields = this.get(item, 'ignoreFields');
@@ -217,12 +176,40 @@ export class DatapackExportDefinitionStore {
         return this.getFieldConfig(item, field, 'embeddedLookup') === true;
     }
 
-    public getMatchingKeyFields(item: Omit<ObjectRef, 'datapackType'>) {
-        return this.matchingKeyFields[item.scope ?? GLOBAL_SCOPE]?.[item.objectType] ?? [];
+    /**
+     * Get the matching key fields configured for an SObject type in the loaded export definitions.
+     * Matching keys are object-scoped so definitions from all scopes are considered; the first
+     * definition in scope order (global scope first) that configures a matching key wins.
+     * @param objectType SObject type with or without (placeholder) namespace prefix
+     * @returns The configured matching key fields, an empty array for objects marked with an
+     * auto-generated matching key, or `undefined` when no loaded definition configures a key
+     */
+    public getMatchingKeyFields(objectType: string): string[] | undefined {
+        for (const definition of this.findObjectDefinitions(objectType)) {
+            if (definition.autoGeneratedMatchingKey === true) {
+                return [];
+            }
+            if (definition.matchingKeyFields?.length) {
+                return [ ...definition.matchingKeyFields ];
+            }
+        }
+        return undefined;
     }
 
-    public isAutoGeneratedMatchingKey(item: ObjectRef) {
-        return this.get(item, 'autoGeneratedMatchingKey') === true;
+    /**
+     * Iterate all definitions for an SObject type across all scopes; global scope definitions are
+     * yielded first. The object type is compared namespace-agnostic and case-insensitive.
+     * Definitions without an object type (such as the catch-all `SObject` definition) never match.
+     */
+    private *findObjectDefinitions(objectType: string): Generator<DatapackExportDefinitionStoreEntry> {
+        const normalizedType = normalizeSObjectTypeName(objectType);
+        for (const scope of [ GLOBAL_SCOPE as string | symbol, ...Object.keys(this.config) ]) {
+            for (const definition of Object.values(this.config[scope] ?? {})) {
+                if (definition.objectType && normalizeSObjectTypeName(definition.objectType) === normalizedType) {
+                    yield definition;
+                }
+            }
+        }
     }
 
     public getFieldConfig(item: ObjectRef, field: string, configKey?: keyof ExportFieldDefinition) {

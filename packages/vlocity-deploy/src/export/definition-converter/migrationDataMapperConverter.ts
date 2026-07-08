@@ -1,7 +1,8 @@
 import type { SalesforceService } from "@vlocode/salesforce";
-import { VlocityNamespaceService, type DatapackInfoService, type DatapackMatchingKeyService } from "@vlocode/vlocity";
+import { type DatapackInfoService } from "@vlocode/vlocity";
+import type { MatchingKeyService } from "../../matchingKeyService";
 import { MigrationDataMapperFields, type MigrationDataMapperItemRecord } from "./migrationDataMapper.types";
-import { except, groupBy, intersect, iterateObject, removeNamespacePrefix, sortBy, stringEqualsIgnoreCase, substringAfter } from "@vlocode/util";
+import { except, groupBy, iterateObject, removeNamespacePrefix, sortBy, stringEqualsIgnoreCase, substringAfter } from "@vlocode/util";
 import type { DatapackExportDefinition, ExportFieldDefinition, LookupFilerPrimitive, LookupFilter, ObjectFilter } from "../exportDefinitions";
 import { LogManager } from "@vlocode/core";
 import type { DatapacksExpandDefinitionAccessor } from "../expandDefinitionAccessor";
@@ -11,14 +12,12 @@ export class MigrationDataMapperConverter {
 
     private migrationRecordObject = '%vlocity_namespace%__DRMapItem__c';
     private migrationRecordFields = [ ...MigrationDataMapperFields ];
-    //private matchingKeyRecordObject = '%vlocity_namespace%__DRMatchingKey__mdt';
-    //private matchingKeyRecordFields = [ 'QualifiedApiName', 'NamespacePrefix', '%vlocity_namespace%__MatchingKeyObject__c', '%vlocity_namespace%__MatchingKeyFields__c' ];
     private logger = LogManager.get('MigrationDataMapperConverter');
 
     constructor(
         private readonly salesforce: SalesforceService,
         private readonly datapackInfo: DatapackInfoService,
-        private readonly matchingKeys: DatapackMatchingKeyService,
+        private readonly matchingKeys: MatchingKeyService,
         private readonly expandDefinitions?: DatapacksExpandDefinitionAccessor
     ) {
     }
@@ -74,7 +73,7 @@ export class MigrationDataMapperConverter {
         // Access expand definition for this datapack type and primary object type to get additional details for the export definition such as file names and source key fields
         const sourceKeyDefinition = this.expandDefinitions?.getValue(datapackName, primaryObjectType, 'SourceKeyDefinition');
         const sourceKeyFields = await this.resolveFields(primaryObjectType, (sourceKeyDefinition ?? []).filter(f => !f.startsWith('_')));
-        const matchingKeysFields = (await this.matchingKeys.getMatchingKeyDefinition(primaryObjectType)).fields;
+        const matchingKeysFields = [ ...(await this.matchingKeys.getMatchingKey(primaryObjectType)).fields ];
         const folderName = this.expandDefinitions?.getValue(datapackName, primaryObjectType, 'FolderName');
         const fileName = this.expandDefinitions?.getValue(datapackName, primaryObjectType, 'FileName');
 
@@ -257,13 +256,6 @@ export class MigrationDataMapperConverter {
         );
     }
 
-    private async getDRMatchingKeys(name: string): Promise<MigrationDataMapperItemRecord[]> {
-        return this.salesforce.data.lookup<MigrationDataMapperItemRecord>(
-            this.migrationRecordObject, 
-            { name }, 
-            this.migrationRecordFields as any
-        );
-    }
 
     private normalizeNamespacePlaceholders<T>(value: T): T {
         if (typeof value === 'string') {

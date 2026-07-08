@@ -13,7 +13,7 @@ describe('DatapackExportQueries', () => {
 
     function mockMatchingKeyService(fields: string[] = [ 'Name' ]): DatapackExportMatchingKeyProvider {
         return {
-            getMatchingKeyDefinition: async (obj: string) => ({
+            getMatchingKey: async (obj: string) => ({
                 sobjectType: obj,
                 fields: [...fields],
                 returnField: 'Id',

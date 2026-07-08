@@ -15,6 +15,7 @@ type DatapackExportResult = Awaited<ReturnType<DatapackExporter['exportObject']>
 
 type ExportCommandOptions = {
     definitions?: string;
+    matchingKeys?: string[];
     expand?: boolean;
     query?: string;
     file?: string;
@@ -107,7 +108,8 @@ export default class extends SalesforceCommand {
         new Option(
             '--no-progress',
             'disable the interactive progress bar and use plain forward-printing output'
-        )
+        ),
+        SalesforceCommand.matchingKeysOption,
     ];
 
     private readonly exportFileLoader = new DatapackExportFileLoader();
@@ -118,6 +120,7 @@ export default class extends SalesforceCommand {
 
     public async run(ids?: string[]) {
         const options = this.options as ExportCommandOptions;
+        this.applyMatchingKeyOptions(options);
         const argIds = Array.isArray(ids) ? ids : [];
         const exportFile = options.file ? await this.loadExportFile(options.file) : undefined;
 

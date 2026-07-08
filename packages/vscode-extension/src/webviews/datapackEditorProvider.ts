@@ -3,15 +3,15 @@ import path from 'path';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
-import { deepClone, isRecord } from '@vlocode/util';
-import { FileSystem, injectable } from '@vlocode/core';
+import { deepClone, getErrorMessage, isRecord } from '@vlocode/util';
+import { FileSystem, injectable, Logger } from '@vlocode/core';
 import {
     DatapackInfoService,
-    DatapackMatchingKeyService,
     getDatapackHeaders,
     VlocityDatapack,
     type VlocityDatapackReference
 } from '@vlocode/vlocity';
+import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 import { getDatapackHeadersInWorkspace } from '../lib/vlocity/datapackUtil';
 import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
 import { WorkspaceDocuments } from '../lib/workspaceDocuments';
@@ -82,7 +82,8 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
         fileSystem: FileSystem,
         private readonly datapackInfo: DatapackInfoService,
         datapackExpansion: DatapackExpansionService,
-        private readonly matchingKeys: DatapackMatchingKeyService
+        private readonly matchingKeys: MatchingKeyService,
+        private readonly logger: Logger
     ) {
         super(context, service, fileSystem, datapackInfo, datapackExpansion);
     }
@@ -251,10 +252,15 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
     }
 
     private async createReferenceFilter(reference: VlocityDatapackReference): Promise<Record<string, unknown>> {
-        const matchingKey = await this.matchingKeys.getMatchingKeyDefinition(reference.VlocityRecordSObjectType);
+        const matchingKeyFields = await this.matchingKeys.getMatchingKey(reference.VlocityRecordSObjectType)
+            .then(matchingKey => matchingKey.fields)
+            .catch(error => {
+                this.logger.warn(`Unable to resolve matching key for ${reference.VlocityRecordSObjectType}: ${getErrorMessage(error)}`);
+                return [];
+            });
         const referenceValues = reference as Record<string, unknown>;
-        const fields = matchingKey.fields.length
-            ? matchingKey.fields
+        const fields = matchingKeyFields.length
+            ? matchingKeyFields
             : Object.keys(referenceValues).filter(key => !key.startsWith('Vlocity') && this.isPrimitive(referenceValues[key]));
 
         return Object.fromEntries(fields

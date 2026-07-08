@@ -56,6 +56,15 @@ export function removeNamespacePrefix(field : string) : string {
 }
 
 /**
+ * Normalize an SObject type or field name for case- and namespace-insensitive comparisons;
+ * strips both real and placeholder namespace prefixes and lower cases the name.
+ * @param name SObject type or field name to normalize
+ */
+export function normalizeSObjectTypeName(name: string): string {
+    return removeNamespacePrefix(name).toLowerCase().trim();
+}
+
+/**
  * Extract both the name of a type as well as the namespace if any
  * @param typeName Field to separate namespace and type
  */

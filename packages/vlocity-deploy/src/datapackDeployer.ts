@@ -41,9 +41,8 @@ export class DatapackDeployer {
     /**
      * Deployment-scoped spec instances. The registry yields freshly (lazily) instantiated specs on every
      * call, so we materialize them once per deployer -- which is created per deployment -- and reuse them
-     * across every spec-function invocation. This lets specs that hold per-deployment state (e.g.
-     * {@link MatchingFieldsSpec} caching `matching-keys.json`) initialize once instead of re-running for
-     * every datapack.
+     * across every spec-function invocation. This lets specs that hold per-deployment state initialize
+     * once instead of re-running for every datapack.
      */
     private materializedSpecs?: { filter: DatapackFilter; spec: DatapackDeploymentSpec }[];
 

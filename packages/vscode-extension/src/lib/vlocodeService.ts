@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs-extra';
 import chalk from 'chalk';
 
 import { Logger, injectable ,container, LifecyclePolicy, inject } from '@vlocode/core';
-import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, singleFlight, clearCache } from '@vlocode/util';
+import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, singleFlight, clearCache, filterAsyncParallel } from '@vlocode/util';
 import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { DatapackMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
+import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
 import { Activity as ActivityTask, ActivityOptions, CancellableActivity, NoncancellableActivity as NonCancellableActivity, VlocodeActivity, VlocodeActivityStatus, ActivityProgressData } from '../lib/vlocodeActivity';
@@ -13,6 +15,7 @@ import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
 import { SfdxConfigManager } from './sfdxConfigManager';
+import { getWorkspaceFileCandidates } from './workspaceFiles';
 
 @injectable({ lifecycle: LifecyclePolicy.singleton, provides: [SalesforceConnectionProvider, VlocodeService] })
 /**
@@ -157,7 +160,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 if (this.isVlocityInstalled) {
                     this.showStatus('$(sync~spin) Initializing SF-Industries Services...');
                     this._datapackService = await this._datapackService.initialize();
-                    await container.get(DatapackMatchingKeyService).initialize();
+                    await container.get(MatchingKeyService).initialize();
                 } else {
                     vscode.window.showWarningMessage('Vlocity managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
                     this.logger.warn('Salesforce Industries Managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
@@ -602,8 +605,28 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.disposables.push(
             this.sfdxConfig.onChange(e => 'defaultusername' in e.changes && this.setUsername(e.changes.defaultusername)),
             ConfigurationManager.onConfigChange(this.config, [ 'projectPath', 'customJobOptionsYaml' ], this.processConfigurationChange.bind(this)),
+            ConfigurationManager.onConfigChange(this.config, 'matchingKeyFiles', () => this.applyMatchingKeyFiles(), { initial: true }),
             ConfigurationManager.onConfigChange(this.config.salesforce, [ 'apiVersion' ], this.processConfigurationChange.bind(this))
         );
+    }
+
+    /**
+     * Register the default and configured (`matchingKeyFiles` setting) matching key files on the
+     * {@link MatchingKeyService}; relative paths are resolved against the workspace folders.
+     */
+    private async applyMatchingKeyFiles() {
+        const configuredFiles = (this.config.matchingKeyFiles ?? []).filter(file => typeof file === 'string' && file.trim());
+        const files = new Array<string>();
+        for (const file of [ ...MatchingKeyService.defaultMatchingKeyFiles, ...configuredFiles ]) {
+            const existing = await filterAsyncParallel(getWorkspaceFileCandidates(file), candidate => fs.pathExists(candidate));
+            if (existing.length) {
+                files.push(...existing);
+            } else if (configuredFiles.includes(file)) {
+                // Only the default matching key files are optional
+                this.logger.warn(`Configured matching key file does not exist: ${file}`);
+            }
+        }
+        container.get(MatchingKeyService).setMatchingKeyFiles(...files);
     }
 
     private async processConfigurationChange() {

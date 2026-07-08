@@ -1405,6 +1405,15 @@
                         },
                         "markdownDescription": "Additional YAML files that define custom datapack and export definitions. Object keys become Datapacks explorer root node labels and values are YAML file paths; relative paths are resolved from workspace folders."
                     },
+                    "vlocity.matchingKeyFiles": {
+                        "type": "array",
+                        "scope": "resource",
+                        "default": [],
+                        "items": {
+                            "type": "string"
+                        },
+                        "markdownDescription": "Additional JSON or YAML files defining the matching key fields per SObject type, i.e `Product2: [ ProductCode ]`. Matching keys from these files take precedence over matching keys defined in the org and in export definitions; relative paths are resolved from workspace folders. A `matching-keys.json` or `matching-keys.yaml` file in the working directory is always loaded when present."
+                    },
                     "vlocity.deployOnSave": {
                         "type": "boolean",
                         "default": false,

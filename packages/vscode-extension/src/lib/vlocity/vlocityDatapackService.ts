@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import vlocity from 'vlocity';
 
 import { Logger, container, injectable } from '@vlocode/core';
-import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, DatapackMatchingKeyService } from '@vlocode/vlocity';
+import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
 import { groupBy, mapAsync , getDocumentBodyAsString , getErrorMessage } from '@vlocode/util';
@@ -142,12 +142,6 @@ interface CustomJobYaml {
     [key: string] : any;
 }
 
-export interface VlocityMatchingKey {
-    sobjectType: string;
-    fields: Array<string>;
-    returnField: string;
-}
-
 interface ExpandDefinitionProvider {
     /**
      * Get the expand definition for a datapack
@@ -191,7 +185,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly config: VlocodeConfiguration,
         private readonly salesforceService: SalesforceService,
-        private readonly matchingKeyService: DatapackMatchingKeyService,
         private readonly loader: DatapackLoader,
         private readonly exportQueries: DatapackExportQueries
     ) {
