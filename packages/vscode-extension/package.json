@@ -1513,6 +1513,21 @@
                         "default": false,
                         "markdownDescription": "Automatically deploy metadata files to Salesforce when saved."
                     },
+                    "vlocity.salesforce.productionDeployTestLevel": {
+                        "type": "string",
+                        "enum": [
+                            "RunRelevantTests",
+                            "RunLocalTests",
+                            "RunAllTestsInOrg"
+                        ],
+                        "default": "RunRelevantTests",
+                        "enumDescriptions": [
+                            "Run tests that Salesforce determines are relevant to the deployed metadata.",
+                            "Run all local Apex tests in the production org.",
+                            "Run all Apex tests in the production org, including managed package tests."
+                        ],
+                        "markdownDescription": "Apex test level used for Salesforce metadata deployments to production orgs. `NoTestRun` is not available in production."
+                    },
                     "vlocity.salesforce.profileActionsInContextMenu": {
                         "type": "boolean",
                         "default": true,

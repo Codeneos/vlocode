@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import open from 'open';
 
-import { DeployResult, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployOptions, DeployResult, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 
 import { VlocodeCommand } from '../../constants';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
@@ -196,7 +196,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             deployment.cancel();
         });
 
-        await deployment.start({ ignoreWarnings: true });
+        await deployment.start(await this.getDeploymentStartOptions());
         this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
         const result = await deployment.getResult();
 
@@ -206,6 +206,14 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
         this.outputDeployResult(result);
         return this.onDeploymentComplete(deployment, result);
+    }
+
+    protected async getDeploymentStartOptions(): Promise<DeployOptions> {
+        const options: DeployOptions = { ignoreWarnings: true };
+        if (await this.salesforce.isProductionOrg()) {
+            options.testLevel = this.vlocode.config.salesforce.productionDeployTestLevel ?? 'RunRelevantTests';
+        }
+        return options;
     }
 
     private onDeploymentComplete(deployment: SalesforceDeployment, result: DeployResult) {
