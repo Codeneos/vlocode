@@ -24,3 +24,4 @@ export * from './datapackDeploymentStatus';
 export * from './datapackRecordFactory';
 export * from './datapackLookupService';
 export * from './matchingKeyService';
+export * from './datapackComparison';

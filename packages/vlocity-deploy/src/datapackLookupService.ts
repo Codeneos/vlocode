@@ -8,25 +8,50 @@ import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { DatapackDependencyResolver, DependencyResolutionRequest } from './datapackDependencyResolver';
 
 /**
- * Describes a records status in the target org.
+ * Field-level value difference when a matched target record exists but is not in sync.
  */
+export interface OrgRecordFieldMismatch {
+    field: string;
+    actual: any;
+    expected: any;
+}
+
 /**
- * Represents the status of a record in an org.
+ * Expected datapack field data that could not be found on any comparable target org record.
+ */
+export interface MissingOrgRecordField {
+    field: string;
+    expected: any;
+}
+
+export type OrgRecordMatchMode = 'id' | 'recordData' | 'none';
+
+/**
+ * Describes how a datapack record compares to the corresponding target org data.
  */
 export interface OrgRecordStatus {
     /**
      * Record ID in the target org.
      */
-    recordId: string;
+    recordId?: string;
     /**
      * True if the record is in sync with the target org and all fields match.
      */
     inSync: boolean;
-    mismatchedFields?: Array<{
-        field: string;
-        actual: any;
-        expected: any;
-    }>;
+    /**
+     * True when no target org record could be matched to the datapack record.
+     */
+    missing?: boolean;
+    /**
+     * Describes how the datapack record was matched to target org data.
+     */
+    matchedBy?: OrgRecordMatchMode;
+    /**
+     * True when the record is embedded data that would normally be removed and recreated during deploy.
+     */
+    deleteRecreate?: boolean;
+    mismatchedFields?: OrgRecordFieldMismatch[];
+    missingRecordData?: MissingOrgRecordField[];
 }
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
@@ -374,37 +399,114 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         for (const [type, records] of Object.entries(bySobjectType)) {
             this.logger.info(`Comparing record data to target org for ${records.length} ${type} records...`);
 
-            const recordFields = [...records.reduce((acc, rec) => Object.keys(rec.values).reduce((acc, field) => acc.add(field), acc), new Set<string>())];
-            const targetOrgRecords = await this.salesforce.data.lookupById(records.map(rec => rec.recordId!), recordFields, cancelToken);
             const objectFields = await this.salesforce.schema.getSObjectFields(type);
+            const recordFields = this.getComparableFields(records, objectFields);
+            const targetOrgRecords = await this.salesforce.data.lookupById(records.map(rec => rec.recordId!), recordFields, cancelToken);
 
             if (cancelToken?.isCancellationRequested) {
                 break;
             }
 
             for (const record of records) {
-                const orgData = targetOrgRecords.get(record.recordId!)!;
-                const mismatchedFields = Object.entries(record.values).map(([field, value]) => ({
-                    field,
-                    expected: value,
-                    actual: orgData[field],
-                    isEqual: this.fieldEquals(orgData, field, value)
-                })).filter(({ field, isEqual }) => !isEqual && this.isUpdateableField(objectFields.get(field)!));
-
-                const status: OrgRecordStatus = {
-                    recordId: record.recordId!,
-                    inSync: !mismatchedFields.length,
-                    mismatchedFields
-                }
+                const status = this.compareRecordToOrgData(record, targetOrgRecords.get(record.recordId!), objectFields, 'id');
 
                 results.set(record.sourceKey, status);
-                results.set(record.recordId!, status);
+                if (record.recordId) {
+                    results.set(record.recordId, status);
+                }
             }
 
             this.logger.info(`Found ${count(results.values(), item => !item.inSync) / 2} out of sync ${type} records`);
         }
 
         return results;
+    }
+
+    /**
+     * Compare one datapack record against a set of candidate target records.
+     *
+     * This is used for embedded child records where the parent lookup scopes the candidate rows but
+     * there is no stable child Id to query directly. The first candidate whose comparable datapack
+     * fields all match is treated as the existing target record.
+     *
+     * Extra fields in the org are ignored because only datapack fields are compared. Datapack fields
+     * that do not exist, or cannot be updated, in the target org are also ignored by the comparable
+     * field filter below.
+     */
+    public async compareRecordToOrgRecords(record: DatapackDeploymentRecord, targetOrgRecords: Iterable<object>): Promise<OrgRecordStatus> {
+        const objectFields = await this.salesforce.schema.getSObjectFields(record.sobjectType);
+        for (const orgData of targetOrgRecords) {
+            const status = this.compareRecordToOrgData(record, orgData, objectFields, 'recordData');
+            if (status.inSync) {
+                return status;
+            }
+        }
+        return this.createMissingRecordStatus(record, objectFields);
+    }
+
+    /**
+     * Return the minimal field list needed to compare the supplied datapack records against target data.
+     * The field list is schema-aware so comparison queries do not fail on datapack fields that are absent
+     * from the target org.
+     */
+    public async getComparableRecordFields(sobjectType: string, records: DatapackDeploymentRecord[]): Promise<string[]> {
+        return this.getComparableFields(records, await this.salesforce.schema.getSObjectFields(sobjectType));
+    }
+
+    private compareRecordToOrgData(
+        record: DatapackDeploymentRecord,
+        orgData: object | undefined,
+        objectFields: ReadonlyMap<string, Field>,
+        matchedBy: OrgRecordMatchMode = 'id'
+    ): OrgRecordStatus {
+        if (!orgData) {
+            return this.createMissingRecordStatus(record, objectFields);
+        }
+
+        const mismatchedFields = Object.entries(record.values)
+            .filter(([field]) => this.isComparableField(objectFields.get(field)))
+            .map(([field, value]) => ({
+                field,
+                expected: value,
+                actual: orgData[field],
+                isEqual: this.fieldEquals(orgData, field, value)
+            }))
+            .filter(({ isEqual }) => !isEqual)
+            .map(({ field, expected, actual }) => ({ field, expected, actual }));
+
+        return {
+            recordId: orgData['Id'] ?? record.recordId,
+            inSync: !mismatchedFields.length,
+            matchedBy,
+            mismatchedFields
+        };
+    }
+
+    private createMissingRecordStatus(record: DatapackDeploymentRecord, objectFields: ReadonlyMap<string, Field>): OrgRecordStatus {
+        return {
+            recordId: record.recordId,
+            inSync: false,
+            missing: true,
+            matchedBy: 'none',
+            missingRecordData: Object.entries(record.values)
+                .filter(([field]) => this.isComparableField(objectFields.get(field)))
+                .map(([field, expected]) => ({ field, expected }))
+        };
+    }
+
+    private getComparableFields(records: DatapackDeploymentRecord[], objectFields: ReadonlyMap<string, Field>) {
+        return [...records.reduce((acc, rec) => {
+            for (const field of Object.keys(rec.values)) {
+                if (this.isComparableField(objectFields.get(field))) {
+                    acc.add(field);
+                }
+            }
+            return acc;
+        }, new Set<string>())];
+    }
+
+    private isComparableField(field: Field | undefined): field is Field {
+        return !!field && this.isUpdateableField(field);
     }
 
     private isUpdateableField(field: Field) {

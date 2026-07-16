@@ -31,6 +31,27 @@ interface DatapackDeployOptions extends DatapackDeploymentOptions {
  * @returns An promise of the deployment object containing the deployment results
  */
 export async function deploy(input: string | string[], options: DatapackDeployOptions) {
+    const localContainer = await createDatapackDeployContainer(options);
+    const datapacks = await loadDatapacks(localContainer, input);
+
+    // Create deployment
+    return await localContainer.new(DatapackDeployer).deploy(datapacks, options);
+}
+
+/**
+ * Compare 1 or more datapack folders with Salesforce without deploying changes.
+ * @param input The folder(s) to load the datapacks from that will be compared
+ * @param options options that control connection and comparison behavior
+ * @returns A per-datapack comparison report
+ */
+export async function compare(input: string | string[], options: DatapackDeployOptions) {
+    const localContainer = await createDatapackDeployContainer(options);
+    const datapacks = await loadDatapacks(localContainer, input);
+
+    return await localContainer.new(DatapackDeployer).compare(datapacks, options);
+}
+
+async function createDatapackDeployContainer(options: DatapackDeployOptions) {
     const localContainer = container.create();
 
     if (options.logger) {
@@ -50,7 +71,10 @@ export async function deploy(input: string | string[], options: DatapackDeployOp
     // Setup dependencies
     localContainer.add(await new VlocityNamespaceService().initialize(localContainer.get(SalesforceConnectionProvider)));
     localContainer.add(new CachedFileSystemAdapter(new NodeFileSystem()), { provides: [ FileSystem ] });
+    return localContainer;
+}
 
+async function loadDatapacks(localContainer: ReturnType<typeof container.create>, input: string | string[]) {
     // load datapacks
     input = Array.isArray(input) ? input : [ input ];
     const datapackLoader = localContainer.new(DatapackLoader);
@@ -58,7 +82,5 @@ export async function deploy(input: string | string[], options: DatapackDeployOp
     if (datapacks.length == 0) {
         throw new Error(`No datapacks found in specified folders: ${input}`);
     }
-
-    // Create deployment
-    return await localContainer.new(DatapackDeployer).deploy(datapacks, options);
+    return datapacks;
 }

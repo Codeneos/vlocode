@@ -1,7 +1,7 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceService, RecordError } from '@vlocode/salesforce';
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore } from '@vlocode/util';
-import { DatapackLookupService } from './datapackLookupService';
+import { DatapackLookupService, OrgRecordStatus } from './datapackLookupService';
 import { DatapackDependencyResolver, DependencyResolutionRequest, DependencyResolutionResult } from './datapackDependencyResolver';
 import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
@@ -10,6 +10,7 @@ import { DeferredDependencyResolver } from './deferredDependencyResolver';
 import { DatapackDeploymentError as Error } from './datapackDeploymentError';
 import { VlocityDatapackReference } from '@vlocode/vlocity';
 import { DatapackDeploymentDatapackStatus, DatapackDeploymentMessage, DatapackDeploymentStatus, DatapackDeploymentState } from './datapackDeploymentStatus';
+import { DatapackComparator } from './datapackComparison';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -95,6 +96,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
     private readonly recordGroupsErrors = new Map<string, Error[]>();
     private readonly orgDependencyResolver: DatapackDependencyResolver;
+    private deltaRecordStatuses?: Map<string, OrgRecordStatus>;
 
     private isStarted = false;
     private timer: Timer;
@@ -685,13 +687,18 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Compared the to be deployed records to the records in the org
+     * Create the Salesforce DML batch for records that are ready to deploy.
+     *
+     * With delta enabled this method consumes the full-deployment comparison map, not just records in
+     * the current batch. That is intentional: parent purge happens immediately after the parent batch,
+     * so embedded children must already be known as in-sync before the child batch becomes deployable.
+     *
      * @param records Records to deploy
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
     private async createDeploymentBatch(records: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         const batch = new RecordBatch(this.salesforceService.schema, this.options);
-        const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records.values(), cancelToken) : undefined;
+        const recordStatuses = this.options.deltaCheck ? await this.getDeltaRecordStatuses(cancelToken) : undefined;
 
         for (const [ref, record] of records.entries()) {
             if (record.isSkipped || record.isFailed) {
@@ -699,14 +706,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 continue;
             }
 
+            const status = this.getDeltaRecordStatus(record, recordStatuses);
+            if (status?.inSync) {
+                record.setAction(DeploymentAction.Skip, status.recordId ?? record.recordId);
+                continue;
+            } else if (status) {
+                this.logger.verbose(`Record out of sync ${record.recordId ?? record.sourceKey} (${record.sobjectType})`, status.mismatchedFields ?? status.missingRecordData);
+            }
+
             if (record.recordId) {
-                const status = recordStatuses?.get(record.recordId);
-                if (status?.inSync) {
-                    record.setAction(DeploymentAction.Skip);
-                    continue;
-                } else if(status) {
-                    this.logger.verbose(`Record out of sync ${record.recordId} (${record.sobjectType})`, status.mismatchedFields)
-                }
                 this.logger.debug('Update', record.sobjectType, ':', record.values);
                 batch.addUpdate(record.sobjectType, record.values, record.recordId, ref);
             } else {
@@ -719,12 +727,31 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Compared the to be deployed records to the records in the org
-     * @param records Records
+     * Compare all deployment records to the target org once and cache the results for deploy-time delta decisions.
+     *
+     * The cache is shared by all batches so a parent batch can protect unchanged embedded children from
+     * purge before those children are deployed. The comparison is first requested after the current batch
+     * has run `beforeDeployRecord`; embedded children in later batches are compared from their converted
+     * record values plus resolved parent Ids.
+     *
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
-    private async getRecordSyncStatus(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId && !rec.isSkipped)], cancelToken);
+    private async getDeltaRecordStatuses(cancelToken?: CancellationToken) {
+        if (!this.deltaRecordStatuses) {
+            this.deltaRecordStatuses = await new DatapackComparator(
+                this.lookupService,
+                this.salesforceService
+            ).compareRecordStatuses(this, cancelToken);
+        }
+        return this.deltaRecordStatuses;
+    }
+
+    private getDeltaRecordStatus(record: DatapackDeploymentRecord, statuses = this.deltaRecordStatuses): OrgRecordStatus | undefined {
+        return statuses?.get(record.sourceKey) ?? (record.recordId ? statuses?.get(record.recordId) : undefined);
+    }
+
+    private isDeltaRecordInSync(record: DatapackDeploymentRecord): boolean {
+        return this.getDeltaRecordStatus(record)?.inSync === true;
     }
 
     private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken): Promise<void> {
@@ -1001,6 +1028,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         for (const [recordId, record] of recordsById.entries()) {
             for (const { record: undeployRecord, field, dependency } of dependentsBySourceKey.get(record.sourceKey) ?? []) {
+                // Delta already proved this pending embedded record exists in the target with the same
+                // field data. Deleting it here would force a no-op delete + insert cycle later.
+                if (this.options.deltaCheck && this.isDeltaRecordInSync(undeployRecord)) {
+                    continue;
+                }
                 if (predicate({ field, dependency, dependentRecord: undeployRecord, record })) {
                     setMapAdd(deleteFilters, undeployRecord.sobjectType, `${field} = '${recordId}'`);
                 }

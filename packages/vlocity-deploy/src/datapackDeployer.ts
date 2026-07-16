@@ -1,6 +1,6 @@
 
 import { SalesforceService, RecordBatch, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
-import { Logger, injectable, container, LifecyclePolicy, Container, inject } from '@vlocode/core';
+import { Logger, injectable, LifecyclePolicy, Container, inject } from '@vlocode/core';
 import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
@@ -11,6 +11,7 @@ import { DatapackDeploymentSpec, DeploymentSpecExecuteOptions } from './datapack
 import { DatapackDeploymentSpecRegistry } from './datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from './datapackDeploymentEvent';
 import { VlocityDatapack } from '@vlocode/vlocity';
+import { DatapackComparisonService } from './datapackComparison';
 
 /**
  * Import all default deployment specs and trigger the decorators to register each sepc
@@ -117,6 +118,17 @@ export class DatapackDeployer {
     public async deploy(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
         const deployment = await this.createDeployment(datapacks, options, cancellationToken);
         return deployment.start(cancellationToken).then(() => deployment);
+    }
+
+    /**
+     * Compare datapacks with the target org without deploying them.
+     * @param datapacks Datapacks to compare
+     * @param options Deployment options that influence comparison behavior, such as purge matching dependencies
+     * @param cancellationToken optional cancellation token
+     */
+    public async compare(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
+        const deployment = await this.createDeployment(datapacks, options, cancellationToken);
+        return this.container.new(DatapackComparisonService).compare(deployment, cancellationToken);
     }
 
     /**
