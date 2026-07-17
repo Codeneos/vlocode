@@ -122,7 +122,7 @@ export interface ObjectFilter {
     /**
      * Where condition to filter the object data to export by.
      * Can be a string or an object. When an object, the key is the
-     * field name and the value is the value to filter by. Accesing fields from the parent
+     * field name and the value is the value to filter by. Accessing fields from the parent
      * datapack using bracket syntax `{}` is supported:
      * ```
      * filter:

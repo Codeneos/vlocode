@@ -14,7 +14,7 @@ describe('QueryBuilder', () => {
         });
         it('should keep backslash pattern escapes in like condition values', () => {
             const query = new QueryBuilder('Account', [ 'Id' ]).where.like('Name', `100\\% O'Neil%`).getQuery();
-            expect(query).toContain(`Name LIKE '100\\% O\\'Neil%'`);
+            expect(query).toContain(`Name LIKE '100\\\\% O\\'Neil%'`);
         });
     });
 });

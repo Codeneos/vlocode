@@ -1,4 +1,5 @@
-import { writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
+import { dirname } from 'path';
 
 import { Logger } from '@vlocode/core';
 import { DatapackComparisonResult, DatapackComparisonStatus } from '@vlocode/vlocity-deploy';
@@ -47,6 +48,7 @@ export class MarkdownComparisonReporter implements ComparisonReporter {
     }
 
     public async report(result: DatapackComparisonResult): Promise<void> {
+        await mkdir(dirname(this.outputFile), { recursive: true });
         await writeFile(this.outputFile, this.generate(result));
         this.logger.info(`Markdown comparison report written to: ${this.outputFile}`);
     }
@@ -149,7 +151,7 @@ export class MarkdownComparisonReporter implements ComparisonReporter {
             for (const record of changedRecords.slice(0, MarkdownComparisonReporter.maxTableRows)) {
                 lines.push(`| ${this.escape(record.sourceKey)} | ${this.escape(record.sobjectType)} | ${record.status} | ${record.deployAction} | ${this.recordLink(record.recordId)} |`);
             }
-            this.pushTruncationNote(lines, changedRecords, MarkdownComparisonReporter.maxTableRows, 'record(s)');
+            this.pushTruncationNote(lines, changedRecords, MarkdownComparisonReporter.maxTableRows, 'record(s)', 5);
             lines.push('');
         }
 
@@ -162,7 +164,7 @@ export class MarkdownComparisonReporter implements ComparisonReporter {
                 for (const { field, actual, expected } of record.mismatchedFields.slice(0, MarkdownComparisonReporter.maxFieldRows)) {
                     lines.push(`| ${this.escape(field)} | ${this.escape(formatValue(actual))} | ${this.escape(formatValue(expected))} |`);
                 }
-                this.pushTruncationNote(lines, record.mismatchedFields, MarkdownComparisonReporter.maxFieldRows, 'field(s)');
+                this.pushTruncationNote(lines, record.mismatchedFields, MarkdownComparisonReporter.maxFieldRows, 'field(s)', 3);
                 lines.push('');
             }
         }
@@ -175,7 +177,7 @@ export class MarkdownComparisonReporter implements ComparisonReporter {
             for (const extra of datapack.extraOrgRecords.slice(0, MarkdownComparisonReporter.maxTableRows)) {
                 lines.push(`| ${this.escape(extra.sobjectType)} | ${this.recordLink(extra.recordId)} |`);
             }
-            this.pushTruncationNote(lines, datapack.extraOrgRecords, MarkdownComparisonReporter.maxTableRows, 'record(s)');
+            this.pushTruncationNote(lines, datapack.extraOrgRecords, MarkdownComparisonReporter.maxTableRows, 'record(s)', 2);
             lines.push('');
         }
 
@@ -196,9 +198,11 @@ export class MarkdownComparisonReporter implements ComparisonReporter {
      * Add a trailing table row stating how many more entries were truncated from a detail table;
      * tables are limited to keep reports for large comparisons readable, the JSON report contains all entries.
      */
-    private pushTruncationNote(lines: string[], rows: unknown[], limit: number, entryName: string) {
+    private pushTruncationNote(lines: string[], rows: unknown[], limit: number, entryName: string, columnCount: number) {
         if (rows.length > limit) {
-            lines.push(`| _… ${rows.length - limit} more ${entryName}, see the JSON report for all entries_ |`);
+            const cells = [ `_… ${rows.length - limit} more ${entryName}, see the JSON report for all entries_`,
+                ...new Array<string>(columnCount - 1).fill('') ];
+            lines.push(`| ${cells.join(' | ')} |`);
         }
     }
 

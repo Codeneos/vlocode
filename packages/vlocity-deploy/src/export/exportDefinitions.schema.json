@@ -30,7 +30,7 @@
         },
         "filter": {
           "$ref": "#/definitions/LookupFilter",
-          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accessing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
         },
         "ignoreFields": {
           "description": "List of fields to exclude from the export.",
@@ -111,7 +111,7 @@
             },
             "filter": {
               "$ref": "#/definitions/LookupFilter",
-              "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+              "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accessing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
             },
             "ignoreFields": {
               "description": "When the field is a lookup and embeddedLookup is true, this array defines a list of fields to  exclude from the export of the related record.\n\nThis can be used to prevent circular references when exporting related records as embedded objects.  For example when exporting an Account with related Contacts as embedded objects,  excluding the AccountId field from the Contact export will prevent circular reference  between the Account and Contact datapacks.",
@@ -319,7 +319,7 @@
       "properties": {
         "filter": {
           "$ref": "#/definitions/LookupFilter",
-          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accessing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
         },
         "limit": {
           "description": "Optional maximum number of records to return when querying this object.",

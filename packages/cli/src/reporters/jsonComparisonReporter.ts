@@ -1,4 +1,5 @@
-import { writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
+import { dirname } from 'path';
 
 import { Logger } from '@vlocode/core';
 import { DatapackComparisonResult } from '@vlocode/vlocity-deploy';
@@ -19,6 +20,7 @@ export class JsonComparisonReporter implements ComparisonReporter {
     }
 
     public async report(result: DatapackComparisonResult): Promise<void> {
+        await mkdir(dirname(this.outputFile), { recursive: true });
         await writeFile(this.outputFile, JSON.stringify(this.generate(result), undefined, 2));
         this.logger.info(`JSON comparison report written to: ${this.outputFile}`);
     }

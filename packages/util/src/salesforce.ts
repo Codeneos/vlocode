@@ -75,8 +75,8 @@ export function removeNamespacePlaceholders(value: string): string {
 
 /**
  * Escape a value for use in a quoted SOQL string literal: quotes and backslashes are prefixed with a
- * backslash. Do **not** use for `like` patterns in which backslashes escape the `%` and `_` pattern
- * characters and only quotes should be escaped.
+ * backslash. For `like` patterns this preserves backslashes that escape `%` and `_` after the string
+ * literal itself is parsed by SOQL.
  * @param value Value to escape
  */
 export function escapeSoqlString(value: string): string {
