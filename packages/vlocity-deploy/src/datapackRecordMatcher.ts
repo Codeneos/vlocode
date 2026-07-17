@@ -360,7 +360,7 @@ export class DatapackRecordMatcher {
         // Index the pending groups by the canonical form of their scope values per scope shape
         const groupIndexes = new Map<string, { shape: string[], byKey: Map<string, CandidateGroup[]>, fuzzy: CandidateGroup[] }>();
         for (const group of pendingGroups) {
-            const shape = Object.keys(group.scope).sort();
+            const shape = Object.keys(group.scope).sort((left, right) => left.localeCompare(right));
             const groupIndex = mapGetOrCreate(groupIndexes, JSON.stringify(shape), () => ({ shape, byKey: new Map<string, CandidateGroup[]>(), fuzzy: new Array<CandidateGroup>() }));
             const keyValues = shape.map(field => this.getMatchKeyValue(group.scope[field]));
             if (keyValues.some(value => value === undefined)) {

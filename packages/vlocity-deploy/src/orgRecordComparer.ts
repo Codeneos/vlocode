@@ -263,6 +263,6 @@ export class OrgRecordComparer {
      */
     private picklistValueSet(value: string): string {
         return this.namespaceService.updateNamespace(value)
-            .split(';').map(entry => entry.toLowerCase().trim()).sort().join(';');
+            .split(';').map(entry => entry.toLowerCase().trim()).sort((left, right) => left.localeCompare(right)).join(';');
     }
 }
