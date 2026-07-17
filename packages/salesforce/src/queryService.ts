@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { Logger, injectable, LifecyclePolicy, inject } from '@vlocode/core';
-import { CancellationToken } from '@vlocode/util';
+import { CancellationToken, escapeSoqlString } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection';
 import { SObjectRecord, FieldType } from './types';
@@ -188,8 +188,11 @@ export class QueryService {
             }
         }
 
-        if (options.escapeStrings && field.type === 'string') {
-            value = String(value).replace(/(['\\])/ig, '\\$1');
+        if (options.escapeStrings && typeof value === 'string') {
+            // Escape any string value that is wrapped in quotes -- not only for string-type fields;
+            // picklist, textarea and other text-like field values can equally contain quotes which
+            // would otherwise generate a malformed SOQL query
+            value = escapeSoqlString(value);
         }
 
         return options.wrapStrings ? `'${value}'` : `${value}`;

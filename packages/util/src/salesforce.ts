@@ -65,6 +65,25 @@ export function normalizeSObjectTypeName(name: string): string {
 }
 
 /**
+ * Removes namespace placeholder prefixes (i.e. `%vlocity_namespace%__`) from the specified value;
+ * used to display source keys and field names without namespace placeholders.
+ * @param value Value to remove the namespace placeholders from
+ */
+export function removeNamespacePlaceholders(value: string): string {
+    return value.replace(/%[^%]+%__/ig, '');
+}
+
+/**
+ * Escape a value for use in a quoted SOQL string literal: quotes and backslashes are prefixed with a
+ * backslash. Do **not** use for `like` patterns in which backslashes escape the `%` and `_` pattern
+ * characters and only quotes should be escaped.
+ * @param value Value to escape
+ */
+export function escapeSoqlString(value: string): string {
+    return value.replace(/(['\\])/g, '\\$1');
+}
+
+/**
  * Extract both the name of a type as well as the namespace if any
  * @param typeName Field to separate namespace and type
  */

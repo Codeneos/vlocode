@@ -1,5 +1,5 @@
 import { container } from '@vlocode/core';
-import { deepClone, flattenObject, Iterable } from '@vlocode/util';
+import { deepClone, escapeSoqlString, flattenObject, Iterable } from '@vlocode/util';
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -181,7 +181,7 @@ export class QueryConditionBuilder extends QueryBuilderData {
     }
 
     public like(field: (string | { name: string }), value: unknown) : this {
-        return this.condition(`${field} LIKE ${this.formatValue(value)}`);
+        return this.condition(`${field} LIKE ${this.formatValue(value, { pattern: true })}`);
     }
 
     public equals(field: (string | { name: string }), value: unknown) : this {
@@ -216,14 +216,18 @@ export class QueryConditionBuilder extends QueryBuilderData {
         return this.condition(`${field} not in (${Iterable.join(values, v => this.formatValue(v), ',')})`);
     }
 
-    private formatValue(value: unknown) {
+    private formatValue(value: unknown, options?: { pattern?: boolean }) {
         if (value === null || value === undefined) {
             return null;
         }
         else if (typeof value === 'number' || typeof value === 'boolean') {
             return `${value}`;
         }
-        return `'${value}'`;
+        // Literal values share the SOQL string escaping with QueryService.formatFieldValue; in `like`
+        // patterns only quotes are escaped as backslashes escape the `%` and `_` pattern characters
+        return options?.pattern
+            ? `'${String(value).replace(/'/g, `\\'`)}'`
+            : `'${escapeSoqlString(String(value))}'`;
     }
 
     public getCondition() {
