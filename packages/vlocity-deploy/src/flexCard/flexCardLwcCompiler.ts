@@ -1,6 +1,6 @@
 
 import { SalesforceService, SalesforcePackage, LightningComponentBundle, SalesforceLabels } from '@vlocode/salesforce';
-import { container, injectable, Logger } from '@vlocode/core';
+import { injectable, Logger } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { cache, Timer, XML } from '@vlocode/util';
 import { FlexCardDesigner, FlexCardDesignerOptions } from './flexCardDesignerUtil';
@@ -28,6 +28,7 @@ export class FlexCardLwcCompiler {
         private readonly salesforceService: SalesforceService,
         private readonly cardAccess: FlexCardDefinitionAccess,
         private readonly namespaceService: VlocityNamespaceService,
+        private readonly salesforceLabels: SalesforceLabels,
         private readonly logger: Logger
     ) {
     }
@@ -141,9 +142,8 @@ export class FlexCardLwcCompiler {
         const labelRegex = /\{(Label\.[^}]+)\}/g;
         const matches = [...JSON.stringify(cardDef).matchAll(labelRegex)].map(m => m[1].substring(6)); // Extract "Label.namespace.labelName" or "Label.labelName"
         const labelKeys = Array.from(new Set(matches));
-        const salesforceLabelsService = container.get(SalesforceLabels);
         cardDef.Label = Object.fromEntries(
-            Object.entries(await salesforceLabelsService.getCustomLabels(labelKeys)).map(([key, label]) =>[key, label.value]
+            Object.entries(await this.salesforceLabels.getCustomLabels(labelKeys)).map(([key, label]) =>[key, label.value]
         ));
     }
     /**
