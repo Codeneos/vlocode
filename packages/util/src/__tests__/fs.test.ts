@@ -1,5 +1,5 @@
 import 'jest';
-import { directoryName } from '../fs';
+import { directoryName, fileName } from '../fs';
 
 describe('fs', () => {
     describe('#directoryName', () => {
@@ -27,6 +27,22 @@ describe('fs', () => {
 
         it('should throw on invalid depth', () => {
             expect(() => directoryName('foo/bar', 0)).toThrow('Invalid depth 0');
+        });
+    });
+
+    describe('#fileName', () => {
+        it('should support POSIX and Windows path separators', () => {
+            expect(fileName('/project/datapacks/Product.json')).toBe('Product.json');
+            expect(fileName('C:\\project\\datapacks\\Product.json')).toBe('Product.json');
+        });
+
+        it('should remove only the final extension when requested', () => {
+            expect(fileName('/project/Product.pack.json', true)).toBe('Product.pack');
+            expect(fileName('Product.json', true)).toBe('Product');
+        });
+
+        it('should preserve extension-only file names', () => {
+            expect(fileName('/project/.gitignore', true)).toBe('.gitignore');
         });
     });
 });

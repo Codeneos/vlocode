@@ -105,8 +105,14 @@ export function directoryName(pathLike: string, depth?: number) {
  * @returns Basename of a path with the file suffix
  */
 export function fileName(pathLike: string, removeExtension: boolean = false) {
-    const match = (removeExtension ? /^.*[\\|/|](.*)(\.[^.]+)$/s : /^.*[\\|/](.*)$/s).exec(pathLike);
-    return match ? match[1] : pathLike;
+    const separatorIndex = Math.max(pathLike.lastIndexOf('/'), pathLike.lastIndexOf('\\'));
+    const name = separatorIndex >= 0 ? pathLike.slice(separatorIndex + 1) : pathLike;
+    if (!removeExtension) {
+        return name;
+    }
+
+    const extensionIndex = name.lastIndexOf('.');
+    return extensionIndex > 0 ? name.slice(0, extensionIndex) : name;
 }
 
 /**
