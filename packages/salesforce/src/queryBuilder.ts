@@ -223,10 +223,10 @@ export class QueryConditionBuilder extends QueryBuilderData {
         else if (typeof value === 'number' || typeof value === 'boolean') {
             return `${value}`;
         }
-        // Literal values share the SOQL string escaping with QueryService.formatFieldValue; in `like`
-        // patterns only quotes are escaped as backslashes escape the `%` and `_` pattern characters
+        // Literal values share the SOQL string escaping with QueryService.formatFieldValue. LIKE patterns
+        // restore only intentional wildcard escapes after escaping every quote and backslash in the input.
         return options?.pattern
-            ? `'${String(value).replace(/'/g, `\\'`)}'`
+            ? `'${escapeSoqlString(String(value)).replace(/\\\\([%_])/g, '\\$1')}'`
             : `'${escapeSoqlString(String(value))}'`;
     }
 
