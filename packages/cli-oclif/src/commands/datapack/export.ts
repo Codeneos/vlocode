@@ -109,6 +109,7 @@ export default class DatapackExport extends SalesforceCommand<typeof DatapackExp
             allowNo: true,
             summary: 'show an interactive progress bar (use --no-progress for plain forward-printing output)',
         }),
+        ...SalesforceCommand.matchingKeysFlag,
     };
 
     static examples = [
@@ -134,6 +135,7 @@ export default class DatapackExport extends SalesforceCommand<typeof DatapackExp
         const argIds = this.positionals;
         const exportFile = options.file ? await this.loadExportFile(options.file) : undefined;
 
+        this.applyMatchingKeyOptions(this.flags['matching-keys']);
         await this.loadExportDefinitions(options.definitions ?? exportFile?.exportDefinitions);
 
         const requests = exportFile

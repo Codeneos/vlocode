@@ -23,6 +23,7 @@ Verify the install with `vlocode --version`.
 | --- | --- | --- |
 | **datapack** | `datapack deploy <paths..>` (alias `datapack import`) | Deploy Vlocity datapacks from disk into an org. |
 | | `datapack export [ids..]` | Export records from an org into datapack files. |
+| | `datapack compare <paths..>` | Compare datapacks against org data without deploying (console/json/markdown reports). |
 | | `datapack convert <paths..>` | Convert managed-runtime OmniScript datapacks to native OmniProcess. |
 | | `datapack build-definitions` | Generate export-definition YAML from an org's DataRaptor config. |
 | **metadata** | `metadata deploy [sources..]` | Deploy/validate Salesforce metadata (delta, tests, reports). |
@@ -70,6 +71,7 @@ offline.
 * [`vlocode data delete SOQL`](#vlocode-data-delete-soql)
 * [`vlocode data export [SOBJECT]`](#vlocode-data-export-sobject)
 * [`vlocode datapack build-definitions`](#vlocode-datapack-build-definitions)
+* [`vlocode datapack compare PATHS`](#vlocode-datapack-compare-paths)
 * [`vlocode datapack convert PATHS`](#vlocode-datapack-convert-paths)
 * [`vlocode datapack deploy PATHS`](#vlocode-datapack-deploy-paths)
 * [`vlocode datapack export [IDS]`](#vlocode-datapack-export-ids)
@@ -268,6 +270,71 @@ EXAMPLES
   $ vlocode datapack build-definitions --expanded --output-dir ./definitions -u my-org
 ```
 
+## `vlocode datapack compare PATHS`
+
+Compare datapacks against the data in a Salesforce org without deploying them. Reports per datapack if it is in sync with the org and which records a deployment would insert, update or delete.
+
+```
+USAGE
+  $ vlocode datapack compare PATHS... [-v] [--debug] [--log-file <path>] [--log-level
+    debug|verbose|info|warn|error|fatal] [-u username@example.com] [-i <value>] [--api-version <version>]
+    [--record-session | --replay-session <file>] [-r console|json|markdown...] [--report-file <value>] [--progress]
+    [--bulk-extract] [--bulk-extract-limit <value>] [--matching-keys <files...>...]
+
+ARGUMENTS
+  PATHS...  path of the folders containing the datapacks or datapack files to compare
+
+FLAGS
+  -i, --instance=<value>             [default: test.salesforce.com] Salesforce instance URL used for interactive OAuth;
+                                     for example: test.salesforce.com
+  -r, --reporter=<option>...         [default: console] one or more reporters used to output the comparison results
+                                     <options: console|json|markdown>
+  -u, --user=username@example.com    Salesforce username or alias of the org to connect to
+  -v, --verbose                      enable more detailed verbose logging
+      --api-version=<version>        Salesforce API version to use; defaults to the latest version supported by the org
+      --[no-]bulk-extract            bulk extract org data for comparison (use --no-bulk-extract to compare using
+                                     filtered org queries)
+      --bulk-extract-limit=<value>   [default: 200000] maximum number of org records per SObject type to bulk extract;
+                                     types with more records fall back to filtered org queries
+      --debug                        print the call stack when an unhandled error occurs
+      --log-file=<path>              append logs as NDJSON to the specified file
+      --log-level=<option>           set the log level, overrides -v/--debug
+                                     <options: debug|verbose|info|warn|error|fatal>
+      --matching-keys=<files...>...  JSON or YAML files defining the matching key fields per SObject type, e.g. {
+                                     "Product2": ["ProductCode"] }
+      --[no-]progress                show an interactive progress bar (use --no-progress for plain forward-printing
+                                     output)
+      --record-session               record the interaction with Salesforce to a session log that can be replayed later
+      --replay-session=<file>        replay a previously recorded session log instead of connecting to an org
+      --report-file=<value>          [default: datapack-comparison] name of the report file to which the json and
+                                     markdown reporters write; the file extension is set per reporter
+
+DESCRIPTION
+  Compare datapacks against the data in a Salesforce org without deploying them. Reports per datapack if it is in sync
+  with the org and which records a deployment would insert, update or delete.
+
+EXAMPLES
+  $ vlocode datapack compare ./datapacks -u my-org
+
+  $ vlocode datapack compare ./datapacks -r console -r markdown --report-file compare-report -u my-org
+
+FLAG DESCRIPTIONS
+  -r, --reporter=console|json|markdown...  one or more reporters used to output the comparison results
+
+    The console reporter prints a colorized summary, the json and markdown reporters write a detailed report file.
+
+  --[no-]bulk-extract  bulk extract org data for comparison (use --no-bulk-extract to compare using filtered org queries)
+
+    Bulk extraction reads all org records per compared SObject type which is significantly faster for large comparisons.
+
+  --matching-keys=<files...>...
+
+    JSON or YAML files defining the matching key fields per SObject type, e.g. { "Product2": ["ProductCode"] }
+
+    Matching keys from these files take precedence over matching keys defined in the org and in export definitions. A
+    matching-keys.json or matching-keys.yaml file in the current directory is always loaded when present.
+```
+
 ## `vlocode datapack convert PATHS`
 
 Convert Managed runtime OmniScript datapacks to native OmniProcess datapacks
@@ -311,37 +378,39 @@ USAGE
     debug|verbose|info|warn|error|fatal] [-u username@example.com] [-i <value>] [--api-version <version>]
     [--record-session | --replay-session <file>] [--purge-dependencies] [--lookup-failed] [--allow-unresolved]
     [--retry-count <value>] [--bulk-api] [--delta] [--strict-order] [--skip-lwc] [--use-metadata-api]
-    [--remote-script-activation] [-y]
+    [--remote-script-activation] [-y] [--matching-keys <files...>...]
 
 ARGUMENTS
   PATHS...  path of the folders containing the datapacks or datapack files to be deployed
 
 FLAGS
-  -i, --instance=<value>           [default: test.salesforce.com] Salesforce instance URL used for interactive OAuth;
-                                   for example: test.salesforce.com
-  -u, --user=username@example.com  Salesforce username or alias of the org to connect to
-  -v, --verbose                    enable more detailed verbose logging
-  -y, --continue-on-error          continue deploying when one of the datapacks cannot be loaded
-      --allow-unresolved           do not fail the deployment of a datapack when a dependency cannot be resolved
-      --api-version=<version>      Salesforce API version to use; defaults to the latest version supported by the org
-      --bulk-api                   use the Salesforce bulk API to update and insert records
-      --debug                      print the call stack when an unhandled error occurs
-      --delta                      check for changes between the source data packs and source org and only deploy the
-                                   datapacks that are changed
-      --log-file=<path>            append logs as NDJSON to the specified file
-      --log-level=<option>         set the log level, overrides -v/--debug
-                                   <options: debug|verbose|info|warn|error|fatal>
-      --lookup-failed              lookup dependencies that fail to deploy in the org
-      --purge-dependencies         delete embedded dependencies with matching keys after the primary datapack record is
-                                   deployed
-      --record-session             record the interaction with Salesforce to a session log that can be replayed later
-      --remote-script-activation   use anonymous apex to activate OmniScripts
-      --replay-session=<file>      replay a previously recorded session log instead of connecting to an org
-      --retry-count=<value>        [default: 1] the number of times a record deployment is retried before failing it
-      --skip-lwc                   skip LWC activation for LWC enabled OmniScripts
-      --strict-order               enforce a strict order for datapacks that are dependent on other datapacks in the
-                                   same deployment
-      --use-metadata-api           deploy LWC components using the Metadata API (slower) instead of the Tooling API
+  -i, --instance=<value>             [default: test.salesforce.com] Salesforce instance URL used for interactive OAuth;
+                                     for example: test.salesforce.com
+  -u, --user=username@example.com    Salesforce username or alias of the org to connect to
+  -v, --verbose                      enable more detailed verbose logging
+  -y, --continue-on-error            continue deploying when one of the datapacks cannot be loaded
+      --allow-unresolved             do not fail the deployment of a datapack when a dependency cannot be resolved
+      --api-version=<version>        Salesforce API version to use; defaults to the latest version supported by the org
+      --bulk-api                     use the Salesforce bulk API to update and insert records
+      --debug                        print the call stack when an unhandled error occurs
+      --delta                        check for changes between the source data packs and source org and only deploy the
+                                     datapacks that are changed
+      --log-file=<path>              append logs as NDJSON to the specified file
+      --log-level=<option>           set the log level, overrides -v/--debug
+                                     <options: debug|verbose|info|warn|error|fatal>
+      --lookup-failed                lookup dependencies that fail to deploy in the org
+      --matching-keys=<files...>...  JSON or YAML files defining the matching key fields per SObject type, e.g. {
+                                     "Product2": ["ProductCode"] }
+      --purge-dependencies           delete embedded dependencies with matching keys after the primary datapack record
+                                     is deployed
+      --record-session               record the interaction with Salesforce to a session log that can be replayed later
+      --remote-script-activation     use anonymous apex to activate OmniScripts
+      --replay-session=<file>        replay a previously recorded session log instead of connecting to an org
+      --retry-count=<value>          [default: 1] the number of times a record deployment is retried before failing it
+      --skip-lwc                     skip LWC activation for LWC enabled OmniScripts
+      --strict-order                 enforce a strict order for datapacks that are dependent on other datapacks in the
+                                     same deployment
+      --use-metadata-api             deploy LWC components using the Metadata API (slower) instead of the Tooling API
 
 DESCRIPTION
   Deploy datapacks to Salesforce
@@ -372,6 +441,13 @@ FLAG DESCRIPTIONS
     Using the Bulk API for deployments is significantly slower compared to the standard Salesforce API and should only
     be used to reduce the number of call outs made during the deployment
 
+  --matching-keys=<files...>...
+
+    JSON or YAML files defining the matching key fields per SObject type, e.g. { "Product2": ["ProductCode"] }
+
+    Matching keys from these files take precedence over matching keys defined in the org and in export definitions. A
+    matching-keys.json or matching-keys.yaml file in the current directory is always loaded when present.
+
   --purge-dependencies  delete embedded dependencies with matching keys after the primary datapack record is deployed
 
     By default Vlocode will only delete child records that do not have a matching key configuration, with this flag
@@ -401,34 +477,36 @@ USAGE
   $ vlocode datapack export [IDS...] [-v] [--debug] [--log-file <path>] [--log-level
     debug|verbose|info|warn|error|fatal] [-u username@example.com] [-i <value>] [--api-version <version>]
     [--record-session | --replay-session <file>] [--definitions <file>] [-f <value> | -q <value>] [-e] [-t <value>] [-o
-    <value>] [-d <value>] [--suppress-nulls] [--fail-on-error] [--progress]
+    <value>] [-d <value>] [--suppress-nulls] [--fail-on-error] [--progress] [--matching-keys <files...>...]
 
 ARGUMENTS
   [IDS...]  list of object IDs to export
 
 FLAGS
-  -d, --depth=<value>              dependency export depth; use -1 to include all dependencies
-  -e, --expand                     expand the exported datapack into separate files according to the definitions
-  -f, --file=<value>               path to a YAML export manifest with datapack export queries
-  -i, --instance=<value>           [default: test.salesforce.com] Salesforce instance URL used for interactive OAuth;
-                                   for example: test.salesforce.com
-  -o, --output=<value>             [default: ./] folder where exported datapacks are written
-  -q, --query=<value>              SOQL query selecting the records to export instead of passing object IDs
-  -t, --type=<value>               datapack type to use when exporting IDs or a single query
-  -u, --user=username@example.com  Salesforce username or alias of the org to connect to
-  -v, --verbose                    enable more detailed verbose logging
-      --api-version=<version>      Salesforce API version to use; defaults to the latest version supported by the org
-      --debug                      print the call stack when an unhandled error occurs
-      --definitions=<file>         path to the YAML or JSON file defining how objects are expanded into datapack files
-      --fail-on-error              fail the export if an error occurs while exporting a datapack
-      --log-file=<path>            append logs as NDJSON to the specified file
-      --log-level=<option>         set the log level, overrides -v/--debug
-                                   <options: debug|verbose|info|warn|error|fatal>
-      --[no-]progress              show an interactive progress bar (use --no-progress for plain forward-printing
-                                   output)
-      --record-session             record the interaction with Salesforce to a session log that can be replayed later
-      --replay-session=<file>      replay a previously recorded session log instead of connecting to an org
-      --suppress-nulls             suppress null SObject field values from exported datapacks
+  -d, --depth=<value>                dependency export depth; use -1 to include all dependencies
+  -e, --expand                       expand the exported datapack into separate files according to the definitions
+  -f, --file=<value>                 path to a YAML export manifest with datapack export queries
+  -i, --instance=<value>             [default: test.salesforce.com] Salesforce instance URL used for interactive OAuth;
+                                     for example: test.salesforce.com
+  -o, --output=<value>               [default: ./] folder where exported datapacks are written
+  -q, --query=<value>                SOQL query selecting the records to export instead of passing object IDs
+  -t, --type=<value>                 datapack type to use when exporting IDs or a single query
+  -u, --user=username@example.com    Salesforce username or alias of the org to connect to
+  -v, --verbose                      enable more detailed verbose logging
+      --api-version=<version>        Salesforce API version to use; defaults to the latest version supported by the org
+      --debug                        print the call stack when an unhandled error occurs
+      --definitions=<file>           path to the YAML or JSON file defining how objects are expanded into datapack files
+      --fail-on-error                fail the export if an error occurs while exporting a datapack
+      --log-file=<path>              append logs as NDJSON to the specified file
+      --log-level=<option>           set the log level, overrides -v/--debug
+                                     <options: debug|verbose|info|warn|error|fatal>
+      --matching-keys=<files...>...  JSON or YAML files defining the matching key fields per SObject type, e.g. {
+                                     "Product2": ["ProductCode"] }
+      --[no-]progress                show an interactive progress bar (use --no-progress for plain forward-printing
+                                     output)
+      --record-session               record the interaction with Salesforce to a session log that can be replayed later
+      --replay-session=<file>        replay a previously recorded session log instead of connecting to an org
+      --suppress-nulls               suppress null SObject field values from exported datapacks
 
 DESCRIPTION
   Export an object as datapack from Salesforce
@@ -437,6 +515,14 @@ EXAMPLES
   $ vlocode datapack export a0X000000000000 -t Product2 -u my-org
 
   $ vlocode datapack export --definitions ./export-definitions.yaml --query "SELECT Id FROM Product2" --expand -u my-org
+
+FLAG DESCRIPTIONS
+  --matching-keys=<files...>...
+
+    JSON or YAML files defining the matching key fields per SObject type, e.g. { "Product2": ["ProductCode"] }
+
+    Matching keys from these files take precedence over matching keys defined in the org and in export definitions. A
+    matching-keys.json or matching-keys.yaml file in the current directory is always loaded when present.
 ```
 
 ## `vlocode datapack import PATHS`
@@ -449,37 +535,39 @@ USAGE
     debug|verbose|info|warn|error|fatal] [-u username@example.com] [-i <value>] [--api-version <version>]
     [--record-session | --replay-session <file>] [--purge-dependencies] [--lookup-failed] [--allow-unresolved]
     [--retry-count <value>] [--bulk-api] [--delta] [--strict-order] [--skip-lwc] [--use-metadata-api]
-    [--remote-script-activation] [-y]
+    [--remote-script-activation] [-y] [--matching-keys <files...>...]
 
 ARGUMENTS
   PATHS...  path of the folders containing the datapacks or datapack files to be deployed
 
 FLAGS
-  -i, --instance=<value>           [default: test.salesforce.com] Salesforce instance URL used for interactive OAuth;
-                                   for example: test.salesforce.com
-  -u, --user=username@example.com  Salesforce username or alias of the org to connect to
-  -v, --verbose                    enable more detailed verbose logging
-  -y, --continue-on-error          continue deploying when one of the datapacks cannot be loaded
-      --allow-unresolved           do not fail the deployment of a datapack when a dependency cannot be resolved
-      --api-version=<version>      Salesforce API version to use; defaults to the latest version supported by the org
-      --bulk-api                   use the Salesforce bulk API to update and insert records
-      --debug                      print the call stack when an unhandled error occurs
-      --delta                      check for changes between the source data packs and source org and only deploy the
-                                   datapacks that are changed
-      --log-file=<path>            append logs as NDJSON to the specified file
-      --log-level=<option>         set the log level, overrides -v/--debug
-                                   <options: debug|verbose|info|warn|error|fatal>
-      --lookup-failed              lookup dependencies that fail to deploy in the org
-      --purge-dependencies         delete embedded dependencies with matching keys after the primary datapack record is
-                                   deployed
-      --record-session             record the interaction with Salesforce to a session log that can be replayed later
-      --remote-script-activation   use anonymous apex to activate OmniScripts
-      --replay-session=<file>      replay a previously recorded session log instead of connecting to an org
-      --retry-count=<value>        [default: 1] the number of times a record deployment is retried before failing it
-      --skip-lwc                   skip LWC activation for LWC enabled OmniScripts
-      --strict-order               enforce a strict order for datapacks that are dependent on other datapacks in the
-                                   same deployment
-      --use-metadata-api           deploy LWC components using the Metadata API (slower) instead of the Tooling API
+  -i, --instance=<value>             [default: test.salesforce.com] Salesforce instance URL used for interactive OAuth;
+                                     for example: test.salesforce.com
+  -u, --user=username@example.com    Salesforce username or alias of the org to connect to
+  -v, --verbose                      enable more detailed verbose logging
+  -y, --continue-on-error            continue deploying when one of the datapacks cannot be loaded
+      --allow-unresolved             do not fail the deployment of a datapack when a dependency cannot be resolved
+      --api-version=<version>        Salesforce API version to use; defaults to the latest version supported by the org
+      --bulk-api                     use the Salesforce bulk API to update and insert records
+      --debug                        print the call stack when an unhandled error occurs
+      --delta                        check for changes between the source data packs and source org and only deploy the
+                                     datapacks that are changed
+      --log-file=<path>              append logs as NDJSON to the specified file
+      --log-level=<option>           set the log level, overrides -v/--debug
+                                     <options: debug|verbose|info|warn|error|fatal>
+      --lookup-failed                lookup dependencies that fail to deploy in the org
+      --matching-keys=<files...>...  JSON or YAML files defining the matching key fields per SObject type, e.g. {
+                                     "Product2": ["ProductCode"] }
+      --purge-dependencies           delete embedded dependencies with matching keys after the primary datapack record
+                                     is deployed
+      --record-session               record the interaction with Salesforce to a session log that can be replayed later
+      --remote-script-activation     use anonymous apex to activate OmniScripts
+      --replay-session=<file>        replay a previously recorded session log instead of connecting to an org
+      --retry-count=<value>          [default: 1] the number of times a record deployment is retried before failing it
+      --skip-lwc                     skip LWC activation for LWC enabled OmniScripts
+      --strict-order                 enforce a strict order for datapacks that are dependent on other datapacks in the
+                                     same deployment
+      --use-metadata-api             deploy LWC components using the Metadata API (slower) instead of the Tooling API
 
 DESCRIPTION
   Deploy datapacks to Salesforce
@@ -509,6 +597,13 @@ FLAG DESCRIPTIONS
 
     Using the Bulk API for deployments is significantly slower compared to the standard Salesforce API and should only
     be used to reduce the number of call outs made during the deployment
+
+  --matching-keys=<files...>...
+
+    JSON or YAML files defining the matching key fields per SObject type, e.g. { "Product2": ["ProductCode"] }
+
+    Matching keys from these files take precedence over matching keys defined in the org and in export definitions. A
+    matching-keys.json or matching-keys.yaml file in the current directory is always loaded when present.
 
   --purge-dependencies  delete embedded dependencies with matching keys after the primary datapack record is deployed
 

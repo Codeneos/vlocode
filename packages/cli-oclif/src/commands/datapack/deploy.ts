@@ -93,6 +93,7 @@ export default class DatapackDeploy extends SalesforceCommand<typeof DatapackDep
                 'For any error that occurs while loading and converting a datapack to records the deployment will exit without making changes to the org. ' +
                 'You can ignore these errors and continue deploying the datapacks that were loaded without errors by setting this option.',
         }),
+        ...SalesforceCommand.matchingKeysFlag,
     };
 
     static examples = [
@@ -122,6 +123,8 @@ export default class DatapackDeploy extends SalesforceCommand<typeof DatapackDep
         if (!datapacks.length) {
             return;
         }
+
+        this.applyMatchingKeyOptions(this.flags['matching-keys']);
 
         // get options from command line
         const deployOptions: DatapackDeploymentOptions = {

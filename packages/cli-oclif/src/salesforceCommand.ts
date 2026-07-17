@@ -14,6 +14,7 @@ import {
     TransportRecorder,
 } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 
 import { BaseCommand } from './baseCommand';
 import { OrgSettingsStore } from './lib/orgSettings';
@@ -81,9 +82,33 @@ export abstract class SalesforceCommand<T extends typeof Command = typeof Comman
         }),
     };
 
+    /**
+     * Opt-in flag for commands that resolve datapack matching keys; spread into a command's
+     * `flags` and apply with {@link applyMatchingKeyOptions}.
+     */
+    static matchingKeysFlag = {
+        'matching-keys': Flags.string({
+            multiple: true,
+            helpValue: '<files...>',
+            summary: 'JSON or YAML files defining the matching key fields per SObject type, e.g. { "Product2": ["ProductCode"] }',
+            description:
+                'Matching keys from these files take precedence over matching keys defined in the org and in export ' +
+                'definitions. A matching-keys.json or matching-keys.yaml file in the current directory is always loaded when present.',
+        }),
+    };
+
     protected connectionProvider!: SalesforceConnectionProvider;
     protected connection!: SalesforceConnection;
     private salesforceService?: SalesforceService;
+
+    /**
+     * Register the matching key files from the `--matching-keys` flag on the {@link MatchingKeyService}.
+     */
+    protected applyMatchingKeyOptions(files?: string[]) {
+        if (files?.length) {
+            this.container.get(MatchingKeyService).setMatchingKeyFiles(...files);
+        }
+    }
 
     public async init(): Promise<void> {
         await super.init();
