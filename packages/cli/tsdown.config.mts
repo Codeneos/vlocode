@@ -5,6 +5,7 @@ import fileTypesPatch from '../../build/patches/file-types.ts';
 import vlocityPatch from '../../build/patches/vlocity.ts';
 import dtracePatch from '../../build/patches/dtrace.ts';
 import jsdomPatch from '../../build/patches/jsdom.ts';
+import cssTreePatch from '../../build/patches/csstree.ts';
 import commands from './build/commands.ts';
 
 /**
@@ -54,6 +55,7 @@ export default defineConfig((options: UserConfig) => {
       fileTypesPatch(), 
       vlocityPatch(),
       jsdomPatch(),
+      cssTreePatch(),
       dtracePatch()
     ]
   };
