@@ -1,5 +1,5 @@
 import { inject, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { asArray, CancellationToken, groupBy, isSalesforceId, joinLimit, mapKeys } from '@vlocode/util';
+import { asArray, CancellationToken, groupBy, isSalesforceId, joinLimit, mapAsyncParallel, mapKeys } from '@vlocode/util';
 import { DateTime } from 'luxon';
 
 import { SalesforceConnectionProvider, type Query2Options } from './connection';
@@ -86,6 +86,12 @@ export class CachedQueryRunner implements QueryRunner {
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class SalesforceDataService {
+
+    /**
+     * Number of chunked lookup queries executed in parallel by {@link lookup}; kept well below the
+     * Salesforce concurrent request limits while removing most of the sequential round-trip latency.
+     */
+    public static lookupParallelism = 4;
 
     @inject(Logger) private readonly logger!: Logger;
     @inject(NamespaceService) private readonly nsService!: NamespaceService;
@@ -216,18 +222,22 @@ export class SalesforceDataService {
      */
     public async lookup<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: LookupFilter<T>, lookupFields?: K[] | readonly K[] | 'all', limit?: number, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]>  {
         const filters = await Promise.all(asArray(filter).map(f => typeof f === 'string' ? Promise.resolve(f) : this.createWhereClause(type, f)));
-        const results = new Array<QueryResult<T, K>>();
         const lookupFieldLen = Array.isArray(lookupFields) ? lookupFields.reduce((a, f) => a + String(f).length, 0) : 1000;
         const filterChunks = joinLimit(filters.filter(f => f?.trim().length).map(f => `(${f})`), 8000 - lookupFieldLen, ' or '); // max query string is 10k characters
 
-        do {
-            if (cancelToken?.isCancellationRequested) {
-                break;
-            }
-            results.push(...await this.lookupWhere<T, K>(type, filterChunks.shift(), lookupFields || 'all', limit, cancelToken));
-        } while(filterChunks.length);
+        if (filterChunks.length <= 1) {
+            return this.lookupWhere<T, K>(type, filterChunks[0], lookupFields || 'all', limit, cancelToken);
+        }
 
-        return results;
+        // Execute the chunked lookups in parallel; large lookups are split into many chunks
+        // and executing them sequentially makes the lookup latency bound
+        const chunkResults = await mapAsyncParallel(filterChunks, chunk =>
+            cancelToken?.isCancellationRequested
+                ? Promise.resolve(new Array<QueryResult<T, K>>())
+                : this.lookupWhere<T, K>(type, chunk, lookupFields || 'all', limit, cancelToken),
+            SalesforceDataService.lookupParallelism
+        );
+        return chunkResults.flat();
     }
 
     public async lookupMultiple<T extends object, K extends PropertyKey = keyof T>(
