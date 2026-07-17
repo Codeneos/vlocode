@@ -302,6 +302,21 @@ export class DatapackDeploymentRecord {
         this._datapackAction = action;
     }
 
+    /**
+     * Mark this record as skipped because it is up-to-date (in sync) with the target org; used by the
+     * delta check. Sets the deployment action to {@link DeploymentAction.Skip} with an `up-to-date`
+     * status detail and optionally records the org record this record was matched against.
+     * @param recordId Optional ID of the in-sync org record this record was matched against
+     */
+    public setUpToDate(recordId?: string) {
+        if (recordId !== undefined) {
+            this.setAction(DeploymentAction.Skip, recordId);
+        } else {
+            this.setAction(DeploymentAction.Skip);
+        }
+        this.updateStatus(DeploymentStatus.Skipped, 'up-to-date');
+    }
+
     public hasGlobalKey() {
         return this.getGlobalKeyField() !== undefined;
     }

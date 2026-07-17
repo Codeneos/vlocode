@@ -199,10 +199,16 @@ export class MatchingKeyService {
             ? await this.validateFields(describe, configuredFields)
             : this.getFallbackFields(describe);
 
-        // Records of objects with a master-detail relation are always matched within their parent(s)
-        for (const parentField of this.getMasterDetailFields(describe)) {
-            if (!stringEqualsIgnoreCase(parentField, fields)) {
-                fields.push(parentField);
+        // Records of objects with a master-detail relation are always matched within their parent(s).
+        // A single parent field without any other key field does not form a key by itself as it would
+        // match all sibling records under the same parent; a combination of multiple parent fields
+        // identifies a junction record (e.g. PricebookEntry) and is used as key
+        const parentFields = this.getMasterDetailFields(describe);
+        if (fields.length || parentFields.length > 1) {
+            for (const parentField of parentFields) {
+                if (!stringEqualsIgnoreCase(parentField, fields)) {
+                    fields.push(parentField);
+                }
             }
         }
 

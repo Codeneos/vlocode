@@ -1,23 +1,23 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceService, RecordError } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore } from '@vlocode/util';
-import { DatapackLookupService, OrgRecordStatus } from './datapackLookupService';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore, getErrorMessage } from '@vlocode/util';
+import { DatapackLookupService } from './datapackLookupService';
 import { DatapackDependencyResolver, DependencyResolutionRequest, DependencyResolutionResult } from './datapackDependencyResolver';
 import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
+import { DatapackRecordMatcher } from './datapackRecordMatcher';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
 import { DatapackDeploymentError as Error } from './datapackDeploymentError';
 import { VlocityDatapackReference } from '@vlocode/vlocity';
-import { DatapackDeploymentDatapackStatus, DatapackDeploymentMessage, DatapackDeploymentStatus, DatapackDeploymentState } from './datapackDeploymentStatus';
-import { DatapackComparator } from './datapackComparison';
+import { DatapackDeploymentDatapackStatus, DatapackDeploymentMessage, DatapackDeploymentRecordStatus, DatapackDeploymentStatus, DatapackDeploymentState } from './datapackDeploymentStatus';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
     afterDeployRecord: Iterable<DatapackDeploymentRecord>;
     beforeDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
-    afterDeployGroup: Iterable<DatapackDeploymentRecordGroup>;    
-    beforeRetryRecord: Iterable<DatapackDeploymentRecord>;    
+    afterDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
+    beforeRetryRecord: Iterable<DatapackDeploymentRecord>;
     beforeResolveDependencies: Iterable<DatapackDeploymentRecord>;
     recordError: DatapackDeploymentRecord;
     cancel: DatapackDeployment;
@@ -96,7 +96,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
     private readonly recordGroupsErrors = new Map<string, Error[]>();
     private readonly orgDependencyResolver: DatapackDependencyResolver;
-    private deltaRecordStatuses?: Map<string, OrgRecordStatus>;
 
     private isStarted = false;
     private timer: Timer;
@@ -165,6 +164,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
         private readonly salesforceService: SalesforceService,
+        /**
+         * Matcher used to match embedded records without matching key against org data; used by the delta
+         * check to avoid deleting and recreating embedded records that are already in sync with the target org.
+         */
+        public readonly recordMatcher: DatapackRecordMatcher,
         private readonly logger: Logger
     ) {
         super();
@@ -278,6 +282,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 status: group.status,
                 recordCount: group.size,
                 failedCount: group.failedCount,
+                records: group.records.map(record => this.getRecordStatusDetail(record)),
                 messages
             });
         }
@@ -298,7 +303,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     status: DatapackDeploymentState.Error,
                     recordCount: 1,
                     failedCount: 1,
-                    messages 
+                    records: [],
+                    messages
                 });
             } else {
                 Object.assign(datapackStatus, {
@@ -312,6 +318,37 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             total: datapackValues.length,
             status: DatapackDeploymentState.summarize(datapackValues.map(result => result.status)),
             datapacks: datapackValues,
+        };
+    }
+
+    private static readonly recordStatusNames: Record<DeploymentStatus, DatapackDeploymentRecordStatus['status']> = {
+        [DeploymentStatus.Pending]: 'pending',
+        [DeploymentStatus.InProgress]: 'inProgress',
+        [DeploymentStatus.Retry]: 'retry',
+        [DeploymentStatus.Deployed]: 'deployed',
+        [DeploymentStatus.Failed]: 'failed',
+        [DeploymentStatus.Skipped]: 'skipped',
+    };
+
+    private static readonly recordActionNames: Record<DeploymentAction, DatapackDeploymentRecordStatus['action']> = {
+        [DeploymentAction.None]: 'none',
+        [DeploymentAction.Update]: 'update',
+        [DeploymentAction.Insert]: 'insert',
+        [DeploymentAction.Skip]: 'skip',
+    };
+
+    /**
+     * Build the per record status detail included in {@link getStatus} describing which org record a
+     * datapack record was matched against and the action the deployment took (or will take) for it.
+     */
+    private getRecordStatusDetail(record: DatapackDeploymentRecord): DatapackDeploymentRecordStatus {
+        return {
+            sourceKey: record.sourceKey,
+            sobjectType: record.sobjectType,
+            recordId: record.recordId,
+            status: DatapackDeployment.recordStatusNames[record.status],
+            action: DatapackDeployment.recordActionNames[record.action],
+            statusMessage: record.statusMessage
         };
     }
 
@@ -670,7 +707,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return [...(this.recordGroups.get(datapackKey) ?? [])];
     }
 
-    private async resolveExistingIds(datapacks: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+    /**
+     * Resolve the existing org record IDs for the specified records using the matching key configuration and
+     * update the deployment action of each record accordingly: records that match an existing org record are
+     * updated ({@link DeploymentAction.Update}) and records without a match are inserted ({@link DeploymentAction.Insert}).
+     * Records with {@link DatapackDeploymentRecord.skipLookup} set are excluded from the lookup.
+     * @param datapacks Records for which to resolve the existing org record IDs
+     * @param cancelToken An optional cancellation token to abort the org lookups
+     */
+    public async resolveExistingIds(datapacks: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // prepare batch
         const recordsForLookup = [...Iterable.filter(datapacks, rec => !rec.skipLookup)];
         this.logger.verbose(`Resolving existing IDs for ${recordsForLookup.length} record(s)`);
@@ -687,18 +732,13 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Create the Salesforce DML batch for records that are ready to deploy.
-     *
-     * With delta enabled this method consumes the full-deployment comparison map, not just records in
-     * the current batch. That is intentional: parent purge happens immediately after the parent batch,
-     * so embedded children must already be known as in-sync before the child batch becomes deployable.
-     *
+     * Compared the to be deployed records to the records in the org
      * @param records Records to deploy
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
     private async createDeploymentBatch(records: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         const batch = new RecordBatch(this.salesforceService.schema, this.options);
-        const recordStatuses = this.options.deltaCheck ? await this.getDeltaRecordStatuses(cancelToken) : undefined;
+        const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records.values(), cancelToken) : undefined;
 
         for (const [ref, record] of records.entries()) {
             if (record.isSkipped || record.isFailed) {
@@ -706,15 +746,14 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 continue;
             }
 
-            const status = this.getDeltaRecordStatus(record, recordStatuses);
-            if (status?.inSync) {
-                record.setAction(DeploymentAction.Skip, status.recordId ?? record.recordId);
-                continue;
-            } else if (status) {
-                this.logger.verbose(`Record out of sync ${record.recordId ?? record.sourceKey} (${record.sobjectType})`, status.mismatchedFields ?? status.missingRecordData);
-            }
-
             if (record.recordId) {
+                const status = recordStatuses?.get(record.recordId);
+                if (status?.inSync) {
+                    record.setUpToDate();
+                    continue;
+                } else if(status) {
+                    this.logger.verbose(`Record out of sync ${record.recordId} (${record.sobjectType})`, status.mismatchedFields)
+                }
                 this.logger.debug('Update', record.sobjectType, ':', record.values);
                 batch.addUpdate(record.sobjectType, record.values, record.recordId, ref);
             } else {
@@ -727,31 +766,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Compare all deployment records to the target org once and cache the results for deploy-time delta decisions.
-     *
-     * The cache is shared by all batches so a parent batch can protect unchanged embedded children from
-     * purge before those children are deployed. The comparison is first requested after the current batch
-     * has run `beforeDeployRecord`; embedded children in later batches are compared from their converted
-     * record values plus resolved parent Ids.
-     *
+     * Compared the to be deployed records to the records in the org
+     * @param records Records
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
-    private async getDeltaRecordStatuses(cancelToken?: CancellationToken) {
-        if (!this.deltaRecordStatuses) {
-            this.deltaRecordStatuses = await new DatapackComparator(
-                this.lookupService,
-                this.salesforceService
-            ).compareRecordStatuses(this, cancelToken);
-        }
-        return this.deltaRecordStatuses;
-    }
-
-    private getDeltaRecordStatus(record: DatapackDeploymentRecord, statuses = this.deltaRecordStatuses): OrgRecordStatus | undefined {
-        return statuses?.get(record.sourceKey) ?? (record.recordId ? statuses?.get(record.recordId) : undefined);
-    }
-
-    private isDeltaRecordInSync(record: DatapackDeploymentRecord): boolean {
-        return this.getDeltaRecordStatus(record)?.inSync === true;
+    private async getRecordSyncStatus(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+        return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId && !rec.isSkipped)], cancelToken);
     }
 
     private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken): Promise<void> {
@@ -984,7 +1004,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private async purgeDependentRecords(records: Iterable<DatapackDeploymentRecord>, predicate: RecordPurgePredicate) {
-        const deleteFilters = new Map<string, Set<string>>();
+        const deleteFilters = new Map<string, Array<Record<string, string>>>();
+        const deleteIds = new Map<string, Set<string>>();
         const recordsById = new Map(Iterable.transform(records, {
             map: rec => [rec.recordId!, rec],
             filter: rec => (rec.isDeployed && rec.isUpdate) || (rec.recordId && rec.isSkipped)
@@ -1011,30 +1032,76 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
         }
 
-        const deleteRecords = async (record?: DatapackDeploymentRecord) => {
-            for (const [sobjectType, filters] of deleteFilters) {
-                const result = await this.salesforceService.deleteWhere(sobjectType, filters);
-                for (const {error, id} of result.filter(res => !res.success)) {
-                    const errorMessage = `Unable to delete ${sobjectType} with id '${id}' -- ${error}`;
-                    if (record) {
-                        await this.handleError(record, errorMessage);
-                    } else {
-                        this.logger.warn(errorMessage);
-                    }
+        // Match the dependents that would be deleted and recreated against the org data first instead
+        // of blindly purging them: dependents in sync with an org record are skipped and their org
+        // records preserved so only the unmatched org records are deleted and only the unmatched
+        // datapack records are inserted
+        const preservedRecords = await this.deltaMatchDependentRecords([...recordsById.values()], dependentsBySourceKey, predicate);
+
+        // Records preserved by the delta match become purge parents themselves so org records that are
+        // dependent on them but not part of the datapack are still purged
+        const purgeParents = new Map([
+            ...recordsById,
+            ...preservedRecords.map<[string, DatapackDeploymentRecord]>(rec => [rec.recordId!, rec])
+        ]);
+
+        const reportDeleteErrors = async (sobjectType: string, results: { id: string, success: boolean, error?: string }[], record?: DatapackDeploymentRecord) => {
+            for (const {error, id} of results.filter(res => !res.success)) {
+                const errorMessage = `Unable to delete ${sobjectType} with id '${id}' -- ${error}`;
+                if (record) {
+                    await this.handleError(record, errorMessage);
+                } else {
+                    this.logger.warn(errorMessage);
                 }
             }
-            deleteFilters.clear();
         };
 
-        for (const [recordId, record] of recordsById.entries()) {
+        const deleteRecords = async (record?: DatapackDeploymentRecord) => {
+            for (const [sobjectType, filters] of deleteFilters) {
+                await reportDeleteErrors(sobjectType, await this.salesforceService.deleteWhere(sobjectType, filters), record);
+            }
+            for (const [sobjectType, ids] of deleteIds) {
+                await reportDeleteErrors(sobjectType, await this.salesforceService.delete(ids), record);
+            }
+            deleteFilters.clear();
+            deleteIds.clear();
+        };
+
+        // Group the dependents of each purge parent per SObject type and dependency field; each target
+        // translates into a single delete action for the org records of the parent that are not part of
+        // the datapack
+        const parentTargets = [...purgeParents.entries()].map(([recordId, record]) => {
+            const targets = new Map<string, { sobjectType: string, field: string, recordId: string, preservedIds: Set<string>, unmatchedIds?: string[] }>();
             for (const { record: undeployRecord, field, dependency } of dependentsBySourceKey.get(record.sourceKey) ?? []) {
-                // Delta already proved this pending embedded record exists in the target with the same
-                // field data. Deleting it here would force a no-op delete + insert cycle later.
-                if (this.options.deltaCheck && this.isDeltaRecordInSync(undeployRecord)) {
+                if (!predicate({ field, dependency, dependentRecord: undeployRecord, record })) {
                     continue;
                 }
-                if (predicate({ field, dependency, dependentRecord: undeployRecord, record })) {
-                    setMapAdd(deleteFilters, undeployRecord.sobjectType, `${field} = '${recordId}'`);
+                const purgeTarget = mapGetOrCreate(targets, `${undeployRecord.sobjectType}:${field}`,
+                    () => ({ sobjectType: undeployRecord.sobjectType, field, recordId, preservedIds: new Set<string>() }));
+                if (undeployRecord.isSkipped && undeployRecord.recordId) {
+                    // Dependent is delta matched to an in-sync org record; preserve the org record
+                    purgeTarget.preservedIds.add(undeployRecord.recordId);
+                }
+            }
+            return { record, targets: [...targets.values()] };
+        });
+
+        // For targets with preserved records only the unmatched org records are deleted (by ID) so the
+        // preserved records are kept and the delete is not limited by the SOQL filter length; resolve
+        // the unmatched record IDs in one batched lookup per SObject type
+        const preservedTargets = parentTargets.flatMap(({ targets }) => targets.filter(target => target.preservedIds.size));
+        for (const [sobjectType, targets] of Object.entries(groupBy(preservedTargets, target => target.sobjectType))) {
+            const unmatchedIds = await this.recordMatcher.getUnmatchedRowIds(sobjectType,
+                targets.map(target => ({ [target.field]: target.recordId })), this.cancelToken);
+            targets.forEach((target, i) => target.unmatchedIds = unmatchedIds[i].filter(id => !target.preservedIds.has(id)));
+        }
+
+        for (const { record, targets } of parentTargets) {
+            for (const { sobjectType, field, recordId, preservedIds, unmatchedIds } of targets) {
+                if (preservedIds.size) {
+                    unmatchedIds?.forEach(id => setMapAdd(deleteIds, sobjectType, id));
+                } else {
+                    arrayMapPush(deleteFilters, sobjectType, { [field]: recordId });
                 }
             }
 
@@ -1049,5 +1116,65 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         if (this.options.purgeLookupOptimization) {
             await deleteRecords();
         }
+    }
+
+    /**
+     * Match the pending dependents of the specified purge parents against the org data and skip
+     * dependents that are already in sync with the target org; a deployment would otherwise delete and
+     * recreate these records with identical data. Matching walks down the datapack tree: the dependents of
+     * a matched (preserved) record are matched against the org records under the preserved record.
+     * @param parents Deployed or skipped records whose dependents are about to be purged
+     * @param dependentsBySourceKey Pending records indexed by the source keys they depend on
+     * @param predicate Predicate that selects which dependents are purged
+     * @returns The dependent records that were matched to an in-sync org record and skipped
+     */
+    private async deltaMatchDependentRecords(
+        parents: DatapackDeploymentRecord[],
+        dependentsBySourceKey: Map<string, Array<{ record: DatapackDeploymentRecord, field: string, dependency: VlocityDatapackReference }>>,
+        predicate: RecordPurgePredicate
+    ): Promise<DatapackDeploymentRecord[]> {
+        const skippedRecords = new Array<DatapackDeploymentRecord>();
+        let queue = parents;
+
+        while (queue.length) {
+            const candidates = new Map<string, DatapackDeploymentRecord>();
+            for (const parent of queue) {
+                for (const { record, field, dependency } of dependentsBySourceKey.get(parent.sourceKey) ?? []) {
+                    if (record.isPending && predicate({ field, dependency, dependentRecord: record, record: parent })) {
+                        candidates.set(record.sourceKey, record);
+                    }
+                }
+            }
+
+            if (!candidates.size) {
+                break;
+            }
+
+            // Resolve the dependencies of the candidates so their parent reference fields are set before
+            // matching; candidates with dependencies that cannot be resolved yet are not matched (and thus
+            // recreated) which is the safe default
+            await Promise.all([...candidates.values()].map(record => record.resolveDependencies(this).catch(err => {
+                this.logger.verbose(`Unable to resolve dependencies for delta match of ${record.sourceKey}: ${getErrorMessage(err)}`);
+            })));
+
+            const outcomes = await this.recordMatcher.matchRecords([...candidates.values()], { strict: true }, this.cancelToken);
+            queue = [];
+
+            for (const record of candidates.values()) {
+                const outcome = outcomes.get(record.sourceKey);
+                if (outcome?.status === 'inSync') {
+                    record.setUpToDate(outcome.recordId);
+                    this.logger.verbose(`Skipping ${record.sourceKey}; in-sync with org record ${outcome.recordId}`);
+                    skippedRecords.push(record);
+                    // Dependents of a preserved record can now be matched against the org records under it
+                    queue.push(record);
+                }
+            }
+        }
+
+        if (skippedRecords.length) {
+            this.logger.info(`Preserving ${skippedRecords.length} embedded record(s) already in-sync with the target org`);
+        }
+        return skippedRecords;
     }
 }

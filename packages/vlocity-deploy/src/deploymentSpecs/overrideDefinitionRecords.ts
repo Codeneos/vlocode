@@ -14,6 +14,13 @@ export class OverrideDefinitionRecords implements DatapackDeploymentSpec {
         private readonly logger: Logger) {
     }
 
+    public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
+        // Datapacks carry the hierarchy path of the source org which is recalculated for the target
+        // org just before deployment; clear the stale source value so the delta check does not
+        // compare it against the target org and report (and recreate) in-sync records as changed
+        records.forEach(record => record.value('ProductHierarchyPath__c', undefined));
+    }
+
     public beforeDeployRecord(records: ReadonlyArray<DatapackDeploymentRecord>) {
         return Promise.all(records.map(this.updateOverrideDefinition, this));
     }

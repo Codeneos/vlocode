@@ -37,7 +37,19 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     purgeLookupOptimization?: boolean;
     /**
-     * When enabled teh deployment wil check for changes between the datapack source and the source org and only deploy
+     * When enabled the deployment compares the datapack records against the data in the target org and only
+     * deploys records that have changed; records that are already in sync with the target org are skipped
+     * and report an `up-to-date` status.
+     *
+     * Note: embedded child records without a matching key configuration are always -- regardless of this
+     * option -- matched against the org records under the same parent by comparing the record data.
+     * Embedded records that are in sync are preserved; only the unmatched org records are deleted and only
+     * the unmatched datapack records are inserted. Records that cannot be fully compared (e.g. records
+     * with binary fields) are always deleted and recreated.
+     *
+     * Fields that are (re)calculated for the target org by a deployment spec just before deployment are
+     * cleared during record conversion and excluded from the comparison; see
+     * {@link DatapackDeploymentSpec.beforeDeployRecord}.
      * @default false;
      */
     deltaCheck?: boolean;
