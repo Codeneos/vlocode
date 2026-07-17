@@ -41,9 +41,43 @@ export namespace DatapackDeploymentState {
 
 
 
-export type DatapackDeploymentMessage = 
-    { type: 'warn' , message: string } | 
+export type DatapackDeploymentMessage =
+    { type: 'warn' , message: string } |
     { type: 'error' , message: string, code?: string };
+
+/**
+ * Detailed status of a single record within a datapack deployment describing which org record the
+ * datapack record was matched against and the action the deployment took (or will take) for it.
+ */
+export interface DatapackDeploymentRecordStatus {
+    /**
+     * Source key of the datapack record.
+     */
+    readonly sourceKey: string;
+    /**
+     * SObject type of the record.
+     */
+    readonly sobjectType: string;
+    /**
+     * ID of the org record this datapack record was matched against or deployed to;
+     * `undefined` for records that are inserted but not yet deployed.
+     */
+    readonly recordId?: string;
+    /**
+     * Deployment status of the record.
+     */
+    readonly status: 'pending' | 'inProgress' | 'retry' | 'deployed' | 'failed' | 'skipped';
+    /**
+     * Action the deployment performed (or will perform) for this record. Records that are
+     * up-to-date in the target org report a `skip` action when the delta check is enabled.
+     */
+    readonly action: 'none' | 'insert' | 'update' | 'skip';
+    /**
+     * Additional status detail such as the failure reason or the skip reason (e.g. `up-to-date`
+     * for records skipped by the delta check).
+     */
+    readonly statusMessage?: string;
+}
 
 /**
  * Represents the deployment status of a datapack.
@@ -81,7 +115,13 @@ export interface DatapackDeploymentDatapackStatus {
      * Used to determine if a deployment was partially successful.
      */
     readonly failedCount: number;
-    
+
+    /**
+     * Detailed status per record in this datapack describing which org records were matched
+     * and the action the deployment took (or will take) for each record.
+     */
+    readonly records: ReadonlyArray<DatapackDeploymentRecordStatus>;
+
     /**
      * A collection of error messages generated during the deployment of this datapack.
      * Each error contains a type, optional code, and message but excludes record references.
