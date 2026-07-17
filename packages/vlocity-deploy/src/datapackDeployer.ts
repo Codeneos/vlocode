@@ -117,6 +117,9 @@ export class DatapackDeployer {
      */
     public async deploy(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
         const deployment = await this.createDeployment(datapacks, options, cancellationToken);
+        // The deployment runs on the converted records; release the parsed datapacks so the raw
+        // datapack data does not stay on the heap for the duration of the deployment
+        datapacks = [];
         return deployment.start(cancellationToken).then(() => deployment);
     }
 
@@ -249,7 +252,7 @@ export class DatapackDeployer {
 
     /**
      * Executes the necessary actions before retrying a record deployment.
-     * 
+     *
      * @param deployment - The DatapackDeployment object.
      * @param datapackRecords - An iterable of DatapackDeploymentRecord objects.
      */
