@@ -67,6 +67,13 @@
         "objectType": {
           "description": "Type of SObject to which this filter applies",
           "type": "string"
+        },
+        "relatedObjects": {
+          "description": "List of related objects that are exported as separate datapacks but are related to this object and should be included in the export.",
+          "items": {
+            "$ref": "#/definitions/ObjectFilter"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -306,6 +313,27 @@
           "type": "array"
         }
       ]
+    },
+    "ObjectFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "$ref": "#/definitions/LookupFilter",
+          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+        },
+        "limit": {
+          "description": "Optional maximum number of records to return when querying this object.",
+          "type": "number"
+        },
+        "objectType": {
+          "description": "Type of SObject to which this filter applies",
+          "type": "string"
+        }
+      },
+      "required": [
+        "objectType"
+      ],
+      "type": "object"
     }
   }
 }
