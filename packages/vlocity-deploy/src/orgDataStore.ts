@@ -122,7 +122,7 @@ class OrgDataTable {
     }
 
     public getRows(filter: Record<string, unknown>): Record<string, unknown>[] {
-        const shape = Object.keys(filter).sort();
+        const shape = Object.keys(filter).sort((a, b) => a.localeCompare(b));
         if (!shape.length) {
             return [...this.rows.values()];
         }

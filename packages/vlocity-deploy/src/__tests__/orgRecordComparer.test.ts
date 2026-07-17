@@ -61,5 +61,11 @@ describe('OrgRecordComparer', () => {
             expect(comparer.getIndexValue(true)).toBe('true');
             expect(comparer.getRecordIndexValue({ Field: true }, 'Field')).toBe('true');
         });
+
+        it('falls back from the index for numeric checkbox values', () => {
+            expect(comparer.getIndexValue(0)).toBeUndefined();
+            expect(comparer.getIndexValue(1)).toBeUndefined();
+            expect(comparer.getIndexValue(2)).toBe('2');
+        });
     });
 });

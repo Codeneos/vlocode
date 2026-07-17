@@ -181,7 +181,7 @@ export class QueryConditionBuilder extends QueryBuilderData {
     }
 
     public like(field: (string | { name: string }), value: unknown) : this {
-        return this.condition(`${field} LIKE ${this.formatValue(value, { pattern: true })}`);
+        return this.condition(`${field} LIKE ${this.formatValue(value)}`);
     }
 
     public equals(field: (string | { name: string }), value: unknown) : this {
@@ -216,18 +216,17 @@ export class QueryConditionBuilder extends QueryBuilderData {
         return this.condition(`${field} not in (${Iterable.join(values, v => this.formatValue(v), ',')})`);
     }
 
-    private formatValue(value: unknown, options?: { pattern?: boolean }) {
+    private formatValue(value: unknown) {
         if (value === null || value === undefined) {
             return null;
         }
         else if (typeof value === 'number' || typeof value === 'boolean') {
             return `${value}`;
         }
-        // Literal values share the SOQL string escaping with QueryService.formatFieldValue; in `like`
-        // patterns only quotes are escaped as backslashes escape the `%` and `_` pattern characters
-        return options?.pattern
-            ? `'${String(value).replace(/'/g, `\\'`)}'`
-            : `'${escapeSoqlString(String(value))}'`;
+        // Literal values share the SOQL string escaping with QueryService.formatFieldValue. This also
+        // preserves LIKE pattern escapes: `\\%` becomes `\\\\%` in the query literal and is parsed back
+        // to `\\%` before the LIKE pattern is evaluated.
+        return `'${escapeSoqlString(String(value))}'`;
     }
 
     public getCondition() {

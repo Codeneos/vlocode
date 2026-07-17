@@ -56,6 +56,18 @@ describe('OrgDataStore', () => {
         expect(query2).toHaveBeenCalledTimes(1);
     });
 
+    it('should match numeric datapack checkbox values against extracted boolean values', async () => {
+        // Arrange
+        const unchecked = { ...ROW_1, Enabled__c: false };
+        const checked = { ...ROW_2, Enabled__c: true };
+        const { store } = createStore({ rows: [ unchecked, checked ] });
+        await store.loadTable('Test__c', [ 'Enabled__c' ], 1000);
+
+        // Assert; numeric 0/1 bypass the exact index and are verified with fieldEquals
+        expect(store.getRows('Test__c', { Enabled__c: 0 })).toEqual([ unchecked ]);
+        expect(store.getRows('Test__c', { Enabled__c: 1 })).toEqual([ checked ]);
+    });
+
     it('should fall back gracefully when the extraction fails', async () => {
         // Arrange
         const { store, query2 } = createStore({ rows: [] });

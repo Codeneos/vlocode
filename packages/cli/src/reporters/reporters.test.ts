@@ -1,5 +1,9 @@
 import 'jest';
 
+import { mkdtemp, readFile, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
+
 import { DatapackComparisonResult } from '@vlocode/vlocity-deploy';
 
 import { ConsoleComparisonReporter } from './consoleComparisonReporter';
@@ -7,6 +11,16 @@ import { JsonComparisonReporter } from './jsonComparisonReporter';
 import { MarkdownComparisonReporter } from './markdownComparisonReporter';
 
 describe('comparison reporters', () => {
+
+    let tempDir: string;
+
+    beforeEach(async () => {
+        tempDir = await mkdtemp(join(tmpdir(), 'vlocode-compare-reporters-'));
+    });
+
+    afterEach(async () => {
+        await rm(tempDir, { recursive: true, force: true });
+    });
 
     const comparisonResult: DatapackComparisonResult = {
         total: 3,
@@ -119,6 +133,40 @@ describe('comparison reporters', () => {
             expect(report).toContain('[01t000000000001AAA](https://test.my.salesforce.com/01t000000000001AAA)');
             expect(report).toContain('[a00000000000001AAA](https://test.my.salesforce.com/a00000000000001AAA)');
         });
+
+        it('should create parent directories before writing the report', async () => {
+            const outputFile = join(tempDir, 'nested', 'report.md');
+            await new MarkdownComparisonReporter(outputFile, { info: jest.fn() } as any).report(comparisonResult);
+
+            expect(await readFile(outputFile, 'utf8')).toContain('# Datapack comparison report');
+        });
+
+        it('should generate truncation rows with the same number of cells as their tables', () => {
+            const baseDatapack = comparisonResult.datapacks[1];
+            const baseRecord = baseDatapack.records[0];
+            const records = Array.from({ length: 201 }, (_, index) => ({
+                ...baseRecord,
+                sourceKey: `Product2/ProductB-${index}`,
+                mismatchedFields: index === 0
+                    ? Array.from({ length: 31 }, (_, fieldIndex) => ({ field: `Field${fieldIndex}`, actual: 'old', expected: 'new' }))
+                    : undefined
+            }));
+            const extraOrgRecords = Array.from({ length: 201 }, (_, index) => ({
+                sobjectType: 'Child__c',
+                recordId: `a${String(index).padStart(17, '0')}`
+            }));
+            const report = new MarkdownComparisonReporter('report.md', { info: jest.fn() } as any).generate({
+                ...comparisonResult,
+                datapacks: [ { ...baseDatapack, records, extraOrgRecords } ]
+            });
+
+            const truncationRows = report.split('\n').filter(line => line.includes('see the JSON report'));
+            expect(truncationRows).toEqual([
+                '| _… 1 more record(s), see the JSON report for all entries_ |  |  |  |  |',
+                '| _… 1 more field(s), see the JSON report for all entries_ |  |  |',
+                '| _… 1 more record(s), see the JSON report for all entries_ |  |'
+            ]);
+        });
     });
 
     describe('JsonComparisonReporter', () => {
@@ -136,6 +184,14 @@ describe('comparison reporters', () => {
                 deployAction: 'update'
             }));
             expect(report.datapacks[1].extraOrgRecords).toHaveLength(1);
+        });
+
+        it('should create parent directories before writing the report', async () => {
+            const outputFile = join(tempDir, 'nested', 'report.json');
+            await new JsonComparisonReporter(outputFile, { info: jest.fn() } as any).report(comparisonResult);
+
+            const report = JSON.parse(await readFile(outputFile, 'utf8'));
+            expect(report.reportType).toBe('datapack-comparison');
         });
     });
 

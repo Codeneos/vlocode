@@ -174,7 +174,12 @@ export class OrgRecordComparer {
         if (typeof value === 'string') {
             return this.isFuzzyMatchValue(value) ? undefined : this.canonicalMatchValue(value);
         }
-        if (typeof value === 'number' || typeof value === 'boolean') {
+        if (typeof value === 'number') {
+            // Salesforce returns checkbox values as booleans while datapacks can represent them as
+            // 0/1. Do not index those ambiguous numeric values; callers fall back to fieldEquals.
+            return value === 0 || value === 1 ? undefined : String(value);
+        }
+        if (typeof value === 'boolean') {
             return String(value);
         }
         return undefined;
@@ -263,6 +268,6 @@ export class OrgRecordComparer {
      */
     private picklistValueSet(value: string): string {
         return this.namespaceService.updateNamespace(value)
-            .split(';').map(entry => entry.toLowerCase().trim()).sort().join(';');
+            .split(';').map(entry => entry.toLowerCase().trim()).sort((a, b) => a.localeCompare(b)).join(';');
     }
 }
