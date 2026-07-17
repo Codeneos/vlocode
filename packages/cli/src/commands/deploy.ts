@@ -1,14 +1,14 @@
 import logSymbols from 'log-symbols';
 import chalk from 'chalk';
 import { existsSync } from 'fs';
-import { stat } from 'fs/promises';
 
-import { Logger, LogLevel, LogManager } from '@vlocode/core';
+import { FileSystem, Logger, LogLevel, LogManager } from '@vlocode/core';
 import { DatapackDeployer, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
 import { DatapackLoader } from '@vlocode/vlocity';
-import { groupBy, mapAsync, partition, pluralize, Timer } from '@vlocode/util';
+import { groupBy, partition, pluralize, removeNamespacePlaceholders, Timer } from '@vlocode/util';
 
 import { Argument, Option } from '../command';
+import { loadDatapacks } from '../datapackLoading';
 import { SalesforceCommand } from '../salesforceCommand';
 
 export default class extends SalesforceCommand {
@@ -44,7 +44,10 @@ export default class extends SalesforceCommand {
             'Using the Bulk API for deployments is significantly slower compared to the standard Salesforce API and should only be used ' +
             'to reduce the number of call outs made during the deployment'
         ).default(false),
-        new Option('--delta', 'check for changes between the source data packs and source org and only deploy the datapacks that are changed').default(false),
+        new Option('--delta', 'compare the source datapacks against the org data and only deploy records that are changed; ' +
+            'records that are in sync with the target org are skipped. Embedded child records without matching keys are always ' +
+            'matched by record data and preserved when in sync, only out of sync embedded records are deleted and recreated.'
+        ).default(false),
         new Option('--strict-order',
             `enforce a strict order for datapacks that are dependent on other datapacks in the same deployment` +
             `By default Vlocode determines deployment order based on record level dependencies, ` +
@@ -80,7 +83,7 @@ export default class extends SalesforceCommand {
 
     public async run(paths: string[], options: any) {
         // Load datapacks
-        const datapacks = await this.loadDatapacks(paths);
+        const datapacks = await loadDatapacks(this.container.get(DatapackLoader), paths, this.logger, this.container.get(FileSystem));
         if (!datapacks.length) {
             return;
         }
@@ -104,7 +107,8 @@ export default class extends SalesforceCommand {
 
         // Create deployment
         const deployTimer = new Timer();
-        const deployment = await this.container.new(DatapackDeployer).createDeployment(datapacks, deployOptions);
+        // Hand off the datapacks; once converted to records the parsed datapack data is released
+        const deployment = await this.container.new(DatapackDeployer).createDeployment(datapacks.splice(0), deployOptions);
         await deployment.start();
 
         // done!!
@@ -126,7 +130,7 @@ export default class extends SalesforceCommand {
 
         for (const [datapack, messages] of Object.entries(deployment.getMessagesByDatapack())) {
             for (const message of messages.sort((a, b) => (a.type + a.datapackKey + a.record?.sourceKey).localeCompare(b.type + b.datapackKey + b.record?.sourceKey))) {
-                const normalizedSourceKey = (message.record?.sourceKey ?? message.datapackKey).replaceAll(/%[^%]+%__/ig,'');
+                const normalizedSourceKey = removeNamespacePlaceholders(message.record?.sourceKey ?? message.datapackKey);
                 const logMessage = `${datapack} -- ${normalizedSourceKey} - ${message.message}`;
                 if (message.type === 'error') {
                     this.logger.error(`${this.prefixFormat[message.type]} ${logMessage}`);
@@ -135,29 +139,6 @@ export default class extends SalesforceCommand {
                 }
             }
         }
-    }
-
-    private async loadDatapacks(paths: string[]) {
-        this.logger.info(`Load datapacks: "${paths.join('", "')}"`);
-
-        const datapackLoadTimer = new Timer();
-        const loader = this.container.get(DatapackLoader);
-        const datapacks = (await mapAsync(paths, async path => {
-            const fileInfo = await stat(path);
-            if (fileInfo.isDirectory()) {
-                return loader.loadDatapacksFromFolder(path);
-            } else {
-                return [ await loader.loadDatapack(path) ];
-            }
-        })).flat();
-
-        if (datapacks.length == 0) {
-            this.logger.error(`No datapacks found in specified paths: "${paths.join('", "')}"`);
-        } else {
-            this.logger.info(`Loaded ${datapacks.length} datapacks in [${datapackLoadTimer.stop()}]`);
-        }
-
-        return datapacks;
     }
 
     protected async init(options: any) {

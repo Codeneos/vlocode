@@ -2,13 +2,14 @@ import { join } from 'path';
 import * as fs from 'fs-extra';
 
 import { Logger, LogManager } from '@vlocode/core';
-import { DatapackExpandResult, DatapackExportDefinitionStore, DatapackExporter, type DatapackExportProgress } from '@vlocode/vlocity-deploy';
+import { DatapackExpandResult, DatapackExporter, type DatapackExportProgress } from '@vlocode/vlocity-deploy';
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
 import { HttpTransport, SalesforceService } from '@vlocode/salesforce';
 import { getErrorMessage } from '@vlocode/util';
 import { DatapackExportFileLoader, type DatapackExportFile } from '../datapackExportFileLoader';
+import { loadExportDefinitions } from '../datapackLoading';
 import { ExportProgressReporter } from '../progress';
 
 type DatapackExportResult = Awaited<ReturnType<DatapackExporter['exportObject']>>[number];
@@ -359,11 +360,7 @@ export default class extends SalesforceCommand {
         if (!filePath) {
             return;
         }
-
-        this.logger.info(`Loading export definitions from ${filePath}`);
-        const definitions = await this.exportFileLoader.loadDefinitions(filePath);
-        this.container.get(DatapackExportDefinitionStore).load(definitions);
-        this.logger.info(`Loaded ${Object.keys(definitions).length} export definition${Object.keys(definitions).length === 1 ? '' : 's'}`);
+        await loadExportDefinitions(this.container, filePath, this.logger);
     }
 
     private async loadExportFile(filePath: string): Promise<DatapackExportFile> {

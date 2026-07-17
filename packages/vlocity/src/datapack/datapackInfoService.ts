@@ -24,11 +24,49 @@ export class DatapackInfoService {
 
     private datapackConfiguration: DatapackConfigAccess;
 
+    /**
+     * Datapack type definitions registered from a local source (e.g. derived from export definitions);
+     * take precedence over the datapack configurations in the org and the built-in definitions.
+     */
+    private readonly localDefinitions = new Array<DatapackTypeDefinition>();
+
     constructor(
         public readonly logger: Logger,
         private readonly salesforce: SalesforceService
     ) {
         this.datapackConfiguration = new DatapackConfigAccess(this.salesforce, this.logger)
+    }
+
+    /**
+     * Register datapack type definitions from a local source such as loaded export definitions.
+     * Registered definitions take precedence over the datapack configurations in the org and the
+     * built-in definitions, so datapacks resolve to their actual datapack type (e.g. `ProductRule`)
+     * instead of the generic `SObject` type when no org configuration exists for the object.
+     */
+    public registerDatapackDefinitions(definitions: Array<{ datapackType: string, sobjectType: string, typeLabel?: string }>) {
+        for (const { datapackType, sobjectType, typeLabel } of definitions) {
+            const existing = this.localDefinitions.find(def =>
+                def.datapackType.toLowerCase() === datapackType.toLowerCase() &&
+                def.source.sobjectType?.toLowerCase() === sobjectType.toLowerCase());
+            if (!existing) {
+                this.localDefinitions.push({
+                    typeLabel: typeLabel ?? datapackType,
+                    datapackType,
+                    source: {
+                        sobjectType,
+                        fieldList: [ 'Id' ]
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * All known datapack type definitions: locally registered definitions first followed by the
+     * definitions from the org and the built-in definitions.
+     */
+    private async getAllDefinitions(): Promise<DatapackTypeDefinition[]> {
+        return [ ...this.localDefinitions, ...await this.getDatapackDefinitions() ];
     }
 
     /**
@@ -106,17 +144,17 @@ export class DatapackInfoService {
      */
     public async getDatapackByObject(sobjectType: string, datapackType?: string) : Promise<DatapackTypeDefinition | undefined> {
         const objectRegex = new RegExp(`^([a-z0-9_%]+__)?${removeNamespacePrefix(sobjectType)}$`,'i');
-        const objects = (await this.getDatapackDefinitions()).filter(
+        const objects = (await this.getAllDefinitions()).filter(
             dataPack => objectRegex.test(dataPack.source.sobjectType)
         );
         if (objects.length > 1 && datapackType) {
-            return objects.find(dataPack => dataPack.datapackType.toLowerCase() === datapackType.toLowerCase());
+            return objects.find(dataPack => dataPack.datapackType.toLowerCase() === datapackType.toLowerCase()) ?? objects[0];
         }
         return objects[0];
     }
 
     public async getDatapackByType(datapackType: string) : Promise<DatapackTypeDefinition | undefined> {
-        return (await this.getDatapackDefinitions()).find(dataPack => dataPack.datapackType.toLowerCase() === datapackType.toLowerCase());
+        return (await this.getAllDefinitions()).find(dataPack => dataPack.datapackType.toLowerCase() === datapackType.toLowerCase());
     }
 
     /**
@@ -126,7 +164,7 @@ export class DatapackInfoService {
     public async getDatapackType(sobjectType: string) : Promise<string | undefined> {
         const objectRegex = new RegExp(`^([a-z0-9_%]+__)?${removeNamespacePrefix(sobjectType)}$`,'i');
         const typeRegex = new RegExp(`^${substringBeforeLast(removeNamespacePrefix(sobjectType), '__')}$`,'i');
-        const definitions = await this.getDatapackDefinitions();
+        const definitions = await this.getAllDefinitions();
 
         if (definitions.length === 0) {
             this.logger.warn(`Current org does not contain Datapack configurations, see VlocityDataPackConfiguration__mdt metadata object`);
