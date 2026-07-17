@@ -1,8 +1,9 @@
-import { CachedFileSystemAdapter, container, NodeFileSystem } from '@vlocode/core';
+import { CachedFileSystemAdapter, container, LogManager, NodeFileSystem } from '@vlocode/core';
 import { InteractiveConnectionProvider, SalesforceConnectionProvider, SfdxConnectionProvider, JsForceConnectionProvider, SalesforceConnection, ReplayTransport, SessionDataStore, HttpTransport, TransportRecorder } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 import { Command, Option } from './command';
+import { loadDefaultExportDefinitions } from './datapackLoading';
 
 /**
  * Base command for Vlocode CLI commands that require Salesforce connectivity.
@@ -60,10 +61,18 @@ export abstract class SalesforceCommand extends Command {
 
         this.container.add(connectionProvider, { provides: [ SalesforceConnectionProvider ] });
 
-        // Setup Namespace replacer
-        this.container.add(await this.container.get(VlocityNamespaceService).initialize(connectionProvider));
+        // Setup Namespace replacer; also register it on the global container as property-injected
+        // NamespaceService lookups from instances created outside a container (e.g. QueryParser)
+        // fall back to the root container and would otherwise resolve an uninitialized instance
+        const namespaceService = await this.container.get(VlocityNamespaceService).initialize(connectionProvider);
+        this.container.add(namespaceService);
+        container.add(namespaceService);
 
         // Setup a Cached file system for loading datapacks
         this.container.add(new CachedFileSystemAdapter(new NodeFileSystem()));
+
+        // Load the export definitions from the working directory when present so datapacks and
+        // matching keys resolve using the actual datapack type definitions of the project
+        await loadDefaultExportDefinitions(this.container, LogManager.get(SalesforceCommand));
     }
 }

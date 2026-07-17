@@ -165,24 +165,20 @@ export class ProgressTracker {
     }
 
     /**
-     * Time column for a gauge: the estimated time remaining while that is meaningful (at least a
-     * second), otherwise the elapsed time. This avoids a stuck `ETA 0:00` near the end of a phase and
-     * keeps a climbing `elapsed` visible while a finalizing tail runs.
+     * Time column for a gauge: the time the task is running. Estimates (ETA) and throughput rates
+     * fluctuate too much across the phases of a run to be meaningful; a climbing elapsed time is
+     * always accurate and keeps visibly moving while a long phase runs.
      */
     public get timeText() {
-        const eta = this.eta;
-        if (eta !== undefined && eta >= 1) {
-            return `ETA ${formatDuration(eta * 1000)}`;
-        }
         return `${formatDuration(this.elapsed)} elapsed`;
     }
 
     /**
      * Plain, colourless one-line summary suitable for forward-printing output, e.g.
-     * `62% (248/400) · 31/s · ETA 0:05`.
+     * `62% (248/400) · 0:35 elapsed`.
      */
     public summary() {
-        return `${this.percentText} (${this.countText}) · ${this.rateText} · ${this.timeText}`;
+        return `${this.percentText} (${this.countText}) · ${this.timeText}`;
     }
 }
 

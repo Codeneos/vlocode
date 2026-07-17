@@ -47,9 +47,10 @@ export class DatapackExportDefinitionStore {
      * Scoped configurations are merged with the global configuration, with scoped settings taking precedence over global settings in case of conflicts.
      * @returns An array of export definitions with their associated scope if applicable.
      */
-    public objectDefinitions(): ReadonlyArray<DatapackExportDefinition & { scope?: string }> {
-        return Object.values(this.config)
-            .flatMap(scopeConfig => Object.values(scopeConfig));
+    public objectDefinitions(): ReadonlyArray<DatapackExportDefinitionStoreEntry> {
+        // The global scope is keyed by a symbol which Object.values does not include
+        return Reflect.ownKeys(this.config)
+            .flatMap(scope => Object.values(this.config[scope]));
     }
 
     /**
