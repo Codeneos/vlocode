@@ -242,6 +242,21 @@ describe('MatchingKeyService', () => {
             expect(matchingKey.fields).toEqual([ 'Pricebook2Id', 'Product2Id' ]);
         });
 
+        it('treats objects with a single master-detail field and no other key fields as key-less', async () => {
+            // A single parent field would match all sibling records under the same parent; such
+            // records are matched by their record data instead (SBQQ__ErrorCondition__c-like objects)
+            const { service } = createService({
+                describes: [ describeOf('SBQQ__ErrorCondition__c', [
+                    field('Name', { nameField: true, autoNumber: true }),
+                    field('SBQQ__Rule__c', { type: 'reference', cascadeDelete: true, nillable: false, referenceTo: [ 'SBQQ__ProductRule__c' ] })
+                ]) ]
+            });
+
+            const matchingKey = await service.getMatchingKey('SBQQ__ErrorCondition__c');
+
+            expect(matchingKey.fields).toEqual([]);
+        });
+
         it('does not include optional cascade-delete lookups in the matching key', async () => {
             const { service } = createService({
                 describes: [ describeOf('Contact', [

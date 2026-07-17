@@ -105,6 +105,11 @@ export interface DatapackDeploymentSpec {
      * This hook point should only be used to run logic that depends on all dependencies on individual record level are resolved.
      *
      * Note: this runs on record level and use {@link beforeDeploy} to run datapack activation processes.
+     *
+     * Note: when this hook (re)calculates field values for the target org, clear the field in
+     * {@link afterRecordConversion} so the delta check does not compare the stale datapack value
+     * against the target org; cleared fields are excluded from any comparison and only set by this
+     * hook when the record is actually deployed.
      * @param event Array of records that is going to be deployed
      */
     beforeDeployRecord?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<unknown> | unknown;
