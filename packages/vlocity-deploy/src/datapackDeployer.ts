@@ -11,7 +11,6 @@ import { DatapackDeploymentSpec, DeploymentSpecExecuteOptions } from './datapack
 import { DatapackDeploymentSpecRegistry } from './datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from './datapackDeploymentEvent';
 import { VlocityDatapack } from '@vlocode/vlocity';
-import { DatapackComparisonService } from './datapackComparison';
 
 /**
  * Import all default deployment specs and trigger the decorators to register each sepc
@@ -121,17 +120,6 @@ export class DatapackDeployer {
         // datapack data does not stay on the heap for the duration of the deployment
         datapacks = [];
         return deployment.start(cancellationToken).then(() => deployment);
-    }
-
-    /**
-     * Compare datapacks with the target org without deploying them.
-     * @param datapacks Datapacks to compare
-     * @param options Deployment options that influence comparison behavior, such as purge matching dependencies
-     * @param cancellationToken optional cancellation token
-     */
-    public async compare(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
-        const deployment = await this.createDeployment(datapacks, options, cancellationToken);
-        return this.container.new(DatapackComparisonService).compare(deployment, cancellationToken);
     }
 
     /**
