@@ -65,15 +65,28 @@ export class OmniScriptLwcCompiler {
 
     private readonly lwcCompilerResource = 'OmniscriptLwcCompiler';
     private compiler: OmniCompiler;
+    private compilerInitialization: Promise<OmniCompiler> | undefined;
     private compilerApiVersion: string;
 
     constructor(
         private readonly salesforceService: SalesforceService,
         private readonly namespaceService: VlocityNamespaceService) {
-            this.getCompiler().then(() => {});
     }
 
-    private async getCompiler() {
+    /**
+     * Get the OmniScript LWC compiler from the target org; the compiler is fetched and initialized once
+     * on first use -- not at construction as fetching requires org access and loading the compiler is
+     * expensive -- and concurrent callers await the same initialization.
+     */
+    private getCompiler() {
+        return this.compilerInitialization ??= this.initializeCompiler().catch(err => {
+            // Reset so a subsequent call can retry instead of rejecting forever
+            this.compilerInitialization = undefined;
+            throw err;
+        });
+    }
+
+    private async initializeCompiler() {
         if (this.compiler) {
             return this.compiler;
         }
