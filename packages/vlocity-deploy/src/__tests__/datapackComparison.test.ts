@@ -77,6 +77,81 @@ describe('Datapack comparison', () => {
         );
     }
 
+    it('resolves one dependency layer concurrently so external lookups can be bulkified', async () => {
+        const salesforce = createSalesforceService();
+        const recordA = new DatapackDeploymentRecord(
+            'Product2',
+            'Child__c',
+            'Child__c/A',
+            'Product2/Root',
+            [ 'Name' ],
+            { Name: 'A' }
+        );
+        const recordB = new DatapackDeploymentRecord(
+            'Product2',
+            'Child__c',
+            'Child__c/B',
+            'Product2/Root',
+            [ 'Name' ],
+            { Name: 'B' }
+        );
+        for (const record of [ recordA, recordB ]) {
+            record.addLookup('Parent__c', {
+                VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+                VlocityRecordSObjectType: 'Product2',
+                VlocityLookupRecordSourceKey: 'Product2/Root'
+            });
+        }
+
+        let releaseFirstResolution: (() => void) | undefined;
+        let resolveSecondStarted: (() => void) | undefined;
+        const secondStarted = new Promise<void>(resolve => {
+            resolveSecondStarted = resolve;
+        });
+        const startedRecords = new Array<string>();
+        const comparisonStatuses = new Map([
+            [ recordA.sourceKey, { recordId: 'a01000000000001AAA', inSync: true, matchedBy: 'id' as const } ],
+            [ recordB.sourceKey, { recordId: 'a01000000000002AAA', inSync: true, matchedBy: 'id' as const } ]
+        ]);
+        const lookupIds = jest.fn(async () => [ 'a01000000000001AAA', 'a01000000000002AAA' ]);
+        const resolveDependencies = jest.fn(async requests => {
+            startedRecords.push(requests[0].datapackRecord.sourceKey);
+            if (startedRecords.length === 1) {
+                await new Promise<void>(resolve => {
+                    releaseFirstResolution = resolve;
+                });
+            } else {
+                resolveSecondStarted?.();
+                releaseFirstResolution?.();
+            }
+            return requests.map(() => ({ resolution: parentId }));
+        });
+        const lookupService = {
+            lookupIds,
+            compareRecordsToOrgData: jest.fn(async () => comparisonStatuses),
+            compareRecordToOrgRecords: jest.fn(),
+            getComparableRecordFields: jest.fn()
+        } as unknown as DatapackLookupService;
+        const deployment = {
+            options: {},
+            getDatapacks: () => [{ records: [ recordA, recordB ] }],
+            resolveDependencies
+        } as unknown as DatapackDeployment;
+
+        const comparison = new DatapackComparator(lookupService, salesforce).compareRecordStatuses(deployment);
+        const startedTogether = await Promise.race([
+            secondStarted.then(() => true),
+            new Promise<boolean>(resolve => setTimeout(() => resolve(false), 50))
+        ]);
+        releaseFirstResolution?.();
+        await comparison;
+
+        expect(startedTogether).toBe(true);
+        expect(startedRecords).toEqual([ recordA.sourceKey, recordB.sourceKey ]);
+        expect(resolveDependencies).toHaveBeenCalledTimes(2);
+        expect(lookupIds).toHaveBeenCalledWith([ recordA, recordB ], undefined);
+    });
+
     it('reports exact missing record data for embedded children compared through the resolved parent', async () => {
         const lookupMultiple = jest.fn(async () => [ [] ]);
         const salesforce = createSalesforceService({ lookupMultiple });

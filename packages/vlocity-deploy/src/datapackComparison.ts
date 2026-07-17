@@ -107,6 +107,7 @@ export class DatapackComparator {
         while (unresolvedRecords.size && !cancelToken?.isCancellationRequested) {
             let madeProgress = false;
             const lookupReadyRecords = new Array<DatapackDeploymentRecord>();
+            const dependencyCandidates = new Array<DatapackDeploymentRecord>();
 
             for (const record of [...unresolvedRecords]) {
                 if (this.hasMissingInternalDependency(record, recordsBySourceKey, dependencyMissingRecords)) {
@@ -116,8 +117,14 @@ export class DatapackComparator {
                     continue;
                 }
 
-                await record.resolveDependencies(deployment);
+                dependencyCandidates.push(record);
+            }
 
+            // Resolve a complete dependency layer concurrently. DatapackDeployment's deferred resolver can
+            // then bulkify external lookups instead of paying its collection delay once for every record.
+            await Promise.all(dependencyCandidates.map(record => record.resolveDependencies(deployment)));
+
+            for (const record of dependencyCandidates) {
                 if (this.hasMissingInternalDependency(record, recordsBySourceKey, dependencyMissingRecords)) {
                     dependencyMissingRecords.add(record);
                     unresolvedRecords.delete(record);
