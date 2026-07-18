@@ -222,12 +222,12 @@ export class HttpTransport implements Transport {
             const errorCode = 'code' in err && err.code as string;
             const syscall = 'syscall' in err && err.syscall as string;
 
-            if (errorCode === 'ECONNRESET' || (errorCode === 'ETIMEDOUT' && syscall === 'connect')) {
+            if (errorCode === 'ECONNRESET' || errorCode === 'EPIPE' || (errorCode === 'ETIMEDOUT' && syscall === 'connect')) {
                 if (retryCount === 0) {
-                    this.logger.verbose(`Connection reset by peer when requesting ${url.pathname} (${request.method}), retrying...`);
+                    this.logger.verbose(`Connection interrupted when requesting ${url.pathname} (${request.method}), retrying...`);
                     return requestPromise.bind(this.httpRequest(info, options, retryCount + 1));
                 }
-                requestPromise.reject(new CustomError(`Connection reset by peer when requesting ${url.pathname} (${request.method})`, { code: 'ECONNRESET' }));
+                requestPromise.reject(new CustomError(`Connection interrupted when requesting ${url.pathname} (${request.method})`, { code: errorCode }));
             } else if (errorCode === 'ECONNREFUSED') { 
                 requestPromise.reject(new CustomError(`Connection refused when requesting ${url.pathname} (${request.method})`, { code: 'ECONNREFUSED' }));
             } else if (errorCode === 'ENOTFOUND') {

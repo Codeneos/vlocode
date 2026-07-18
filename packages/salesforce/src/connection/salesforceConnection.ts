@@ -439,6 +439,7 @@ export class SalesforceConnection extends Connection {
     private isRetryableError(req: HttpRequestInfo, err: unknown) : err is (Error & { code: string | undefined, errorCode: string | undefined }) {
         return err instanceof Error && (
             err['code'] == 'ECONNRESET' ||
+            err['code'] == 'EPIPE' ||
             err['code'] == 'ECONNREFUSED' ||
             err['code'] == 'ENOTFOUND' || (
                 (
