@@ -3,6 +3,7 @@ import { deepClone, escapeSoqlString, flattenObject, Iterable } from '@vlocode/u
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
+import { NamespaceService } from './namespaceService';
 
 export interface QueryExecutor {
     query(query: string): Promise<any[]>;
@@ -16,8 +17,13 @@ class QueryBuilderData {
         return { ...this.query, fieldList: [...new Set(this.query.fieldList)] };
     }
 
-    public getQuery() {
-        return QueryFormatter.format(this.getSpec());
+    /**
+     * Format the query as SOQL string. Namespace placeholders are only replaced when a namespace
+     * service is passed; without one placeholders are left untouched so the executing layer can
+     * normalize them with its own initialized namespace service.
+     */
+    public getQuery(namespaceService?: NamespaceService) {
+        return QueryFormatter.format(this.getSpec(), namespaceService);
     }
 
     public toString() {

@@ -248,6 +248,29 @@ describe('QueryFormatter', () => {
                 fieldList: ['Id', 'Name']
             })).toBe(`select Id, Name from account`);
         });
+        it('should leave namespace placeholders untouched without a namespace service', () => {
+            expect(QueryFormatter.format({
+                sobjectType: '%vlocity_namespace%__OmniScriptDefinition__c',
+                fieldList: ['Id', '%vlocity_namespace%__Sequence__c'],
+                whereCondition: `%vlocity_namespace%__OmniScriptId__c = 'id1'`
+            })).toBe(
+                `select Id, %vlocity_namespace%__Sequence__c from %vlocity_namespace%__OmniScriptDefinition__c ` +
+                `where %vlocity_namespace%__OmniScriptId__c = 'id1'`
+            );
+        });
+        it('should replace namespace placeholders with the passed namespace service', () => {
+            const namespaceService = {
+                updateNamespace: (value: string) => value.replace(/%vlocity_namespace%/g, 'vlocity_cmt')
+            };
+            expect(QueryFormatter.format({
+                sobjectType: '%vlocity_namespace%__OmniScriptDefinition__c',
+                fieldList: ['Id', '%vlocity_namespace%__Sequence__c'],
+                whereCondition: `%vlocity_namespace%__OmniScriptId__c = 'id1'`
+            }, namespaceService as any)).toBe(
+                `select Id, vlocity_cmt__Sequence__c from vlocity_cmt__OmniScriptDefinition__c ` +
+                `where vlocity_cmt__OmniScriptId__c = 'id1'`
+            );
+        });
         it('should format condition with and', () => {
             const condition = {
                 left: `id = 'id1'`,

@@ -449,7 +449,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         }
 
         const connection = await this.getJsForceConnection();
-        const { records: staticResources } = await connection.tooling.query<any>(query.toString());
+        const { records: staticResources } = await connection.tooling.query<any>(query.getQuery(this.namespaceService));
         
         if (staticResources.length == 0) {
             return [];
