@@ -15,6 +15,17 @@ export interface FormattingLogWriter extends LogWriter {
  */
 export type LogInterceptor = (entry: LogEntry, format: () => string) => boolean;
 
+/**
+ * Create an interceptor that consumes console log entries and writes their formatted output to a
+ * specific stream. This is useful when stdout is reserved for machine-readable command output.
+ */
+export function createStreamLogInterceptor(stream: NodeJS.WriteStream): LogInterceptor {
+    return (_entry, format) => {
+        stream.write(`${format()}\n`);
+        return true;
+    };
+}
+
 let activeInterceptor: LogInterceptor | undefined;
 
 /**
