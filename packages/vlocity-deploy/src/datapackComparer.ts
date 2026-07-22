@@ -370,7 +370,22 @@ export class DatapackComparer {
             // Resolve records with matching keys against the extracted org data when available and
             // fall back to org based lookups for types that are not extracted
             const keyRecords = records.filter(record => this.hasMatchingKey(record));
-            const [localKeyRecords, remoteKeyRecords] = partition(keyRecords, record => store?.has(record.sobjectType) ?? false);
+
+            // A record whose matching-key parent reference(s) could not be resolved cannot exist in the
+            // target org because its parent is missing there. Resolving its existing ID anyway drops the
+            // unresolved parent field from the lookup filter, degrading it to the remaining key fields and
+            // over-matching unrelated records (e.g. every PricebookEntry in a price book). Report these as
+            // missing -- mirroring how records without a matching key are handled in matchRecordsToOrgData.
+            const [missingParentRecords, resolvableKeyRecords] = partition(keyRecords,
+                record => record.getUnresolvedDependencies('matching').length > 0);
+            for (const record of missingParentRecords) {
+                record.setAction(DeploymentAction.Insert);
+                record.addWarning(`Parent record(s) [${
+                    record.getUnresolvedDependencies('matching').map(({ dependency }) => dependency.VlocityMatchingRecordSourceKey).join(', ')
+                }] missing in the target org`);
+            }
+
+            const [localKeyRecords, remoteKeyRecords] = partition(resolvableKeyRecords, record => store?.has(record.sobjectType) ?? false);
             await deployment.resolveExistingIds(remoteKeyRecords, cancelToken);
             if (localKeyRecords.length) {
                 this.resolveExistingIdsLocally(localKeyRecords, store!);

@@ -245,6 +245,51 @@ describe('DatapackComparer', () => {
         expect(childResult.messages.join(' ')).toMatch(/parent record/i);
     });
 
+    it('should report matching-key records with a missing parent as missing instead of over-matching', async () => {
+        // Regression: a record with its own matching key whose matching-key parent reference is
+        // unresolved (the parent is missing in the org) must not be resolved through a lookup. Doing
+        // so drops the unresolved parent field from the matching filter, degrading it to the remaining
+        // key fields and over-matching unrelated records (e.g. every PricebookEntry in a price book).
+        const WRONG_CHILD_ID = 'a00000000000999AAA';
+
+        // The root does not exist in the org so the child's parent reference cannot be resolved
+        const root = new DatapackDeploymentRecord('Product2', 'Product2', 'Product2/PRODUCT-1', 'Product2/PRODUCT-1',
+            [ 'GlobalKey__c' ], { Name: 'My Product', GlobalKey__c: 'PRODUCT-1' });
+        // The child has a usable matching key (GlobalKey__c has a value) *and* a matching-key parent
+        // reference (Product2Id__c) that stays unresolved because the parent is missing
+        const child = new DatapackDeploymentRecord('Product2', 'Child__c', 'Child__c/CHILD-1', 'Product2/PRODUCT-1',
+            [ 'GlobalKey__c', 'Product2Id__c' ], { Name: 'Child 1', GlobalKey__c: 'CHILD-1' });
+        addParentLookup(child, 'Product2Id__c', 'Product2', 'Product2/PRODUCT-1');
+
+        const comparer = createComparer({
+            records: [ root, child ],
+            // Without the guard the child would be resolved through its degraded matching key and
+            // matched to this unrelated org record
+            idsBySourceKey: { 'Product2/PRODUCT-1': undefined, 'Child__c/CHILD-1': WRONG_CHILD_ID },
+            orgRecordsById: {
+                [WRONG_CHILD_ID]: { Id: WRONG_CHILD_ID, Name: 'Unrelated child', GlobalKey__c: 'CHILD-1' }
+            },
+            schema: {
+                'Product2': new Map([ mockField('Name'), mockField('GlobalKey__c') ]),
+                'Child__c': new Map([ mockField('Name'), mockField('GlobalKey__c'), mockField('Product2Id__c', { type: 'reference' }) ])
+            }
+        });
+
+        // Act
+        const result = await comparer.compare([]);
+
+        // Assert; the child cannot exist in the org because its parent is missing -- it is reported as
+        // missing and never matched to the unrelated org record
+        expect(result.datapacks[0].status).toBe('missing');
+
+        const childResult = result.datapacks[0].records.find(record => record.sourceKey === 'Child__c/CHILD-1')!;
+        expect(childResult.status).toBe('missing');
+        expect(childResult.recordId).toBeUndefined();
+        expect(childResult.missingData).toEqual({ Name: 'Child 1', GlobalKey__c: 'CHILD-1' });
+        expect(childResult.messages.join(' ')).toMatch(/parent record/i);
+        expect(childResult.messages.join(' ')).not.toMatch(/matches multiple/i);
+    });
+
     it('should not report embedded records with binary fields as in sync', async () => {
         const { root, child } = createProductDatapackRecords();
         child.value('Body', 'aGVsbG8=');
