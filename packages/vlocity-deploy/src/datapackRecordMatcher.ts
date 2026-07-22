@@ -109,6 +109,15 @@ export class DatapackRecordMatcher {
     }
 
     /**
+     * Release the record IDs consumed by previous matches while retaining queried candidate rows. A
+     * deployment comparison calls this after building its result so the same matcher can subsequently
+     * be reused by the deployment's embedded-record purge without querying the org again.
+     */
+    public resetMatches() {
+        this.consumedRowIds.clear();
+    }
+
+    /**
      * Match datapack records without matching key against org data by querying the org records in the same
      * scope (child records of the same parent) and comparing all comparable fields.
      *

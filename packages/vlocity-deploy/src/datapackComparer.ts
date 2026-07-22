@@ -1,4 +1,4 @@
-import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
+import { inject, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
 import { CancellationToken, Iterable, Timer, arrayMapPush, count, filterKeys, getErrorMessage, groupBy, mapAsyncParallel, partition, setMapAdd } from '@vlocode/util';
 import { VlocityDatapack } from '@vlocode/vlocity';
@@ -189,7 +189,7 @@ export interface DatapackComparisonResult {
 export class DatapackComparer {
 
     constructor(
-        private readonly deployer: DatapackDeployer,
+        @inject(() => DatapackDeployer) private readonly deployer: DatapackDeployer,
         private readonly recordComparer: OrgRecordComparer,
         private readonly salesforceService: SalesforceService,
         private readonly logger: Logger
@@ -204,11 +204,23 @@ export class DatapackComparer {
      * @returns Comparison result with per datapack root details on how the datapack compares to the target org
      */
     public async compare(datapacks: VlocityDatapack[], options?: DatapackComparerOptions, cancelToken?: CancellationToken): Promise<DatapackComparisonResult> {
-        const timer = new Timer();
         const deployment = await this.deployer.createDeployment(datapacks, { continueOnError: true, ...options }, cancelToken);
         // The comparison runs on the converted deployment records; release the parsed datapacks
         // so the raw datapack data does not stay on the heap for the duration of the comparison
         datapacks = [];
+        return this.compareDeployment(deployment, options, cancelToken);
+    }
+
+    /**
+     * Compare the converted records of an existing deployment against the target org. This is used by
+     * delta deployments to reuse the bulk comparison as their input without converting the datapacks a
+     * second time.
+     * @param deployment Deployment containing the converted records to compare
+     * @param options Options controlling bulk extraction and progress reporting
+     * @param cancelToken An optional cancellation token to abort the comparison
+     */
+    public async compareDeployment(deployment: DatapackDeployment, options?: DatapackComparerOptions, cancelToken?: CancellationToken): Promise<DatapackComparisonResult> {
+        const timer = new Timer();
         const outcomes = new Map<string, RecordMatchOutcome>();
 
         this.logger.info(`Comparing ${deployment.totalRecordCount} records from ${deployment.totalDatapackCount} datapack(s) to the target org...`);
@@ -224,6 +236,10 @@ export class DatapackComparer {
         const orgStatuses = await this.compareMatchedRecords(matchedRecords, store, options, cancelToken);
 
         const result = await this.buildResult(deployment, outcomes, orgStatuses);
+        // Comparison and deployment share the matcher and its extracted/cached candidate rows. Release
+        // only the consumed IDs so a following delta deployment can match embedded records again while
+        // continuing to reuse the already-loaded org data.
+        deployment.recordMatcher.resetMatches();
         this.logger.info(`Compared ${result.total} datapack(s): ${result.inSync} in sync${
             result.extraRecords ? `, ${result.extraRecords} with extra org records` : ''}, ${result.outOfSync} not in sync [${timer.stop()}]`);
         return result;
@@ -446,7 +462,7 @@ export class DatapackComparer {
      * matched org record so records deeper in the datapack tree can resolve their parent references.
      */
     private async matchRecordsToOrgData(deployment: DatapackDeployment, records: DatapackDeploymentRecord[], outcomes: Map<string, RecordMatchOutcome>, cancelToken?: CancellationToken) {
-        const matchOutcomes = await deployment.recordMatcher.matchRecords(records, { fallbackLookup: true }, cancelToken);
+        const matchOutcomes = await deployment.recordMatcher.matchRecords(records, { fallbackLookup: true, strict: true }, cancelToken);
         for (const record of records) {
             const outcome = matchOutcomes.get(record.sourceKey);
             if (!outcome) {

@@ -1,6 +1,6 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceService, RecordError } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore, getErrorMessage } from '@vlocode/util';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore, getErrorMessage, deepClone, objectEquals } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DatapackDependencyResolver, DependencyResolutionRequest, DependencyResolutionResult } from './datapackDependencyResolver';
 import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
@@ -11,6 +11,8 @@ import { DeferredDependencyResolver } from './deferredDependencyResolver';
 import { DatapackDeploymentError as Error } from './datapackDeploymentError';
 import { VlocityDatapackReference } from '@vlocode/vlocity';
 import { DatapackDeploymentDatapackStatus, DatapackDeploymentMessage, DatapackDeploymentRecordStatus, DatapackDeploymentStatus, DatapackDeploymentState } from './datapackDeploymentStatus';
+import type { DatapackComparerOptions, DatapackComparisonResult, DatapackRecordComparisonResult } from './datapackComparer';
+import type { OrgRecordStatus } from './orgRecordComparer';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -57,6 +59,12 @@ type RecordPurgePredicate = (item: {
     record: DatapackDeploymentRecord
 }) => any;
 
+type DeltaComparisonProvider = (
+    deployment: DatapackDeployment,
+    options: DatapackComparerOptions,
+    cancelToken?: CancellationToken
+) => Promise<DatapackComparisonResult>;
+
 const datapackDeploymentDefaultOptions: Required<DatapackDeploymentOptions> = {
     useBulkApi: false,
     bulkApiThreshold: 500,
@@ -96,6 +104,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
     private readonly recordGroupsErrors = new Map<string, Error[]>();
     private readonly orgDependencyResolver: DatapackDependencyResolver;
+    private deltaComparison?: ReadonlyMap<string, DatapackRecordComparisonResult>;
+    private deltaComparisonValues?: ReadonlyMap<string, object>;
+    private deltaComparisonProvider?: DeltaComparisonProvider;
 
     private isStarted = false;
     private timer: Timer;
@@ -188,6 +199,50 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
+     * Use an existing datapack comparison as the input for this delta deployment. Comparison records
+     * are matched to deployment records by source key; missing or unknown results automatically fall
+     * back to the regular deployment lookups.
+     * @param comparison Result produced by {@link DatapackComparer.compare} or
+     * {@link DatapackComparer.compareDeployment}
+     */
+    public useComparison(comparison: DatapackComparisonResult): this {
+        const comparisonRecords = comparison.datapacks.flatMap(datapack => datapack.records)
+            .filter(result => {
+                const record = this.records.get(result.sourceKey);
+                return record?.sobjectType === result.sobjectType && record.datapackKey === result.datapackKey;
+            });
+        this.deltaComparison = new Map(comparisonRecords.map(record => [ record.sourceKey, record ]));
+        this.deltaComparisonValues = new Map(comparisonRecords.map(result => [
+            result.sourceKey,
+            deepClone(this.records.get(result.sourceKey)!.values)
+        ]));
+        return this;
+    }
+
+    /**
+     * Configure the comparison provider used to prepare a delta deployment. Datapack deployments
+     * created through {@link DatapackDeployer} receive a provider that runs the bulk comparer against
+     * this deployment's already-converted records.
+     * @internal
+     */
+    public setDeltaComparisonProvider(provider: DeltaComparisonProvider): this {
+        this.deltaComparisonProvider = provider;
+        return this;
+    }
+
+    private getComparison(record: DatapackDeploymentRecord, requireUnchangedValues = false) {
+        if (!this.options.deltaCheck) {
+            return undefined;
+        }
+        const comparison = this.deltaComparison?.get(record.sourceKey);
+        const comparedValues = this.deltaComparisonValues?.get(record.sourceKey);
+        if (requireUnchangedValues && comparedValues && !objectEquals(comparedValues, record.values)) {
+            return undefined;
+        }
+        return comparison;
+    }
+
+    /**
      * Deploy deployment records part of this deployment task to Salesforce.
      * @param cancelToken An optional cancellation token to stop the deployment
      */
@@ -199,6 +254,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.timer = new Timer();
         this.cancelToken = cancelToken;
         this.isStarted = true;
+
+        if (this.options.deltaCheck && !this.deltaComparison && this.deltaComparisonProvider) {
+            this.useComparison(await this.deltaComparisonProvider(this, this.options, cancelToken));
+        }
 
         this.validateRecordDependencies();
 
@@ -718,10 +777,27 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     public async resolveExistingIds(datapacks: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // prepare batch
         const recordsForLookup = [...Iterable.filter(datapacks, rec => !rec.skipLookup)];
-        this.logger.verbose(`Resolving existing IDs for ${recordsForLookup.length} record(s)`);
-        const ids = await this.lookupService.lookupIds(recordsForLookup, cancelToken);
+        const unresolvedRecords = new Array<DatapackDeploymentRecord>();
 
-        for (const [i, datapack] of recordsForLookup.entries()) {
+        for (const record of recordsForLookup) {
+            const comparison = this.getComparison(record);
+            if ((comparison?.status === 'inSync' || comparison?.status === 'outOfSync') && comparison.recordId) {
+                record.setAction(DeploymentAction.Update, comparison.recordId);
+            } else if (comparison?.status === 'missing') {
+                record.setAction(DeploymentAction.Insert);
+            } else {
+                unresolvedRecords.push(record);
+            }
+        }
+
+        if (!unresolvedRecords.length) {
+            return;
+        }
+
+        this.logger.verbose(`Resolving existing IDs for ${unresolvedRecords.length} record(s)`);
+        const ids = await this.lookupService.lookupIds(unresolvedRecords, cancelToken);
+
+        for (const [i, datapack] of unresolvedRecords.entries()) {
             const existingId = ids[i];
             if (existingId) {
                 datapack.setAction(DeploymentAction.Update, existingId);
@@ -771,7 +847,30 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
     private async getRecordSyncStatus(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId && !rec.isSkipped)], cancelToken);
+        const statuses = new Map<string, OrgRecordStatus>();
+        const recordsToCompare = new Array<DatapackDeploymentRecord>();
+
+        for (const record of Iterable.filter(records, rec => rec.recordId && !rec.isSkipped)) {
+            const comparison = this.getComparison(record, true);
+            if (comparison?.status === 'inSync' || comparison?.status === 'outOfSync') {
+                const status: OrgRecordStatus = {
+                    recordId: record.recordId!,
+                    inSync: comparison.status === 'inSync',
+                    mismatchedFields: comparison.mismatchedFields
+                };
+                statuses.set(record.recordId!, status);
+                statuses.set(record.sourceKey, status);
+            } else {
+                recordsToCompare.push(record);
+            }
+        }
+
+        if (recordsToCompare.length) {
+            for (const [key, status] of await this.lookupService.compareRecordsToOrgData(recordsToCompare, cancelToken)) {
+                statuses.set(key, status);
+            }
+        }
+        return statuses;
     }
 
     private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken): Promise<void> {

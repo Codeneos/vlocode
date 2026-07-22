@@ -18,6 +18,7 @@ import { VlocityDatapack } from '@vlocode/vlocity';
  */
 import './deploymentSpecs';
 import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
+import { DatapackComparer } from './datapackComparer';
 
 /**
  * Filter that determines if a datapack is applicable for the given spec. The filter can be either a regular expression or a string.
@@ -103,6 +104,10 @@ export class DatapackDeployer {
             }
         }, 8);
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
+
+        deployment.setDeltaComparisonProvider(async (target, compareOptions, cancelToken) => {
+            return this.container.new(DatapackComparer).compareDeployment(target, compareOptions, cancelToken);
+        });
 
         return deployment;
     }

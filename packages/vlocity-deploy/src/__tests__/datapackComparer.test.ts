@@ -112,6 +112,26 @@ describe('DatapackComparer', () => {
         expect(recordResults['Child__c/CHILD-1'].recordId).toBe(CHILD_ID);
     });
 
+    it('should release consumed embedded matches for a following deployment', async () => {
+        const { root, child } = createProductDatapackRecords();
+        const comparer = createComparer({
+            records: [ root, child ],
+            idsBySourceKey: { 'Product2/PRODUCT-1': PRODUCT_ID },
+            orgRecordsById: {
+                [PRODUCT_ID]: { Id: PRODUCT_ID, Name: 'My Product', GlobalKey__c: 'PRODUCT-1' }
+            },
+            orgRows: {
+                'Child__c': [ { Id: CHILD_ID, Product2Id__c: PRODUCT_ID, Name: 'Child 1', Sequence__c: 1 } ]
+            }
+        });
+
+        await comparer.compare([]);
+        const deployment = await comparer['deployer'].createDeployment([]);
+        const outcomes = await deployment.recordMatcher.matchRecords([ child ], { strict: true });
+
+        expect(outcomes.get(child.sourceKey)).toEqual({ status: 'inSync', recordId: CHILD_ID });
+    });
+
     it('should report extraRecords status when all records are in sync but the org has extra records', async () => {
         // Arrange; the org has a second child record that is not represented in the datapack
         const { root, child } = createProductDatapackRecords();
@@ -223,6 +243,37 @@ describe('DatapackComparer', () => {
         const childResult = result.datapacks[0].records.find(record => record.sourceKey === 'Child__c/CHILD-1')!;
         expect(childResult.status).toBe('missing');
         expect(childResult.messages.join(' ')).toMatch(/parent record/i);
+    });
+
+    it('should not report embedded records with binary fields as in sync', async () => {
+        const { root, child } = createProductDatapackRecords();
+        child.value('Body', 'aGVsbG8=');
+        const comparer = createComparer({
+            records: [ root, child ],
+            idsBySourceKey: { 'Product2/PRODUCT-1': PRODUCT_ID },
+            orgRecordsById: {
+                [PRODUCT_ID]: { Id: PRODUCT_ID, Name: 'My Product', GlobalKey__c: 'PRODUCT-1' }
+            },
+            orgRows: {
+                'Child__c': [ { Id: CHILD_ID, Product2Id__c: PRODUCT_ID, Name: 'Child 1', Sequence__c: 1, Body: 'aGVsbG8=' } ]
+            },
+            schema: {
+                ...mockSchema(),
+                'Child__c': new Map([
+                    mockField('Name'),
+                    mockField('Sequence__c', { type: 'double' }),
+                    mockField('Product2Id__c', { type: 'reference' }),
+                    mockField('Body', { type: 'base64' })
+                ])
+            }
+        });
+
+        const result = await comparer.compare([]);
+        const childResult = result.datapacks[0].records.find(record => record.sourceKey === child.sourceKey)!;
+
+        expect(childResult.status).toBe('unknown');
+        expect(childResult.deployAction).toBe('unknown');
+        expect(childResult.messages.join(' ')).toMatch(/cannot be fully compared/i);
     });
 
     it('should ignore datapack fields that cannot be mapped to the target org', async () => {
