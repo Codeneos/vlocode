@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.4.0](https://github.com/codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* add default lifecycle policy to InjectableDecorator and improve export command definition reloading ([b6dd169](https://github.com/codeneos/vlocode/commit/b6dd169baeff710e067d7983c7e1fd4dbfd956c6))
+* inline css-tree JSON data in bundles ([63ede89](https://github.com/codeneos/vlocode/commit/63ede8907ad8fc55a3556ff7f8d7dbc417e439e1))
+
 # [2.3.0](https://github.com/codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes

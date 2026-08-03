@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* address datapack comparison review feedback ([897d017](https://github.com/Codeneos/vlocode/commit/897d0173e9696a64162953b93b918a9fa3029776))
+* avoid regex backtracking in file names ([fa1d939](https://github.com/Codeneos/vlocode/commit/fa1d939ce821b60642be89f9cdcc869cc10bba6b))
+* harden Salesforce field and query handling ([b890ead](https://github.com/Codeneos/vlocode/commit/b890eadb9c7eced102cab8dd453b979b7e300f3d))
+
+### Features
+
+* add datapack comparison CLI reports ([ce6c47f](https://github.com/Codeneos/vlocode/commit/ce6c47f372261635e0874f3c6e4264946f077ed6))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes

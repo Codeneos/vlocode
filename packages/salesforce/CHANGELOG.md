@@ -4,6 +4,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* address datapack comparison review feedback ([897d017](https://github.com/Codeneos/vlocode/commit/897d0173e9696a64162953b93b918a9fa3029776))
+* enhance error handling for connection interruptions in HttpTransport ([1b7bb7e](https://github.com/Codeneos/vlocode/commit/1b7bb7ec25d5763f2d470cf22ef67733b698f334))
+* harden Salesforce field and query handling ([b890ead](https://github.com/Codeneos/vlocode/commit/b890eadb9c7eced102cab8dd453b979b7e300f3d))
+
+### Features
+
+* enhance QueryFormatter to support namespace placeholders with optional namespace service ([e97178e](https://github.com/Codeneos/vlocode/commit/e97178e00c8385ff82cbd2eebd397cd3ba876e5e))
+* update TypeScriptCompilerPlugin to handle empty JS source cases ([4b1555c](https://github.com/Codeneos/vlocode/commit/4b1555c2dde53298976284c0c82a2e8cb394ece8))
+
+### Performance Improvements
+
+* parallelize chunked Salesforce lookups ([503abb9](https://github.com/Codeneos/vlocode/commit/503abb949ef606793946e224d74c07438aacbce7))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes

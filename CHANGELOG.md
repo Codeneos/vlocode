@@ -4,6 +4,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.4.0](https://github.com/codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* add default lifecycle policy to InjectableDecorator and improve export command definition reloading ([b6dd169](https://github.com/codeneos/vlocode/commit/b6dd169baeff710e067d7983c7e1fd4dbfd956c6))
+* address datapack comparison review feedback ([897d017](https://github.com/codeneos/vlocode/commit/897d0173e9696a64162953b93b918a9fa3029776))
+* avoid regex backtracking in file names ([fa1d939](https://github.com/codeneos/vlocode/commit/fa1d939ce821b60642be89f9cdcc869cc10bba6b))
+* cancelling a deployment marked unprocessed records as failed or skipped ([9f3b8c9](https://github.com/codeneos/vlocode/commit/9f3b8c909268598f9d0ce07b90bf6bf7c4a6966d))
+* do not retry record errors that are deterministic ([3908ee3](https://github.com/codeneos/vlocode/commit/3908ee36ec6081687fa04cb8c0e6354021f60015))
+* embedded objects defined by relationshipName always failed with an empty filter ([7a76bbd](https://github.com/codeneos/vlocode/commit/7a76bbdb062a8728cce1b6359ca8f66ae5784124))
+* enhance error handling for connection interruptions in HttpTransport ([1b7bb7e](https://github.com/codeneos/vlocode/commit/1b7bb7ec25d5763f2d470cf22ef67733b698f334))
+* global key field detection never matched namespace-prefixed fields ([1a0b7f3](https://github.com/codeneos/vlocode/commit/1a0b7f38414f5ad77434784cdcf282267a4cf0fb))
+* harden Salesforce field and query handling ([b890ead](https://github.com/codeneos/vlocode/commit/b890eadb9c7eced102cab8dd453b979b7e300f3d))
+* inline css-tree JSON data in bundles ([63ede89](https://github.com/codeneos/vlocode/commit/63ede8907ad8fc55a3556ff7f8d7dbc417e439e1))
+* lazily initialize OmniScript LWC compiler ([078de02](https://github.com/codeneos/vlocode/commit/078de02ab43fca9d91240b1a327889a7c5501b57))
+* matching key regression on export ([dd67a95](https://github.com/codeneos/vlocode/commit/dd67a9513c2902cee454f9cd7d1523f01130c5c6))
+* only verify datapack-set fields after deploy to avoid spurious global key updates ([df1867e](https://github.com/codeneos/vlocode/commit/df1867ebe5a8b349ef9981dbd9504c3e38ba0ba8))
+* records skipped for unresolved internal dependencies not counted as skipped ([cdbe1b3](https://github.com/codeneos/vlocode/commit/cdbe1b3fa1f67084edc8abb05d42282c2751eaa2))
+* render formula editor controls within modal ([0398265](https://github.com/codeneos/vlocode/commit/0398265ceced1b4d18c719893c94e37ffe7e1e15))
+* throw on expanded datapack file name collisions instead of overwriting ([4210415](https://github.com/codeneos/vlocode/commit/4210415b6436530fb11698a9a5b854b1dcb84fa0))
+
+### Features
+
+* add bulk-extracted datapack comparer ([a26f72d](https://github.com/codeneos/vlocode/commit/a26f72d9c52bfb4d9f7755d0ae598b1f6b71ab49))
+* add createStreamLogInterceptor for redirecting formatted console logs to a separate stream ([095c7bf](https://github.com/codeneos/vlocode/commit/095c7bf663436d350d0b0c5221aa10ae7cc84dcb))
+* add cssTreePatch plugin for handling css-tree browser data modules ([2a174a6](https://github.com/codeneos/vlocode/commit/2a174a683f20e6382e5219548612f6317794be17))
+* add datapack comparison CLI reports ([ce6c47f](https://github.com/codeneos/vlocode/commit/ce6c47f372261635e0874f3c6e4264946f077ed6))
+* add embedded-aware datapack compare ([#469](https://github.com/codeneos/vlocode/issues/469)) ([e9ae652](https://github.com/codeneos/vlocode/commit/e9ae6523f4b35da6ef4ba52d048a3dc5a9a99d0a))
+* add handling for records with missing parent references to report them as missing ([6765821](https://github.com/codeneos/vlocode/commit/676582196776876db4080a7c544ae0f2434ecf6e))
+* enhance QueryFormatter to support namespace placeholders with optional namespace service ([e97178e](https://github.com/codeneos/vlocode/commit/e97178e00c8385ff82cbd2eebd397cd3ba876e5e))
+* preserve in-sync embedded deployment records ([11bc505](https://github.com/codeneos/vlocode/commit/11bc505dfcd0ebde503de1452ee044c9f1d84b45))
+* update TypeScriptCompilerPlugin to handle empty JS source cases ([4b1555c](https://github.com/codeneos/vlocode/commit/4b1555c2dde53298976284c0c82a2e8cb394ece8))
+
+### Performance Improvements
+
+* avoid quadratic record matching in lookupMultiple ([e7bb457](https://github.com/codeneos/vlocode/commit/e7bb457e2df41582695c97f8e8187d80d984ec54))
+* memoize circular dependency detection ([2b8c6ec](https://github.com/codeneos/vlocode/commit/2b8c6ecbb7a66ebd8d0eda3132c3069995f6f146))
+* parallelize chunked Salesforce lookups ([503abb9](https://github.com/codeneos/vlocode/commit/503abb949ef606793946e224d74c07438aacbce7))
+
 # [2.3.0](https://github.com/codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes
