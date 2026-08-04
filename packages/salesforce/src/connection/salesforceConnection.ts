@@ -159,7 +159,7 @@ export class SalesforceConnection extends Connection {
      */
     private initializeLocalVariables(options?: SalesforceConnectionOptions) {
         // Setup transport
-        this.version = options?.version ?? '60.0';
+        this.version = options?.version ?? '66.0';
         this._transport = options?.transport ?? new HttpTransport({
                 instanceUrl: this.instanceUrl,
                 baseUrl: `${this.instanceUrl}/services/data/v${this.version}`
