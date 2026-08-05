@@ -11,9 +11,8 @@ import {
     VlocityDatapack,
     type VlocityDatapackReference
 } from '@vlocode/vlocity';
-import { MatchingKeyService } from '@vlocode/vlocity-deploy';
+import { DatapackWriter, MatchingKeyService } from '@vlocode/vlocity-deploy';
 import { getDatapackHeadersInWorkspace } from '../lib/vlocity/datapackUtil';
-import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
 import { WorkspaceDocuments } from '../lib/workspaceDocuments';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
@@ -81,11 +80,11 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
         service: VlocodeService,
         fileSystem: FileSystem,
         private readonly datapackInfo: DatapackInfoService,
-        datapackExpansion: DatapackExpansionService,
+        datapackWriter: DatapackWriter,
         private readonly matchingKeys: MatchingKeyService,
         private readonly logger: Logger
     ) {
-        super(context, service, fileSystem, datapackInfo, datapackExpansion);
+        super(context, service, fileSystem, datapackInfo, datapackWriter);
     }
 
     protected readonly view = {
@@ -291,7 +290,7 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
             await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
             return;
         }
-        await this.datapackExpansion.saveDatapack(document.datapack);
+        await this.writeDatapack(document.datapack);
     }
 
     private createModel(datapack: VlocityDatapack): DatapackEditorModel {

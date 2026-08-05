@@ -3,6 +3,9 @@ import { FileSystem, injectable, Logger, LogManager } from '@vlocode/core';
 import { VlocityDatapack } from './datapack';
 import { getDatapackSource } from './datapackSource';
 
+/**
+ * @deprecated Use `DatapackWriter` from `@vlocode/vlocity-deploy`.
+ */
 @injectable()
 export class DatapackFileWriter {
 

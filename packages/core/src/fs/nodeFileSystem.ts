@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { injectable } from '../index';
-import { FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
+import { DeleteOptions, FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
 
 /**
  * Basic class that can wrap any API implementation the NodeJS FS API into a more reduced FileSystem interface.
@@ -56,6 +56,16 @@ export class NodeFileSystem extends FileSystem {
         }));
     }
 
+    public delete(path: string, options?: DeleteOptions): Promise<void> {
+        return new Promise((resolve, reject) => this.innerFs.rm(path, { recursive: options?.recursive }, err => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        }));
+    }
+
     public writeFile(path: string, data?: Buffer | string, options?: WriteOptions): Promise<void> {
         return new Promise((resolve, reject) => this.innerFs.writeFile(path, data ?? '', { flag: options?.append ? 'a' : 'w' }, (err) => {
             if (err) {
@@ -94,4 +104,3 @@ class FsStatsAdapter implements FileStat {
         return this.stats.isDirectory();
     }
 }
-

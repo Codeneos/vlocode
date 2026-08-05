@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { FileSystem, type FileInfo, type FileStat, type StatsOptions, type WriteOptions } from '@vlocode/core';
+import { FileSystem, type DeleteOptions, type FileInfo, type FileStat, type StatsOptions, type WriteOptions } from '@vlocode/core';
 
 import { WorkspaceDocuments } from '../workspaceDocuments';
 
@@ -64,6 +64,10 @@ export class OpenTextDocumentFileSystem extends FileSystem {
 
     public createDirectory(dir: string): Promise<void> {
         return this.inner.createDirectory(dir);
+    }
+
+    public delete(fileName: string, options?: DeleteOptions): Promise<void> {
+        return this.inner.delete(fileName, options);
     }
 
     private openFileText(fileName: string): string | undefined {

@@ -33,6 +33,49 @@ describe('DatapackExportDefinitionStore', () => {
 
             expect(store.getMatchingKeyFields('AttributePicklistValue')).toEqual([]);
         });
+
+        it('should use the explicitly selected datapack definition when multiple types share an object', () => {
+            const store = new DatapackExportDefinitionStore();
+            store.load({
+                OmniScript: {
+                    objectType: 'OmniProcess',
+                    name: [ 'Type', 'SubType', 'Language' ],
+                    matchingKeyFields: [ 'Type', 'SubType', 'Language' ]
+                },
+                IntegrationProcedure: {
+                    objectType: 'OmniProcess',
+                    name: [ 'Type', 'SubType' ],
+                    matchingKeyFields: [ 'Type', 'SubType' ]
+                }
+            }, { scope: 'std' });
+
+            expect(store.getMatchingKeyFields({
+                objectType: 'OmniProcess',
+                datapackType: 'IntegrationProcedure',
+                scope: 'std'
+            })).toEqual([ 'Type', 'SubType' ]);
+            expect(store.getMatchingKeyFields({
+                objectType: 'OmniProcess',
+                datapackType: 'OmniScript',
+                scope: 'std'
+            })).toEqual([ 'Type', 'SubType', 'Language' ]);
+        });
+
+        it('should prefer the selected scope when custom definitions use different matching keys', () => {
+            const store = new DatapackExportDefinitionStore();
+            store.load({
+                CustomType: { objectType: 'Shared__c', matchingKeyFields: [ 'StandardKey__c' ] }
+            }, { scope: 'standard.yaml' });
+            store.load({
+                CustomType: { objectType: 'Shared__c', matchingKeyFields: [ 'CustomKey__c' ] }
+            }, { scope: 'custom.yaml' });
+
+            expect(store.getMatchingKeyFields({
+                objectType: 'Shared__c',
+                datapackType: 'CustomType',
+                scope: 'custom.yaml'
+            })).toEqual([ 'CustomKey__c' ]);
+        });
     });
 
     describe('#isFieldIgnored', () => {

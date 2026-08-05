@@ -12,6 +12,7 @@ export * from './export/definition-converter';
 export * from './flexCard';
 export * from './datapackCompare';
 export * from './datapackComparer';
+export * from './datapackWriter';
 export * from './datapackDeploy';
 export * from './datapackDeployer';
 export * from './datapackDeployment';

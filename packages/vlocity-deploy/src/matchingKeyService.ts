@@ -2,7 +2,7 @@ import * as yaml from 'js-yaml';
 import { injectable, Logger, FileSystem } from '@vlocode/core';
 import { DescribeSObjectResult, Field, SalesforceService } from '@vlocode/salesforce';
 import { asArray, cache, deepFreeze, getErrorMessage, isRecord, normalizeSObjectTypeName, stringEqualsIgnoreCase } from '@vlocode/util';
-import { DatapackExportDefinitionStore } from './export/exportDefinitionStore';
+import { DatapackExportDefinitionStore, type ObjectRef } from './export/exportDefinitionStore';
 
 /**
  * Matching key definition for an SObject type describing which fields uniquely identify a record.
@@ -35,9 +35,8 @@ interface DRMatchingKeyRecord {
  * fields uniquely identify a record and are used for looking up existing records during deployment
  * (upsert fields), for generating datapack source keys during export and for building export queries.
  *
- * Matching keys are object-scoped: one SObject type resolves to exactly one set of matching key fields
- * regardless of the datapack type or export scope in which it is used. This guarantees that a record
- * exported or referenced from different datapacks always resolves to the same identity.
+ * Matching keys normally resolve by SObject type. Export definitions may specialize them by datapack
+ * type and scope, allowing two definitions backed by the same SObject to use their own record identity.
  *
  * Matching keys are loaded from the following sources; the first source that defines a key for an
  * object wins:
@@ -67,7 +66,7 @@ export class MatchingKeyService {
     private extraMatchingKeyFiles: string[] = [];
 
     /**
-     * Resolved matching keys by normalized SObject type name.
+     * Resolved matching keys by normalized SObject type and optional export context.
      */
     private readonly resolvedKeys = new Map<string, Promise<VlocityMatchingKey>>();
 
@@ -148,8 +147,8 @@ export class MatchingKeyService {
     }
 
     /**
-     * Get the matching key for the specified SObject type. Resolution is cached per object type and
-     * the same key is returned for the import, export and deployment flows.
+     * Get the matching key for the specified SObject type. Resolution is cached per object and export
+     * context. Unscoped callers retain the shared object-level behavior used by import and deployment.
      *
      * Fields configured through one of the matching key sources are validated against the object
      * describe and returned using their API name; configuring a field that does not exist on the
@@ -157,27 +156,35 @@ export class MatchingKeyService {
      * returned matching key.
      *
      * @param sobjectType SObject type with or without (placeholder) namespace prefix
+     * @param context Optional selected datapack definition context for scoped export resolution
      * @returns The matching key for the object; `fields` is empty for key-less objects, either
      * explicitly configured as such or because no matching key could be determined.
      * @throws When the object does not exist in the target org or a configured field does not exist on the object.
      */
-    public async getMatchingKey(sobjectType: string): Promise<VlocityMatchingKey> {
+    public async getMatchingKey(
+        sobjectType: string,
+        context?: Pick<ObjectRef, 'datapackType' | 'scope'>
+    ): Promise<VlocityMatchingKey> {
         if (!sobjectType) {
             throw new Error('Cannot resolve the matching key for an undefined or empty SObject type');
         }
         const typeKey = normalizeSObjectTypeName(sobjectType);
-        let matchingKey = this.resolvedKeys.get(typeKey);
+        const cacheKey = JSON.stringify([ typeKey, context?.scope, context?.datapackType?.toLowerCase() ]);
+        let matchingKey = this.resolvedKeys.get(cacheKey);
         if (!matchingKey) {
             // Freeze the resolved key so the same instance can be shared with all callers
-            this.resolvedKeys.set(typeKey, matchingKey = this.resolveMatchingKey(sobjectType)
+            this.resolvedKeys.set(cacheKey, matchingKey = this.resolveMatchingKey(sobjectType, context)
                 .then(key => deepFreeze({ ...key, fields: [ ...key.fields ] })));
         }
         return matchingKey;
     }
 
-    private async resolveMatchingKey(sobjectType: string): Promise<VlocityMatchingKey> {
+    private async resolveMatchingKey(
+        sobjectType: string,
+        context?: Pick<ObjectRef, 'datapackType' | 'scope'>
+    ): Promise<VlocityMatchingKey> {
         const typeKey = normalizeSObjectTypeName(sobjectType);
-        const configuredFields = await this.getConfiguredFields(sobjectType);
+        const configuredFields = await this.getConfiguredFields(sobjectType, context);
         const returnField = (await this.orgMatchingKeys).get(typeKey)?.returnField ?? 'Id';
 
         if (configuredFields?.length === 0) {
@@ -188,10 +195,6 @@ export class MatchingKeyService {
 
         const describe = await this.salesforce.schema.describeSObject(sobjectType, false);
         if (!describe) {
-            if (configuredFields) {
-                // Without a describe the configured fields cannot be validated; return them as-is
-                return { sobjectType, fields: configuredFields, returnField };
-            }
             throw new Error(`Unable to determine matching key fields for ${sobjectType}: no such object in the target org`);
         }
 
@@ -229,7 +232,10 @@ export class MatchingKeyService {
      * precedence: matching key files, export definitions, org matching keys and built-in defaults.
      * @returns The configured fields or `undefined` when no source defines a key for the object
      */
-    private async getConfiguredFields(sobjectType: string): Promise<ReadonlyArray<string> | undefined> {
+    private async getConfiguredFields(
+        sobjectType: string,
+        context?: Pick<ObjectRef, 'datapackType' | 'scope'>
+    ): Promise<ReadonlyArray<string> | undefined> {
         const typeKey = normalizeSObjectTypeName(sobjectType);
 
         const fileFields = (await this.getFileMatchingKeys()).get(typeKey);
@@ -237,7 +243,10 @@ export class MatchingKeyService {
             return fileFields;
         }
 
-        const definitionFields = this.exportDefinitions.getMatchingKeyFields(sobjectType);
+        const definitionFields = this.exportDefinitions.getMatchingKeyFields({
+            objectType: sobjectType,
+            ...context
+        });
         if (definitionFields) {
             return definitionFields;
         }

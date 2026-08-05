@@ -6,8 +6,7 @@ import { VlocodeCommand } from '../constants';
 import { deepClone, getErrorMessage, isRecord } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
 import { DataMapperExecutor, DatapackInfoService, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition, type DataMapperExecutionWarning } from '@vlocode/vlocity';
-import { MetadataConverter } from '@vlocode/vlocity-deploy';
-import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
+import { DatapackWriter, MetadataConverter } from '@vlocode/vlocity-deploy';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
 
@@ -98,10 +97,10 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         service: VlocodeService,
         fileSystem: FileSystem,
         datapackInfo: DatapackInfoService,
-        datapackExpansion: DatapackExpansionService,
+        datapackWriter: DatapackWriter,
         private readonly metadataConverter: MetadataConverter
     ) {
-        super(context, service, fileSystem, datapackInfo, datapackExpansion);
+        super(context, service, fileSystem, datapackInfo, datapackWriter);
     }
 
     private sObjectSuggestions?: Promise<FieldSuggestion[]>;
@@ -422,7 +421,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
             await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
             return;
         }
-        await this.datapackExpansion.saveDatapack(document.datapack);
+        await this.writeDatapack(document.datapack);
     }
 
     private createModel(datapack: VlocityDatapack, sourceFormat: 'json' | 'xml'): DataMapperModel {

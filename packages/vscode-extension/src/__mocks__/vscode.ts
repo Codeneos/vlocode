@@ -97,13 +97,42 @@ export class CancellationTokenSource {
     public dispose = jest.fn();
 }
 
+export class CancellationError extends Error {
+    public constructor() {
+        super('Canceled');
+        this.name = 'Canceled';
+    }
+}
+
+export class FileSystemError extends Error {
+    public readonly code: string;
+
+    public constructor(message: string, code = 'Unknown') {
+        super(message);
+        this.code = code;
+    }
+
+    public static FileNotFound(message = 'File not found'): FileSystemError {
+        return new FileSystemError(message, 'FileNotFound');
+    }
+}
+
+export const FileType = {
+    Unknown: 0,
+    File: 1,
+    Directory: 2,
+    SymbolicLink: 64
+};
+
 export const workspace = {
     workspaceFolders: undefined as Array<{ uri: Uri }> | undefined,
     textDocuments: [] as Array<{ uri: Uri; getText(): string }>,
     fs: {
         createDirectory: jest.fn(),
         delete: jest.fn(),
+        readDirectory: jest.fn(),
         readFile: jest.fn(),
+        stat: jest.fn(),
         writeFile: jest.fn()
     },
     applyEdit: jest.fn(),

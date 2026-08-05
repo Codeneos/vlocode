@@ -5,12 +5,13 @@ import { randomBytes } from 'crypto';
 import { FileSystem } from '@vlocode/core';
 import { escapeHtmlEntity, getErrorMessage, isRecord } from '@vlocode/util';
 import { DatapackInfoService, DatapackLoader, type VlocityDatapack } from '@vlocode/vlocity';
+import { DatapackWriter } from '@vlocode/vlocity-deploy';
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeContext } from '../lib/vlocodeContext';
-import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
 import { ModelBackedDocument } from './modelBackedDocument';
 import { OpenTextDocumentFileSystem } from '../lib/fs/openTextDocumentFileSystem';
 import { WorkspaceDocuments } from '../lib/workspaceDocuments';
+import { confirmDatapackWrite } from '../lib/vlocity/datapackWriteConfirmation';
 import type { EditorMessage, EditorMessageContext, EditorView, ModelBackedDocumentData } from './modelBackedEditorTypes';
 
 export { ModelBackedDocument } from './modelBackedDocument';
@@ -40,7 +41,7 @@ export abstract class ModelBackedEditorProvider<
         protected readonly service: VlocodeService,
         private readonly fileSystem: FileSystem,
         private readonly datapackInfoService: DatapackInfoService,
-        protected readonly datapackExpansion: DatapackExpansionService
+        protected readonly datapackWriter: DatapackWriter
     ) {
         this.service.registerDisposable(vscode.Disposable.from(
             vscode.workspace.onDidOpenTextDocument(document => this.syncSourceDocumentOnOpen(document)),
@@ -148,6 +149,11 @@ export abstract class ModelBackedEditorProvider<
         return new DatapackLoader(fileSystem, this.datapackInfoService).loadDatapack(fileName);
     }
 
+    protected async writeDatapack(datapack: VlocityDatapack): Promise<void> {
+        await confirmDatapackWrite(datapack, this.datapackWriter.getWritePlan(datapack), this.fileSystem);
+        await this.datapackWriter.write(datapack);
+    }
+
     protected sourceTextMap(entries: Iterable<readonly [string | vscode.Uri, string]>): Map<string, string> {
         return WorkspaceDocuments.sourceTextMap(entries);
     }
@@ -155,7 +161,13 @@ export abstract class ModelBackedEditorProvider<
     /** Returns source text updates for designer-to-source synchronization. */
     protected async serializeSourceDocuments(document: TData): Promise<Map<string, string>> {
         const datapack = this.getDatapackGraph(document);
-        return datapack ? this.sourceTextMap(this.datapackExpansion.sourceTexts(datapack)) : new Map();
+        if (!datapack) {
+            return new Map();
+        }
+        return this.sourceTextMap(Array.from(this.datapackWriter.getWritePlan(datapack).files, ([fileName, data]) => [
+            fileName,
+            Buffer.isBuffer(data) ? data.toString('utf8') : data
+        ] as const));
     }
 
     protected async openEditorWith(viewType: string, missingDocumentMessage: string, uri?: vscode.Uri): Promise<void> {
@@ -301,9 +313,9 @@ export abstract class ModelBackedEditorProvider<
         }
         const datapack = this.getDatapackGraph(document.data);
         if (datapack) {
-            this.datapackExpansion.sourceFiles(datapack)
-                .map(fileName => WorkspaceDocuments.normalizeFileName(fileName))
-                .forEach(fileName => document.sourceFiles.add(fileName));
+            for (const fileName of this.datapackWriter.getWritePlan(datapack).files.keys()) {
+                document.sourceFiles.add(WorkspaceDocuments.normalizeFileName(fileName));
+            }
         }
     }
 

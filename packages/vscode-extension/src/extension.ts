@@ -43,6 +43,7 @@ import { VlocodeLogLinkProvider } from './lib/vlocodeLogLinkProvider';
 import { DatapackDefinitionRegistry } from './lib/vlocity/datapackDefinitionRegistry';
 
 import './commands';
+import './lib/vlocity/datapackExpansionService';
 
 /**
  * Start time of the extension set when the bundled entrypoint is loaded by VSCode.

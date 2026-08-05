@@ -1,5 +1,5 @@
 import { cache, clearCache } from '@vlocode/util';
-import { type FileInfo, type FileStat, FileSystem, type StatsOptions, type WriteOptions } from './fileSystem';
+import { type DeleteOptions, type FileInfo, type FileStat, FileSystem, type StatsOptions, type WriteOptions } from './fileSystem';
 import { inject } from '../di/inject.decorator';
 
 /**
@@ -45,5 +45,10 @@ export class CachedFileSystemAdapter extends FileSystem {
 
     public createDirectory(path: string): Promise<void> {
         return this.innerFs.createDirectory(path);
+    }
+
+    public async delete(path: string, options?: DeleteOptions): Promise<void> {
+        await this.innerFs.delete(path, options);
+        this.clearCache();
     }
 }

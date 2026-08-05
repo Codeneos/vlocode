@@ -1069,6 +1069,49 @@ describe('DatapackExporter', () => {
         expect(expander.expandDatapack).toHaveBeenCalledWith(datapack, { scope: 'std' });
     });
 
+    it('uses matching keys from the explicitly selected datapack definition', async () => {
+        const id = '0jN000000000001AAA';
+        const describe = {
+            name: 'OmniProcess',
+            fields: [
+                { name: 'Id', referenceTo: [] },
+                { name: 'Type', referenceTo: [] },
+                { name: 'SubType', referenceTo: [] },
+                { name: 'Language', referenceTo: [] }
+            ],
+            childRelationships: []
+        };
+        const { exporter, matchingKeys } = createExporter({
+            describe,
+            records: [{
+                Id: id,
+                __type: 'OmniProcess',
+                Type: 'Integration Procedure',
+                SubType: 'Lookup',
+                Language: 'English'
+            }]
+        });
+        matchingKeys.getMatchingKey.mockImplementation(async (type: string, context?: { datapackType?: string }) => ({
+            sobjectType: type,
+            fields: context?.datapackType === 'IntegrationProcedure'
+                ? [ 'Type', 'SubType' ]
+                : [ 'Type', 'SubType', 'Language' ],
+            returnField: 'Id'
+        }));
+
+        const [ result ] = await exporter.exportObject([{
+            id,
+            scope: 'std',
+            datapackType: 'IntegrationProcedure'
+        }], { failOnError: true });
+
+        expect(result.sourceKey).toBe('OmniProcess/Integration Procedure/Lookup');
+        expect(matchingKeys.getMatchingKey).toHaveBeenCalledWith('OmniProcess', {
+            scope: 'std',
+            datapackType: 'IntegrationProcedure'
+        });
+    });
+
     it('exports lookup-related objects within the selected dependency depth', async () => {
         const rootId = 'a00000000000001AAA';
         const relatedId = 'a01000000000001AAA';

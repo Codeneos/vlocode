@@ -446,7 +446,10 @@ export class DatapackExporter {
     private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null> {
         const describe = await this.salesforce.schema.describeSObjectById(record.Id);
         const datapackType = context.datapackType ?? this.inferDatapackType(describe.name, context?.scope);
-        const matchingKey = await this.getMatchingKey(describe, record, context.scope, { allowGeneratedKey: context.embedded === true });
+        const matchingKey = await this.getMatchingKey(describe, record, context.scope, {
+            allowGeneratedKey: context.embedded === true,
+            datapackType
+        });
         const exportStack = this.getExportPath(context.parent);
         this.logger.verbose(`Build ${describe.name} (${record.Id}) datapack: ${matchingKey}`);
 
@@ -1289,7 +1292,7 @@ export class DatapackExporter {
         this.generatedSourceKeys.delete(sourceKey);
     }
 
-    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, options?: { allowGeneratedKey?: boolean, resolving?: Set<string> }) {
+    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, options?: { allowGeneratedKey?: boolean, resolving?: Set<string>, datapackType?: string }) {
         if (!data['id']) {
             throw new Error('Missing id field in data');
         }
@@ -1302,7 +1305,10 @@ export class DatapackExporter {
         // Matching keys are deterministic: reference fields resolve to the referenced record's
         // matching key, so concurrent resolutions of the same record compute the same key and
         // the cache updates below are idempotent.
-        const matchingKeyFields = (await this.matchingKeyService.getMatchingKey(describe.name)).fields;
+        const matchingKeyFields = (await this.matchingKeyService.getMatchingKey(
+            describe.name,
+            options?.datapackType ? { scope, datapackType: options.datapackType } : undefined
+        )).fields;
         if (!matchingKeyFields.length) {
             // Key-less object: either explicitly configured as such or no matching key could be determined
             if (!allowGeneratedKey) {
@@ -1312,7 +1318,7 @@ export class DatapackExporter {
         }
 
         // Use cached matching key if available
-        const matchingKeyEntry = [scope, data['id']].filter(p => p).join('/');
+        const matchingKeyEntry = [scope, options?.datapackType, data['id']].filter(p => p).join('/');
         const cachedMatchingKey = this.matchingKeys.get(matchingKeyEntry);
         if (cachedMatchingKey) {
             return cachedMatchingKey;

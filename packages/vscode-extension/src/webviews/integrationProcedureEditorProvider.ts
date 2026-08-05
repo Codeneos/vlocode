@@ -6,8 +6,7 @@ import { VlocodeCommand } from '../constants';
 import { deepClone, isRecord } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
 import { DatapackInfoService, getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
-import { MetadataConverter } from '@vlocode/vlocity-deploy';
-import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
+import { DatapackWriter, MetadataConverter } from '@vlocode/vlocity-deploy';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { ModelBackedEditorProvider, type EditorMessageContext } from './modelBackedEditorProvider';
 import { ApexWorkspaceIndex } from '../lib/salesforce/apexWorkspaceIndex';
@@ -163,12 +162,12 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         service: VlocodeService,
         fileSystem: FileSystem,
         datapackInfo: DatapackInfoService,
-        datapackExpansion: DatapackExpansionService,
+        datapackWriter: DatapackWriter,
         private readonly metadataConverter: MetadataConverter,
         private readonly dataMappers: DataMapperWorkspaceIndex,
         private readonly apexClasses: ApexWorkspaceIndex
     ) {
-        super(context, service, fileSystem, datapackInfo, datapackExpansion);
+        super(context, service, fileSystem, datapackInfo, datapackWriter);
     }
 
     protected override async createEditorState(model: IntegrationProcedureModel): Promise<EditorState> {
@@ -306,7 +305,7 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
             await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
             return;
         }
-        await this.datapackExpansion.saveDatapack(document.datapack);
+        await this.writeDatapack(document.datapack);
     }
 
     private createModel(datapack: VlocityDatapack, sourceFormat: SourceFormat): IntegrationProcedureModel {

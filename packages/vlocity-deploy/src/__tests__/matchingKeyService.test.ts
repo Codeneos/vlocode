@@ -108,6 +108,38 @@ describe('MatchingKeyService', () => {
             expect(matchingKey.fields).toEqual([ 'vlocity_cmt__DefField__c' ]);
         });
 
+        it('resolves matching keys from the explicitly selected datapack definition', async () => {
+            const omniProcess = describeOf('OmniProcess', [
+                field('Name', { nameField: true }),
+                field('Type'),
+                field('SubType'),
+                field('Language')
+            ]);
+            const { service, store } = createService({ describes: [ omniProcess ] });
+            store.load({
+                OmniScript: {
+                    objectType: 'OmniProcess',
+                    matchingKeyFields: [ 'Type', 'SubType', 'Language' ]
+                },
+                IntegrationProcedure: {
+                    objectType: 'OmniProcess',
+                    matchingKeyFields: [ 'Type', 'SubType' ]
+                }
+            }, { scope: 'std' });
+
+            const integrationProcedureKey = await service.getMatchingKey('OmniProcess', {
+                scope: 'std',
+                datapackType: 'IntegrationProcedure'
+            });
+            const omniScriptKey = await service.getMatchingKey('OmniProcess', {
+                scope: 'std',
+                datapackType: 'OmniScript'
+            });
+
+            expect(integrationProcedureKey.fields).toEqual([ 'Type', 'SubType' ]);
+            expect(omniScriptKey.fields).toEqual([ 'Type', 'SubType', 'Language' ]);
+        });
+
         it('uses org matching keys when no file or export definition defines a key', async () => {
             const { service } = createService({
                 describes: [ testObject ],
