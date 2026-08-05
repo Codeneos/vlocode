@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import vlocity from 'vlocity';
 
 import { Logger, container, injectable } from '@vlocode/core';
-import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder } from '@vlocode/vlocity';
+import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, type DatapackTypeDefinition } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
 import { groupBy, mapAsync , getDocumentBodyAsString , getErrorMessage } from '@vlocode/util';
@@ -30,6 +30,7 @@ export interface ObjectEntry {
     id?: string;
     exportMode?: DatapackExportMode;
     exportDefinitionScope?: string;
+    datapackDefinition?: DatapackTypeDefinition;
 }
 
 type ObjectEntryWithId = ObjectEntry & { id: string };

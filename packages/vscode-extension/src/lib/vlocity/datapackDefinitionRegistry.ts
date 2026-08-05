@@ -11,6 +11,7 @@ import {
     DatapackExportDefinitionStore,
     DatapackExportDefinitions,
     type DatapackExportDefinition,
+    type DatapackExportDefinitionFile,
     type LookupFilter
 } from '@vlocode/vlocity-deploy';
 
@@ -105,62 +106,65 @@ export class DatapackDefinitionRegistry {
     }
 
     private async loadDatapackDefinitions() {
-        const definitions = (await this.datapackInfo.getDatapackDefinitions())
-            .map(definition => {
-                const exportDefinition = this.getDirectExportDefinition(definition);
-                const exportMode = this.vlocode.isVlocityAvailable ? 'tools' as const : exportDefinition ? 'direct' as const : undefined;
-                return { ...definition, exportMode, exportDefinition, scope: 'std' as const };
-            })
-            .filter(definition => !!definition.exportMode);
-        const availableDefinitions = await this.filterAvailableDefinitions(definitions);
-
-        for (const definition of availableDefinitions) {
-            if (definition.exportDefinition) {
-                this.definitions.add(definition.exportDefinition, definition);
-            }
+        const files = this.getAvailablePredefinedDefinitions();
+        if (!files.length) {
+            return;
         }
-
-        if (availableDefinitions.length) {
-            this.entries.push({
-                id: 'datapacks',
-                label: 'Standard Datapacks',
-                description: `Supported ${availableDefinitions.length}`,
-                definitions: availableDefinitions
-            });
+        const knownDefinitions = await this.datapackInfo.getDatapackDefinitions();
+        for (const file of files) {
+            await this.loadPredefinedDefinitions(file, knownDefinitions);
         }
     }
 
-    private getDirectExportDefinition(definition: DatapackTypeDefinition) {
-        const matchingDefinitions = DatapackExportDefinitions.all.filter(exportDefinition =>
-            definition.datapackType === exportDefinition.datapackType && 
-            definition.source.sobjectType === exportDefinition.objectType
-        );
-        if (matchingDefinitions.length > 1) {
-            this.logger.debug(`Multiple export definitions found for datapack type ${definition.datapackType} and sobject ${definition.source.sobjectType}, using the first match`);
+    private getAvailablePredefinedDefinitions(): readonly DatapackExportDefinitionFile[] {
+        const files = new Array<DatapackExportDefinitionFile>();
+        if (this.vlocode.isNativeOmniStudioAvailable) {
+            files.push(DatapackExportDefinitions.omniStudioStandard);
         }
-        return matchingDefinitions[0];
+        if (this.vlocode.isManagedOmniStudioAvailable) {
+            files.push(DatapackExportDefinitions.omniStudioManaged);
+        }
+        if (this.vlocode.isVlocityAvailable) {
+            files.push(DatapackExportDefinitions.industries);
+        }
+        return files;
     }
 
-    // private async loadDirectExportDefinitions(file: DatapackExportDefinitionFile) {
-    //     const typeDefinitions = this.getDatapackTypeDefinitions(file.definitions);
-    //     const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
-    //     if (!availableDefinitions.length) {
-    //         return;
-    //     }
-    //     this.definitions.load(file.definitions, { scope: file.id });
-    //     this.entries.push({
-    //         id: file.id,
-    //         label: file.label,
-    //         description: file.description,
-    //         definitions: availableDefinitions.map(definition => ({ ...definition, scope: file.id }))
-    //     });
-    // }
+    private async loadPredefinedDefinitions(
+        file: DatapackExportDefinitionFile,
+        knownDefinitions: readonly DatapackTypeDefinition[]
+    ) {
+        const typeDefinitions = this.getDatapackTypeDefinitions(file.definitions, knownDefinitions);
+        const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
+        if (!availableDefinitions.length) {
+            return;
+        }
 
-    private getDatapackTypeDefinitions(definitions: Record<string, DatapackExportDefinition>): DatapackTypeDefinition[] {
+        this.definitions.load(file.definitions, { scope: file.id });
+        this.entries.push({
+            id: file.id,
+            label: file.label,
+            description: file.description,
+            definitions: availableDefinitions.map(definition => ({
+                ...definition,
+                exportMode: 'direct',
+                scope: file.id
+            }))
+        });
+    }
+
+    private getDatapackTypeDefinitions(
+        definitions: Readonly<Record<string, Readonly<DatapackExportDefinition>>>,
+        knownDefinitions: readonly DatapackTypeDefinition[] = []
+    ): DatapackTypeDefinition[] {
         return Object.entries(definitions)
             .filter(([, definition]) => !definition.dependent)
             .map(([datapackType, definition]) => {
-                return this.toDatapackTypeDefinition(datapackType, definition);
+                return knownDefinitions.find(candidate =>
+                    candidate.datapackType === datapackType &&
+                    removeNamespacePrefix(candidate.source.sobjectType).toLowerCase() ===
+                        removeNamespacePrefix(definition.objectType).toLowerCase()
+                ) ?? this.toDatapackTypeDefinition(datapackType, definition);
             });
     }
 

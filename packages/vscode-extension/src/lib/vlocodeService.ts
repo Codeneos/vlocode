@@ -44,7 +44,8 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private refreshOAuthTokensPromise?: Promise<boolean>;
     private errorHandlerMarker = Symbol('errorHandlerAttached');
 
-    private isOmnistudioInstalled?: boolean;
+    private isNativeOmniStudioInstalled?: boolean;
+    private isManagedOmniStudioInstalled?: boolean;
     private isVlocityInstalled?: boolean;
 
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
@@ -70,8 +71,16 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return this.isVlocityInstalled === true;
     }
 
+    public get isNativeOmniStudioAvailable(): boolean {
+        return this.isNativeOmniStudioInstalled === true;
+    }
+
+    public get isManagedOmniStudioAvailable(): boolean {
+        return this.isManagedOmniStudioInstalled === true || this.isVlocityAvailable;
+    }
+
     public get isOmniStudioAvailable(): boolean {
-        return this.isOmnistudioInstalled === true || this.isVlocityInstalled === true;
+        return this.isNativeOmniStudioAvailable || this.isManagedOmniStudioAvailable;
     }
 
     private _salesforceService?: SalesforceService;
@@ -154,8 +163,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 this.showStatus('$(sync~spin) Initializing SF services...');
                 await this.nsService.initialize(this._salesforceService);
                 const namespace = this.nsService.getNamespace() ?? '';
-                this.isVlocityInstalled = /vlocity/ig.test(namespace);
-                this.isOmnistudioInstalled = this.isVlocityInstalled || /omnistudio/ig.test(namespace) || await this.hasAccessibleSObject([ 'OmniProcess', 'OmniDataTransform' ]);
+                this.isVlocityInstalled = /vlocity/i.test(namespace);
+                this.isManagedOmniStudioInstalled = /omnistudio/i.test(namespace);
+                this.isNativeOmniStudioInstalled = await this.hasAccessibleSObject([ 'OmniProcess', 'OmniDataTransform' ]);
                 this._datapackService = container.get(VlocityDatapackService);
                 if (this.isVlocityInstalled) {
                     this.showStatus('$(sync~spin) Initializing SF-Industries Services...');
@@ -214,6 +224,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.connector = undefined;
         this._datapackService = undefined;
         this._salesforceService = undefined;
+        this.isNativeOmniStudioInstalled = undefined;
+        this.isManagedOmniStudioInstalled = undefined;
+        this.isVlocityInstalled = undefined;
 
         this.updateExtensionStatus();
     }

@@ -6,7 +6,10 @@ import { ObjectEntry } from './vlocityDatapackService';
 import { deepClone, removeNamespacePrefix } from '@vlocode/util';
 
 export interface DatapackExportMatchingKeyProvider {
-    getMatchingKey(sobjectType: string): Promise<{ sobjectType: string; fields: readonly string[]; returnField: string }>;
+    getMatchingKey(
+        sobjectType: string,
+        context?: { datapackType?: string; scope?: string }
+    ): Promise<{ sobjectType: string; fields: readonly string[]; returnField: string }>;
 }
 
 export interface DatapackExportQueryField {
@@ -36,14 +39,17 @@ export class DatapackExportQueries {
      * @returns Export query
      */
     public async getQuery(datapack: ObjectEntry): Promise<string> {
-        const exportDefinition = this.getExportDefinition(datapack.datapackType, datapack.sobjectType);
+        const exportDefinition = datapack.datapackDefinition ?? this.getExportDefinition(datapack.datapackType, datapack.sobjectType);
         const query = new QueryBuilder(
             deepClone(exportDefinition?.source) ?? {
                 sobjectType: datapack.sobjectType,
                 fieldList: [ 'Id' ],
             }
         );
-        const matchingKey = await this.matchingKeys.getMatchingKey(datapack.sobjectType);
+        const matchingKey = await this.matchingKeys.getMatchingKey(datapack.sobjectType, {
+            datapackType: datapack.datapackType,
+            scope: datapack.exportDefinitionScope
+        });
         const matchingFields = [ ...matchingKey.fields ];
         const nameField = await this.salesforce.schema.getNameField(datapack.sobjectType);
 
