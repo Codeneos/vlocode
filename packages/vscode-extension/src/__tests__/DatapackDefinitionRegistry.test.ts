@@ -1,6 +1,7 @@
 import 'jest';
 
 import { Logger } from '@vlocode/core';
+import { DatapackExportDefinitionStore } from '@vlocode/vlocity-deploy';
 import { DatapackDefinitionRegistry } from '../lib/vlocity/datapackDefinitionRegistry';
 
 describe('DatapackDefinitionRegistry', () => {
@@ -8,6 +9,89 @@ describe('DatapackDefinitionRegistry', () => {
     function createRegistry() {
         return new DatapackDefinitionRegistry({} as any, {} as any, {} as any, Logger.null) as any;
     }
+
+    function createRegistryForCapabilities(capabilities: {
+        nativeOmniStudio?: boolean;
+        managedOmniStudio?: boolean;
+        industries?: boolean;
+    }) {
+        const definitions = new DatapackExportDefinitionStore();
+        const vlocode = {
+            isNativeOmniStudioAvailable: capabilities.nativeOmniStudio === true,
+            isManagedOmniStudioAvailable: capabilities.managedOmniStudio === true || capabilities.industries === true,
+            isVlocityAvailable: capabilities.industries === true,
+            salesforceService: {
+                schema: {
+                    isSObjectAccessible: jest.fn().mockResolvedValue(true)
+                }
+            }
+        };
+        const datapackInfo = {
+            getDatapackDefinitions: jest.fn().mockResolvedValue([])
+        };
+        const registry = new DatapackDefinitionRegistry(vlocode as any, datapackInfo as any, definitions, Logger.null) as any;
+        return { registry, definitions };
+    }
+
+    describe('predefined definitions', () => {
+        it('does not load product definitions without the corresponding org capabilities', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({});
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries).toEqual([]);
+            expect(definitions.objectDefinitions()).toEqual([]);
+            expect(registry.datapackInfo.getDatapackDefinitions).not.toHaveBeenCalled();
+        });
+
+        it('loads native OmniStudio definitions as their own scoped collection', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({ nativeOmniStudio: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([ 'omnistudio-standard' ]);
+            expect(registry.entries[0].definitions).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    datapackType: 'OmniScript',
+                    exportMode: 'direct',
+                    scope: 'omnistudio-standard'
+                })
+            ]));
+            expect(definitions.objectDefinitions().every(definition => definition.scope === 'omnistudio-standard')).toBe(true);
+        });
+
+        it('loads managed OmniStudio and Industries as separate scoped collections', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({ industries: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([ 'omnistudio-managed', 'industries' ]);
+            expect(registry.entries.flatMap((entry: any) => entry.definitions).every((definition: any) => definition.exportMode === 'direct')).toBe(true);
+            expect(new Set(definitions.objectDefinitions().map(definition => definition.scope))).toEqual(
+                new Set([ 'omnistudio-managed', 'industries' ])
+            );
+        });
+
+        it('loads managed OmniStudio without Industries for the standalone managed package', async () => {
+            const { registry } = createRegistryForCapabilities({ managedOmniStudio: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([ 'omnistudio-managed' ]);
+        });
+
+        it('loads both native and managed definition sets when both runtimes are available', async () => {
+            const { registry } = createRegistryForCapabilities({ nativeOmniStudio: true, industries: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([
+                'omnistudio-standard',
+                'omnistudio-managed',
+                'industries'
+            ]);
+        });
+    });
 
     describe('toDatapackTypeDefinition', () => {
         it('uses object filters as explorer where conditions', () => {

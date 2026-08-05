@@ -26,6 +26,33 @@ describe('VlocodeService', () => {
         return service;
     }
 
+    describe('OmniStudio capabilities', () => {
+        it('distinguishes native and managed OmniStudio runtimes', () => {
+            const service = createService() as any;
+
+            service.isNativeOmniStudioInstalled = true;
+            expect(service.isNativeOmniStudioAvailable).toBe(true);
+            expect(service.isManagedOmniStudioAvailable).toBe(false);
+            expect(service.isOmniStudioAvailable).toBe(true);
+
+            service.isNativeOmniStudioInstalled = false;
+            service.isManagedOmniStudioInstalled = true;
+            expect(service.isNativeOmniStudioAvailable).toBe(false);
+            expect(service.isManagedOmniStudioAvailable).toBe(true);
+            expect(service.isOmniStudioAvailable).toBe(true);
+        });
+
+        it('treats the Industries package as managed OmniStudio', () => {
+            const service = createService() as any;
+
+            service.isVlocityInstalled = true;
+
+            expect(service.isVlocityAvailable).toBe(true);
+            expect(service.isManagedOmniStudioAvailable).toBe(true);
+            expect(service.isOmniStudioAvailable).toBe(true);
+        });
+    });
+
     describe('validateSalesforceConnectivity', () => {
         it('asks for org selection before attempting initialization', async () => {
             const service = createService();

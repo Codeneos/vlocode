@@ -32,16 +32,20 @@ export default class OpenSalesforceCommand extends DatapackCommand {
             throw new Error(`${selectedFile.fsPath} not part of datapack`);
         }
 
-        const matchingRecords = await this.datapackService.getDatapackRecords(datapack);
+        const definitions = await this.resolveDatapackDefinitions([ datapack ], { promptOnAmbiguous: true });
+        if (definitions === undefined) {
+            return;
+        }
+        const typeDefinition = definitions.get(datapack) ?? getDatapackTypeDefinition(datapack);
+        const matchingRecords = await this.datapackService.getDatapackRecords(this.asObjectEntry(datapack, typeDefinition));
         if (!matchingRecords.length) {
             void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; datapack might not be deployed on target org.');
             return;
         }
         
-        const typeDefinition = getDatapackTypeDefinition(datapack);
         const selectedMatch = matchingRecords.length > 1 ? await this.showRecordSelection(matchingRecords, typeDefinition) : matchingRecords.pop();
         if (selectedMatch) {
-            return this.openIdInSalesforce(selectedMatch.Id, datapack.datapackType, selectedMatch);
+            return this.openIdInSalesforce(selectedMatch.Id, typeDefinition?.datapackType ?? datapack.datapackType, selectedMatch);
         }
     }
 

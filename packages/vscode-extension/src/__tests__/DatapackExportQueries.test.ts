@@ -78,5 +78,38 @@ describe('DatapackExportQueries', () => {
                 `select Id, Name from OmniDataTransform where Name = 'ExampleMapper'`
             );
         });
+
+        it('uses the selected definition and scope for record matching', async () => {
+            const getMatchingKey = jest.fn(async (sobjectType: string) => ({
+                sobjectType,
+                fields: [ 'ExternalId__c' ],
+                returnField: 'Id'
+            }));
+            const sut = new DatapackExportQueries({ getMatchingKey }, mockSalesforce(), Logger.null);
+
+            const datapack = {
+                datapackType: 'Account',
+                sobjectType: 'Account',
+                exportDefinitionScope: '/workspace/export-definitions.yaml',
+                datapackDefinition: {
+                    datapackType: 'Account',
+                    typeLabel: 'Accounts',
+                    source: {
+                        sobjectType: 'Account',
+                        fieldList: [ 'Id', 'CustomLabel__c' ]
+                    }
+                },
+                ExternalId__c: 'EXT-1'
+            };
+            const result = await sut.getQuery(datapack);
+
+            expect(getMatchingKey).toHaveBeenCalledWith('Account', {
+                datapackType: 'Account',
+                scope: '/workspace/export-definitions.yaml'
+            });
+            expect(result).toBe(
+                `select Id, CustomLabel__c, Name, ExternalId__c from Account where ExternalId__c = 'EXT-1'`
+            );
+        });
     });
 });
