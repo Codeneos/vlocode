@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.1](https://github.com/codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+### Bug Fixes
+
+* only add definitions in datapack explorer if they are confirmed available ([6dbdb93](https://github.com/codeneos/vlocode/commit/6dbdb935157851bba90f7f457a16fdd76a4f143e))
+* open-in-org failed to use the correct query when multiple exist to find the SF Id ([0bc4505](https://github.com/codeneos/vlocode/commit/0bc4505cf087eb8092822039c7d54e40d844baeb))
+* saving datapacks back doesn't properly expand them and can duplicate new folders as the datapack is saved into a different folder all together ([7e69dc1](https://github.com/codeneos/vlocode/commit/7e69dc1444a1effb3787e0f244c17fe873299be2))
+
 # [2.4.0](https://github.com/codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
 
 ### Bug Fixes

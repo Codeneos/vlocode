@@ -4,6 +4,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+### Bug Fixes
+
+* saving datapacks back doesn't properly expand them and can duplicate new folders as the datapack is saved into a different folder all together ([7e69dc1](https://github.com/Codeneos/vlocode/commit/7e69dc1444a1effb3787e0f244c17fe873299be2))
+
+### Features
+
+* simplify datapack type resolution and remove unused parameters in loadJson and resolveValue methods ([b20050b](https://github.com/Codeneos/vlocode/commit/b20050b797acd9dc30c354b8bee894e8f232f0a1))
+
 # [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
 
 ### Features
