@@ -1,4 +1,5 @@
 import 'jest';
+import * as path from 'path';
 
 import { Logger } from '@vlocode/core';
 import { DatapackExportDefinitionStore } from '@vlocode/vlocity-deploy';
@@ -90,6 +91,27 @@ describe('DatapackDefinitionRegistry', () => {
                 'omnistudio-managed',
                 'industries'
             ]);
+        });
+    });
+
+    describe('custom definitions', () => {
+        it('loads global defaults and key-less dependent children without adding them as explorer roots', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({});
+            const file = path.join(__dirname, 'fixtures', 'support-export-definitions.yaml');
+
+            const explorerDefinitions = await registry.loadCustomDefinitionFile(file);
+
+            expect(explorerDefinitions.map((definition: any) => definition.datapackType)).toEqual([ 'Product2' ]);
+            expect(definitions.isFieldIgnored({
+                datapackType: 'SBQQ__ConfigurationAttribute__c',
+                objectType: 'SBQQ__ConfigurationAttribute__c',
+                scope: file
+            }, 'CurrencyIsoCode')).toBe(true);
+            expect(definitions.getMatchingKeyFields({
+                datapackType: 'SBQQ__ConfigurationAttribute__c',
+                objectType: 'SBQQ__ConfigurationAttribute__c',
+                scope: file
+            })).toEqual([]);
         });
     });
 

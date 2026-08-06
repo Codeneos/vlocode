@@ -158,7 +158,9 @@ export class DatapackDefinitionRegistry {
         knownDefinitions: readonly DatapackTypeDefinition[] = []
     ): DatapackTypeDefinition[] {
         return Object.entries(definitions)
-            .filter(([, definition]) => !definition.dependent)
+            // Support-only entries such as the global `SObject` defaults and dependent child
+            // definitions belong in the export definition store, but cannot be explorer roots.
+            .filter(([, definition]) => !definition.dependent && this.isExportDefinition(definition))
             .map(([datapackType, definition]) => {
                 return knownDefinitions.find(candidate =>
                     candidate.datapackType === datapackType &&
@@ -276,28 +278,29 @@ export class DatapackDefinitionRegistry {
     }
 
     private async readExportDefinitionsFromFile(file: string): Promise<Record<string, DatapackExportDefinition>> {
-        const definitionRoot = yaml.load(await fs.readFile(file, 'utf8'), { filename: file });
-        if (typeof definitionRoot !== 'object' || definitionRoot === null || Array.isArray(definitionRoot)) {
-            throw new Error(`Custom datapack definition file ${file} must contain a YAML object`);
+        const loaded = yaml.load(await fs.readFile(file, 'utf8'), { filename: file });
+        const definitionRoot = this.isObject(loaded) && this.isObject(loaded.definitions)
+            ? loaded.definitions
+            : loaded;
+        if (!this.isObject(definitionRoot) || !Object.values(definitionRoot).every(value => this.isObject(value))) {
+            throw new Error(`Custom datapack definition file ${file} must contain a YAML object mapping datapack types to definitions`);
         }
-
-        const definitions = Object.fromEntries<DatapackExportDefinition>(
-            Object.entries(definitionRoot)
-                .filter(([, value ]) => this.isExportDefinition(value))
-        );
-
-        if (!Object.keys(definitions).length) {
-            throw new Error(`No export definitions found in ${file}`);
-        }
-
-        return definitions;
+        // Do not discard support-only definitions here. In particular, global `SObject` defaults do
+        // not have an objectType/name and dependent children do not require a name. The CLI loads the
+        // same entries into the store; filtering them here made refresh exports behave differently.
+        return definitionRoot as unknown as Record<string, DatapackExportDefinition>;
     }
 
     private isExportDefinition(input: unknown): input is DatapackExportDefinition {
-        // Check input is an object and has a and object type and name
-        return typeof input === 'object' && input !== null
-            && 'objectType' in input && typeof (input as any).objectType === 'string' && (input as any).objectType.trim()
-            && 'name' in input && (typeof (input as any).name === 'string' || Array.isArray((input as any).name));
+        // A top-level explorer definition needs both an object type and a display name. Support-only
+        // definitions may omit either and are still loaded into the definition store.
+        return this.isObject(input)
+            && typeof input.objectType === 'string' && !!input.objectType.trim()
+            && (typeof input.name === 'string' || Array.isArray(input.name));
+    }
+
+    private isObject(input: unknown): input is Record<string, unknown> {
+        return typeof input === 'object' && input !== null && !Array.isArray(input);
     }
 
     private getDefinitionLabel(datapackType: string, definition: DatapackExportDefinition) {
