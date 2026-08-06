@@ -51,7 +51,6 @@ interface DeferredEmbedded {
     readonly objectType: string;
     readonly filter: Record<string, any> | Record<string, any>[];
     readonly limit?: number;
-    readonly sortFields?: string[];
     readonly context: ExportContext;
 }
 
@@ -601,15 +600,15 @@ export class DatapackExporter {
         // Export embedded objects
         for (const embeddedObject of this.definitions.getEmbeddedObjects(datapack)) {
             try {
-                const { name, objectType, filter, limit, sortFields } = this.resolveEmbeddedLookup(datapack, embeddedObject);
+                const { name, objectType, filter, limit } = this.resolveEmbeddedLookup(datapack, embeddedObject);
 
                 // Object filters (and arrays of object clauses) are deferred so the child records for all
                 // parents in the chunk can be looked up in a single batched query (see resolveEmbeddedObjects).
                 // Only raw SOQL string filters cannot be grouped back per parent and are resolved inline.
                 if (this.isBatchableFilter(filter)) {
-                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, sortFields, context });
+                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, context });
                 } else {
-                    const records = this.sortRecords(await this.lookupWithFilter(objectType, filter, limit), sortFields);
+                    const records = await this.lookupWithFilter(objectType, filter, limit);
                     if (records.length) {
                         datapack.data[name] = await mapAsync(records, record => this.buildEmbeddedSObject(datapack, record, context));
                     }
@@ -623,7 +622,7 @@ export class DatapackExporter {
         }
     }
 
-    private resolveEmbeddedLookup(datapack: ExportDatapack, embeddedObject: { name: string, sortFields?: string[] } & (ObjectFilter | ObjectRelationship)) {
+    private resolveEmbeddedLookup(datapack: ExportDatapack, embeddedObject: { name: string } & (ObjectFilter | ObjectRelationship)) {
         const objectFilter = 'relationshipName' in embeddedObject
             ? this.getObjectFilterFromRelationship(datapack, embeddedObject)
             : embeddedObject;
@@ -634,42 +633,7 @@ export class DatapackExporter {
         }
 
         this.logger.verbose(`Lookup ${objectFilter.objectType} (${datapack.objectType}) using filter:`, filter);
-        return { name: embeddedObject.name, objectType: objectFilter.objectType, filter, limit: objectFilter.limit, sortFields: embeddedObject.sortFields };
-    }
-
-    /**
-     * Sort records by the configured sortFields, falling back to Id, so embedded/related record arrays
-     * are deterministic across exports -- Salesforce query order (especially batched OR queries) is not
-     * guaranteed stable. Returns a new sorted array and does not mutate the input.
-     */
-    private sortRecords<T extends Record<string, any>>(records: T[], sortFields?: string[]): T[] {
-        const fields = sortFields?.length ? sortFields : ['Id'];
-        return [...records].sort((a, b) => {
-            for (const field of fields) {
-                const compare = this.compareFieldValues(a[field], b[field]);
-                if (compare !== 0) {
-                    return compare;
-                }
-            }
-            return 0;
-        });
-    }
-
-    private compareFieldValues(a: unknown, b: unknown): number {
-        if (a === b) {
-            return 0;
-        }
-        // Sort nullish values last so they don't shuffle around between exports.
-        if (a === undefined || a === null) {
-            return 1;
-        }
-        if (b === undefined || b === null) {
-            return -1;
-        }
-        if (typeof a === 'number' && typeof b === 'number') {
-            return a - b;
-        }
-        return String(a).localeCompare(String(b));
+        return { name: embeddedObject.name, objectType: objectFilter.objectType, filter, limit: objectFilter.limit };
     }
 
     private isBatchableFilter(filter: unknown): filter is Record<string, any> | Record<string, any>[] {
@@ -700,11 +664,10 @@ export class DatapackExporter {
                     }
                 });
 
-                // Sort before applying the limit so a stable, deterministic subset is kept. Limit is
-                // applied client-side; the batched OR query cannot enforce a per-parent limit.
+                // The limit is applied client-side because the batched OR query cannot enforce a
+                // separate limit per parent. Final output ordering is handled by the expander.
                 const recordsPerEntry = entries.map((entry, entryIndex) =>
-                    this.sortRecords([...recordsByEntry[entryIndex].values()], entry.sortFields)
-                        .slice(0, entry.limit || undefined));
+                    [...recordsByEntry[entryIndex].values()].slice(0, entry.limit || undefined));
 
                 // Warm the caches for records referenced from the children's matching key fields in one
                 // batched lookup so building the children does not fan out into per-record queries.

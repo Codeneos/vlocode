@@ -3,6 +3,7 @@ import * as path from 'path';
 
 import { DatapackExporter } from '../export/datapackExporter';
 import { DatapackExpander } from '../export/datapackExpander';
+import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
 
 describe('DatapackExporter', () => {
 
@@ -1370,30 +1371,6 @@ describe('DatapackExporter', () => {
         expect(datapack.data).not.toHaveProperty('ManagerId');
     });
 
-    describe('#sortRecords', () => {
-        it('sorts by Id by default', () => {
-            const { exporter } = createExporter();
-            const sorted = (exporter as any).sortRecords([{ Id: 'b' }, { Id: 'a' }, { Id: 'c' }]);
-            expect(sorted.map((r: any) => r.Id)).toEqual(['a', 'b', 'c']);
-        });
-
-        it('sorts by the configured sortFields before falling back to Id', () => {
-            const { exporter } = createExporter();
-            const sorted = (exporter as any).sortRecords(
-                [{ Seq__c: 2, Id: 'a' }, { Seq__c: 1, Id: 'z' }, { Seq__c: 1, Id: 'b' }],
-                ['Seq__c', 'Id']
-            );
-            expect(sorted.map((r: any) => r.Id)).toEqual(['b', 'z', 'a']);
-        });
-
-        it('orders nullish sort values last and does not mutate the input', () => {
-            const { exporter } = createExporter();
-            const input = [{ Id: 'a', Seq__c: null }, { Id: 'b', Seq__c: 5 }];
-            const sorted = (exporter as any).sortRecords(input, ['Seq__c']);
-            expect(sorted.map((r: any) => r.Id)).toEqual(['b', 'a']);
-            expect(input.map(r => r.Id)).toEqual(['a', 'b']);
-        });
-    });
 });
 
 describe('DatapackExpander', () => {
@@ -1436,6 +1413,108 @@ describe('DatapackExpander', () => {
             'Parent_Child_First.json',
             'Parent_Child_Second.json'
         ]);
+    });
+
+    it('sorts record arrays by configured fields during expansion without mutating the datapack', () => {
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load({
+            Parent: {
+                objectType: 'Parent__c',
+                name: ['Name'],
+                fields: {
+                    Children: { sortFields: ['Group', 'Sequence'] }
+                }
+            }
+        });
+        const expander = new DatapackExpander(definitions, createLogger() as any);
+        const children = [
+            { Group: 'B', Sequence: 1, VlocityRecordSourceKey: 'Child/1' },
+            { Group: 'A', Sequence: 2, VlocityRecordSourceKey: 'Child/2' },
+            { Group: 'A', Sequence: 1, VlocityRecordSourceKey: 'Child/3' }
+        ];
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Parent__c',
+            VlocityRecordSourceKey: 'Parent__c/Parent',
+            Name: 'Parent',
+            Children: children
+        }, { datapackType: 'Parent' });
+
+        expect(JSON.parse(result.files['Parent_DataPack.json'].toString()).Children)
+            .toEqual([children[2], children[1], children[0]]);
+        expect(children.map(child => child.VlocityRecordSourceKey))
+            .toEqual(['Child/1', 'Child/2', 'Child/3']);
+    });
+
+    it('prefers VlocityRecordSourceKey over Name as the default record-array sort field', () => {
+        const definitions = {
+            getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : undefined),
+            getName: jest.fn(() => ['Name']),
+            getFieldConfig: jest.fn()
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Parent__c',
+            VlocityRecordSourceKey: 'Parent__c/Parent',
+            Name: 'Parent',
+            Children: [
+                { Name: 'Alpha', VlocityRecordSourceKey: 'Child/Zulu' },
+                { Name: 'Zulu', VlocityRecordSourceKey: 'Child/Alpha' }
+            ]
+        });
+
+        expect(JSON.parse(result.files['Parent_DataPack.json'].toString()).Children
+            .map(child => child.VlocityRecordSourceKey))
+            .toEqual(['Child/Alpha', 'Child/Zulu']);
+    });
+
+    it('sorts record arrays alphabetically by Name when no source keys are present', () => {
+        const definitions = {
+            getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : undefined),
+            getName: jest.fn(() => ['Name']),
+            getFieldConfig: jest.fn()
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Parent__c',
+            VlocityRecordSourceKey: 'Parent__c/Parent',
+            Name: 'Parent',
+            Children: [
+                { Name: 'Zulu' },
+                { Name: 'Alpha' }
+            ]
+        });
+
+        expect(JSON.parse(result.files['Parent_DataPack.json'].toString()).Children.map(child => child.Name))
+            .toEqual(['Alpha', 'Zulu']);
+    });
+
+    it('preserves record-array order when no configured or default sort field is available', () => {
+        const definitions = {
+            getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : undefined),
+            getName: jest.fn(() => ['Name']),
+            getFieldConfig: jest.fn()
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Parent__c',
+            VlocityRecordSourceKey: 'Parent__c/Parent',
+            Name: 'Parent',
+            Children: [
+                { Value: 'second' },
+                { Value: 'first' }
+            ]
+        });
+
+        expect(JSON.parse(result.files['Parent_DataPack.json'].toString()).Children.map(child => child.Value))
+            .toEqual(['second', 'first']);
     });
 
     it('keeps configured null fields inline instead of expanding them into files', () => {

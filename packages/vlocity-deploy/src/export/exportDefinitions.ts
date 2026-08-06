@@ -104,7 +104,9 @@ export interface ExportFieldDefinition extends ExpandFileDefinition {
      */
     ignoreFields?: string[];
     /**
-     * List of fields by which to sort the exported data when exporting as an embedded object.
+     * List of fields by which to sort a record array during expansion. Fields are evaluated in the
+     * configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`,
+     * when either field is present on every record; otherwise the original array order is preserved.
      */
     sortFields?: string[];
 }

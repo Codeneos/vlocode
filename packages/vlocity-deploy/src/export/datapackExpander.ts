@@ -109,7 +109,7 @@ export class DatapackExpander {
             }
 
             const fileNameFormat = this.definitions.getFileName(itemRef, field);
-            let value = datapack[field];
+            let value = this.sortFieldArray({ ...itemRef, field }, datapack[field]);
 
             if (fileNameFormat && value !== null) {
                 const defaultExt = 'json';
@@ -177,6 +177,70 @@ export class DatapackExpander {
             return shouldExpand;
         }
         return false;
+    }
+
+    /**
+     * Sort record arrays at the expansion boundary, after their source keys have been finalized.
+     * Configured sort fields take precedence. Without configuration, a source key is preferred and
+     * Name is used when a source key is not available on every record. Other arrays retain their
+     * original order because their values may be intentionally positional.
+     */
+    private sortFieldArray(ref: FieldRef, value: unknown): unknown {
+        if (!Array.isArray(value) || value.length < 2 || !value.every(this.isRecord)) {
+            return value;
+        }
+
+        const configuredSortFields = this.definitions.getFieldConfig(ref, ref.field, 'sortFields');
+        const sortFields = Array.isArray(configuredSortFields)
+            ? configuredSortFields.filter(field => typeof field === 'string' && field.length > 0)
+            : [];
+
+        const fields = sortFields.length > 0
+            ? sortFields
+            : this.getDefaultSortFields(value);
+
+        if (!fields) {
+            return value;
+        }
+
+        return [...value].sort((a, b) => {
+            for (const field of fields) {
+                const comparison = this.compareFieldValues(a[field], b[field]);
+                if (comparison !== 0) {
+                    return comparison;
+                }
+            }
+            return 0;
+        });
+    }
+
+    private readonly isRecord = (value: unknown): value is Record<string, unknown> =>
+        typeof value === 'object' && value !== null && !Array.isArray(value) && !Buffer.isBuffer(value);
+
+    private getDefaultSortFields(records: Record<string, unknown>[]): string[] | undefined {
+        if (records.every(record => record.VlocityRecordSourceKey !== undefined && record.VlocityRecordSourceKey !== null)) {
+            return ['VlocityRecordSourceKey'];
+        }
+        if (records.every(record => record.Name !== undefined && record.Name !== null)) {
+            return ['Name'];
+        }
+        return undefined;
+    }
+
+    private compareFieldValues(a: unknown, b: unknown): number {
+        if (a === b) {
+            return 0;
+        }
+        if (a === undefined || a === null) {
+            return 1;
+        }
+        if (b === undefined || b === null) {
+            return -1;
+        }
+        if (typeof a === 'number' && typeof b === 'number') {
+            return a - b;
+        }
+        return String(a).localeCompare(String(b), 'en');
     }
 
     private evalPathFormat(format: string | string[], options?: { context?: object; defaultExt?: string; fallback?: string; }) {
