@@ -237,6 +237,29 @@ describe('MatchingKeyService', () => {
             expect(matchingKey.fields).toEqual([ 'Name' ]);
         });
 
+        it('does not infer a matching key when schema fallback is disabled', async () => {
+            const { service } = createService({
+                describes: [ describeOf('Account', [ field('Name', { nameField: true }) ]) ]
+            });
+
+            const withoutFallback = await service.getMatchingKey('Account', { allowFallback: false });
+            const withFallback = await service.getMatchingKey('Account');
+
+            expect(withoutFallback.fields).toEqual([]);
+            expect(withFallback.fields).toEqual([ 'Name' ]);
+        });
+
+        it('uses a configured matching key when schema fallback is disabled', async () => {
+            const { service } = createService({
+                describes: [ testObject ],
+                orgMatchingKeys: [ testOrgKey ]
+            });
+
+            const matchingKey = await service.getMatchingKey('Test__c', { allowFallback: false });
+
+            expect(matchingKey.fields).toEqual([ 'vlocity_cmt__OrgField__c' ]);
+        });
+
         it('returns an empty matching key when none can be determined', async () => {
             const { service } = createService({
                 describes: [ describeOf('Junction__c', [ field('Name', { nameField: true, autoNumber: true }) ]) ]

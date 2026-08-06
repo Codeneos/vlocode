@@ -23,6 +23,16 @@ export interface VlocityMatchingKey {
     readonly returnField: string;
 }
 
+export interface MatchingKeyContext extends Pick<ObjectRef, 'datapackType' | 'scope'> {
+    /**
+     * Allow a matching key to be inferred from the object schema when none is configured.
+     * Deployment callers disable this because target-schema inference is not an explicit or reliably
+     * unique instruction to update an existing record.
+     * @default true
+     */
+    allowFallback?: boolean;
+}
+
 interface DRMatchingKeyRecord {
     id: string;
     objectAPIName: string;
@@ -156,20 +166,25 @@ export class MatchingKeyService {
      * returned matching key.
      *
      * @param sobjectType SObject type with or without (placeholder) namespace prefix
-     * @param context Optional selected datapack definition context for scoped export resolution
+     * @param context Optional selected datapack definition context and schema-fallback behavior
      * @returns The matching key for the object; `fields` is empty for key-less objects, either
      * explicitly configured as such or because no matching key could be determined.
      * @throws When the object does not exist in the target org or a configured field does not exist on the object.
      */
     public async getMatchingKey(
         sobjectType: string,
-        context?: Pick<ObjectRef, 'datapackType' | 'scope'>
+        context?: MatchingKeyContext
     ): Promise<VlocityMatchingKey> {
         if (!sobjectType) {
             throw new Error('Cannot resolve the matching key for an undefined or empty SObject type');
         }
         const typeKey = normalizeSObjectTypeName(sobjectType);
-        const cacheKey = JSON.stringify([ typeKey, context?.scope, context?.datapackType?.toLowerCase() ]);
+        const cacheKey = JSON.stringify([
+            typeKey,
+            context?.scope,
+            context?.datapackType?.toLowerCase(),
+            context?.allowFallback !== false
+        ]);
         let matchingKey = this.resolvedKeys.get(cacheKey);
         if (!matchingKey) {
             // Freeze the resolved key so the same instance can be shared with all callers
@@ -181,7 +196,7 @@ export class MatchingKeyService {
 
     private async resolveMatchingKey(
         sobjectType: string,
-        context?: Pick<ObjectRef, 'datapackType' | 'scope'>
+        context?: MatchingKeyContext
     ): Promise<VlocityMatchingKey> {
         const typeKey = normalizeSObjectTypeName(sobjectType);
         const configuredFields = await this.getConfiguredFields(sobjectType, context);
@@ -190,6 +205,12 @@ export class MatchingKeyService {
         if (configuredFields?.length === 0) {
             // Explicitly key-less object; always insert on deployment and use generated keys on export.
             // Master-detail fields are deliberately not added as they would (partially) match sibling records.
+            return { sobjectType, fields: [], returnField };
+        }
+
+        if (configuredFields === undefined && context?.allowFallback === false) {
+            // A datapack record without a source key has no stable source identity. Do not invent a
+            // deployment-only key from Name or parent fields as that can match unrelated target rows.
             return { sobjectType, fields: [], returnField };
         }
 

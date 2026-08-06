@@ -199,6 +199,34 @@ describe('datapackRecordFactory', () => {
         expect(records.slice(1).every(record => !record.isFailed)).toBe(true);
     });
 
+    it('disables inferred matching keys for deployment records', async () => {
+        const schemaDataFile = path.join(__dirname, './data/schema.json');
+        const testContainer = container.create();
+        const schema = await new SchemaDataStore().loadFromFile(schemaDataFile);
+        const data = JSON.parse(JSON.stringify(datapackData));
+        const getMatchingKey = jest.fn(async (obj: string): Promise<VlocityMatchingKey> => ({
+            sobjectType: obj,
+            fields: [ 'Name' ],
+            returnField: 'Id'
+        }));
+
+        testContainer.use(mockConnectionProvider([]), SalesforceConnectionProvider);
+        testContainer.use(new VlocityNamespaceService('vlocity_cmt'));
+        testContainer.use(schema);
+        testContainer.use(mockSalesforceService(schema), SalesforceService);
+        testContainer.use({ getMatchingKey } as any, MatchingKeyService);
+
+        const datapack = new VlocityDatapack(data.VlocityDataPackType, data);
+        await testContainer.new(DatapackRecordFactory).createRecords(datapack);
+
+        expect(getMatchingKey).toHaveBeenCalledWith('Product2', {
+            allowFallback: false
+        });
+        expect(getMatchingKey).toHaveBeenCalledWith('vlocity_cmt__CatalogProductRelationship__c', {
+            allowFallback: false
+        });
+    });
+
     it('should stringify convert JSON object', async () => {
         // Arrange
         const testContainer = container.create();

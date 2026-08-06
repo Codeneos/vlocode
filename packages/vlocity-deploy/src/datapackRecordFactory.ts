@@ -58,7 +58,12 @@ export class DatapackRecordFactory {
         const records : Array<typeof record> = [ record ];
 
         try {
-            record.upsertFields = [ ...(await this.matchingKeyService.getMatchingKey(sobject.name)).fields ];
+            record.upsertFields = [ ...(await this.matchingKeyService.getMatchingKey(sobject.name, {
+                // Deployment may only update records through an explicitly configured key. Schema
+                // fallback is useful during export to construct source keys, but using it here could
+                // turn a non-unique Name or relationship combination into an arbitrary update.
+                allowFallback: false
+            })).fields ];
         } catch (err) {
             // Fail only this record; other records in the deployment can still deploy
             record.setFailed(getErrorMessage(err));
