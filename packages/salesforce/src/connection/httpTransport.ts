@@ -132,7 +132,7 @@ export class HttpTransport implements Transport {
         keepAlive: true,
         keepAliveMsecs: 2 * 60 * 1000,
         maxSockets: 5,
-        scheduling: 'fifo',
+        scheduling: 'lifo',
         timeout: 5 * 60 * 1000 // Time out connections after 5 minutes
     });
 

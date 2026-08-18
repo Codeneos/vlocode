@@ -6,6 +6,10 @@ import { IncomingMessage } from 'http';
 
 describe('HttpTransport', () => {
 
+    it('reuses the most recently active Salesforce socket', () => {
+        expect(HttpTransport.httpAgent.options.scheduling).toBe('lifo');
+    });
+
     describe('#decodeResponseBody', () => {
         it('should decoded content-encoding gzip', async () => {
             const transport = new HttpTransport(undefined as unknown as SalesforceConnection, Logger.null);
