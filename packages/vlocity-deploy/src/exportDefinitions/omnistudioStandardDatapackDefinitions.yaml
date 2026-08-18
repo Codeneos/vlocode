@@ -90,7 +90,3 @@ definitions:
     objectType: OmniDataTransformItem
     name:
       - GlobalKey
-    matchingKeyFields:
-      - GlobalKey
-    ignoreFields:
-      - OmniDataTransformationId
