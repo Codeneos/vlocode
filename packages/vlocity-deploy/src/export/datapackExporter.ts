@@ -1009,7 +1009,7 @@ export class DatapackExporter {
         // Object exp with field conditions
         if (typeof filter === 'object' && filter) {
             const entries = Object.entries(filter).map(([key, value]) => [
-                key,
+                this.salesforce.updateNamespace(key),
                 this.evalFilterValue(value, datapack)
             ]);
             return entries.some(([, value]) => value === undefined)
@@ -1038,6 +1038,11 @@ export class DatapackExporter {
     }
 
     private evalFilterValueExp(stringFormat: string, datapack: ExportDatapack) {
+        // Resolve namespace placeholders (e.g. %vlocity_namespace%) so that the
+        // resulting lookup path can be matched against the context keys which use
+        // the real Salesforce namespace.
+        stringFormat = this.salesforce.updateNamespace(stringFormat);
+
         const context = {
             Id: datapack.id,
             [datapack.objectType]: datapack.data,

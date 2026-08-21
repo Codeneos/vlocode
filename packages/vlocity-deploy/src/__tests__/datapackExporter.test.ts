@@ -78,7 +78,8 @@ describe('DatapackExporter', () => {
                 describeSObjectField: jest.fn(async (type: string, fieldName: string) =>
                     findDescribeField(describeFor(type), fieldName))
             },
-            replaceNamespace: jest.fn((value: string) => value)
+            replaceNamespace: jest.fn((value: string) => value),
+            updateNamespace: jest.fn((value: string) => value)
         };
         const matchingKeys = {
             getMatchingKey: jest.fn(async (type: string) => ({
@@ -251,6 +252,31 @@ describe('DatapackExporter', () => {
         expect(filter).toBe(
             "(SBQQ__Product__c = '01t000000000001AAA') or (SBQQ__Feature__c IN (a10000000000001AAA,a10000000000002AAA))"
         );
+    });
+
+    it('resolves namespace placeholders in filter keys and values', () => {
+        const { exporter, salesforce } = createExporter();
+        // Simulate a namespace service that resolves %vlocity_namespace% to the actual namespace
+        salesforce.updateNamespace.mockImplementation((value: string) =>
+            value.replace(/%vlocity_namespace%/g, 'vlocity_cmt')
+        );
+
+        const datapack = {
+            id: 'a0M000000000001AAA',
+            objectType: 'vlocity_cmt__OmniScript__c',
+            normalizedObjectType: 'OmniScript__c',
+            data: {
+                Id: 'a0M000000000001AAA'
+            }
+        };
+
+        const filter = exporter.buildLookupFilter({
+            '%vlocity_namespace%__OmniScriptId__c': '{%vlocity_namespace%__OmniScript__c:Id}'
+        }, datapack);
+
+        expect(filter).toStrictEqual({
+            'vlocity_cmt__OmniScriptId__c': 'a0M000000000001AAA'
+        });
     });
 
     it('awaits lookup references included in matching key objects', async () => {
@@ -1158,7 +1184,8 @@ describe('DatapackExporter', () => {
                 describeSObjectField: jest.fn(async (type: string, fieldName: string) =>
                     findDescribeField(type === rootDescribe.name ? rootDescribe : relatedDescribe, fieldName))
             },
-            replaceNamespace: jest.fn((value: string) => value)
+            replaceNamespace: jest.fn((value: string) => value),
+            updateNamespace: jest.fn((value: string) => value)
         };
         const matchingKeys = mockMatchingKeyService();
         const expandedResults: any[] = [];
@@ -1282,7 +1309,8 @@ describe('DatapackExporter', () => {
                 describeSObjectField: jest.fn(async (_type: string, fieldName: string) =>
                     findDescribeField(childDescribe, fieldName))
             },
-            replaceNamespace: jest.fn((value: string) => value)
+            replaceNamespace: jest.fn((value: string) => value),
+            updateNamespace: jest.fn((value: string) => value)
         };
         const matchingKeys = mockMatchingKeyService();
 
