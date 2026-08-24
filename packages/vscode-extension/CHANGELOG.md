@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.2](https://github.com/codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+### Bug Fixes
+
+* export and refresh from UI ignore global and keyless defintiions from custom definition fules ([d486ddc](https://github.com/codeneos/vlocode/commit/d486ddcdbaf876cfeae066a66d6b196f213f283e))
+
 ## [2.4.1](https://github.com/codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
 
 ### Bug Fixes

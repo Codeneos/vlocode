@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+### Bug Fixes
+
+* change socker pooling to lifo to avoid stale sockets on slow CI environments ([2415183](https://github.com/Codeneos/vlocode/commit/2415183190a1806ce77367629e82944d46d46229))
+
 ## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
 
 ### Features

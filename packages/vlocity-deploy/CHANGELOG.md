@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+### Bug Fixes
+
+* disable inferred matching keys for deployment records and update matching key context ([bf505c8](https://github.com/Codeneos/vlocode/commit/bf505c80e5242171f8658a348fe17844bbaf30ec))
+* exporter doesn't properly sort records in datapacks ([8fb972b](https://github.com/Codeneos/vlocode/commit/8fb972bcc622938952e8076bb9e311eb68e157ce))
+* remove unnecessary matchingKeyFields and ignoreFields from OmniDataTransformItem ([7958f30](https://github.com/Codeneos/vlocode/commit/7958f308dd7b2b3b267a9c5750cf458b82c3ccb9))
+* simplify parent item linking in OmniDataTransformationSpec ([6650613](https://github.com/Codeneos/vlocode/commit/6650613d6ca6204550c0a8e9c8046198a49301fa))
+
 ## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
 
 ### Bug Fixes
