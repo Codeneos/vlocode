@@ -4,6 +4,7 @@ import { Logger } from '@vlocode/core';
 import { removeNamespacePrefix } from '@vlocode/util';
 import { MatchingKeyService } from '../matchingKeyService';
 import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
+import { DatapackExportDefinitions } from '../exportDefinitions';
 
 describe('MatchingKeyService', () => {
 
@@ -176,12 +177,13 @@ describe('MatchingKeyService', () => {
             expect(matchingKey.fields).toEqual([ 'VersionNumber', 'Name' ]);
         });
 
-        it('returns an empty matching key for objects with an explicitly empty built-in default', async () => {
+        it('keeps OmniDataTransformItem key-less with the standard export definitions loaded', async () => {
             const { service } = createService({
                 describes: [ describeOf('OmniDataTransformItem', [
                     field('Name', { nameField: true }),
-                    field('OmniDataTransformId', { type: 'reference', cascadeDelete: true, nillable: false, referenceTo: [ 'OmniDataTransform' ] })
-                ]) ]
+                    field('OmniDataTransformationId', { type: 'reference', cascadeDelete: true, nillable: false, referenceTo: [ 'OmniDataTransform' ] })
+                ]) ],
+                definitions: DatapackExportDefinitions.omniStudioStandard.definitions
             });
 
             const matchingKey = await service.getMatchingKey('OmniDataTransformItem');

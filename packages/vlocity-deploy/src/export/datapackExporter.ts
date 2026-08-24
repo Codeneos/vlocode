@@ -1067,7 +1067,8 @@ export class DatapackExporter {
      */
     private getDatapackValue(obj: any, prop: string): any {
         for (const propertyPath of prop.split(/[|;]/).map(path => path.trim()).filter(Boolean)) {
-            const value = this.getDatapackPathValue(obj, propertyPath.split(/[.:]/));
+            const [root, ...path] = propertyPath.split(/[.:]/);
+            const value = this.getDatapackPathValue(obj, [removeNamespacePrefix(root), ...path]);
 
             if (value !== undefined) {
                 return value;
