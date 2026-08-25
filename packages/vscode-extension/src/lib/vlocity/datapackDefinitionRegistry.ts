@@ -141,13 +141,14 @@ export class DatapackDefinitionRegistry {
         }
 
         this.definitions.load(file.definitions, { scope: file.id });
+        const exportMode = file.id === DatapackExportDefinitions.industries.id ? 'tools' : 'direct';
         this.entries.push({
             id: file.id,
             label: file.label,
             description: file.description,
             definitions: availableDefinitions.map(definition => ({
                 ...definition,
-                exportMode: 'direct',
+                exportMode,
                 scope: file.id
             }))
         });
