@@ -1,6 +1,6 @@
 import { OmniProcessRecord, OmniScriptElementRecord, OmniScriptRecord } from '@vlocode/omniscript';
 import { RecordFactory } from '@vlocode/salesforce';
-import { cache, fileName, filterUndefined, removeNamespacePrefix } from '@vlocode/util';
+import { cache, fileName, filterUndefined, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
 import { OmniSObjectMappings } from './omniStudioMappings';
 import { isDatapackRecord, VlocityDatapack } from '@vlocode/vlocity';
 import { injectable, LogManager } from '@vlocode/core';
@@ -71,7 +71,7 @@ export class OmniStudioConverter {
             );
             if (sourceFields.length) {
                 this.logger.debug(`${sourceType}:${sourceFields.map(({ name }) => name).join('_')} -> ${targetType}:${field}`);
-                covertedData[field] = sourceFields.length > 1 
+                covertedData[field] = sourceFields.length > 1
                     ? sourceFields.map(({ value }) => this.transformDatapackRecordValue(value)).join('_')
                     : this.transformDatapackRecordValue(sourceFields[0].value);
             }
@@ -90,9 +90,9 @@ export class OmniStudioConverter {
         }
         const dataFields = Object.keys(data);        
         const lowerCasedField = field.toLowerCase();
-        const normalizedField = removeNamespacePrefix(field).toLowerCase();
+        const propertyName = normalizeSalesforceName(field).toLowerCase();
         const dataField = dataFields.find(f => f.toLowerCase() === lowerCasedField) ??
-            dataFields.find(f => removeNamespacePrefix(f).toLowerCase() === normalizedField);
+            dataFields.find(f => normalizeSalesforceName(f).toLowerCase() === propertyName);
 
         if (dataField) {
             return { value: data[dataField], name: dataField };
@@ -127,6 +127,37 @@ export class OmniStudioConverter {
         };
     }
 
+    public updateDatapackRecord(target: Record<string, unknown>, source: Record<string, unknown>): void {
+        const targetSObjectType = String(target.VlocityRecordSObjectType);
+        const oppositeMapping = this.getMapping(targetSObjectType);
+        if (!oppositeMapping) {
+            throw new Error(`No OmniStudio runtime mappings found for datapack record: ${targetSObjectType}`);
+        }
+        const targetMapping = this.getMapping(oppositeMapping.sobjectType);
+        if (!targetMapping) {
+            throw new Error(`No reverse OmniStudio runtime mappings found for datapack record: ${targetSObjectType}`);
+        }
+
+        for (const [targetField, oppositeFields] of Object.entries(targetMapping.fields)) {
+            const sourceField = this.getField(source, targetField);
+            if (sourceField?.value !== undefined) {
+                target[targetField] = sourceField.value;
+                continue;
+            }
+
+            const mappedFields = filterUndefined(
+                (Array.isArray(oppositeFields) ? oppositeFields : [oppositeFields]).map(field => this.getField(source, field))
+            );
+            if (mappedFields.length) {
+                target[targetField] = mappedFields.length > 1
+                    ? mappedFields.map(({ value }) => value).join('_')
+                    : mappedFields[0].value;
+            }
+        }
+
+        targetMapping.postProcess?.(target);
+    }
+
     /**
      * Converts a given record to a specified type using OmniStudio runtime mappings.
      *
@@ -153,6 +184,9 @@ export class OmniStudioConverter {
                     ? [ this.getField(record, sourceFieldName) ] 
                     : sourceFieldName.map( f => this.getField(record, f))
             );
+            if (!sourceFields.length) {
+                continue;
+            }
             result[targetField] = sourceFields.length > 1 
                 ? sourceFields.map(({ value }) => value).join('_')
                 : sourceFields[0].value;

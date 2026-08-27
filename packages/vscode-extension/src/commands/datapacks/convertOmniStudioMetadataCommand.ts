@@ -3,13 +3,14 @@ import * as fs from 'fs-extra';
 import * as vscode from 'vscode';
 
 import { container } from '@vlocode/core';
-import { DatapackLoader, getDatapackHeaders, isDatapackRecord, VlocityDatapack } from '@vlocode/vlocity';
-import { DatapackExpander, DatapackExportDefinitionStore, MetadataConverter } from '@vlocode/vlocity-deploy';
-import { getErrorMessage, normalizeName, pluralize } from '@vlocode/util';
+import { DatapackLoader, getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
+import { MetadataConverter } from '@vlocode/vlocity-deploy';
+import { getErrorMessage, pluralize } from '@vlocode/util';
 
 import { VlocodeCommand } from '../../constants';
 import { CommandBase } from '../../lib/commandBase';
 import { vscodeCommand } from '../../lib/commandRouter';
+import { DatapackExpansionService } from '../../lib/vlocity/datapackExpansionService';
 
 interface ConversionResult {
     status: 'converted' | 'failed';
@@ -106,14 +107,7 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
         this.assertSupportedDatapack(datapack);
 
         const outputRoot = this.getWorkspaceRoot(file) ?? path.dirname(file.fsPath);
-        const expander = container.get(DatapackExpander);
-        const scope = container.get(DatapackExportDefinitionStore).getAvailableScopes(datapack)[0];
-        const root = datapack.data;
-        if (!isDatapackRecord(root) || root.VlocityDataPackType !== 'SObject') {
-            throw new Error(`Converted ${datapack.datapackType} metadata did not produce a valid datapack root record.`);
-        }
-        const expanded = expander.expandDatapack(root, { datapackType: datapack.datapackType, scope });
-        const files = await expanded.writeToFilesystem(outputRoot);
+        const files = await container.get(DatapackExpansionService).saveDatapack(datapack, outputRoot);
         const header = files.find(outputFile => /_DataPack\.json$/i.test(outputFile)) ?? files[0];
 
         return {
@@ -142,7 +136,7 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
     private async getMetadataOutputFile(source: vscode.Uri, datapack: VlocityDatapack): Promise<string> {
         const metadataRoot = await this.getMetadataRoot(source);
         const target = this.getMetadataTarget(datapack);
-        return path.join(metadataRoot, target.folder, `${this.getMetadataFileName(datapack)}.${target.extension}`);
+        return path.join(metadataRoot, target.folder, `${this.metadataConverter.getMetadataFileName(datapack)}.${target.extension}`);
     }
 
     private async getMetadataRoot(source: vscode.Uri): Promise<string> {
@@ -167,14 +161,9 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
             return { folder: 'omniDataTransforms', extension: 'rpt-meta.xml' };
         }
         if (this.isIntegrationProcedure(datapack)) {
-            return { folder: 'omniIntegrationProcedures', extension: 'ip-meta.xml' };
+            return { folder: 'omniIntegrationProcedures', extension: 'oip-meta.xml' };
         }
         throw new Error(`Unsupported datapack metadata conversion for ${datapack.sobjectType}`);
-    }
-
-    private getMetadataFileName(datapack: VlocityDatapack): string {
-        const fallback = [datapack.data.Type, datapack.data.SubType, datapack.data.Language].filter(Boolean).join('_');
-        return normalizeName(String(datapack.name || fallback || 'OmniStudioMetadata'));
     }
 
     private assertSupportedDatapack(datapack: VlocityDatapack): void {
@@ -190,6 +179,6 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
     }
 
     private isMetadataXml(fileName: string): boolean {
-        return /\.(rpt|ip)-meta\.xml$/i.test(fileName);
+        return /\.(rpt|oip)-meta\.xml$/i.test(fileName);
     }
 }

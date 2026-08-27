@@ -71,6 +71,23 @@ describe('metadataConverter', () => {
         expect(converted.OmniDataTransformItem[0].OutputFieldName).toBe('account:name');
     });
 
+    it('should parse any valid JSON metadata field when creating a datapack', () => {
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<OmniDataTransform xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>JsonMapper</name>
+    <type>Transform</type>
+    <description>Plain text</description>
+    <expectedInputJson>{"account":{"name":"Acme"}}</expectedInputJson>
+    <expectedOutputJson>[{"customer":"Acme"}]</expectedOutputJson>
+</OmniDataTransform>`;
+
+        const datapack = converter.metadataXmlToDatapack('/metadata/JsonMapper.rpt-meta.xml', xml);
+
+        expect(datapack.Description).toBe('Plain text');
+        expect(datapack.ExpectedInputJson).toEqual({ account: { name: 'Acme' } });
+        expect(datapack.ExpectedOutputJson).toEqual([{ customer: 'Acme' }]);
+    });
+
     it('should convert managed DataRaptor datapacks to standard metadata XML', () => {
         // arrange
         const datapack = new VlocityDatapack('DataRaptor', {
@@ -203,7 +220,7 @@ describe('metadataConverter', () => {
 </OmniIntegrationProcedure>`;
 
         // test
-        const datapack = converter.metadataXmlToDatapack('/metadata/TMF_GetCustomer.ip-meta.xml', xml);
+        const datapack = converter.metadataXmlToDatapack('/metadata/TMF_GetCustomer.oip-meta.xml', xml);
         const convertedXml = converter.datapackToMetadataXml(datapack);
         const converted = XML.parse<Record<string, any>>(convertedXml, {
             arrayMode: path => path.endsWith('omniProcessElements') || path.endsWith('childElements')
@@ -214,6 +231,14 @@ describe('metadataConverter', () => {
         expect(datapack.sobjectType).toBe('OmniProcess');
         expect(datapack.IsIntegrationProcedure).toBe(true);
         expect(datapack.OmniProcessElement).toHaveLength(2);
+        expect(datapack.PropertySetConfig).toEqual({ trackingCustomData: {} });
+        expect(datapack.OmniProcessElement[0].PropertySetConfig).toEqual({
+            remoteClass: 'CustomerController',
+            remoteMethod: 'getIds'
+        });
+        expect(datapack.OmniProcessElement[1].PropertySetConfig).toEqual({
+            elementValueMap: { data: '%GetCustomerIds%' }
+        });
         expect(datapack.OmniProcessElement[1].ParentElementId.VlocityMatchingRecordSourceKey)
             .toBe(datapack.OmniProcessElement[0].VlocityRecordSourceKey);
         expect(converted.name).toBe('TMF_GetCustomer_English');
@@ -222,5 +247,59 @@ describe('metadataConverter', () => {
         expect(convertedXml).not.toContain('&quot;');
         expect(convertedXml).toContain('"remoteClass": "CustomerController"');
         expect(convertedXml).toContain('"elementValueMap": {');
+    });
+
+    it('should use the Integration Procedure metadata full-name convention', () => {
+        const datapack = new VlocityDatapack('IntegrationProcedure', {
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'OmniProcess',
+            Name: 'TMF_632PartyManagementGet_Procedure',
+            Type: 'TMF',
+            SubType: '632PartyManagementGet',
+            Language: 'Procedure',
+            VersionNumber: 1,
+            IsIntegrationProcedure: true,
+            OmniProcessType: 'Integration Procedure'
+        });
+
+        expect(converter.getMetadataFileName(datapack)).toBe('TMF_632PartyManagementGet_Procedure_1');
+    });
+
+    it('should serialize object-valued metadata fields as JSON text instead of XML nodes', () => {
+        const datapack = new VlocityDatapack('IntegrationProcedure', {
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'OmniProcess',
+            VlocityRecordSourceKey: 'OmniProcess/TMF/GetCustomer/English',
+            Name: 'TMF_GetCustomer_English',
+            Type: 'TMF',
+            SubType: 'GetCustomer',
+            Language: 'English',
+            IsIntegrationProcedure: true,
+            OmniProcessType: 'Integration Procedure',
+            DiscoveryFrameworkUsageType: 'Assessment',
+            PropertySetConfig: { trackingCustomData: {} },
+            CustomJavaScript: { enabled: true },
+            OmniProcessElement: [{
+                VlocityDataPackType: 'SObject',
+                VlocityRecordSObjectType: 'OmniProcessElement',
+                VlocityRecordSourceKey: 'OmniProcess/TMF/GetCustomer/English/OmniProcessElement/GetCustomer',
+                Name: 'GetCustomer',
+                Type: 'Remote Action',
+                PropertySetConfig: { remoteClass: 'CustomerController' }
+            }]
+        });
+
+        const xml = converter.datapackToMetadataXml(datapack);
+        const converted = XML.parse<Record<string, any>>(xml, {
+            arrayMode: path => path.endsWith('omniProcessElements')
+        }).OmniIntegrationProcedure;
+
+        expect(converted.propertySetConfig).toBe('{\n    "trackingCustomData": {}\n}');
+        expect(converted.customJavaScript).toBe('{"enabled":true}');
+        expect(converted.omniProcessElements[0].propertySetConfig).toBe('{\n    "remoteClass": "CustomerController"\n}');
+        expect(xml).not.toContain('<trackingCustomData>');
+        expect(xml).not.toContain('<enabled>');
+        expect(xml).not.toContain('<remoteClass>');
+        expect(xml).not.toContain('discoveryFrameworkUsageType');
     });
 });

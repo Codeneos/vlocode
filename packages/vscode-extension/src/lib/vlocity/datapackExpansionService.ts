@@ -44,9 +44,9 @@ export class DatapackExpansionService {
         ]));
     }
 
-    public async saveDatapack(datapack: VlocityDatapack): Promise<void> {
+    public async saveDatapack(datapack: VlocityDatapack, targetPath = this.projectFolder(datapack)): Promise<string[]> {
         const expanded = this.expand(datapack);
-        await expanded.writeToFilesystem(this.projectFolder(datapack));
+        return expanded.writeToFilesystem(targetPath);
     }
 
     private expand(datapack: VlocityDatapack): DatapackExpandResult {

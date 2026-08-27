@@ -35,4 +35,24 @@ describe('DatapackExpansionService', () => {
         });
         expect(JSON.parse(sourceTexts.get('/project/DataRaptor/Foo/Foo_Items.json')!)).toHaveLength(1);
     });
+
+    it('uses the managed Integration Procedure definition without adding language to the folder or header', () => {
+        const service = new DatapackExpansionService();
+        const datapack = new VlocityDatapack('IntegrationProcedure', {
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: '%vlocity_namespace%__OmniScript__c',
+            VlocityRecordSourceKey: 'IntegrationProcedure/TMF/651AgreementManagement/English',
+            '%vlocity_namespace%__Type__c': 'TMF',
+            '%vlocity_namespace%__SubType__c': '651AgreementManagement',
+            '%vlocity_namespace%__Language__c': 'English',
+            '%vlocity_namespace%__Version__c': 1,
+            '%vlocity_namespace%__IsProcedure__c': true
+        }, {
+            projectFolder: '/project'
+        });
+
+        expect(service.sourceFiles(datapack)).toEqual([
+            '/project/IntegrationProcedure/TMF_651AgreementManagement/TMF_651AgreementManagement_DataPack.json'
+        ]);
+    });
 });
