@@ -1,39 +1,34 @@
 import 'jest';
 
-import type { FieldType } from '@vlocode/salesforce';
+import type { FieldType, SalesforceSchemaService } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { container, Logger } from '@vlocode/core';
-import {
-    DatapackExportMatchingKeyProvider,
-    DatapackExportQueries,
-    DatapackExportQuerySalesforce
-} from '../lib/vlocity/datapackExportQueries';
+import { DatapackExportQueries } from '../lib/vlocity/datapackExportQueries';
+import type { MatchingKeyService } from '@vlocode/vlocity-deploy/src/matchingKeyService';
 
 describe('DatapackExportQueries', () => {
 
-    function mockMatchingKeyService(fields: string[] = [ 'Name' ]): DatapackExportMatchingKeyProvider {
+    function mockMatchingKeyService(fields: string[] = [ 'Name' ]): MatchingKeyService {
         return {
             getMatchingKey: async (obj: string) => ({
                 sobjectType: obj,
                 fields: [...fields],
                 returnField: 'Id',
             })
-        };
+        } as unknown as MatchingKeyService;
     }
 
-    function mockSalesforce(fieldTypes?: Record<string, FieldType>, nameField: string = 'Name'): DatapackExportQuerySalesforce {
+    function mockSchema(fieldTypes?: Record<string, FieldType>, nameField: string = 'Name'): SalesforceSchemaService {
         return {
-            schema: {
-                describeSObjectFieldPath: (_obj: string, field: string) => {
-                    const path = field.split('.');
-                    return Promise.resolve(path.map(f => ({
-                        name: f,
-                        type: fieldTypes?.[field] ?? 'string'
-                    })));
-                },
-                getNameField: async () => nameField
-            }
-        };
+            describeSObjectFieldPath: (_obj: string, field: string) => {
+                const path = field.split('.');
+                return Promise.resolve(path.map(f => ({
+                    name: f,
+                    type: fieldTypes?.[field] ?? 'string'
+                })));
+            },
+            getNameField: async () => nameField
+        } as unknown as SalesforceSchemaService;
     }
 
     beforeAll(() => {
@@ -45,7 +40,7 @@ describe('DatapackExportQueries', () => {
             // Arrange
             const types = { '%vlocity_namespace%__Version__c': 'double' } satisfies Record<string, FieldType>;
             const fieds = [ 'Name', '%vlocity_namespace%__Version__c', '%vlocity_namespace%__Author__c' ];
-            const sut = new DatapackExportQueries(mockMatchingKeyService(fieds), mockSalesforce(types), Logger.null);
+            const sut = new DatapackExportQueries(mockMatchingKeyService(fieds), mockSchema(types), Logger.null);
             const entry = {
                 datapackType: 'VlocityCard',
                 sobjectType: '%vlocity_namespace%__VlocityCard__c',
@@ -59,7 +54,7 @@ describe('DatapackExportQueries', () => {
             const result = await sut.getQuery(entry);
 
             // Assert
-            expect(result).toStrictEqual(
+            expect(result.toString()).toStrictEqual(
                 `select Id, Name, LastModifiedDate, %vlocity_namespace%__Version__c, ` +
                 `%vlocity_namespace%__Active__c, %vlocity_namespace%__Author__c from %vlocity_namespace%__VlocityCard__c ` +
                 `where Name = 'Test' and %vlocity_namespace%__Version__c = null and %vlocity_namespace%__Author__c = 'Vlocode'`
@@ -67,48 +62,47 @@ describe('DatapackExportQueries', () => {
         });
 
         it('supports standard OmniDataTransform datapacks', async () => {
-            const sut = new DatapackExportQueries(mockMatchingKeyService(), mockSalesforce(), Logger.null);
+            const sut = new DatapackExportQueries(mockMatchingKeyService(), mockSchema(), Logger.null);
             const result = await sut.getQuery({
                 datapackType: 'OmniDataTransform',
                 sobjectType: 'OmniDataTransform',
                 name: 'ExampleMapper'
             });
 
-            expect(result).toStrictEqual(
+            expect(result.toString()).toStrictEqual(
                 `select Id, Name from OmniDataTransform where Name = 'ExampleMapper'`
             );
         });
 
-        it('uses the selected definition and scope for record matching', async () => {
+        it('passes the selected definition scope without making matching keys datapack-type aware', async () => {
             const getMatchingKey = jest.fn(async (sobjectType: string) => ({
                 sobjectType,
-                fields: [ 'ExternalId__c' ],
+                fields: [ 'ProductCode' ],
                 returnField: 'Id'
             }));
-            const sut = new DatapackExportQueries({ getMatchingKey }, mockSalesforce(), Logger.null);
+            const sut = new DatapackExportQueries({ getMatchingKey } as unknown as MatchingKeyService, mockSchema(), Logger.null);
 
             const datapack = {
-                datapackType: 'Account',
-                sobjectType: 'Account',
+                datapackType: 'Product2',
+                sobjectType: 'Product2',
                 exportDefinitionScope: '/workspace/export-definitions.yaml',
                 datapackDefinition: {
-                    datapackType: 'Account',
-                    typeLabel: 'Accounts',
+                    datapackType: 'Product2',
+                    typeLabel: 'Products',
                     source: {
-                        sobjectType: 'Account',
+                        sobjectType: 'Product2',
                         fieldList: [ 'Id', 'CustomLabel__c' ]
                     }
                 },
-                ExternalId__c: 'EXT-1'
+                ProductCode: 'SKU-1'
             };
             const result = await sut.getQuery(datapack);
 
-            expect(getMatchingKey).toHaveBeenCalledWith('Account', {
-                datapackType: 'Account',
+            expect(getMatchingKey).toHaveBeenCalledWith('Product2', {
                 scope: '/workspace/export-definitions.yaml'
             });
             expect(result).toBe(
-                `select Id, CustomLabel__c, Name, ExternalId__c from Account where ExternalId__c = 'EXT-1'`
+                `select Id, CustomLabel__c, Name, ProductCode from Product2 where ProductCode = 'SKU-1'`
             );
         });
     });

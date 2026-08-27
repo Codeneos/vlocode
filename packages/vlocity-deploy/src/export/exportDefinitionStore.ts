@@ -9,7 +9,7 @@ type DatapackExportDefinitionStoreEntry = DatapackExportDefinition & {
     scope?: string;
 }
 
-type DatapackExportDefinitionMap = Record<string, DatapackExportDefinitionStoreEntry>;
+type DatapackExportDefinitionMap = Record<string, Record<string, DatapackExportDefinitionStoreEntry>>;
 
 const GLOBAL_SCOPE = Symbol('$global');
 const SOBJECT_TYPE = 'SObject';
@@ -24,7 +24,9 @@ export class DatapackExportDefinitionStore {
 
     /**
      * Scoped configuration for specific contexts such as Datapack types or other custom scopes.
-     * The first level key represents the scope name and the second level key the Datapack type.
+     * Definitions are indexed by scope, Datapack type, and normalized SObject type. The SObject
+     * dimension allows standard and managed runtime definitions for the same Datapack type to
+     * coexist in one scope.
      */
     private config: Record<string | symbol, DatapackExportDefinitionMap> = {
         [GLOBAL_SCOPE]: {}
@@ -50,7 +52,7 @@ export class DatapackExportDefinitionStore {
     public objectDefinitions(): ReadonlyArray<DatapackExportDefinitionStoreEntry> {
         // The global scope is keyed by a symbol which Object.values does not include
         return Reflect.ownKeys(this.config)
-            .flatMap(scope => Object.values(this.config[scope]));
+            .flatMap(scope => Object.values(this.config[scope]).flatMap(Object.values));
     }
 
     /**
@@ -79,12 +81,16 @@ export class DatapackExportDefinitionStore {
         // (the datapack type) to the least specific (the global `SObject` default), preferring the
         // scoped config over the global config for each key.
         const scope = item.scope ?? GLOBAL_SCOPE;
-        const lookupKeys = [item.datapackType ?? item.objectType, item.objectType, SOBJECT_TYPE];
+        const lookupKeys = [
+            { datapackType: item.datapackType ?? item.objectType, objectType: item.objectType },
+            { datapackType: item.objectType, objectType: item.objectType },
+            { datapackType: SOBJECT_TYPE, objectType: SOBJECT_TYPE }
+        ];
         const lookupScopes: Array<string | symbol> = scope === GLOBAL_SCOPE ? [GLOBAL_SCOPE] : [scope, GLOBAL_SCOPE];
 
         for (const lookupKey of lookupKeys) {
             for (const lookupScope of lookupScopes) {
-                const definition = this.config[lookupScope]?.[lookupKey];
+                const definition = this.getDefinition(lookupScope, lookupKey.datapackType, lookupKey.objectType);
                 if (definition && key in definition) {
                     return definition[key];
                 }
@@ -101,9 +107,11 @@ export class DatapackExportDefinitionStore {
     public getDatapackTypes(context: { objectType: string, scope?: string }) : { datapackType: string, scope?: string }[] {
         const matchingTypes: { datapackType: string, scope?: string }[] = [];
         const types = this.config[context.scope ?? GLOBAL_SCOPE];
-        for (const [datapackType, config] of Object.entries(types)) {
-            if (config.objectType === context.objectType) {
-                matchingTypes.push({ datapackType, scope: context.scope });
+        const normalizedObjectType = normalizeSObjectTypeName(context.objectType);
+        for (const definitions of Object.values(types)) {
+            const config = definitions[normalizedObjectType];
+            if (config) {
+                matchingTypes.push({ datapackType: config.datapackType, scope: context.scope });
             }
         }
 
@@ -127,7 +135,11 @@ export class DatapackExportDefinitionStore {
     public getAvailableScopes(context: { datapackType: string, objectType?: string }) : string[] {
         const scopes: string[] = [];
         for (const [scope, types] of Object.entries(this.config)) {
-            if (types[context.datapackType] && (!context.objectType || types[context.datapackType].objectType === context.objectType)) {
+            const definitions = types[context.datapackType];
+            const available = context.objectType
+                ? definitions?.[normalizeSObjectTypeName(context.objectType)]
+                : definitions && Object.keys(definitions).length > 0;
+            if (available) {
                 scopes.push(scope);
             }
         }
@@ -142,15 +154,17 @@ export class DatapackExportDefinitionStore {
      */
     public add(definition: DatapackExportDefinition, context: { datapackType?: string, scope?: string }) {
         const datapackType = context.datapackType ?? definition.objectType;
-        const config = Object.assign(deepClone(definition), context);
+        const config = Object.assign(deepClone(definition), context, { datapackType });
         if (config.matchingKeyFields !== undefined) {
             // Normalize as loaded YAML definitions can specify a single field as scalar value
             config.matchingKeyFields = asArray(config.matchingKeyFields).map(String);
         }
-        this.getDefinitionStore(context)[datapackType] = config;
+        const definitions = this.getDefinitionStore(context);
+        const objectType = normalizeSObjectTypeName(config.objectType ?? datapackType);
+        (definitions[datapackType] ??= {})[objectType] = config;
     }
 
-    private getDefinitionStore(scope: string | undefined | { scope?: string | undefined }): Record<string, DatapackExportDefinition> {
+    private getDefinitionStore(scope: string | undefined | { scope?: string | undefined }): DatapackExportDefinitionMap {
         scope = typeof scope === 'string' ? scope : scope?.scope;
         if (scope) {
             if (!this.config[scope]) {
@@ -211,19 +225,24 @@ export class DatapackExportDefinitionStore {
 
         for (const scope of scopes) {
             const definitions = this.config[scope] ?? {};
-            const selected = item.datapackType ? definitions[item.datapackType] : undefined;
-            if (selected?.objectType && normalizeSObjectTypeName(selected.objectType) === normalizedType) {
+            const selected = item.datapackType ? definitions[item.datapackType]?.[normalizedType] : undefined;
+            if (selected) {
                 yield selected;
                 // An explicitly selected definition must not inherit matching-key settings from a
                 // sibling datapack type merely because both types are backed by the same SObject.
                 continue;
             }
-            for (const definition of Object.values(definitions)) {
-                if (definition.objectType && normalizeSObjectTypeName(definition.objectType) === normalizedType) {
+            for (const objectDefinitions of Object.values(definitions)) {
+                const definition = objectDefinitions[normalizedType];
+                if (definition) {
                     yield definition;
                 }
             }
         }
+    }
+
+    private getDefinition(scope: string | symbol, datapackType: string, objectType: string) {
+        return this.config[scope]?.[datapackType]?.[normalizeSObjectTypeName(objectType)];
     }
 
     public getFieldConfig(item: ObjectRef, field: string, configKey?: keyof ExportFieldDefinition) {

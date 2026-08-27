@@ -37,7 +37,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
             return;
         }
         const typeDefinition = definitions.get(datapack) ?? getDatapackTypeDefinition(datapack);
-        const matchingRecords = await this.datapackService.getDatapackRecords(this.asObjectEntry(datapack, typeDefinition));
+        const matchingRecords = await this.datapackService.getDatapackRecords(datapack);
         if (!matchingRecords.length) {
             void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; datapack might not be deployed on target org.');
             return;

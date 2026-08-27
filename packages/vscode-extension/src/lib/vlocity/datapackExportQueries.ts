@@ -1,35 +1,22 @@
 import { injectable, inject, Logger } from "@vlocode/core";
-import { QueryBuilder, QueryService, SalesforceService, type FieldType } from "@vlocode/salesforce";
+import { QueryBuilder, QueryService, type FieldType, SalesforceSchemaService } from "@vlocode/salesforce";
 import { DatapackTypeDefinitions } from "@vlocode/vlocity";
 import { MatchingKeyService } from "@vlocode/vlocity-deploy";
 import { ObjectEntry } from './vlocityDatapackService';
 import { deepClone, removeNamespacePrefix } from '@vlocode/util';
 
-export interface DatapackExportMatchingKeyProvider {
-    getMatchingKey(
-        sobjectType: string,
-        context?: { datapackType?: string; scope?: string }
-    ): Promise<{ sobjectType: string; fields: readonly string[]; returnField: string }>;
-}
 
 export interface DatapackExportQueryField {
     readonly name: string;
     readonly type: FieldType;
 }
 
-export interface DatapackExportQuerySalesforce {
-    readonly schema: {
-        describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound?: boolean): Promise<readonly DatapackExportQueryField[] | undefined>;
-        getNameField(sobjectType: string): Promise<string | undefined>;
-    };
-}
-
 @injectable()
 export class DatapackExportQueries {
 
     constructor(
-        @inject(MatchingKeyService) private readonly matchingKeys: DatapackExportMatchingKeyProvider,
-        @inject(SalesforceService) private readonly salesforce: DatapackExportQuerySalesforce,
+        @inject(MatchingKeyService) private readonly matchingKeys: MatchingKeyService,
+        @inject(SalesforceSchemaService) private readonly schema: SalesforceSchemaService,
         private readonly logger: Logger) {
     }
 
@@ -38,7 +25,7 @@ export class DatapackExportQueries {
      * @param datapack Datapack like objects that has a datapack type and datapack data fields
      * @returns Export query
      */
-    public async getQuery(datapack: ObjectEntry): Promise<string> {
+    public async getQuery(datapack: ObjectEntry): Promise<QueryBuilder> {
         const exportDefinition = datapack.datapackDefinition ?? this.getExportDefinition(datapack.datapackType, datapack.sobjectType);
         const query = new QueryBuilder(
             deepClone(exportDefinition?.source) ?? {
@@ -46,12 +33,9 @@ export class DatapackExportQueries {
                 fieldList: [ 'Id' ],
             }
         );
-        const matchingKey = await this.matchingKeys.getMatchingKey(datapack.sobjectType, {
-            datapackType: datapack.datapackType,
-            scope: datapack.exportDefinitionScope
-        });
+        const matchingKey = await this.matchingKeys.getMatchingKey(datapack.sobjectType);
         const matchingFields = [ ...matchingKey.fields ];
-        const nameField = await this.salesforce.schema.getNameField(datapack.sobjectType);
+        const nameField = await this.schema.getNameField(datapack.sobjectType);
 
         if (!matchingFields.length && nameField) {
             matchingFields.push(nameField);
@@ -70,7 +54,7 @@ export class DatapackExportQueries {
             const missingMatchingKeys = new Array<string>();
 
             for (const field of matchingFields) {
-                const fieldDescribe = await this.salesforce.schema.describeSObjectFieldPath(query.sobjectType, field, false);
+                const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field, false);
                 if (!fieldDescribe) {
                     this.logger.warn(`Unable to resolve field ${field} for ${datapack.datapackType} export query`);
                     continue;
@@ -104,7 +88,10 @@ export class DatapackExportQueries {
             }
         }
 
-        return query.getQuery();
+        // Remove any fields that are not present in the schema to avoid query errors
+        await query.validateFields(this.schema);
+        
+        return query;
     }
 
     private getExportDefinition(datapackType: string, sobjectType?: string) {

@@ -411,14 +411,14 @@ export class DatapackExporter {
     }
 
     private asExportResult(datapack: ExportDatapack): ExportResult {
-        return {
+        return this.salesforce.replaceNamespace({
             parentKeys: Object.entries(datapack.foreignKeys).map(([key, id]) => ({ key, id })),
             datapack: datapack.data,
             sourceKey: datapack.data.VlocityRecordSourceKey,
             datapackType: datapack.datapackType,
             objectType: datapack.objectType,
             scope: datapack.scope
-        };
+        });
     }
 
     private expand(exportResults: ExportResult[] = [], context?: DatapackExportOptions): DatapackExpandResult[] {
@@ -566,9 +566,8 @@ export class DatapackExporter {
     }
 
     private setDatapackField(datapack: ExportDatapack, fieldName: string, value: any) {
-        // Normalize the value
+        // Parse JSON values
         if (typeof value === 'string') {
-            value = this.salesforce.replaceNamespace(value);
             value = this.tryParseAsJson(value) ?? value;
         }
 
@@ -1117,7 +1116,7 @@ export class DatapackExporter {
         }
 
         const describe = await this.salesforce.schema.describeSObjectById(data.id);
-        const fields = (await this.matchingKeyService.getMatchingKey(describe.name)).fields;
+        const fields = (await this.matchingKeyService.getMatchingKey(describe.name, { scope: datapack.scope })).fields;
         const matchingKeyObject = {};
 
         for (const fieldName of fields) {
@@ -1269,10 +1268,7 @@ export class DatapackExporter {
         // Matching keys are deterministic: reference fields resolve to the referenced record's
         // matching key, so concurrent resolutions of the same record compute the same key and
         // the cache updates below are idempotent.
-        const matchingKeyFields = (await this.matchingKeyService.getMatchingKey(
-            describe.name,
-            options?.datapackType ? { scope, datapackType: options.datapackType } : undefined
-        )).fields;
+        const matchingKeyFields = (await this.matchingKeyService.getMatchingKey(describe.name, { scope })).fields;
         if (!matchingKeyFields.length) {
             // Key-less object: either explicitly configured as such or no matching key could be determined
             if (!allowGeneratedKey) {
@@ -1409,7 +1405,7 @@ export class DatapackExporter {
             return;
         }
         const describe = await this.salesforce.schema.describeSObjectById(id);
-        for (const fieldName of (await this.matchingKeyService.getMatchingKey(describe.name)).fields) {
+        for (const fieldName of (await this.matchingKeyService.getMatchingKey(describe.name, { scope })).fields) {
             const value = record[fieldName];
             if (!value || typeof value !== 'string') {
                 continue;

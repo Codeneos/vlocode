@@ -5,11 +5,16 @@ definitions:
   OmniScript: &managedOmniScriptBase
     objectType: '%vlocity_namespace%__OmniScript__c'
     name:
-      - Name
+      - '%vlocity_namespace%__Type__c'
+      - '%vlocity_namespace%__SubType__c'
+      - '%vlocity_namespace%__Language__c'
     matchingKeyFields:
       - '%vlocity_namespace%__Type__c'
       - '%vlocity_namespace%__SubType__c'
       - '%vlocity_namespace%__Language__c'
+      - '%vlocity_namespace%__Version__c'
+    filter:
+      '%vlocity_namespace%__IsProcedure__c': false
     ignoreFields:
       - '%vlocity_namespace%__IsActive__c'
     fields:
@@ -35,9 +40,15 @@ definitions:
 
   IntegrationProcedure:
     <<: *managedOmniScriptBase
+    name:
+      - '%vlocity_namespace%__Type__c'
+      - '%vlocity_namespace%__SubType__c'
+    filter:
+      '%vlocity_namespace%__IsProcedure__c': true
     matchingKeyFields:
       - '%vlocity_namespace%__Type__c'
       - '%vlocity_namespace%__SubType__c'
+      - '%vlocity_namespace%__Language__c'
       - '%vlocity_namespace%__Version__c'
 
   DataRaptor: &managedDataRaptor

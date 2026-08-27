@@ -72,9 +72,8 @@ export abstract class DatapackCommand extends CommandBase {
     ) {
         const getDefinition = (datapack: VlocityDatapack) =>
             options?.definitions?.get(datapack) ?? getDatapackTypeDefinition(datapack);
-        const queryEntries = datapacks.map(datapack => this.asObjectEntry(datapack, getDefinition(datapack)));
 
-        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(queryEntries), async (matchedRecords, i) => {
+        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) => {
             const type = getDefinition(datapacks[i]);
             if (!type) {
                 return matchedRecords[0];
@@ -97,19 +96,6 @@ export abstract class DatapackCommand extends CommandBase {
                 datapackDefinition: type
             };
         });
-    }
-
-    protected asObjectEntry(datapack: VlocityDatapack, definition?: DatapackTypeDefinition): ObjectEntry {
-        return {
-            ...datapack.data,
-            sobjectType: definition?.source.sobjectType ?? datapack.sobjectType,
-            datapackType: definition?.datapackType ?? datapack.datapackType,
-            globalKey: datapack.globalKey,
-            name: datapack.name,
-            exportMode: definition?.exportMode,
-            exportDefinitionScope: definition?.scope,
-            datapackDefinition: definition
-        };
     }
 
     /**

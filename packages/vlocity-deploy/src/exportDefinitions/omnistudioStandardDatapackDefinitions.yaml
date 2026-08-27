@@ -5,11 +5,14 @@ definitions:
   OmniScript: &omniProcessBase
     objectType: OmniProcess
     name:
-      - Name
+      - Type
+      - SubType
+      - Language
     matchingKeyFields:
       - Type
       - SubType
       - Language
+      - Version
     filter:
       IsIntegrationProcedure: false
     fields:
@@ -34,11 +37,16 @@ definitions:
 
   IntegrationProcedure:
     <<: *omniProcessBase
+    name:
+      - Type
+      - SubType
     filter:
       IsIntegrationProcedure: true
     matchingKeyFields:
       - Type
       - SubType
+      - Language
+      - Version
 
   DataRaptor: &omniDataTransform
     objectType: OmniDataTransform

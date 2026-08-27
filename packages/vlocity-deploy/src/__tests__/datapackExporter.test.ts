@@ -1,6 +1,7 @@
 import 'jest';
 import * as path from 'path';
 
+import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { DatapackExporter } from '../export/datapackExporter';
 import { DatapackExpander } from '../export/datapackExpander';
 import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
@@ -80,7 +81,7 @@ describe('DatapackExporter', () => {
                 describeSObjectField: jest.fn(async (type: string, fieldName: string) =>
                     findDescribeField(describeFor(type), fieldName))
             },
-            replaceNamespace: jest.fn((value: string) => value)
+            replaceNamespace: jest.fn((value: any) => value)
         };
         const matchingKeys = {
             getMatchingKey: jest.fn(async (type: string) => ({
@@ -136,6 +137,37 @@ describe('DatapackExporter', () => {
             Count__c: 0,
             Optional__c: null
         });
+    });
+
+    it('replaces namespaces in the complete export result', () => {
+        const { exporter, salesforce } = createExporter();
+        const namespaceService = new VlocityNamespaceService('vlocity_cmt');
+        salesforce.replaceNamespace.mockImplementation((value: string | object) => typeof value === 'string'
+            ? namespaceService.replaceNamespace(value)
+            : namespaceService.replaceObjectNamespace(value));
+
+        const result = exporter.asExportResult({
+            datapackType: 'OmniScript',
+            objectType: 'vlocity_cmt__OmniScript__c',
+            scope: 'managed',
+            foreignKeys: {
+                'vlocity_cmt__OmniScript__c/Parent': 'a0j000000000002AAA'
+            },
+            data: {
+                VlocityDataPackType: 'SObject',
+                VlocityRecordSObjectType: 'vlocity_cmt__OmniScript__c',
+                VlocityRecordSourceKey: 'vlocity_cmt__OmniScript__c/Procedure',
+                PropertySetConfig: {
+                    type: 'vlocity_cmt__Element__c'
+                }
+            }
+        });
+
+        expect(JSON.stringify(result)).not.toContain('vlocity_cmt__');
+        expect(result.datapack.VlocityRecordSObjectType).toBe('%vlocity_namespace%__OmniScript__c');
+        expect(result.datapack.VlocityRecordSourceKey).toBe('%vlocity_namespace%__OmniScript__c/Procedure');
+        expect(result.sourceKey).toBe('%vlocity_namespace%__OmniScript__c/Procedure');
+        expect(result.parentKeys[0].key).toBe('%vlocity_namespace%__OmniScript__c/Parent');
     });
 
     it.each([
@@ -1156,7 +1188,7 @@ describe('DatapackExporter', () => {
         expect(expander.expandDatapack).toHaveBeenCalledWith(datapack, { scope: 'std' });
     });
 
-    it('uses matching keys from the explicitly selected datapack definition', async () => {
+    it('uses the object matching key when exporting a selected datapack definition', async () => {
         const id = '0jN000000000001AAA';
         const describe = {
             name: 'OmniProcess',
@@ -1178,11 +1210,9 @@ describe('DatapackExporter', () => {
                 Language: 'English'
             }]
         });
-        matchingKeys.getMatchingKey.mockImplementation(async (type: string, context?: { datapackType?: string }) => ({
+        matchingKeys.getMatchingKey.mockImplementation(async (type: string) => ({
             sobjectType: type,
-            fields: context?.datapackType === 'IntegrationProcedure'
-                ? [ 'Type', 'SubType' ]
-                : [ 'Type', 'SubType', 'Language' ],
+            fields: [ 'Type', 'SubType', 'Language' ],
             returnField: 'Id'
         }));
 
@@ -1192,11 +1222,8 @@ describe('DatapackExporter', () => {
             datapackType: 'IntegrationProcedure'
         }], { failOnError: true });
 
-        expect(result.sourceKey).toBe('OmniProcess/Integration Procedure/Lookup');
-        expect(matchingKeys.getMatchingKey).toHaveBeenCalledWith('OmniProcess', {
-            scope: 'std',
-            datapackType: 'IntegrationProcedure'
-        });
+        expect(result.sourceKey).toBe('OmniProcess/Integration Procedure/Lookup/English');
+        expect(matchingKeys.getMatchingKey).toHaveBeenCalledWith('OmniProcess', { scope: 'std' });
     });
 
     it('exports lookup-related objects within the selected dependency depth', async () => {

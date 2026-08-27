@@ -2,7 +2,7 @@ import 'jest';
 import * as path from 'path';
 
 import { Logger } from '@vlocode/core';
-import { DatapackExportDefinitionStore } from '@vlocode/vlocity-deploy';
+import { DatapackExportDefinitions, DatapackExportDefinitionStore } from '@vlocode/vlocity-deploy';
 import { DatapackDefinitionRegistry } from '../lib/vlocity/datapackDefinitionRegistry';
 
 describe('DatapackDefinitionRegistry', () => {
@@ -61,13 +61,16 @@ describe('DatapackDefinitionRegistry', () => {
             expect(definitions.objectDefinitions().every(definition => definition.scope === 'omnistudio-standard')).toBe(true);
         });
 
-        it('loads managed OmniStudio and Industries as separate scoped collections', async () => {
+        it('loads managed OmniStudio through direct export and Industries through build tools', async () => {
             const { registry, definitions } = createRegistryForCapabilities({ industries: true });
 
             await registry.loadDatapackDefinitions();
 
             expect(registry.entries.map((entry: any) => entry.id)).toEqual([ 'omnistudio-managed', 'industries' ]);
-            expect(registry.entries.flatMap((entry: any) => entry.definitions).every((definition: any) => definition.exportMode === 'direct')).toBe(true);
+            expect(registry.entries.find((entry: any) => entry.id === 'omnistudio-managed').definitions
+                .every((definition: any) => definition.exportMode === 'direct')).toBe(true);
+            expect(registry.entries.find((entry: any) => entry.id === 'industries').definitions
+                .every((definition: any) => definition.exportMode === 'tools')).toBe(true);
             expect(new Set(definitions.objectDefinitions().map(definition => definition.scope))).toEqual(
                 new Set([ 'omnistudio-managed', 'industries' ])
             );
@@ -116,6 +119,40 @@ describe('DatapackDefinitionRegistry', () => {
     });
 
     describe('toDatapackTypeDefinition', () => {
+        it('keeps native OmniScripts and Integration Procedures in separate explorer queries', () => {
+            const registry = createRegistry();
+            const definitions = DatapackExportDefinitions.omniStudioStandard.definitions;
+
+            const omniScript = registry.toDatapackTypeDefinition('OmniScript', definitions.OmniScript);
+            const integrationProcedure = registry.toDatapackTypeDefinition(
+                'IntegrationProcedure',
+                definitions.IntegrationProcedure
+            );
+
+            expect(omniScript.source.whereCondition).toBe('IsIntegrationProcedure = false');
+            expect(integrationProcedure.source.whereCondition).toBe('IsIntegrationProcedure = true');
+            expect(integrationProcedure.displayName({ Type: 'TMF', SubType: '651AgreementManagement' }))
+                .toBe('TMF 651AgreementManagement');
+        });
+
+        it('keeps managed OmniScripts and Integration Procedures in separate explorer queries', () => {
+            const registry = createRegistry();
+            const definitions = DatapackExportDefinitions.omniStudioManaged.definitions;
+
+            const omniScript = registry.toDatapackTypeDefinition('OmniScript', definitions.OmniScript);
+            const integrationProcedure = registry.toDatapackTypeDefinition(
+                'IntegrationProcedure',
+                definitions.IntegrationProcedure
+            );
+
+            expect(omniScript.source.whereCondition).toBe('%vlocity_namespace%__IsProcedure__c = false');
+            expect(integrationProcedure.source.whereCondition).toBe('%vlocity_namespace%__IsProcedure__c = true');
+            expect(integrationProcedure.displayName({
+                '%vlocity_namespace%__Type__c': 'TMF',
+                '%vlocity_namespace%__SubType__c': '651AgreementManagement'
+            })).toBe('TMF 651AgreementManagement');
+        });
+
         it('uses object filters as explorer where conditions', () => {
             const registry = createRegistry();
 

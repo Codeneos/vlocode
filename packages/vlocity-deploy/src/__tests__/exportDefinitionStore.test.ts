@@ -4,6 +4,50 @@ import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
 
 describe('DatapackExportDefinitionStore', () => {
 
+    describe('definition identity', () => {
+        it('keeps definitions for different SObject runtimes under the same Datapack type and scope', () => {
+            const store = new DatapackExportDefinitionStore();
+            store.load({
+                IntegrationProcedure: {
+                    objectType: 'OmniProcess',
+                    name: [ 'Type', 'SubType' ]
+                }
+            }, { scope: 'runtime' });
+            store.load({
+                IntegrationProcedure: {
+                    objectType: '%vlocity_namespace%__OmniScript__c',
+                    name: [ '%vlocity_namespace%__Type__c', '%vlocity_namespace%__SubType__c' ]
+                }
+            }, { scope: 'runtime' });
+
+            expect(store.getName({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'OmniProcess',
+                scope: 'runtime'
+            })).toEqual([ 'Type', 'SubType' ]);
+            expect(store.getName({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'vlocity_cmt__OmniScript__c',
+                scope: 'runtime'
+            })).toEqual([ '%vlocity_namespace%__Type__c', '%vlocity_namespace%__SubType__c' ]);
+            expect(store.getAvailableScopes({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'OmniProcess'
+            })).toEqual([ 'runtime' ]);
+            expect(store.getAvailableScopes({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'Unrelated__c'
+            })).toEqual([]);
+            expect(store.getDatapackTypes({ objectType: 'OmniProcess', scope: 'runtime' })).toEqual([
+                { datapackType: 'IntegrationProcedure', scope: 'runtime' }
+            ]);
+            expect(store.getDatapackTypes({ objectType: 'vlocity_cmt__OmniScript__c', scope: 'runtime' })).toEqual([
+                { datapackType: 'IntegrationProcedure', scope: 'runtime' }
+            ]);
+            expect(store.objectDefinitions()).toHaveLength(2);
+        });
+    });
+
     describe('#getMatchingKeyFields', () => {
         it('should accept a scalar matchingKeyFields value as a single field', () => {
             const store = new DatapackExportDefinitionStore();
