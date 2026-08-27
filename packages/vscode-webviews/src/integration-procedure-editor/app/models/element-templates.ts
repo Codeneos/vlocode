@@ -1,4 +1,5 @@
-import type { ElementTemplate, IntegrationProcedureElement } from './integration-procedure.model';
+import type { OmniScriptElementRecord } from '@vlocode/omniscript';
+import type { ElementTemplate } from './integration-procedure.model';
 import { asRecord, stringifyValue } from './property-set';
 
 export const ELEMENT_TEMPLATES: ElementTemplate[] = [
@@ -31,7 +32,7 @@ export function groupTemplates(templates: ElementTemplate[]) {
     return groups;
 }
 
-export function uniqueElementName(elements: IntegrationProcedureElement[], baseName: string) {
+export function uniqueElementName(elements: OmniScriptElementRecord[], baseName: string) {
     const existing = new Set(elements.map(element => element.name.toLowerCase()));
     let name = baseName.replace(/\s+/g, '');
     let index = 1;
@@ -66,7 +67,7 @@ export function defaultPropertySet(type: string, name: string): Record<string, u
     return common;
 }
 
-export function elementSummary(element: IntegrationProcedureElement) {
+export function elementSummary(element: OmniScriptElementRecord) {
     const propertySet = element.propertySet;
     if (element.type === 'Remote Action') {
         return [propertySet.remoteClass, propertySet.remoteMethod].filter(Boolean).join('.');

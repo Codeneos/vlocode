@@ -26,6 +26,7 @@
         "@angular/core": "^21.2.11",
         "@angular/forms": "^21.2.11",
         "@angular/platform-browser": "^21.2.11",
+        "@vlocode/omniscript": "workspace:*",
         "@vlocode/vlocity": "workspace:*",
         "@vscode/codicons": "^0.0.45",
         "monaco-editor": "^0.55.1",

@@ -1,5 +1,5 @@
 import { OmniScriptDefinition, OmniScriptElementDefinition } from './types';
-import { deepClone, getErrorMessage, Iterable } from '@vlocode/util';
+import { deepClone, Iterable } from '@vlocode/util';
 import { OmniScriptElementRecord, OmniScriptRecord } from './types/omniScript';
 
 type DefinitionRecordMapping<TRec> = Record<string, 
@@ -27,7 +27,7 @@ export class OmniScriptDefinitionFactory {
         'RPBundle': rec => rec.dataRaptorBundleId ?? '',
         'rMap': { value: {} },
         'response': null,
-        'propSetMap': rec => this.parseAsJson(rec, 'propertySet'),
+        'propSetMap': rec => deepClone(rec.propertySet),
         'prefillJSON': '{}',
         'lwcId': { field: 'lwcId' },
         'labelMap': { value: {} },
@@ -50,7 +50,7 @@ export class OmniScriptDefinitionFactory {
 
     private elementMapping: DefinitionRecordMapping<OmniScriptElementRecord> = {
         'type': { field: 'type' },
-        'propSetMap': rec => this.parseAsJson(rec, 'propertySet'),
+        'propSetMap': rec => deepClone(rec.propertySet),
         'name': { field: 'name' },
         'level': { field: 'level' },
         'indexInParent': 0,
@@ -106,18 +106,4 @@ export class OmniScriptDefinitionFactory {
         return definition as TOut;
     }
 
-    private parseAsJson<T>(record: T, field: keyof T): object | null {
-        const value = record[field];
-        if (!value) {
-            return {};
-        } else if (typeof value !== 'string' || value === 'null') {
-            return null;
-        }
-
-        try {
-            return JSON.parse(value);
-        } catch (err) {
-            throw new Error(`Unable to parse field ${String(field)} for record with Id ${record['Id']} as JSON: ${getErrorMessage(err)}`);
-        }
-    }
 }

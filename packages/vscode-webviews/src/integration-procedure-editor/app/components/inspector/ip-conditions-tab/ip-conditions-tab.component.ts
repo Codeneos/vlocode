@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import type { OmniScriptElementRecord } from '@vlocode/omniscript';
 
 import { VlocodeFormulaEditorComponent } from '../../../../../shared/components/formula-editor/formula-editor.component';
 import { inputChecked } from '../../../../../shared/utils/dom-events';
-import type { IntegrationProcedureElement, PropertyValueChange } from '../../../models/integration-procedure.model';
+import type { PropertyValueChange } from '../../../models/integration-procedure.model';
 import { stringifyValue } from '../../../models/property-set';
 
 @Component({
@@ -14,7 +15,7 @@ import { stringifyValue } from '../../../models/property-set';
 })
 export class IpConditionsTabComponent {
     readonly propertySet = input.required<Record<string, unknown>>();
-    readonly selectedElement = input<IntegrationProcedureElement | undefined>();
+    readonly selectedElement = input<OmniScriptElementRecord | undefined>();
 
     readonly procedurePropertyChange = output<PropertyValueChange>();
     readonly propertyChange = output<PropertyValueChange>();

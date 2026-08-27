@@ -31,21 +31,21 @@
                             <span class="codicon codicon-server-process" aria-hidden="true"></span>
                             <span>Procedure</span>
                         </button>
-                        @for (row of outlineRows(); track row.element.key) {
+                        @for (row of outlineRows(); track row.element.id) {
                             <button
                                 type="button"
                                 class="ip-outline__row"
                                 draggable="true"
-                                [class.ip-outline__row--active]="selectedKey() === row.element.key"
-                                [class.ip-outline__row--dragging]="draggedKey() === row.element.key"
-                                [class.ip-outline__row--drop-before]="dropTargetKey() === row.element.key && dropPosition() === 'before'"
-                                [class.ip-outline__row--drop-after]="dropTargetKey() === row.element.key && dropPosition() === 'after'"
+                                [class.ip-outline__row--active]="selectedKey() === row.element.id"
+                                [class.ip-outline__row--dragging]="draggedKey() === row.element.id"
+                                [class.ip-outline__row--drop-before]="dropTargetKey() === row.element.id && dropPosition() === 'before'"
+                                [class.ip-outline__row--drop-after]="dropTargetKey() === row.element.id && dropPosition() === 'after'"
                                 [style.padding-left.px]="12 + row.depth * 18"
-                                (click)="selectElement.emit(row.element.key)"
-                                (dragstart)="elementDragStart.emit({ key: row.element.key, event: $event })"
-                                (dragover)="elementDragOver.emit({ key: row.element.key, event: $event })"
-                                (dragleave)="elementDragLeave.emit(row.element.key)"
-                                (drop)="elementDrop.emit({ key: row.element.key, event: $event })"
+                                (click)="selectElement.emit(row.element.id)"
+                                (dragstart)="elementDragStart.emit({ key: row.element.id, event: $event })"
+                                (dragover)="elementDragOver.emit({ key: row.element.id, event: $event })"
+                                (dragleave)="elementDragLeave.emit(row.element.id)"
+                                (drop)="elementDrop.emit({ key: row.element.id, event: $event })"
                                 (dragend)="dragEnd.emit()">
                                 <span [ngClass]="['codicon', 'codicon-' + iconForType(row.element.type)]" aria-hidden="true"></span>
                                 <span>{{ row.element.name }}</span>

@@ -11,11 +11,15 @@ export interface OmniScriptRecord extends Required<OmniScriptSpecification> {
     isReusable: boolean;
     isActive: boolean;
     id: string;
+    vlocityRecordSourceKey?: string;
     name: string;
-    propertySet: string;
+    description?: string;
+    requiredPermission?: string;
+    responseCacheType?: string;
+    propertySet: Record<string, unknown>;
     version: number;
     lwcId?: string;
-    omniProcessType: 'OmniScript' | 'IntegrationProcedure';
+    omniProcessType: 'OmniScript' | 'IntegrationProcedure' | 'Integration Procedure';
     customJavaScript: string;
     testHTMLTemplates: string;
     dataRaptorBundleId: string;
@@ -28,14 +32,22 @@ export interface OmniScriptWithElementsRecord extends OmniScriptRecord {
 export interface OmniScriptElementRecord {
     sObjectType: string,
     id: string;
+    vlocityRecordSourceKey?: string;
     omniScriptId: string;
     parentElementId?: string;
     name: string;
     type: string;
     active: boolean;
+    description?: string;
+    uniqueIndex?: string;
     order: number;
     level: number;
-    propertySet: string;
+    propertySet: Record<string, unknown>;
+}
+
+export interface OmniScriptDatapackOptions {
+    /** Preserve the activation state stored in the datapack instead of producing an active record. */
+    preserveActivationState?: boolean;
 }
 
 export namespace OmniScriptRecord {
@@ -45,6 +57,9 @@ export namespace OmniScriptRecord {
     export const Fields = [
         'Id', 
         'Name', 
+        '%vlocity_namespace%__AdditionalInformation__c',
+        '%vlocity_namespace%__RequiredPermission__c',
+        '%vlocity_namespace%__ProcedureResponseCacheType__c',
         '%vlocity_namespace%__Version__c', 
         '%vlocity_namespace%__IsActive__c', 
         '%vlocity_namespace%__Type__c',
@@ -58,8 +73,11 @@ export namespace OmniScriptRecord {
         '%vlocity_namespace%__IsLwcEnabled__c',
         '%vlocity_namespace%__IsReusable__c'
     ];
-    export function fromDatapack(datapack: VlocityDatapack): OmniScriptWithElementsRecord {
-        const record = RecordFactory.create(datapack.data);
+    export function fromDatapack(
+        datapack: VlocityDatapack,
+        options?: OmniScriptDatapackOptions
+    ): OmniScriptWithElementsRecord {
+        const record = RecordFactory.create(datapack.data, { useRecordProxy: true });
         let result: OmniScriptRecord;
         let elements: OmniScriptElementRecord[];
         
@@ -73,19 +91,27 @@ export namespace OmniScriptRecord {
             throw new Error(`Unsupported datapack type: ${datapack.sobjectType}`);
         }
         
-        return Object.assign(result, { 
-                isActive: true, 
-                version: result.version ?? 1, 
-                elements 
-            });
+        return Object.assign(result, {
+            isActive: options?.preserveActivationState ? result.isActive : true,
+            version: result.version ?? 1,
+            elements
+        });
     } 
 
-    export function fromScript(record: OmniScriptRecord): OmniScriptRecord {
+    export function fromScript(record: Omit<OmniScriptRecord, 'propertySet'> & {
+        propertySet: unknown;
+        additionalInformation?: string;
+        procedureResponseCacheType?: string;
+    }): OmniScriptRecord {
         return {
             sObjectType: OmniScriptRecord.SObjectType,
             activationField: OmniScriptRecord.ActivationField,
-            id: record.id,
+            id: record.id ?? record.vlocityRecordSourceKey,
+            vlocityRecordSourceKey: record.vlocityRecordSourceKey,
             name: record.name,
+            description: record.description ?? record.additionalInformation,
+            requiredPermission: record.requiredPermission,
+            responseCacheType: record.responseCacheType ?? record.procedureResponseCacheType,
             version: record.version,
             customJavaScript: record.customJavaScript,
             testHTMLTemplates: record.testHTMLTemplates,
@@ -93,7 +119,7 @@ export namespace OmniScriptRecord {
             type: record.type,
             subType: record.subType,
             language: record.language,
-            propertySet: asString(record.propertySet),
+            propertySet: normalizePropertySet(record.propertySet),
             omniProcessType: record.omniProcessType,
             isActive: record.isActive,
             isLwcEnabled: record.isLwcEnabled,
@@ -105,8 +131,12 @@ export namespace OmniScriptRecord {
         return {
             sObjectType: OmniProcessRecord.SObjectType,
             activationField: OmniProcessRecord.ActivationField,
-            id: record.id,
+            id: record.id ?? record.vlocityRecordSourceKey,
+            vlocityRecordSourceKey: record.vlocityRecordSourceKey,
             name: record.name,
+            description: record.description,
+            requiredPermission: record.requiredPermission,
+            responseCacheType: record.responseCacheType,
             version: record.versionNumber,
             customJavaScript: record.customJavaScript,
             testHTMLTemplates: record.customHtmlTemplates,
@@ -114,7 +144,7 @@ export namespace OmniScriptRecord {
             type: record.type,
             subType: record.subType,
             language: record.language,
-            propertySet: asString(record.propertySetConfig),
+            propertySet: normalizePropertySet(record.propertySetConfig),
             omniProcessType: record.omniProcessType,
             isActive: record.isActive,
             isLwcEnabled: record.isWebCompEnabled,
@@ -138,36 +168,47 @@ export namespace OmniScriptElementRecord {
         '%vlocity_namespace%__Order__c', 
         '%vlocity_namespace%__ParentElementId__c', 
         '%vlocity_namespace%__PropertySet__c',
+        '%vlocity_namespace%__InternalNotes__c',
+        '%vlocity_namespace%__SearchKey__c',
         '%vlocity_namespace%__OmniScriptVersion__c', 
     ];
 
-    export function fromScriptElement(record: OmniScriptElementRecord): OmniScriptElementRecord {
+    export function fromScriptElement(record: Omit<OmniScriptElementRecord, 'propertySet' | 'description'> & {
+        propertySet: unknown;
+        internalNotes?: string;
+    }): OmniScriptElementRecord {
         return {
             sObjectType: OmniScriptElementRecord.SObjectType,
-            id: record.id ?? record['VlocityRecordSourceKey'],
+            id: record.id ?? record.vlocityRecordSourceKey,
+            vlocityRecordSourceKey: record.vlocityRecordSourceKey,
             omniScriptId: getLookupValue(record.omniScriptId),
             parentElementId: getLookupValue(record.parentElementId),
             name: record.name,
             type: record.type,
             active: record.active,
+            description: record.internalNotes,
+            uniqueIndex: record.uniqueIndex,
             order: record.order,
             level: record.level,
-            propertySet: asString(record.propertySet)
+            propertySet: normalizePropertySet(record.propertySet)
         };
     }
 
     export function fromProcessElement(record: OmniProcessElementRecord): OmniScriptElementRecord {
         return {
             sObjectType: OmniProcessElementRecord.SObjectType,
-            id: record.id ?? record['VlocityRecordSourceKey'],
+            id: record.id ?? record.vlocityRecordSourceKey,
+            vlocityRecordSourceKey: record.vlocityRecordSourceKey,
             omniScriptId: getLookupValue(record.omniProcessId),
             parentElementId: getLookupValue(record.parentElementId),
             name: record.name,
             type: record.type,
             active: record.isActive,
+            description: record.description,
+            uniqueIndex: record.uniqueIndex,
             order: record.sequenceNumber,
             level: record.level,
-            propertySet: asString(record.propertySetConfig)
+            propertySet: normalizePropertySet(record.propertySetConfig)
         };
     }
 
@@ -180,4 +221,9 @@ export namespace OmniScriptElementRecord {
         }
         return '';
     }
+}
+
+/** Normalize a string- or object-valued DataPack property set to its canonical JSON object form. */
+export function normalizePropertySet(propertySet: unknown): Record<string, unknown> {
+    return JSON.parse(asString(propertySet) || '{}') as Record<string, unknown>;
 }

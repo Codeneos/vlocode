@@ -59,10 +59,10 @@ export class IpFlowNodeComponent {
     protected hasOpenInsertMenu(node: FlowNode) {
         const context = this.insertContext();
         const targetKey = context?.parentKey ?? context?.afterKey;
-        return !!targetKey && (targetKey === node.element.key || this.hasDescendant(node, targetKey));
+        return !!targetKey && (targetKey === node.element.id || this.hasDescendant(node, targetKey));
     }
 
     private hasDescendant(node: FlowNode, key: string): boolean {
-        return node.children.some(child => child.element.key === key || this.hasDescendant(child, key));
+        return node.children.some(child => child.element.id === key || this.hasDescendant(child, key));
     }
 }

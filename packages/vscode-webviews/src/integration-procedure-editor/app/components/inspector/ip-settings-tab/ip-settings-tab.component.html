@@ -131,7 +131,7 @@
         <textarea rows="4" [value]="model().header.description || ''" (input)="headerFieldChange.emit({ field: 'description', value: inputValue($event) })"></textarea>
     </label>
     <label class="ip-switch">
-        <input type="checkbox" [checked]="model().header.active" (change)="headerFieldChange.emit({ field: 'active', value: inputChecked($event) })" />
+        <input type="checkbox" [checked]="model().header.isActive" (change)="headerFieldChange.emit({ field: 'isActive', value: inputChecked($event) })" />
         <span>Active</span>
     </label>
     <label class="ip-field">

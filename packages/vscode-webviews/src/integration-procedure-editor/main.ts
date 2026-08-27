@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
+import type { OmniScriptElementRecord } from '@vlocode/omniscript';
 
 import { VlocodeDialogComponent } from '../shared/components/dialog/dialog.component';
 import { VlocodeEmptyStateComponent } from '../shared/components/empty-state/empty-state.component';
@@ -29,7 +30,6 @@ import {
     type HeaderFieldChange,
     type InspectorTab,
     type InsertContext,
-    type IntegrationProcedureElement,
     type IntegrationProcedureLayout,
     type IntegrationProcedureModel,
     type LeftTab,
@@ -103,16 +103,16 @@ export class AppComponent {
     private resizeCleanup?: () => void;
 
     protected readonly selectedElement = computed(() =>
-        this.model().elements.find(element => element.key === this.selectedKey())
+        this.model().elements.find(element => element.id === this.selectedKey())
     );
 
     protected readonly pendingDeleteElement = computed(() =>
-        this.model().elements.find(element => element.key === this.pendingDeleteKey())
+        this.model().elements.find(element => element.id === this.pendingDeleteKey())
     );
 
     protected readonly pendingDeleteChildCount = computed(() => {
         const element = this.pendingDeleteElement();
-        return element ? this.descendantCount(element.key) : 0;
+        return element ? this.descendantCount(element.id) : 0;
     });
     protected readonly pendingDeleteMessage = computed(() => {
         const childCount = this.pendingDeleteChildCount();
@@ -319,7 +319,7 @@ export class AppComponent {
         if (!selected) {
             return;
         }
-        this.updateElement(selected.key, { [change.field]: change.value } as Partial<IntegrationProcedureElement>);
+        this.updateElement(selected.id, { [change.field]: change.value } as Partial<OmniScriptElementRecord>);
     }
 
     protected updateElementPropertyFromChange(change: PropertyValueChange) {
@@ -331,7 +331,7 @@ export class AppComponent {
         if (!selected) {
             return;
         }
-        this.updateElement(selected.key, {
+        this.updateElement(selected.id, {
             propertySet: setObjectValue(selected.propertySet, field, value)
         });
     }
@@ -383,25 +383,27 @@ export class AppComponent {
 
     protected addElement(type: string, afterKey?: string, parentKey?: string, beforeKey?: string) {
         const model = this.model();
-        const afterElement = afterKey ? model.elements.find(element => element.key === afterKey) : undefined;
-        const beforeElement = beforeKey ? model.elements.find(element => element.key === beforeKey) : undefined;
-        const resolvedParentKey = parentKey ?? afterElement?.parentKey ?? beforeElement?.parentKey;
+        const afterElement = afterKey ? model.elements.find(element => element.id === afterKey) : undefined;
+        const beforeElement = beforeKey ? model.elements.find(element => element.id === beforeKey) : undefined;
+        const resolvedParentKey = parentKey ?? afterElement?.parentElementId ?? beforeElement?.parentElementId;
         const name = uniqueElementName(model.elements, defaultElementName(type));
         const sourceKey = `${model.sourceKey ?? `IntegrationProcedure/${model.header.type}/${model.header.subType}`}/OmniProcessElement/${name}`;
-        const element: IntegrationProcedureElement = {
+        const element: OmniScriptElementRecord = {
             active: true,
-            key: sourceKey,
+            id: sourceKey,
             level: resolvedParentKey ? 1 : 0,
             name,
-            parentKey: resolvedParentKey,
+            omniScriptId: model.header.id,
+            parentElementId: resolvedParentKey,
             propertySet: defaultPropertySet(type, name),
-            sequenceNumber: 1,
-            sourceKey,
-            type
+            order: 1,
+            sObjectType: model.runtime === 'managed' ? '%vlocity_namespace%__Element__c' : 'OmniProcessElement',
+            type,
+            uniqueIndex: name
         };
         const elements = insertElementInFlow(model.elements, element, afterKey, resolvedParentKey, beforeKey);
         this.setModel({ ...model, elements: resequence(elements) });
-        this.selectedKey.set(element.key);
+        this.selectedKey.set(element.id);
         this.leftTab.set('outline');
     }
 
@@ -424,33 +426,33 @@ export class AppComponent {
 
     protected duplicateElement(key: string) {
         const model = this.model();
-        const original = model.elements.find(element => element.key === key);
+        const original = model.elements.find(element => element.id === key);
         if (!original) {
             return;
         }
         const name = uniqueElementName(model.elements, `${original.name}Copy`);
         const sourceKey = `${model.sourceKey ?? 'IntegrationProcedure'}/OmniProcessElement/${name}`;
-        const duplicate: IntegrationProcedureElement = {
+        const duplicate: OmniScriptElementRecord = {
             ...structuredClone(original),
-            key: sourceKey,
-            sourceKey,
+            id: sourceKey,
             name,
+            uniqueIndex: name,
             propertySet: {
                 ...structuredClone(original.propertySet),
                 label: name
             }
         };
-        const index = model.elements.findIndex(element => element.key === key);
+        const index = model.elements.findIndex(element => element.id === key);
         const elements = [...model.elements];
         elements.splice(index + 1, 0, duplicate);
         this.setModel({ ...model, elements: resequence(elements) });
-        this.selectedKey.set(duplicate.key);
+        this.selectedKey.set(duplicate.id);
     }
 
     protected deleteElement(key: string) {
         const model = this.model();
         this.setModel({ ...model, elements: removeElementTree(model.elements, key) });
-        if (this.selectedKey() && !this.model().elements.some(element => element.key === this.selectedKey())) {
+        if (this.selectedKey() && !this.model().elements.some(element => element.id === this.selectedKey())) {
             this.selectedKey.set(undefined);
         }
     }
@@ -688,7 +690,7 @@ export class AppComponent {
             }
             const selected = this.selectedElement();
             if (selected) {
-                this.updateElement(selected.key, { propertySet: parsed });
+                this.updateElement(selected.id, { propertySet: parsed });
             } else {
                 this.updateModel(model => ({ ...model, propertySet: parsed }));
             }
@@ -716,7 +718,7 @@ export class AppComponent {
                 this.hasLoaded.set(true);
                 this.refreshing.set(false);
                 this.error.set(undefined);
-                if (this.selectedKey() && !message.state.model.elements.some(element => element.key === this.selectedKey())) {
+                if (this.selectedKey() && !message.state.model.elements.some(element => element.id === this.selectedKey())) {
                     this.selectedKey.set(undefined);
                 }
                 break;
@@ -758,10 +760,10 @@ export class AppComponent {
         this.setModel(updater(this.model()));
     }
 
-    private updateElement(key: string, patch: Partial<IntegrationProcedureElement>) {
+    private updateElement(key: string, patch: Partial<OmniScriptElementRecord>) {
         this.updateModel(model => ({
             ...model,
-            elements: resequence(model.elements.map(element => element.key === key ? { ...element, ...patch } : element))
+            elements: resequence(model.elements.map(element => element.id === key ? { ...element, ...patch } : element))
         }));
     }
 
@@ -769,13 +771,13 @@ export class AppComponent {
         if (draggedKey === targetKey) {
             return false;
         }
-        const keys = new Set(this.model().elements.map(element => element.key));
+        const keys = new Set(this.model().elements.map(element => element.id));
         return keys.has(draggedKey) && keys.has(targetKey) && !isDescendantOf(this.model().elements, targetKey, draggedKey);
     }
 
     private getDraggedElementKey(event: DragEvent) {
         const key = this.draggedKey() || event.dataTransfer?.getData(DRAG_ELEMENT_MIME) || event.dataTransfer?.getData('text/plain');
-        return this.model().elements.some(element => element.key === key) ? key : undefined;
+        return this.model().elements.some(element => element.id === key) ? key : undefined;
     }
 
     private getDraggedTemplateType(event: DragEvent) {
@@ -784,7 +786,7 @@ export class AppComponent {
     }
 
     private addElementRelative(type: string, targetKey: string, position: Exclude<DropPosition, 'inside'>) {
-        const target = this.model().elements.find(element => element.key === targetKey);
+        const target = this.model().elements.find(element => element.id === targetKey);
         if (!target) {
             return;
         }
@@ -792,7 +794,7 @@ export class AppComponent {
             this.addElement(type, targetKey);
             return;
         }
-        this.addElement(type, undefined, target.parentKey, targetKey);
+        this.addElement(type, undefined, target.parentElementId, targetKey);
     }
 
     private normalizeDropTarget(targetKey: string, position: Exclude<DropPosition, 'inside'>, draggedKey: string) {
@@ -817,13 +819,13 @@ export class AppComponent {
     }
 
     private descendantCount(parentKey: string) {
-        return this.model().elements.filter(element => isDescendantOf(this.model().elements, element.key, parentKey)).length;
+        return this.model().elements.filter(element => isDescendantOf(this.model().elements, element.id, parentKey)).length;
     }
 
     private updateMap(mapName: string, updater: (current: Record<string, unknown>) => Record<string, unknown>) {
         const selected = this.selectedElement();
         if (selected) {
-            this.updateElement(selected.key, {
+            this.updateElement(selected.id, {
                 propertySet: {
                     ...selected.propertySet,
                     [mapName]: updater(asRecord(selected.propertySet[mapName]))

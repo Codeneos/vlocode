@@ -34,10 +34,10 @@
                     <span class="codicon codicon-chevron-right" aria-hidden="true"></span>
                 </button>
                 @if (selectedElement(); as selected) {
-                    <button type="button" class="ip-icon-button" title="Duplicate" (click)="duplicateElement.emit(selected.key)">
+                    <button type="button" class="ip-icon-button" title="Duplicate" (click)="duplicateElement.emit(selected.id)">
                         <span class="codicon codicon-copy" aria-hidden="true"></span>
                     </button>
-                    <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="deleteRequested.emit(selected.key)">
+                    <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="deleteRequested.emit(selected.id)">
                         <span class="codicon codicon-trash" aria-hidden="true"></span>
                     </button>
                 }

@@ -13,7 +13,7 @@
                 <vlo-empty-state title="Start with an action or block" icon="add" actionLabel="Open palette" actionIcon="add" [inline]="true" (action)="openPalette.emit()" />
             </section>
         }
-        @for (node of flowTree(); track node.element.key) {
+        @for (node of flowTree(); track node.element.id) {
             <ip-flow-node
                 [node]="node"
                 [selectedKey]="selectedKey()"

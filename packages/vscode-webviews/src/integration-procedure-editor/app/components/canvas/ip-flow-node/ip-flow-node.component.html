@@ -5,15 +5,15 @@
         <section
             class="ip-child-frame ip-child-frame--group-node"
             draggable="true"
-            [class.ip-child-frame--active]="selectedKey() === node.element.key || hasSelectedDescendant(node)"
-            [class.ip-child-frame--dragging]="draggedKey() === node.element.key"
-            [class.ip-child-frame--drop-before]="dropTargetKey() === node.element.key && dropPosition() === 'before'"
+            [class.ip-child-frame--active]="selectedKey() === node.element.id || hasSelectedDescendant(node)"
+            [class.ip-child-frame--dragging]="draggedKey() === node.element.id"
+            [class.ip-child-frame--drop-before]="dropTargetKey() === node.element.id && dropPosition() === 'before'"
             [class.ip-child-frame--menu-open]="hasOpenInsertMenu(node)"
-            (click)="$event.stopPropagation(); selectElement.emit(node.element.key)"
-            (dragstart)="elementDragStart.emit({ key: node.element.key, event: $event })"
-            (dragover)="elementDragOver.emit({ key: node.element.key, event: $event })"
-            (dragleave)="elementDragLeave.emit(node.element.key)"
-            (drop)="elementDrop.emit({ key: node.element.key, event: $event })"
+            (click)="$event.stopPropagation(); selectElement.emit(node.element.id)"
+            (dragstart)="elementDragStart.emit({ key: node.element.id, event: $event })"
+            (dragover)="elementDragOver.emit({ key: node.element.id, event: $event })"
+            (dragleave)="elementDragLeave.emit(node.element.id)"
+            (drop)="elementDrop.emit({ key: node.element.id, event: $event })"
             (dragend)="dragEnd.emit()">
             <header class="ip-child-frame__label" title="Select and drag {{ node.element.name }}">
                 <span [ngClass]="['codicon', 'codicon-' + iconForType(node.element.type)]" aria-hidden="true"></span>
@@ -26,11 +26,11 @@
                 <span class="codicon codicon-gripper" aria-hidden="true"></span>
             </header>
             <div class="ip-child-frame__actions">
-                <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete group" (click)="$event.stopPropagation(); deleteRequested.emit(node.element.key)">
+                <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete group" (click)="$event.stopPropagation(); deleteRequested.emit(node.element.id)">
                     <span class="codicon codicon-trash" aria-hidden="true"></span>
                 </button>
             </div>
-            @if (node.children.length && isInsertPickerOpen(undefined, node.element.key)) {
+            @if (node.children.length && isInsertPickerOpen(undefined, node.element.id)) {
                 <ip-insert-menu
                     [filter]="insertFilter()"
                     [templates]="insertTemplates()"
@@ -39,20 +39,20 @@
                     (addTemplate)="addSelectedElement.emit($event)" />
             }
             @if (node.children.length) {
-                @for (child of node.children; track child.element.key) {
+                @for (child of node.children; track child.element.id) {
                     <ng-container *ngTemplateOutlet="flowNode; context: { node: child }" />
                 }
             } @else {
                 <section
                     class="ip-child-frame__empty"
-                    [class.ip-child-frame__empty--drop-target]="dropTargetKey() === node.element.key && dropPosition() === 'inside'"
-                    (click)="$event.stopPropagation(); selectElement.emit(node.element.key)"
-                    (dragover)="groupDragOver.emit({ key: node.element.key, event: $event })"
-                    (dragleave)="elementDragLeave.emit(node.element.key)"
-                    (drop)="groupDrop.emit({ key: node.element.key, event: $event })">
-                    <button type="button" title="Add child to {{ node.element.name }}" (click)="$event.stopPropagation(); addChildElement.emit(node.element.key)">
+                    [class.ip-child-frame__empty--drop-target]="dropTargetKey() === node.element.id && dropPosition() === 'inside'"
+                    (click)="$event.stopPropagation(); selectElement.emit(node.element.id)"
+                    (dragover)="groupDragOver.emit({ key: node.element.id, event: $event })"
+                    (dragleave)="elementDragLeave.emit(node.element.id)"
+                    (drop)="groupDrop.emit({ key: node.element.id, event: $event })">
+                    <button type="button" title="Add child to {{ node.element.name }}" (click)="$event.stopPropagation(); addChildElement.emit(node.element.id)">
                     </button>
-                    @if (isInsertPickerOpen(undefined, node.element.key)) {
+                    @if (isInsertPickerOpen(undefined, node.element.id)) {
                         <ip-insert-menu
                             [filter]="insertFilter()"
                             [templates]="insertTemplates()"
@@ -67,16 +67,16 @@
         <article
             class="ip-node"
             draggable="true"
-            [class.ip-node--active]="selectedKey() === node.element.key"
+            [class.ip-node--active]="selectedKey() === node.element.id"
             [class.ip-node--disabled]="!node.element.active"
-            [class.ip-node--dragging]="draggedKey() === node.element.key"
-            [class.ip-node--drop-before]="dropTargetKey() === node.element.key && dropPosition() === 'before'"
-            [class.ip-node--menu-open]="isInsertPickerOpen(undefined, node.element.key)"
-            (click)="$event.stopPropagation(); selectElement.emit(node.element.key)"
-            (dragstart)="elementDragStart.emit({ key: node.element.key, event: $event })"
-            (dragover)="elementDragOver.emit({ key: node.element.key, event: $event })"
-            (dragleave)="elementDragLeave.emit(node.element.key)"
-            (drop)="elementDrop.emit({ key: node.element.key, event: $event })"
+            [class.ip-node--dragging]="draggedKey() === node.element.id"
+            [class.ip-node--drop-before]="dropTargetKey() === node.element.id && dropPosition() === 'before'"
+            [class.ip-node--menu-open]="isInsertPickerOpen(undefined, node.element.id)"
+            (click)="$event.stopPropagation(); selectElement.emit(node.element.id)"
+            (dragstart)="elementDragStart.emit({ key: node.element.id, event: $event })"
+            (dragover)="elementDragOver.emit({ key: node.element.id, event: $event })"
+            (dragleave)="elementDragLeave.emit(node.element.id)"
+            (drop)="elementDrop.emit({ key: node.element.id, event: $event })"
             (dragend)="dragEnd.emit()">
             <div class="ip-node__stripe"></div>
             <div class="ip-node__icon">
@@ -91,7 +91,7 @@
                 </div>
                 <p>
                     <span>{{ node.element.type }}</span>
-                    <span>#{{ node.element.sequenceNumber }}</span>
+                    <span>#{{ node.element.order }}</span>
                 </p>
                 @if (elementSummary(node.element)) {
                     <code>{{ elementSummary(node.element) }}</code>
@@ -99,11 +99,11 @@
             </div>
             <div class="ip-node__actions">
                 <span class="ip-drag-handle codicon codicon-gripper" title="Drag to reorder" aria-hidden="true"></span>
-                <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="$event.stopPropagation(); deleteRequested.emit(node.element.key)">
+                <button type="button" class="ip-icon-button ip-icon-button--danger" title="Delete" (click)="$event.stopPropagation(); deleteRequested.emit(node.element.id)">
                     <span class="codicon codicon-trash" aria-hidden="true"></span>
                 </button>
             </div>
-            @if (isInsertPickerOpen(undefined, node.element.key)) {
+            @if (isInsertPickerOpen(undefined, node.element.id)) {
                 <ip-insert-menu
                     [filter]="insertFilter()"
                     [templates]="insertTemplates()"
@@ -116,14 +116,14 @@
 
     <div
         class="ip-insert"
-        [class.ip-insert--drop-target]="dropTargetKey() === node.element.key && dropPosition() === 'after'"
-        [class.ip-insert--menu-open]="isInsertPickerOpen(node.element.key)"
-        (dragover)="insertDragOver.emit({ key: node.element.key, event: $event })"
-        (dragleave)="elementDragLeave.emit(node.element.key)"
-        (drop)="insertDrop.emit({ key: node.element.key, event: $event })">
-        <button type="button" title="Insert element after {{ node.element.name }}" (click)="$event.stopPropagation(); openInsertPicker.emit({ afterKey: node.element.key })">
+        [class.ip-insert--drop-target]="dropTargetKey() === node.element.id && dropPosition() === 'after'"
+        [class.ip-insert--menu-open]="isInsertPickerOpen(node.element.id)"
+        (dragover)="insertDragOver.emit({ key: node.element.id, event: $event })"
+        (dragleave)="elementDragLeave.emit(node.element.id)"
+        (drop)="insertDrop.emit({ key: node.element.id, event: $event })">
+        <button type="button" title="Insert element after {{ node.element.name }}" (click)="$event.stopPropagation(); openInsertPicker.emit({ afterKey: node.element.id })">
         </button>
-        @if (isInsertPickerOpen(node.element.key)) {
+        @if (isInsertPickerOpen(node.element.id)) {
             <ip-insert-menu
                 [filter]="insertFilter()"
                 [templates]="insertTemplates()"

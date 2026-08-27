@@ -40,7 +40,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     }
 
     private async buildScriptDefinition(
-        scriptRecord: OmniScriptRecord, 
+        scriptRecord: OmniScriptRecord,
         elementRecords?: OmniScriptElementRecord[]
     ) : Promise<OmniScriptDefinition> {
         if (scriptRecord.omniProcessType !== 'OmniScript') {
@@ -84,7 +84,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
      */
     private async addElements(
         builder: OmniScriptDefinitionBuilder, 
-        elementsOrSpec: OmniScriptElementRecord[] | OmniScriptSpecification | string, 
+        elementsOrSpec: OmniScriptElementRecord[] | OmniScriptSpecification | string,
         options?: { scriptElementId?: string }
     ) {
         const scriptElements = Array.isArray(elementsOrSpec) ? elementsOrSpec 
