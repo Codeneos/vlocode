@@ -186,6 +186,8 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param value - The new namespace value to set
      * @returns A promise that resolves when the namespace has been updated
      */
+    public updateNamespace(value: string): string;
+    public updateNamespace<T extends object>(value: T): T;
     public updateNamespace<T extends string | object>(value: T): T {
         if (typeof value === 'string') {
             return this.namespaceService.updateNamespace(value) as T;
@@ -199,8 +201,11 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param value The value to normalize
      * @returns The normalized value
      */
-    public replaceNamespace(value: string) {
-        return this.namespaceService.replaceNamespace(value);
+    public replaceNamespace<T extends string | object>(value: T): T {
+        if (typeof value === 'string') {
+            return this.namespaceService.replaceNamespace(value) as T;
+        }
+        return this.namespaceService.replaceObjectNamespace(value) as T;
     }
     
     /**

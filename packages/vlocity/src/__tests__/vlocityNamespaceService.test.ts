@@ -84,4 +84,27 @@ describe('VlocityNamespaceService', () => {
         expect(connection.query).not.toHaveBeenCalled();
         expect(connection.tooling.query).not.toHaveBeenCalled();
     });
+
+    it('replaces namespaces throughout objects and arrays', () => {
+        const service = new VlocityNamespaceService('vlocity_cmt');
+        const value = {
+            VlocityRecordSObjectType: 'vlocity_cmt__OmniScript__c',
+            VlocityRecordSourceKey: 'vlocity_cmt__OmniScript__c/Procedure',
+            nested: [{
+                vlocity_cmt__PropertySetConfig__c: {
+                    type: 'vlocity_cmt__Element__c'
+                }
+            }]
+        };
+
+        expect(service.replaceObjectNamespace(value)).toEqual({
+            VlocityRecordSObjectType: '%vlocity_namespace%__OmniScript__c',
+            VlocityRecordSourceKey: '%vlocity_namespace%__OmniScript__c/Procedure',
+            nested: [{
+                '%vlocity_namespace%__PropertySetConfig__c': {
+                    type: '%vlocity_namespace%__Element__c'
+                }
+            }]
+        });
+    });
 });

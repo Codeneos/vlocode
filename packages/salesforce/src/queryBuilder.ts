@@ -1,9 +1,8 @@
 import { container } from '@vlocode/core';
-import { deepClone, escapeSoqlString, flattenObject, Iterable } from '@vlocode/util';
+import { deepClone, escapeSoqlString, flattenObject, Iterable, last } from '@vlocode/util';
 import { QueryService } from './queryService';
-import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
+import { QueryFormatter, QueryParser, SalesforceQueryData, type QueryFormatterOptions } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
-import { NamespaceService } from './namespaceService';
 
 export interface QueryExecutor {
     query(query: string): Promise<any[]>;
@@ -22,8 +21,8 @@ class QueryBuilderData {
      * service is passed; without one placeholders are left untouched so the executing layer can
      * normalize them with its own initialized namespace service.
      */
-    public getQuery(namespaceService?: NamespaceService) {
-        return QueryFormatter.format(this.getSpec(), namespaceService);
+    public getQuery(options?: QueryFormatterOptions) {
+        return QueryFormatter.format(this.getSpec(), options);
     }
 
     public toString() {
@@ -72,16 +71,16 @@ export class QueryBuilder extends QueryBuilderData {
      */
     public async validateFields(schema: SalesforceSchemaService): Promise<string[]> {
         const removedFields = new Array<string>();
-        const resolvedFields = new Array<string>();
+        const resolvedFields = new Map<string, string>();
         for (const field of this.fields) {
             const fieldDef = await schema.describeSObjectFieldPath(this.sobjectType, field, false);
             if (fieldDef) {
-                resolvedFields.push(field);
+                resolvedFields.set(last(fieldDef)!.name, field);
             } else {
                 removedFields.push(field);
             }
         }
-        this.query.fieldList = resolvedFields;
+        this.query.fieldList = [...resolvedFields.values()];
         return removedFields;
     }
 
