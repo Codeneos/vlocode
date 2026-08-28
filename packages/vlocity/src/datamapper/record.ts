@@ -1,4 +1,5 @@
-import { normalizeSalesforceName, normalizeSObjectTypeName } from '@vlocode/util';
+import { RecordFactory } from '@vlocode/salesforce';
+import { normalizeSObjectTypeName } from '@vlocode/util';
 
 import type { VlocityDatapack } from '../datapack';
 import type { DataMapperDefinition, DataMapperItem } from './types';
@@ -8,6 +9,12 @@ export interface DataMapperRecord extends DataMapperDefinition {
     sObjectType: string;
     vlocityRecordSourceKey?: string;
     OmniDataTransformItem: DataMapperItem[];
+}
+
+interface DataMapperDatapackRecord extends Record<string, unknown> {
+    id?: string;
+    vlocityRecordSObjectType?: string;
+    vlocityRecordSourceKey?: string;
 }
 
 export namespace DataMapperRecord {
@@ -111,22 +118,22 @@ export namespace DataMapperRecord {
     };
 
     export function fromDatapack(datapack: VlocityDatapack): DataMapperRecord {
+        const record = RecordFactory.create<DataMapperDatapackRecord>(datapack.data, { useRecordProxy: true });
         const managed = normalizeSObjectTypeName(datapack.sobjectType) === normalizeSObjectTypeName(ManagedSObjectType);
-        const record = datapack.data as Record<string, unknown>;
         const fields = managed ? ManagedFields : StandardFields;
         const itemFields = managed ? ManagedItemFields : StandardItemFields;
-        const items = asArray(getField(record, fields.OmniDataTransformItem)).map(item => ({
+        const items = asArray(record[fields.OmniDataTransformItem]).map(item => ({
             ...projectRecord(item, itemFields),
-            id: getField(item, 'Id') ?? getField(item, 'VlocityRecordSourceKey'),
-            sObjectType: getField(item, 'VlocityRecordSObjectType'),
-            vlocityRecordSourceKey: getField(item, 'VlocityRecordSourceKey')
+            id: item.id ?? item.vlocityRecordSourceKey,
+            sObjectType: item.vlocityRecordSObjectType,
+            vlocityRecordSourceKey: item.vlocityRecordSourceKey
         }));
 
         return {
             ...projectRecord(record, fields),
-            id: getField(record, 'Id') ?? getField(record, 'VlocityRecordSourceKey'),
-            sObjectType: String(getField(record, 'VlocityRecordSObjectType')),
-            vlocityRecordSourceKey: getField(record, 'VlocityRecordSourceKey') as string | undefined,
+            id: record.id ?? record.vlocityRecordSourceKey,
+            sObjectType: record.vlocityRecordSObjectType,
+            vlocityRecordSourceKey: record.vlocityRecordSourceKey,
             OmniDataTransformItem: items
         } as DataMapperRecord;
     }
@@ -148,10 +155,10 @@ function standardFields(fields: Record<string, string>): Record<string, string> 
     return Object.fromEntries(Object.keys(fields).map(field => [field, field]));
 }
 
-function projectRecord(record: Record<string, unknown>, fields: Record<string, string>): Record<string, unknown> {
+function projectRecord(record: DataMapperDatapackRecord, fields: Record<string, string>): Record<string, unknown> {
     const result: Record<string, unknown> = {};
     for (const [field, sourceField] of Object.entries(fields)) {
-        const value = getField(record, sourceField);
+        const value = record[sourceField];
         if (value !== undefined) {
             result[field] = value;
         }
@@ -159,18 +166,9 @@ function projectRecord(record: Record<string, unknown>, fields: Record<string, s
     return result;
 }
 
-function getField(record: Record<string, unknown>, field: string): unknown {
-    if (field in record) {
-        return record[field];
-    }
-    const normalizedField = normalizeSalesforceName(field).toLowerCase();
-    const recordField = Object.keys(record).find(key => normalizeSalesforceName(key).toLowerCase() === normalizedField);
-    return recordField ? record[recordField] : undefined;
-}
-
-function asArray(value: unknown): Array<Record<string, unknown>> {
+function asArray(value: unknown): DataMapperDatapackRecord[] {
     if (Array.isArray(value)) {
-        return value.filter(item => item !== null && typeof item === 'object') as Array<Record<string, unknown>>;
+        return value.filter(item => item !== null && typeof item === 'object') as DataMapperDatapackRecord[];
     }
-    return value !== null && typeof value === 'object' ? [value as Record<string, unknown>] : [];
+    return value !== null && typeof value === 'object' ? [value as DataMapperDatapackRecord] : [];
 }
