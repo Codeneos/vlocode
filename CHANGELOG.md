@@ -4,6 +4,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.3](https://github.com/codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **omniscript:** support singleton datapack elements ([2900df2](https://github.com/codeneos/vlocode/commit/2900df28113108ea1a472ff9c26085175169ada6))
+* **salesforce:** generalize namespace handling ([911fee4](https://github.com/codeneos/vlocode/commit/911fee4e4cbfea437b1363f7400c2881ad236438))
+* **salesforce:** honor RecordFactory proxy override ([6037a25](https://github.com/codeneos/vlocode/commit/6037a251cfe872fcc9d8a4e92b545b7914006c7e))
+* update exportMode logic in DatapackDefinitionRegistry ([1bc77f1](https://github.com/codeneos/vlocode/commit/1bc77f1fad280e459754b77a900b4e89194c036e))
+* **vlocity-deploy:** correct OmniStudio metadata conversion ([6aecadb](https://github.com/codeneos/vlocode/commit/6aecadb1f4117f022c7c9377d543950f8c5f187b))
+* **vlocity-deploy:** resolve OmniStudio export definitions ([754dc8e](https://github.com/codeneos/vlocode/commit/754dc8eb9ea2ac9128b7ebbc3c03bffa391b2dee))
+* **vlocity:** preserve Data Mapper metadata semantics ([de778a1](https://github.com/codeneos/vlocode/commit/de778a18c93b9138b5571383c283df24a75f435e))
+* **vscode:** keep source-backed editors in sync ([4e6d844](https://github.com/codeneos/vlocode/commit/4e6d844acb28b95f473ff870e398d4b2be4d48ec))
+* **vscode:** preserve datapack definition scope ([96a884a](https://github.com/codeneos/vlocode/commit/96a884aabeead88aefb5bfb72e77dd56d0a5fda7))
+* **vscode:** save synchronized source documents ([4cf9ca8](https://github.com/codeneos/vlocode/commit/4cf9ca85255aa9b285705c9a2ad6676c8403cac9))
+
+### Features
+
+* **vscode:** show Integration Procedure loading state ([0ac35a9](https://github.com/codeneos/vlocode/commit/0ac35a9ef726be19a954a455fe69bddd292e4dab))
+
 ## [2.4.2](https://github.com/codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
 
 ### Bug Fixes

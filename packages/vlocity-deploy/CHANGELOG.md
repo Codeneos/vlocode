@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **vlocity-deploy:** correct OmniStudio metadata conversion ([6aecadb](https://github.com/Codeneos/vlocode/commit/6aecadb1f4117f022c7c9377d543950f8c5f187b))
+* **vlocity-deploy:** resolve OmniStudio export definitions ([754dc8e](https://github.com/Codeneos/vlocode/commit/754dc8eb9ea2ac9128b7ebbc3c03bffa391b2dee))
+* **vlocity:** preserve Data Mapper metadata semantics ([de778a1](https://github.com/Codeneos/vlocode/commit/de778a18c93b9138b5571383c283df24a75f435e))
+
 ## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
 
 ### Bug Fixes

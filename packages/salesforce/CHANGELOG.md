@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **salesforce:** generalize namespace handling ([911fee4](https://github.com/Codeneos/vlocode/commit/911fee4e4cbfea437b1363f7400c2881ad236438))
+* **salesforce:** honor RecordFactory proxy override ([6037a25](https://github.com/Codeneos/vlocode/commit/6037a251cfe872fcc9d8a4e92b545b7914006c7e))
+
 ## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
 
 ### Bug Fixes

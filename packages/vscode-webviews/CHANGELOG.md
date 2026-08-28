@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Features
+
+* **vscode:** show Integration Procedure loading state ([0ac35a9](https://github.com/Codeneos/vlocode/commit/0ac35a9ef726be19a954a455fe69bddd292e4dab))
+
 ## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
 
 **Note:** Version bump only for package @vlocode/vscode-webviews

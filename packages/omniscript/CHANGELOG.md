@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **omniscript:** support singleton datapack elements ([2900df2](https://github.com/Codeneos/vlocode/commit/2900df28113108ea1a472ff9c26085175169ada6))
+
 ## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
 
 **Note:** Version bump only for package @vlocode/omniscript
