@@ -6,6 +6,10 @@ import { SObjectRecord } from '../types/sobjectRecord';
 
 describe('recordFactory', () => {
 
+    afterEach(() => {
+        RecordFactory.useRecordProxy = false;
+    });
+
     describe('#create', () => {
         const testRecord: SObjectRecord  = {
             "attributes" : {
@@ -35,6 +39,23 @@ describe('recordFactory', () => {
         it('field with NON ISO string should be returned as is', async () => {
             const record = RecordFactory.create<QueryResult<SObjectRecord>>(testRecord);
             expect(record.name).toEqual('Maria Meyer');
+        });
+        it('uses a record proxy when explicitly enabled', () => {
+            RecordFactory.useRecordProxy = false;
+            const record = RecordFactory.create<Record<string, unknown>>({
+                'vlocity_cmt__Description__c': 'Managed description'
+            }, { useRecordProxy: true });
+
+            expect(record['%vlocity_namespace%__Description__c']).toBe('Managed description');
+        });
+        it('uses defined accessors when proxy creation is explicitly disabled', () => {
+            RecordFactory.useRecordProxy = true;
+            const record = RecordFactory.create<Record<string, unknown>>({
+                'vlocity_cmt__Description__c': 'Managed description'
+            }, { useRecordProxy: false });
+
+            expect(record.description).toBe('Managed description');
+            expect(record['%vlocity_namespace%__Description__c']).toBeUndefined();
         });
     });
 });

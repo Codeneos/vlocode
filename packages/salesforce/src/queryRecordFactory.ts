@@ -65,7 +65,7 @@ export class RecordFactory {
             });
         }
 
-        if (RecordFactory.useRecordProxy && options?.useRecordProxy !== false) {
+        if (options?.useRecordProxy ?? RecordFactory.useRecordProxy) {
             return this.createWithProxy(queryResultRecord);
         }
         return this.createWithDefine(queryResultRecord);
