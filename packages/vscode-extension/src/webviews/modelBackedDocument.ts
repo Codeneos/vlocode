@@ -36,6 +36,7 @@ export class ModelBackedDocument<TModel, TData extends ModelBackedDocumentData<T
 
     /** Debounces designer-to-source writes so rapid form edits become one text edit. */
     public scheduleSourceWrite(sync: () => Promise<void>): void {
+        this.sourceReloadTimer = this.cancelTimer(this.sourceReloadTimer);
         this.sourceWriteTimer = this.schedule(this.sourceWriteTimer, () => {
             this.sourceWriteTimer = undefined;
             return sync();
@@ -44,6 +45,7 @@ export class ModelBackedDocument<TModel, TData extends ModelBackedDocumentData<T
 
     /** Debounces source-to-designer reloads while the user is typing in a text editor. */
     public scheduleSourceReload(reload: () => Promise<void>): void {
+        this.sourceWriteTimer = this.cancelTimer(this.sourceWriteTimer);
         this.sourceReloadTimer = this.schedule(this.sourceReloadTimer, () => {
             this.sourceReloadTimer = undefined;
             return reload();
@@ -60,13 +62,14 @@ export class ModelBackedDocument<TModel, TData extends ModelBackedDocumentData<T
     }
 
     private cancelTimers(): void {
-        if (this.sourceWriteTimer) {
-            clearTimeout(this.sourceWriteTimer);
-            this.sourceWriteTimer = undefined;
+        this.sourceWriteTimer = this.cancelTimer(this.sourceWriteTimer);
+        this.sourceReloadTimer = this.cancelTimer(this.sourceReloadTimer);
+    }
+
+    private cancelTimer(timer: ReturnType<typeof setTimeout> | undefined): undefined {
+        if (timer) {
+            clearTimeout(timer);
         }
-        if (this.sourceReloadTimer) {
-            clearTimeout(this.sourceReloadTimer);
-            this.sourceReloadTimer = undefined;
-        }
+        return undefined;
     }
 }

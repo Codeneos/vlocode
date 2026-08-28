@@ -391,8 +391,6 @@ export abstract class ModelBackedEditorProvider<
         try {
             document.data = await this.loadDocument(document.data.uri, await this.readOpenTextOrUri(document.data.uri));
             this.refreshSourceFileMembership(document);
-            document.hasUnsavedChanges = true;
-            this.changeEmitter.fire({ document });
             await this.postStateToDocument(document);
         } catch (error) {
             this.postToDocument(document, { type: 'error', message: getErrorMessage(error) });
