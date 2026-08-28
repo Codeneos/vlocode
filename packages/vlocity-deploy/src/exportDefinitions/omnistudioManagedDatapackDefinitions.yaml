@@ -17,6 +17,7 @@ definitions:
       '%vlocity_namespace%__IsProcedure__c': false
     ignoreFields:
       - '%vlocity_namespace%__IsActive__c'
+      - '%vlocity_namespace%__Version__c'
     fields:
       '%vlocity_namespace%__CustomJavaScript__c':
         fileName:
@@ -45,11 +46,6 @@ definitions:
       - '%vlocity_namespace%__SubType__c'
     filter:
       '%vlocity_namespace%__IsProcedure__c': true
-    matchingKeyFields:
-      - '%vlocity_namespace%__Type__c'
-      - '%vlocity_namespace%__SubType__c'
-      - '%vlocity_namespace%__Language__c'
-      - '%vlocity_namespace%__Version__c'
 
   DataRaptor: &managedDataRaptor
     objectType: '%vlocity_namespace%__DRBundle__c'
