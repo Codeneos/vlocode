@@ -12,12 +12,18 @@ describe('metadataConverter', () => {
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <OmniDataTransform xmlns="http://soap.sforce.com/2006/04/metadata">
     <name>ExampleMapper</name>
+    <namespace>example</namespace>
+    <overrideKey>ExampleMapperOverride</overrideKey>
     <type>Extract</type>
+    <versionNumber>4</versionNumber>
     <active>true</active>
     <omniDataTransformItem>
+        <filterDataType>STRING</filterDataType>
         <globalKey>item-1</globalKey>
         <inputObjectName>Account</inputObjectName>
         <inputFieldName>Name</inputFieldName>
+        <omniDataTransformation>ExampleTransform</omniDataTransformation>
+        <omniDataTransformationId>0jN000000000001</omniDataTransformationId>
         <outputFieldName>account:name</outputFieldName>
     </omniDataTransformItem>
 </OmniDataTransform>`;
@@ -34,10 +40,18 @@ describe('metadataConverter', () => {
         expect(datapack.name).toBe('ExampleMapper');
         expect(datapack.OmniDataTransformItem).toHaveLength(1);
         expect(datapack.OmniDataTransformItem[0].InputObjectName).toBe('Account');
+        expect(datapack.OmniDataTransformItem[0]).not.toHaveProperty('VlocityRecordSourceKey');
+        expect(datapack.OmniDataTransformItem[0].FilterDataType).toBe('STRING');
         expect(converted.name).toBe('ExampleMapper');
+        expect(converted.namespace).toBe('example');
+        expect(converted.overrideKey).toBe('ExampleMapperOverride');
         expect(converted.type).toBe('Extract');
+        expect(converted.versionNumber).toBe(4);
         expect(converted.active).toBe(true);
         expect(converted.omniDataTransformItem[0].inputFieldName).toBe('Name');
+        expect(converted.omniDataTransformItem[0].filterDataType).toBe('STRING');
+        expect(converted.omniDataTransformItem[0].omniDataTransformation).toBe('ExampleTransform');
+        expect(converted.omniDataTransformItem[0].omniDataTransformationId).toBe('0jN000000000001');
     });
 
     it('should round-trip DataRaptor datapacks through metadata XML', () => {
@@ -95,6 +109,8 @@ describe('metadataConverter', () => {
             VlocityRecordSObjectType: '%vlocity_namespace%__DRBundle__c',
             VlocityRecordSourceKey: '%vlocity_namespace%__DRBundle__c/ManagedMapper',
             Name: 'ManagedMapper',
+            '%vlocity_namespace%__BatchSize__c': 200,
+            '%vlocity_namespace%__GlobalKey__c': 'ManagedMapperKey',
             '%vlocity_namespace%__Type__c': 'Extract',
             '%vlocity_namespace%__IsActive__c': true,
             '%vlocity_namespace%__DRMapItem__c': [{
@@ -118,6 +134,8 @@ describe('metadataConverter', () => {
         expect(converted.type).toBe('Extract');
         expect(converted.active).toBe(true);
         expect(converted.omniDataTransformItem[0].inputFieldName).toBe('Account:Name');
+        expect(converted).not.toHaveProperty('batchSize');
+        expect(converted).not.toHaveProperty('globalKey');
         expect(xml).not.toContain('VlocityRecordSObjectType');
         expect(xml).not.toContain('%vlocity_namespace%__');
     });

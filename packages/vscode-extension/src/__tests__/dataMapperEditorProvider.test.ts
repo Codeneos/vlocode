@@ -22,6 +22,7 @@ interface TestDataMapperEditorProvider {
         sourceFormat: 'json' | 'xml';
         title: string;
     };
+    getOutputFields(model: any): Array<{ name: string; path: string }>;
     applyModel(document: any, model: any): void;
 }
 
@@ -133,6 +134,19 @@ describe('DataMapperEditorProvider', () => {
             OutputFieldName: 'customer:name',
             TransformValuesMappings: '{"Acme":"Acme Corporation"}'
         });
+        expect(datapack.data.OmniDataTransformItem[0]).not.toHaveProperty('VlocityRecordSourceKey');
         expect(document.model.items[0].TransformValuesMappings).toBe('{"Acme":"Acme Corporation"}');
+    });
+
+    it('suggests output paths from object-valued JSON fields', () => {
+        const provider = createProvider(jest.fn());
+
+        expect(provider.getOutputFields({
+            header: { ExpectedOutputJson: { customer: { name: 'Acme' } } },
+            items: []
+        })).toEqual([
+            { name: 'customer', path: 'customer' },
+            { name: 'name', path: 'customer:name' }
+        ]);
     });
 });

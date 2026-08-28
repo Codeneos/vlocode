@@ -7,9 +7,8 @@ import { getErrorMessage, normalizeSObjectTypeName } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
 import {
     DataMapperExecutor,
+    DataMapperItemRecord,
     DataMapperRecord,
-    DataRaptorItemRecord,
-    DataRaptorRecord,
     DatapackInfoService,
     getDatapackHeaders,
     OmniDataTransformItemRecord,
@@ -324,19 +323,15 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 name: String(item.OutputFieldName).split(':').pop() ?? String(item.OutputFieldName),
                 path: String(item.OutputFieldName)
             }));
-        const expectedOutput = typeof model.header.ExpectedOutputJson === 'string'
-            ? this.flattenJsonPaths(model.header.ExpectedOutputJson)
-            : [];
+        const expectedOutput = model.header.ExpectedOutputJson === undefined
+            ? []
+            : this.flattenJsonPaths(model.header.ExpectedOutputJson);
         return this.mergeSuggestions(existing, expectedOutput);
     }
 
-    private flattenJsonPaths(json: string): FieldSuggestion[] {
-        if (!json.trim()) {
-            return [];
-        }
-
+    private flattenJsonPaths(value: unknown): FieldSuggestion[] {
         try {
-            const data = JSON.parse(json);
+            const data = typeof value === 'string' ? JSON.parse(value) : value;
             const fields = new Array<FieldSuggestion>();
             const visit = (value: unknown, prefix: string) => {
                 if (prefix) {
@@ -445,7 +440,7 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
 
     private sourceItems(datapack: VlocityDatapack): Array<Record<string, unknown>> {
         const value = datapack.data[this.isDataRaptor(datapack)
-            ? DataRaptorRecord.ItemsField
+            ? DataMapperRecord.ItemsField
             : OmniDataTransformRecord.ItemsField];
         if (Array.isArray(value)) {
             return value;
@@ -469,15 +464,19 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private createItemRecord(datapack: VlocityDatapack, item: DataMapperItem, index: number): Record<string, unknown> {
-        const sObjectType = this.isDataRaptor(datapack)
-            ? DataRaptorItemRecord.SObjectType
+        const isDataRaptor = this.isDataRaptor(datapack);
+        const sObjectType = isDataRaptor
+            ? DataMapperItemRecord.SObjectType
             : OmniDataTransformItemRecord.SObjectType;
         const key = item.GlobalKey ?? item.Name ?? index;
-        return {
+        const record: Record<string, unknown> = {
             VlocityDataPackType: 'SObject',
-            VlocityRecordSObjectType: sObjectType,
-            VlocityRecordSourceKey: item.vlocityRecordSourceKey ?? `${datapack.sourceKey}/${sObjectType}/${key}`
+            VlocityRecordSObjectType: sObjectType
         };
+        if (isDataRaptor) {
+            record.VlocityRecordSourceKey = item.vlocityRecordSourceKey ?? `${datapack.sourceKey}/${sObjectType}/${key}`;
+        }
+        return record;
     }
 
     private itemKey(item: Record<string, unknown>): string | undefined {
@@ -486,6 +485,6 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private isDataRaptor(datapack: VlocityDatapack): boolean {
-        return normalizeSObjectTypeName(datapack.sobjectType) === normalizeSObjectTypeName(DataRaptorRecord.SObjectType);
+        return normalizeSObjectTypeName(datapack.sobjectType) === normalizeSObjectTypeName(DataMapperRecord.SObjectType);
     }
 }

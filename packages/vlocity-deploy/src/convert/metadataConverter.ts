@@ -1,9 +1,7 @@
 import { XML, fileName as getFileName, normalizeName } from '@vlocode/util';
 import { injectable } from '@vlocode/core';
-import { VlocityDatapack } from '@vlocode/vlocity';
+import { isDatapackReference, VlocityDatapack } from '@vlocode/vlocity';
 import {
-    DataRaptorItemMapping,
-    DataRaptorMapping,
     ObjectMapping,
     OmniScriptElementMapping,
     OmniScriptMapping
@@ -30,14 +28,89 @@ const DefaultXmlAttributes = { xmlns: 'http://soap.sforce.com/2006/04/metadata' 
 
 type MetadataFieldNames = Readonly<Record<string, string>>;
 
-const dataMapperHeaderFields = metadataFieldNames(DataRaptorMapping, {
-    stripIsPrefix: true,
-    overrides: { OmniDataTransformItem: 'omniDataTransformItem' }
-});
+const dataMapperHeaderFields: MetadataFieldNames = {
+    IsActive: 'active',
+    IsAssignmentRulesUsed: 'assignmentRulesUsed',
+    IsDeletedOnSuccess: 'deletedOnSuccess',
+    Description: 'description',
+    IsErrorIgnored: 'errorIgnored',
+    ExpectedInputJson: 'expectedInputJson',
+    ExpectedInputOtherData: 'expectedInputOtherData',
+    ExpectedInputXml: 'expectedInputXml',
+    ExpectedOutputJson: 'expectedOutputJson',
+    ExpectedOutputOtherData: 'expectedOutputOtherData',
+    ExpectedOutputXml: 'expectedOutputXml',
+    IsFieldLevelSecurityEnabled: 'fieldLevelSecurityEnabled',
+    InputParsingClass: 'inputParsingClass',
+    InputType: 'inputType',
+    Name: 'name',
+    Namespace: 'namespace',
+    IsNullInputsIncludedInOutput: 'nullInputsIncludedInOutput',
+    OmniDataTransformItem: 'omniDataTransformItem',
+    OutputParsingClass: 'outputParsingClass',
+    OutputType: 'outputType',
+    OverrideKey: 'overrideKey',
+    PreprocessorClassName: 'preprocessorClassName',
+    PreviewJsonData: 'previewJsonData',
+    PreviewOtherData: 'previewOtherData',
+    PreviewSourceObjectData: 'previewSourceObjectData',
+    PreviewXmlData: 'previewXmlData',
+    IsProcessSuperBulk: 'processSuperBulk',
+    RequiredPermission: 'requiredPermission',
+    ResponseCacheTtlMinutes: 'responseCacheTtlMinutes',
+    ResponseCacheType: 'responseCacheType',
+    IsRollbackOnError: 'rollbackOnError',
+    SourceObject: 'sourceObject',
+    IsSourceObjectDefault: 'sourceObjectDefault',
+    SynchronousProcessThreshold: 'synchronousProcessThreshold',
+    TargetOutputDocumentIdentifier: 'targetOutputDocumentIdentifier',
+    TargetOutputFileName: 'targetOutputFileName',
+    Type: 'type',
+    UniqueName: 'uniqueName',
+    VersionNumber: 'versionNumber',
+    IsXmlDeclarationRemoved: 'xmlDeclarationRemoved',
+    XmlOutputTagsOrder: 'xmlOutputTagsOrder'
+};
 const dataMapperHeaderXmlFields = reverseFieldNames(dataMapperHeaderFields);
-const dataMapperItemFields = metadataFieldNames(DataRaptorItemMapping, {
-    stripIsPrefix: true
-});
+const dataMapperItemFields: MetadataFieldNames = {
+    DefaultValue: 'defaultValue',
+    IsDisabled: 'disabled',
+    FilterDataType: 'filterDataType',
+    FilterGroup: 'filterGroup',
+    FilterOperator: 'filterOperator',
+    FilterValue: 'filterValue',
+    FormulaConverted: 'formulaConverted',
+    FormulaExpression: 'formulaExpression',
+    FormulaResultPath: 'formulaResultPath',
+    FormulaSequence: 'formulaSequence',
+    GlobalKey: 'globalKey',
+    InputFieldName: 'inputFieldName',
+    InputObjectName: 'inputObjectName',
+    InputObjectQuerySequence: 'inputObjectQuerySequence',
+    LinkedFieldName: 'linkedFieldName',
+    LinkedObjectSequence: 'linkedObjectSequence',
+    LookupByFieldName: 'lookupByFieldName',
+    LookupObjectName: 'lookupObjectName',
+    LookupReturnedFieldName: 'lookupReturnedFieldName',
+    MigrationAttribute: 'migrationAttribute',
+    MigrationCategory: 'migrationCategory',
+    MigrationGroup: 'migrationGroup',
+    MigrationKey: 'migrationKey',
+    MigrationPattern: 'migrationPattern',
+    MigrationProcess: 'migrationProcess',
+    MigrationType: 'migrationType',
+    MigrationValue: 'migrationValue',
+    Name: 'name',
+    OmniDataTransformation: 'omniDataTransformation',
+    OmniDataTransformationId: 'omniDataTransformationId',
+    OutputCreationSequence: 'outputCreationSequence',
+    OutputFieldFormat: 'outputFieldFormat',
+    OutputFieldName: 'outputFieldName',
+    OutputObjectName: 'outputObjectName',
+    IsRequiredForUpsert: 'requiredForUpsert',
+    TransformValuesMappings: 'transformValuesMappings',
+    IsUpsertKey: 'upsertKey'
+};
 const dataMapperItemXmlFields = reverseFieldNames(dataMapperItemFields);
 const omniScriptFields = metadataFieldNames(OmniScriptMapping, {
     exclude: ['DiscoveryFrameworkUsageType'],
@@ -147,7 +220,10 @@ abstract class MetadataRecordConverter implements MetadataTypeConverter {
         return Object.entries(fields).reduce((result, [field, xmlField]) => {
             const value = record[field];
             if (!skip.has(field) && value !== undefined) {
-                result[xmlField] = this.metadataFieldValue(value);
+                const metadataValue = this.metadataFieldValue(value);
+                if (metadataValue !== undefined) {
+                    result[xmlField] = metadataValue;
+                }
             }
             return result;
         }, {} as MetadataRecord);
@@ -187,6 +263,9 @@ abstract class MetadataRecordConverter implements MetadataTypeConverter {
                 ? value
                 : JSON.stringify(value);
         }
+        if (value && typeof value === 'object' && isDatapackReference(value)) {
+            return undefined;
+        }
         return value && typeof value === 'object' && !this.isMetadataRecord(value)
             ? JSON.stringify(value)
             : value;
@@ -205,6 +284,7 @@ abstract class MetadataRecordConverter implements MetadataTypeConverter {
 
     private isMetadataRecord(value: unknown): value is MetadataRecord {
         return value !== null && typeof value === 'object' &&
+            (value as MetadataRecord).VlocityDataPackType === 'SObject' &&
             typeof (value as MetadataRecord).VlocityRecordSObjectType === 'string';
     }
 
@@ -219,11 +299,10 @@ class DataMapperMetadataConverter extends MetadataRecordConverter {
         const data = this.recordToDatapack(root, dataMapperHeaderXmlFields);
         const name = String(data.Name ?? getFileName(fileName).replace(/\.rpt-meta\.xml$/i, ''));
 
-        data.OmniDataTransformItem = this.records(data.OmniDataTransformItem).map((item, index) => ({
+        data.OmniDataTransformItem = this.records(data.OmniDataTransformItem).map(item => ({
             ...this.recordToDatapack(item, dataMapperItemXmlFields),
             VlocityDataPackType: 'SObject',
-            VlocityRecordSObjectType: 'OmniDataTransformItem',
-            VlocityRecordSourceKey: `OmniDataTransform/${name}/OmniDataTransformItem/${this.itemKey(item, index)}`
+            VlocityRecordSObjectType: 'OmniDataTransformItem'
         }));
         Object.assign(data, {
             Name: data.Name ?? name,
@@ -362,13 +441,11 @@ class OmniProcessMetadataConverter extends MetadataRecordConverter {
 
 function metadataFieldNames(mapping: ObjectMapping, options: {
     exclude?: readonly string[];
-    stripIsPrefix?: boolean;
     overrides?: MetadataFieldNames;
 } = {}): MetadataFieldNames {
     const exclude = new Set(options.exclude);
     return Object.fromEntries(Object.keys(mapping.fields).filter(field => !exclude.has(field)).map(field => {
-        const metadataField = options.stripIsPrefix && /^Is[A-Z]/.test(field) ? field.slice(2) : field;
-        return [field, options.overrides?.[field] ?? lowerFirst(metadataField)];
+        return [field, options.overrides?.[field] ?? lowerFirst(field)];
     }));
 }
 
