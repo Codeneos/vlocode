@@ -83,10 +83,12 @@ export namespace OmniScriptRecord {
         
         if (datapack.sobjectType === OmniProcessRecord.SObjectType) {
             result = fromProcess(record as OmniProcessRecord);
-            elements = record.omniProcessElement?.map(element => OmniScriptElementRecord.fromProcessElement(element)) || [];
+            elements = asArray(record.omniProcessElement)
+                .map(element => OmniScriptElementRecord.fromProcessElement(element));
         } else if (datapack.sobjectType === OmniScriptRecord.SObjectType) {
             result = fromScript(record as OmniScriptRecord);
-            elements = record.element?.map(element => OmniScriptElementRecord.fromScriptElement(element)) || [];
+            elements = asArray(record.element)
+                .map(element => OmniScriptElementRecord.fromScriptElement(element));
         } else {
             throw new Error(`Unsupported datapack type: ${datapack.sobjectType}`);
         }
@@ -226,4 +228,8 @@ export namespace OmniScriptElementRecord {
 /** Normalize a string- or object-valued DataPack property set to its canonical JSON object form. */
 export function normalizePropertySet(propertySet: unknown): Record<string, unknown> {
     return JSON.parse(asString(propertySet) || '{}') as Record<string, unknown>;
+}
+
+function asArray<T>(value: T | T[] | undefined): T[] {
+    return value === undefined ? [] : Array.isArray(value) ? value : [value];
 }

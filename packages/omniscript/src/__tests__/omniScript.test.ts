@@ -92,7 +92,7 @@ describe('OmniScriptRecord', () => {
             '%vlocity_namespace%__IsActive__c': false,
             '%vlocity_namespace%__OmniProcessType__c': 'IntegrationProcedure',
             '%vlocity_namespace%__PropertySet__c': { trackingCustomData: {} },
-            '%vlocity_namespace%__Element__c': [{
+            '%vlocity_namespace%__Element__c': {
                 VlocityRecordSObjectType: '%vlocity_namespace%__Element__c',
                 VlocityRecordSourceKey: 'Element/GetCustomer',
                 Name: 'GetCustomer',
@@ -102,7 +102,7 @@ describe('OmniScriptRecord', () => {
                 '%vlocity_namespace%__Order__c': 1,
                 '%vlocity_namespace%__Level__c': 0,
                 '%vlocity_namespace%__PropertySet__c': { remoteClass: 'CustomerController' }
-            }]
+            }
         });
 
         const record = OmniScriptRecord.fromDatapack(datapack);
