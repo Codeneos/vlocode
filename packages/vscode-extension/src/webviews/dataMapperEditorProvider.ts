@@ -3,9 +3,22 @@ import path from 'path';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
-import { getErrorMessage } from '@vlocode/util';
+import { getErrorMessage, normalizeSObjectTypeName } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
-import { DataMapperExecutor, DataMapperRecord, DatapackInfoService, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition, type DataMapperExecutionWarning, type DataMapperItem } from '@vlocode/vlocity';
+import {
+    DataMapperExecutor,
+    DataMapperRecord,
+    DataRaptorItemRecord,
+    DataRaptorRecord,
+    DatapackInfoService,
+    getDatapackHeaders,
+    OmniDataTransformItemRecord,
+    OmniDataTransformRecord,
+    VlocityDatapack,
+    type DataMapperDefinition,
+    type DataMapperExecutionWarning,
+    type DataMapperItem
+} from '@vlocode/vlocity';
 import { DatapackWriter, MetadataConverter, OmniStudioConverter } from '@vlocode/vlocity-deploy';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
@@ -431,7 +444,9 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private sourceItems(datapack: VlocityDatapack): Array<Record<string, unknown>> {
-        const value = datapack.data[DataMapperRecord.itemField(datapack.sobjectType)];
+        const value = datapack.data[this.isDataRaptor(datapack)
+            ? DataRaptorRecord.ItemsField
+            : OmniDataTransformRecord.ItemsField];
         if (Array.isArray(value)) {
             return value;
         }
@@ -454,7 +469,9 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     }
 
     private createItemRecord(datapack: VlocityDatapack, item: DataMapperItem, index: number): Record<string, unknown> {
-        const sObjectType = DataMapperRecord.itemSObjectType(datapack.sobjectType);
+        const sObjectType = this.isDataRaptor(datapack)
+            ? DataRaptorItemRecord.SObjectType
+            : OmniDataTransformItemRecord.SObjectType;
         const key = item.GlobalKey ?? item.Name ?? index;
         return {
             VlocityDataPackType: 'SObject',
@@ -466,5 +483,9 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
     private itemKey(item: Record<string, unknown>): string | undefined {
         const key = item.GlobalKey ?? item.vlocityRecordSourceKey ?? item.id;
         return typeof key === 'string' && key ? key : undefined;
+    }
+
+    private isDataRaptor(datapack: VlocityDatapack): boolean {
+        return normalizeSObjectTypeName(datapack.sobjectType) === normalizeSObjectTypeName(DataRaptorRecord.SObjectType);
     }
 }

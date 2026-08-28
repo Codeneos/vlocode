@@ -36,8 +36,7 @@ const dataMapperHeaderFields = metadataFieldNames(DataRaptorMapping, {
 });
 const dataMapperHeaderXmlFields = reverseFieldNames(dataMapperHeaderFields);
 const dataMapperItemFields = metadataFieldNames(DataRaptorItemMapping, {
-    stripIsPrefix: true,
-    overrides: { TransformValueMappings: 'transformValuesMappings' }
+    stripIsPrefix: true
 });
 const dataMapperItemXmlFields = reverseFieldNames(dataMapperItemFields);
 const omniScriptFields = metadataFieldNames(OmniScriptMapping, {

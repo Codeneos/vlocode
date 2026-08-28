@@ -72,6 +72,7 @@ export interface DataMapperItem {
     filterOperator?: string;
     FilterValue?: string;
     filterValue?: string;
+    FormulaConverted?: string;
     FormulaExpression?: string;
     formulaExpression?: string;
     FormulaResultPath?: string;
