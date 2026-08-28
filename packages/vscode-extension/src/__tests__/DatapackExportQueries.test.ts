@@ -101,7 +101,7 @@ describe('DatapackExportQueries', () => {
             expect(getMatchingKey).toHaveBeenCalledWith('Product2', {
                 scope: '/workspace/export-definitions.yaml'
             });
-            expect(result).toBe(
+            expect(result.toString()).toBe(
                 `select Id, CustomLabel__c, Name, ProductCode from Product2 where ProductCode = 'SKU-1'`
             );
         });

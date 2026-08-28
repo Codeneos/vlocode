@@ -33,7 +33,9 @@ export class DatapackExportQueries {
                 fieldList: [ 'Id' ],
             }
         );
-        const matchingKey = await this.matchingKeys.getMatchingKey(datapack.sobjectType);
+        const matchingKey = await this.matchingKeys.getMatchingKey(datapack.sobjectType, {
+            scope: datapack.exportDefinitionScope
+        });
         const matchingFields = [ ...matchingKey.fields ];
         const nameField = await this.schema.getNameField(datapack.sobjectType);
 
