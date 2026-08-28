@@ -12,7 +12,7 @@ definitions:
       - Type
       - SubType
       - Language
-      - Version
+      - OmniProcessVersionNumber
     filter:
       IsIntegrationProcedure: false
     fields:
@@ -46,7 +46,7 @@ definitions:
       - Type
       - SubType
       - Language
-      - Version
+      - OmniProcessVersionNumber
 
   DataRaptor: &omniDataTransform
     objectType: OmniDataTransform
