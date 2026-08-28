@@ -32,6 +32,17 @@ describe('ModelBackedDocument source synchronization', () => {
         expect(reload).not.toHaveBeenCalled();
         expect(write).toHaveBeenCalledTimes(1);
     });
+
+    it('cancels a pending designer write before an immediate save synchronization', async () => {
+        const document = createDocument();
+        const write = jest.fn().mockResolvedValue(undefined);
+
+        document.scheduleSourceWrite(write);
+        document.cancelSourceWrite();
+        await jest.runAllTimersAsync();
+
+        expect(write).not.toHaveBeenCalled();
+    });
 });
 
 function createDocument() {

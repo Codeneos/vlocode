@@ -102,7 +102,10 @@ export abstract class ModelBackedEditorProvider<
 
     public async saveCustomDocument(document: ModelBackedDocument<TModel, TData>): Promise<void> {
         this.applyModel(document.data, document.data.model);
+        document.cancelSourceWrite();
+        await this.syncDesignerToOpenSourceDocuments(document);
         await this.saveDocument(document.data);
+        await WorkspaceDocuments.saveOpenDocuments(document.sourceFiles);
         document.hasUnsavedChanges = false;
         this.postToDocument(document, { type: 'saved' });
         void vscode.window.setStatusBarMessage(this.view.savedMessage, 2500);

@@ -52,6 +52,11 @@ export class ModelBackedDocument<TModel, TData extends ModelBackedDocumentData<T
         });
     }
 
+    /** Cancels a queued designer-to-source write before an immediate save synchronization. */
+    public cancelSourceWrite(): void {
+        this.sourceWriteTimer = this.cancelTimer(this.sourceWriteTimer);
+    }
+
     private schedule(timer: ReturnType<typeof setTimeout> | undefined, action: () => Promise<void>): ReturnType<typeof setTimeout> {
         if (timer) {
             clearTimeout(timer);
