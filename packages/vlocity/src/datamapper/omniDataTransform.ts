@@ -1,3 +1,5 @@
+import type { DataMapperJsonValue } from './types';
+
 export interface OmniDataTransformRecord {
     id?: string;
     vlocityRecordSObjectType: string;
@@ -5,10 +7,10 @@ export interface OmniDataTransformRecord {
     name?: string;
     batchSize?: number | string;
     description?: string;
-    expectedInputJson?: string;
+    expectedInputJson?: DataMapperJsonValue;
     expectedInputOtherData?: string;
     expectedInputXml?: string;
-    expectedOutputJson?: string;
+    expectedOutputJson?: DataMapperJsonValue;
     expectedOutputOtherData?: string;
     expectedOutputXml?: string;
     globalKey?: string;
@@ -30,7 +32,7 @@ export interface OmniDataTransformRecord {
     outputType?: string;
     overrideKey?: string;
     preprocessorClassName?: string;
-    previewJsonData?: string;
+    previewJsonData?: DataMapperJsonValue;
     previewOtherData?: string;
     previewSourceObjectData?: string;
     previewXmlData?: string;

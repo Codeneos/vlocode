@@ -6,13 +6,17 @@ import type {
 
 export type DataMapperType = 'Extract' | 'Transform' | 'Load' | string;
 
+export type DataMapperJsonValue = null | boolean | number | string | DataMapperJsonValue[] | {
+    [key: string]: DataMapperJsonValue;
+};
+
 export interface DataMapperDefinition {
     BatchSize?: number | string;
     Description?: string;
-    ExpectedInputJson?: string;
+    ExpectedInputJson?: DataMapperJsonValue;
     ExpectedInputOtherData?: string;
     ExpectedInputXml?: string;
-    ExpectedOutputJson?: string;
+    ExpectedOutputJson?: DataMapperJsonValue;
     ExpectedOutputOtherData?: string;
     ExpectedOutputXml?: string;
     GlobalKey?: string;
@@ -40,7 +44,7 @@ export interface DataMapperDefinition {
     omniDataTransformItem?: DataMapperItem[] | DataMapperItem;
     OutputParsingClass?: string;
     PreprocessorClassName?: string;
-    PreviewJsonData?: string;
+    PreviewJsonData?: DataMapperJsonValue;
     PreviewOtherData?: string;
     PreviewSourceObjectData?: string;
     PreviewXmlData?: string;

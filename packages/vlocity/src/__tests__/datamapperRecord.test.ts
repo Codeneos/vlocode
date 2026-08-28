@@ -13,7 +13,7 @@ describe('DataMapperRecord', () => {
             Type: 'Extract',
             VersionNumber: 3,
             ExpectedInputJson: '{"accountId":"001"}',
-            OmniDataTransformItem: [{
+            OmniDataTransformItem: {
                 VlocityDataPackType: 'SObject',
                 VlocityRecordSObjectType: 'OmniDataTransformItem',
                 VlocityRecordSourceKey: 'OmniDataTransformItem/AccountName',
@@ -23,7 +23,7 @@ describe('DataMapperRecord', () => {
                 InputFieldName: 'Name',
                 OutputFieldName: 'account:name',
                 TransformValuesMappings: '{"Acme":"ACME"}'
-            }]
+            }
         });
 
         expect(DataMapperRecord.fromDatapack(datapack)).toMatchObject({
@@ -67,12 +67,12 @@ describe('DataMapperRecord', () => {
         });
 
         expect(DataMapperRecord.fromDatapack(datapack)).toMatchObject({
-            sObjectType: 'vlocity_cmt__DRBundle__c',
+            sObjectType: '%vlocity_namespace%__DRBundle__c',
             Name: 'AccountExtract',
             Type: 'Extract',
             ExpectedInputJson: '{"accountId":"001"}',
             OmniDataTransformItem: [{
-                sObjectType: 'vlocity_cmt__DRMapItem__c',
+                sObjectType: '%vlocity_namespace%__DRMapItem__c',
                 GlobalKey: 'AccountName',
                 InputObjectName: 'Account',
                 InputFieldName: 'Name',
