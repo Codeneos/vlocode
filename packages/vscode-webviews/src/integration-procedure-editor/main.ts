@@ -163,6 +163,16 @@ export class AppComponent {
     protected readonly jsonTargetLabel = computed(() => this.selectedElement() ? 'selected element property set' : 'procedure property set');
     protected readonly inspectorCollapsed = computed(() => this.layout().inspectorCollapsed);
     protected readonly inspectorWidth = computed(() => `${this.layout().inspectorWidth}px`);
+    protected readonly loading = computed(() => !this.hasLoaded() || this.refreshing());
+    protected readonly loadingPhase = computed(() => this.hasLoaded()
+        ? {
+            title: 'Refreshing Integration Procedure',
+            message: 'Refreshing the source file from the selected org.'
+        }
+        : {
+            title: 'Loading Integration Procedure',
+            message: 'Reading the elements and procedure settings.'
+        });
     protected readonly navigationCollapsed = computed(() => this.layout().leftCollapsed);
 
     constructor() {
@@ -205,7 +215,9 @@ export class AppComponent {
     protected refresh() {
         this.refreshing.set(true);
         this.vscode?.postMessage({ type: 'refresh' });
-        window.setTimeout(() => this.refreshing.set(false), 1200);
+        if (!this.vscode) {
+            window.setTimeout(() => this.refreshing.set(false), 1000);
+        }
     }
 
     protected openSalesforce() {

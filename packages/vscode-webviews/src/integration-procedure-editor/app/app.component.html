@@ -131,5 +131,15 @@
                 (jsonDraftChange)="setJsonDraftValue($event)"
                 (applyJson)="applyJson()" />
         </section>
+
+        @if (loading()) {
+            <section class="ip-loading" role="status" aria-live="polite" aria-busy="true">
+                <div class="ip-loading__content">
+                    <span class="ip-loading__spinner" aria-hidden="true"></span>
+                    <h2>{{ loadingPhase().title }}</h2>
+                    <p>{{ loadingPhase().message }}</p>
+                </div>
+            </section>
+        }
     </main>
 }
