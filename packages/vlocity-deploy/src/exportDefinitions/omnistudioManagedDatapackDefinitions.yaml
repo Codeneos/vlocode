@@ -38,7 +38,7 @@ definitions:
           - _Element
           - Name
         expandArray: true
-        orderBy:
+        sortFields:
           - '%vlocity_namespace%__Level__c'
           - '%vlocity_namespace%__Order__c'
 

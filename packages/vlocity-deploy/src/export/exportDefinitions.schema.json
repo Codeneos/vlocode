@@ -68,13 +68,6 @@
           "description": "Type of SObject to which this filter applies",
           "type": "string"
         },
-        "orderBy": {
-          "description": "Optional list of fields by which to sort the records, executed in JS after querying the data.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
         "relatedObjects": {
           "description": "List of related objects that are exported as separate datapacks but are related to this object and should be included in the export.",
           "items": {
@@ -134,13 +127,6 @@
             "objectType": {
               "description": "Type of SObject to which this filter applies",
               "type": "string"
-            },
-            "orderBy": {
-              "description": "Optional list of fields by which to sort the records, executed in JS after querying the data.",
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
             },
             "processor": {
               "description": "Processor function snippet to use for processing the field data before exporting.",
@@ -342,13 +328,6 @@
         "objectType": {
           "description": "Type of SObject to which this filter applies",
           "type": "string"
-        },
-        "orderBy": {
-          "description": "Optional list of fields by which to sort the records, executed in JS after querying the data.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
         }
       },
       "required": [

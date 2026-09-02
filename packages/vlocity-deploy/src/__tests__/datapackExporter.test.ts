@@ -192,17 +192,17 @@ describe('DatapackExporter', () => {
         };
         const [embeddedObject] = definitions.getEmbeddedObjects(datapack);
 
+        expect(embeddedObject.sortFields).toEqual([
+            '%vlocity_namespace%__Level__c',
+            '%vlocity_namespace%__Order__c'
+        ]);
         expect(exporter.resolveEmbeddedLookup(datapack, embeddedObject)).toEqual({
             name: '%vlocity_namespace%__Element__c',
             objectType: '%vlocity_namespace%__Element__c',
             filter: {
                 '%vlocity_namespace%__OmniScriptId__c': 'a0M000000000001AAA'
             },
-            limit: 5000,
-            orderBy: [
-                '%vlocity_namespace%__Level__c',
-                '%vlocity_namespace%__Order__c'
-            ]
+            limit: 5000
         });
     });
 
