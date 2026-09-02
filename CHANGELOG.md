@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.5](https://github.com/codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
+
+### Bug Fixes
+
+* **vlocity-deploy:** OmniProcess datapacks with a version number did not deploy as the script did not get deactivated ([47d752b](https://github.com/codeneos/vlocode/commit/47d752bbe667b6561657edd4eb1e69fcf803f955))
+
 ## [2.4.4](https://github.com/codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
 
 ### Bug Fixes
