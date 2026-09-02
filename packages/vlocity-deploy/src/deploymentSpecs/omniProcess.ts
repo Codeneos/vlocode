@@ -4,9 +4,10 @@ import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 import { forEachAsyncParallel, getErrorMessage, Timer } from '@vlocode/util';
-import { DeploymentStatus } from '../datapackDeploymentRecord';
+import { DeploymentStatus, type DatapackDeploymentRecord, type DeployedDatapackDeploymentRecord } from '../datapackDeploymentRecord';
 import { Logger } from '@vlocode/core';
 import { OmniProcessRecord, OmniScriptActivator, OmniScriptDefinition } from '@vlocode/omniscript';
+import { RecordActivator } from './recordActivator';
 
 @deploymentSpec({ recordFilter: /^OmniProcess$/i })
 export class OmniProcess implements DatapackDeploymentSpec {
@@ -15,11 +16,13 @@ export class OmniProcess implements DatapackDeploymentSpec {
         isProcedure: 'IsIntegrationProcedure',
         lwcKey: OmniProcessRecord.WebComponentKeyField,
         uiniqueName: 'UniqueName',
+        version: 'VersionNumber',
         active: OmniProcessRecord.ActivationField
     } as const;
 
     public constructor(
         private readonly activator: OmniScriptActivator,
+        private readonly deactivator: RecordActivator,
         private readonly salesforce: SalesforceService,
         private readonly logger: Logger) {
     }
@@ -30,6 +33,15 @@ export class OmniProcess implements DatapackDeploymentSpec {
         if (datapack.data[this.fields.isProcedure] === true) {
             delete datapack.data[this.fields.lwcKey];
         }
+    }
+
+    public beforeDeployRecord(event: ReadonlyArray<DatapackDeploymentRecord>) {
+        // Deactivate IPs and OmniScript that carry a version number before deployment
+        return this.deactivator.activateRecords(
+            event.filter(r => r.recordId) as unknown[] as DeployedDatapackDeploymentRecord[], 
+            () => ({ [this.fields.active]: false }), 
+            { chunkSize: 1, message: 'Deactivated', recordType: 'OmniProcess' }
+        );
     }
 
     public async afterDeploy(event: DatapackDeploymentEvent) {

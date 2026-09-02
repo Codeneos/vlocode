@@ -63,7 +63,7 @@ export interface DatapackDeploymentSpec {
     beforeDependencyResolution?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<unknown> | unknown;
 
     /**
-     * This hook is called before deploying the first record in a datapack, and is only called once very datapack in the deployment. 
+     * This hook is called before deploying the first record in a datapack, and is only called once for every datapack in the deployment. 
      * - Use this hook to execute and pre-deployment actions. This action is comparable with the `pre-step` job from the Vlocity tools library. 
      * - Use the {@link DatapackDeploymentEvent.getRecords} function to get a list of records for a specific SObject type.
      *
