@@ -22,6 +22,8 @@ export abstract class VlocodeVlocityDeployConfiguration extends BaseConfiguratio
     lwcDeploymentType: 'metadata' | 'tooling';
     disableTriggers: boolean;
     allowUnresolvedDependencies: boolean;
+    purgeMatchingDependencies: boolean | 'none' | 'unmatched' | 'all';
+    purgeMatchingRecordsFilter: string[];
 }
 
 export type CustomExportDefinitionFiles = Record<string, string>;

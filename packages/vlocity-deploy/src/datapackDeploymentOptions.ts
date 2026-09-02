@@ -1,5 +1,7 @@
 import { RecordBatchOptions } from "@vlocode/salesforce";
 
+export type PurgeMatchingDependenciesMode = 'none' | 'unmatched' | 'all';
+
 export interface DatapackDeploymentOptions extends RecordBatchOptions {
     /**
      * Disable all Vlocity Triggers before starting the deployment; triggers are automatically re-enabled after the deployment completes.
@@ -24,11 +26,15 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     lookupFailedDependencies?: boolean;
     /**
-     * Purge dependent records after deploying any record. This setting controls whether or not the deployment will delete direct dependencies linked
-     * through a matching (not lookup) dependency. This is especially useful to delete for example PCI records and ensure that old relationships are deleted.
+     * Controls purging of direct dependencies linked through a matching (not lookup) dependency.
+     * `none` retains the default cleanup of records without usable matching keys, `unmatched` additionally
+     * deletes excess records and can be limited by {@link purgeMatchingRecordsFilter}, and `all` retains
+     * the force-replacement behavior previously enabled by `true`.
+     *
+     * Boolean values remain supported for backwards compatibility: `false` is `none` and `true` is `all`.
      * @default false
      */
-    purgeMatchingDependencies?: boolean;
+    purgeMatchingDependencies?: boolean | PurgeMatchingDependenciesMode;
     /**
      * When @see DatapackDeploymentOptions.purgeMatchingDependencies is enabled this setting controls how embedded datapacks are deleted from the target org
      * when enabled purging of existing records happens in bulk, this is more efficient but in this mode it is not possible to related errors while deleting
@@ -36,6 +42,17 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * @default true
      */
     purgeLookupOptimization?: boolean;
+    /**
+     * Embedded SObject types included in `unmatched` matching-dependency cleanup. When empty, all embedded
+     * SObject types are considered. When set, only the listed types are considered. After a parent record
+     * is deployed, matching child records linked through the same relationship as an embedded deployment
+     * record are deleted when no deployment record has the same matching key. Completely empty child
+     * collections are not inferred or purged. This filter is ignored by `none` and `all` modes.
+     *
+     * Object names can include the Vlocity namespace placeholder and are matched case-insensitively.
+     * @default []
+     */
+    purgeMatchingRecordsFilter?: string[] | null;
     /**
      * When enabled the deployment compares the datapack records against the data in the target org and only
      * deploys records that have changed; records that are already in sync with the target org are skipped

@@ -261,6 +261,44 @@ describe('collection', () => {
                 { x: 1, a: 'd' },
             ]);
         });
+        it('should sort by multiple properties in precedence order', () => {
+            const items = [
+                { x: 1, group: 'b', rank: 1 },
+                { x: 2, group: 'a', rank: 2 },
+                { x: 3, group: 'a', rank: 1 },
+                { x: 4, group: 'b', rank: 2 }
+            ];
+            expect(collection.sortBy(items, ['group', 'rank'])).toEqual([
+                { x: 3, group: 'a', rank: 1 },
+                { x: 2, group: 'a', rank: 2 },
+                { x: 1, group: 'b', rank: 1 },
+                { x: 4, group: 'b', rank: 2 }
+            ]);
+        });
+        it('should sort by multiple properties in descending order', () => {
+            const items = [
+                { x: 1, group: 'b', rank: 1 },
+                { x: 2, group: 'a', rank: 2 },
+                { x: 3, group: 'a', rank: 1 },
+                { x: 4, group: 'b', rank: 2 }
+            ];
+            expect(collection.sortBy(items, ['group', 'rank'], 'desc')).toEqual([
+                { x: 4, group: 'b', rank: 2 },
+                { x: 1, group: 'b', rank: 1 },
+                { x: 2, group: 'a', rank: 2 },
+                { x: 3, group: 'a', rank: 1 }
+            ]);
+        });
+        it('should preserve order and return a copy when properties are empty', () => {
+            const items = [
+                { x: 1, group: 'b' },
+                { x: 2, group: 'a' }
+            ];
+            const result = collection.sortBy(items, []);
+
+            expect(result).toEqual(items);
+            expect(result).not.toBe(items);
+        });
         it('should sort by numbers selected by fn', () => {
             const items = [
                 { x: 1, a: 1 },

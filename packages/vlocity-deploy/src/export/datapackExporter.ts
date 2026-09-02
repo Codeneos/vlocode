@@ -2,7 +2,7 @@ import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService 
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey } from "@vlocode/vlocity";
 import { MatchingKeyService } from "../matchingKeyService";
-import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, Iterable, mapAsync, mapAsyncParallel, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
+import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, Iterable, mapAsync, mapAsyncParallel, removeNamespacePrefix, sortBy, visitObject, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
@@ -45,12 +45,10 @@ interface DeferredLookup {
     readonly objectType?: string;
 }
 
-interface DeferredEmbedded {
-    readonly datapack: ExportDatapack;
+interface DeferredEmbedded extends ObjectFilter {
     readonly name: string;
-    readonly objectType: string;
+    readonly datapack: ExportDatapack;
     readonly filter: Record<string, any> | Record<string, any>[];
-    readonly limit?: number;
     readonly context: ExportContext;
 }
 
@@ -599,17 +597,18 @@ export class DatapackExporter {
         // Export embedded objects
         for (const embeddedObject of this.definitions.getEmbeddedObjects(datapack)) {
             try {
-                const { name, objectType, filter, limit } = this.resolveEmbeddedLookup(datapack, embeddedObject);
+                const { name, objectType, filter, limit, orderBy } = this.resolveEmbeddedLookup(datapack, embeddedObject);
 
                 // Object filters (and arrays of object clauses) are deferred so the child records for all
                 // parents in the chunk can be looked up in a single batched query (see resolveEmbeddedObjects).
                 // Only raw SOQL string filters cannot be grouped back per parent and are resolved inline.
                 if (this.isBatchableFilter(filter)) {
-                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, context });
+                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, orderBy, context });
                 } else {
                     const records = await this.lookupWithFilter(objectType, filter, limit);
                     if (records.length) {
-                        datapack.data[name] = await mapAsync(records, record => this.buildEmbeddedSObject(datapack, record, context));
+                        const embeddedRecords = await mapAsync(records, record => this.buildEmbeddedSObject(datapack, record, context))
+                        datapack.data[name] = sortBy(embeddedRecords.filter(f => f != null), orderBy ?? []);
                     }
                 }
             } catch (e) {
@@ -632,7 +631,11 @@ export class DatapackExporter {
         }
 
         this.logger.verbose(`Lookup ${objectFilter.objectType} (${datapack.objectType}) using filter:`, filter);
-        return { name: embeddedObject.name, objectType: objectFilter.objectType, filter, limit: objectFilter.limit };
+        return { 
+            ...objectFilter,
+            name: embeddedObject.name, 
+            filter
+        };
     }
 
     private isBatchableFilter(filter: unknown): filter is Record<string, any> | Record<string, any>[] {
@@ -694,7 +697,7 @@ export class DatapackExporter {
                     })).filter(child => child != null);
 
                     if (children.length) {
-                        entry.datapack.data[entry.name] = children;
+                        entry.datapack.data[entry.name] = sortBy(children, entry.orderBy ?? []);
                     }
 
                 }, this.exportParallelism);

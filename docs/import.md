@@ -41,7 +41,8 @@ The most frequently used options are summarized below; see the
 | `--delta` | Deploy only datapacks that differ from the target org. Recommended for fast, repeatable deployments. |
 | `--retry-count <n>` | Increase resilience to transient row-lock/timeout errors. |
 | `--strict-order` | Enforce datapack-level ordering when record-level ordering is not enough. |
-| `--purge-dependencies` | Force-replace embedded child collections (non-production). |
+| `--purge-dependencies [mode]` | Use `none`, `unmatched`, or `all` matching-dependency cleanup; omitting the mode retains the previous `all` behavior. |
+| `--purge-matching-records-filter <objects...>` | Limit `unmatched` cleanup to the listed embedded SObject types. An empty filter considers every embedded child type. Completely empty collections are not inferred. |
 | `--allow-unresolved` | Continue when a dependency cannot be resolved (may produce inconsistent data). |
 | `-y, --continue-on-error` | Continue with datapacks that loaded successfully even if others failed to load. |
 
@@ -161,7 +162,7 @@ readability.
 | Circular dependency failure | Two or more records depend on each other. Review the datapack references; try `--strict-order`, or split the cycle. |
 | Dependency cannot be resolved | A referenced record is missing from both the deployment and the org. Deploy the dependency first, use `--lookup-failed`, or (with caution) `--allow-unresolved`. |
 | Field exists in datapack but not deployed | The field is absent in the target org; Vlocode matches datapack fields against the org schema and reports unmatched fields as errors. Review the org's object/field setup. |
-| Deleted child records are not removed | By design Vlocode does not delete records unless asked. Use `--purge-dependencies` (non-production) to replace embedded child collections. |
+| Deleted child records are not removed | By design Vlocode does not delete matching-key records unless asked. Use `--purge-dependencies unmatched --purge-matching-records-filter <objects...>` to delete only excess records of selected child types, or `--purge-dependencies` to retain force-replacement behavior. |
 
 Raise the log level with `-v`/`--debug` to see detailed per-record diagnostics in
 the NDJSON [log file](./cli.md#logging-and-diagnostics).

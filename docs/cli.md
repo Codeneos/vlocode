@@ -192,7 +192,8 @@ vlocode deploy <paths...> [options]
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `--purge-dependencies` | `false` | After deploying the primary record, delete target child records that have a lookup to it (even those with a matching key). Use to force-replace child collections; not recommended on production. |
+| `--purge-dependencies [mode]` | `false` | Use `none`, `unmatched`, or `all` matching-dependency cleanup. Supplying the option without a mode retains the previous `all` behavior. |
+| `--purge-matching-records-filter <objects...>` | `[]` | Limit `unmatched` cleanup to the listed embedded SObject types. An empty filter considers every embedded child type. Completely empty collections are not inferred. |
 | `--lookup-failed` | `false` | Look up the Ids of dependencies that failed to deploy so dependent records can still resolve them. |
 | `--allow-unresolved` | `false` | Do not fail a datapack when a dependency cannot be resolved; the field is set to `null` and a warning logged. May produce inconsistent data. |
 | `--retry-count <count>` | `1` | Number of times a record deployment is retried before it is failed. |

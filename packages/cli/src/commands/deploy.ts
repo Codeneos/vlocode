@@ -26,12 +26,14 @@ export default class extends SalesforceCommand {
 
     static options = [
         ...SalesforceCommand.options,
-        new Option('--purge-dependencies',
-            `delete embedded dependencies with matching keys after the primary datapack record is deployed. ` +
-            `By default Vlocode will only delete child records that do not have a matching key configuration, ` +
-            `with this flag Vlocode will delete all child records that have a lookup relationships to the primary datapack record. ` +
-            `For example; when deploying a Product2 datapack this flag will delete all child item records found in the target org with a lookup to the Product2 datapack that is deployed.`
-        ).default(false),
+        new Option('--purge-dependencies [mode]',
+            `purge embedded matching dependencies using none, unmatched, or all. ` +
+            `Using the option without a mode retains the previous all behavior.`
+        ).choices([ 'none', 'unmatched', 'all' ]).preset('all').default(false),
+        new Option('--purge-matching-records-filter <objects...>',
+            `limit unmatched matching-dependency cleanup to the specified embedded SObject types. ` +
+            `When omitted, all embedded child types are considered; completely empty collections are not inferred.`
+        ).default([]),
         new Option('--lookup-failed', 'lookup dependencies that fail to deploy in the org').default(false),
         new Option('--allow-unresolved', 
             `do not fail the deployment of a datapack when a dependency cannot be resolved` +
@@ -94,7 +96,8 @@ export default class extends SalesforceCommand {
         const deployOptions: DatapackDeploymentOptions = {
             useBulkApi: !!options.bulkApi,
             strictOrder: !!options.strictOrder,
-            purgeMatchingDependencies: !!options.purgeDependencies,
+            purgeMatchingDependencies: options.purgeDependencies,
+            purgeMatchingRecordsFilter: options.purgeMatchingRecordsFilter,
             lookupFailedDependencies: !!options.lookupFailed,
             allowUnresolvedDependencies: !!options.allowUnresolved,
             maxRetries: options.retryCount,

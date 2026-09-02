@@ -3,7 +3,7 @@ import { SalesforceConnectionProvider, RecordBatch, SalesforceService, RecordErr
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore, getErrorMessage, deepClone, objectEquals } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DatapackDependencyResolver, DependencyResolutionRequest, DependencyResolutionResult } from './datapackDependencyResolver';
-import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
+import { DatapackDeploymentOptions, PurgeMatchingDependenciesMode } from './datapackDeploymentOptions';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { DatapackRecordMatcher } from './datapackRecordMatcher';
@@ -169,6 +169,13 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     public get isCancelled() {
         return this.cancelToken?.isCancellationRequested === true;
     }
+
+    public get purgeMatchingDependenciesMode(): PurgeMatchingDependenciesMode {
+        return typeof this.options.purgeMatchingDependencies === 'boolean' ?
+            this.options.purgeMatchingDependencies ? 'all' : 'none' :
+            this.options.purgeMatchingDependencies;
+    }
+
 
     constructor(
         options: DatapackDeploymentOptions | undefined,
@@ -776,7 +783,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      */
     public async resolveExistingIds(datapacks: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // prepare batch
-        const recordsForLookup = [...Iterable.filter(datapacks, rec => !rec.skipLookup)];
+        const recordsForLookup = [...Iterable.filter(datapacks, rec => !rec.skipLookup && rec.action == DeploymentAction.None)];
         const unresolvedRecords = new Array<DatapackDeploymentRecord>();
 
         for (const record of recordsForLookup) {
@@ -978,16 +985,17 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 }
             }
 
-            if (this.options.purgeMatchingDependencies) {
+            if (this.purgeMatchingDependenciesMode === 'all') {
                 await this.purgeMatchingDependentRecords([...datapackRecords.values()]);
             } else {
-                // When purgeMatchingDependencies is disabled only delete records that cannot be updated
-                // because they don't have a configured matching fields -or- because lookup is skipped
+                // In none/unmatched mode, always retain the existing cleanup for records without usable
+                // matching keys and additionally purge filtered matching-key records in unmatched mode
                 await this.purgeDependentRecords([...datapackRecords.values()], ({ dependency, dependentRecord, field }) => {
                     if (field.startsWith('$') || dependency.VlocityDataPackType !== 'VlocityMatchingKeyObject') {
                         return false;
                     }
-                    return !dependentRecord.upsertFields?.length || dependentRecord.skipLookup;
+                    return this.shouldPurgeUnmatchedRecord(dependentRecord) ||
+                        !dependentRecord.upsertFields?.length || dependentRecord.skipLookup;
                 });
             }
         } finally {
@@ -1102,6 +1110,16 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             !field.startsWith('$') && dependency.VlocityDataPackType === 'VlocityMatchingKeyObject');
     }
 
+    private shouldPurgeUnmatchedRecord(record: DatapackDeploymentRecord) {
+        if (this.purgeMatchingDependenciesMode !== 'unmatched') {
+            return false
+        }
+        if (!this.options.purgeMatchingRecordsFilter) {
+            return true;
+        }
+        return this.options.purgeMatchingRecordsFilter.some(sobjectType => record.isSObjectOfType(sobjectType));
+    }
+
     private async purgeDependentRecords(records: Iterable<DatapackDeploymentRecord>, predicate: RecordPurgePredicate) {
         const deleteFilters = new Map<string, Array<Record<string, string>>>();
         const deleteIds = new Map<string, Set<string>>();
@@ -1177,8 +1195,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 }
                 const purgeTarget = mapGetOrCreate(targets, `${undeployRecord.sobjectType}:${field}`,
                     () => ({ sobjectType: undeployRecord.sobjectType, field, recordId, preservedIds: new Set<string>() }));
-                if (undeployRecord.isSkipped && undeployRecord.recordId) {
-                    // Dependent is delta matched to an in-sync org record; preserve the org record
+                if (undeployRecord.recordId && (undeployRecord.isSkipped || this.shouldPurgeUnmatchedRecord(undeployRecord))) {
+                    // Preserve in-scope records matched by data or by their configured matching key
                     purgeTarget.preservedIds.add(undeployRecord.recordId);
                 }
             }
@@ -1225,6 +1243,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param parents Deployed or skipped records whose dependents are about to be purged
      * @param dependentsBySourceKey Pending records indexed by the source keys they depend on
      * @param predicate Predicate that selects which dependents are purged
+     * In unmatched mode, filtered records with matching keys have their existing IDs resolved before
+     * matching so the scoped purge can preserve them while they remain pending for normal deployment.
      * @returns The dependent records that were matched to an in-sync org record and skipped
      */
     private async deltaMatchDependentRecords(
@@ -1256,10 +1276,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 this.logger.verbose(`Unable to resolve dependencies for delta match of ${record.sourceKey}: ${getErrorMessage(err)}`);
             })));
 
-            const outcomes = await this.recordMatcher.matchRecords([...candidates.values()], { strict: true }, this.cancelToken);
+            const candidateRecords = [...candidates.values()];
+            const matchingKeyRecords = candidateRecords.filter(record =>
+                this.shouldPurgeUnmatchedRecord(record) && !!record.upsertFields?.length);
+            await this.resolveExistingIds(matchingKeyRecords, this.cancelToken);
+
+            const outcomes = await this.recordMatcher.matchRecords(candidateRecords, { strict: true }, this.cancelToken);
             queue = [];
 
-            for (const record of candidates.values()) {
+            for (const record of candidateRecords) {
                 const outcome = outcomes.get(record.sourceKey);
                 if (outcome?.status === 'inSync') {
                     record.setUpToDate(outcome.recordId);

@@ -1484,6 +1484,24 @@
                         "type": "boolean",
                         "default": false,
                         "markdownDescription": "Disable SF Industries triggers during deployment. Helps with resolving deployment errors and speeds up deployment but runtime generated fields will not be populated."
+                    },
+                    "vlocity.deploy.purgeMatchingDependencies": {
+                        "type": "string",
+                        "enum": [
+                            "none",
+                            "unmatched",
+                            "all"
+                        ],
+                        "default": "none",
+                        "markdownDescription": "Controls cleanup of embedded matching dependencies. `none` retains default keyless cleanup, `unmatched` deletes excess matching records and can be limited by `vlocity.deploy.purgeMatchingRecordsFilter`, and `true`/`all` retains force-replacement behavior. This setting only affects direct deployments."
+                    },
+                    "vlocity.deploy.purgeMatchingRecordsFilter": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "type": "string"
+                        },
+                        "markdownDescription": "Object API names included when `vlocity.deploy.purgeMatchingDependencies` is `unmatched`. Leave this empty to consider every embedded child type. When set, only the listed types are considered. Empty child collections are ignored. This setting only affects direct deployments."
                     }
                 }
             },
