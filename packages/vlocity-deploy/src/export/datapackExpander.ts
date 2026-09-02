@@ -2,7 +2,7 @@ import path from "path/posix";
 import nativePath from "path";
 
 import { injectable, Logger } from "@vlocode/core";
-import { formatString, normalizeName, substringAfter } from "@vlocode/util";
+import { formatString, normalizeName, sortBy, substringAfter } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
 import * as fs from "fs-extra";
 
@@ -203,15 +203,7 @@ export class DatapackExpander {
             return value;
         }
 
-        return [...value].sort((a, b) => {
-            for (const field of fields) {
-                const comparison = this.compareFieldValues(a[field], b[field]);
-                if (comparison !== 0) {
-                    return comparison;
-                }
-            }
-            return 0;
-        });
+        return sortBy(value, fields);
     }
 
     private readonly isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -225,22 +217,6 @@ export class DatapackExpander {
             return ['Name'];
         }
         return undefined;
-    }
-
-    private compareFieldValues(a: unknown, b: unknown): number {
-        if (a === b) {
-            return 0;
-        }
-        if (a === undefined || a === null) {
-            return 1;
-        }
-        if (b === undefined || b === null) {
-            return -1;
-        }
-        if (typeof a === 'number' && typeof b === 'number') {
-            return a - b;
-        }
-        return String(a).localeCompare(String(b), 'en');
     }
 
     private evalPathFormat(format: string | string[], options?: { context?: object; defaultExt?: string; fallback?: string; }) {
