@@ -631,10 +631,12 @@ export class DatapackExporter {
         }
 
         this.logger.verbose(`Lookup ${objectFilter.objectType} (${datapack.objectType}) using filter:`, filter);
-        return { 
-            ...objectFilter,
-            name: embeddedObject.name, 
-            filter
+        return {
+            name: embeddedObject.name,
+            objectType: objectFilter.objectType,
+            filter,
+            limit: objectFilter.limit,
+            orderBy: objectFilter.orderBy
         };
     }
 

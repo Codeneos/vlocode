@@ -143,6 +143,10 @@ export interface ObjectFilter {
      * Optional maximum number of records to return when querying this object.
      */
     limit?: number;
+    /**
+     * Optional list of fields by which to sort the records, executed in JS after querying the data.
+     */
+    orderBy?: string[];
 }
 
 export interface ObjectRelationship {

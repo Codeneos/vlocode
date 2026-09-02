@@ -198,7 +198,11 @@ describe('DatapackExporter', () => {
             filter: {
                 '%vlocity_namespace%__OmniScriptId__c': 'a0M000000000001AAA'
             },
-            limit: 5000
+            limit: 5000,
+            orderBy: [
+                '%vlocity_namespace%__Level__c',
+                '%vlocity_namespace%__Order__c'
+            ]
         });
     });
 

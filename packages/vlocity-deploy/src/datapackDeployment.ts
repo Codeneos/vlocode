@@ -74,6 +74,7 @@ const datapackDeploymentDefaultOptions: Required<DatapackDeploymentOptions> = {
     lookupFailedDependencies: false,
     purgeMatchingDependencies: false,
     purgeLookupOptimization: true,
+    purgeMatchingRecordsFilter: [],
     bulkDependencyResolution: true,
     deltaCheck: false,
     skipLwcActivation: false,
@@ -1111,13 +1112,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private shouldPurgeUnmatchedRecord(record: DatapackDeploymentRecord) {
-        if (this.purgeMatchingDependenciesMode !== 'unmatched') {
-            return false
-        }
-        if (!this.options.purgeMatchingRecordsFilter) {
-            return true;
-        }
-        return this.options.purgeMatchingRecordsFilter.some(sobjectType => record.isSObjectOfType(sobjectType));
+        const filter = this.options.purgeMatchingRecordsFilter;
+        return this.purgeMatchingDependenciesMode === 'unmatched' &&
+            (!filter?.length || filter.some(sobjectType => record.isSObjectOfType(sobjectType)));
     }
 
     private async purgeDependentRecords(records: Iterable<DatapackDeploymentRecord>, predicate: RecordPurgePredicate) {

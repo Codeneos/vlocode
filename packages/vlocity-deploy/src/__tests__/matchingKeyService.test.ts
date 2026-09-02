@@ -186,7 +186,7 @@ describe('MatchingKeyService', () => {
                 field('Type'),
                 field('SubType'),
                 field('Language'),
-                field('Version')
+                field('VersionNumber')
             ]);
             const managedOmniScript = describeOf('vlocity_cmt__OmniScript__c', [
                 field('Name', { nameField: true }),
@@ -202,7 +202,7 @@ describe('MatchingKeyService', () => {
                 scope: '/workspace/custom.yaml'
             });
 
-            expect(matchingKey.fields).toEqual([ 'Type', 'SubType', 'Language', 'Version' ]);
+            expect(matchingKey.fields).toEqual([ 'Type', 'SubType', 'Language', 'VersionNumber' ]);
             expect(managedMatchingKey.fields).toEqual([
                 'vlocity_cmt__Type__c',
                 'vlocity_cmt__SubType__c',
@@ -210,9 +210,9 @@ describe('MatchingKeyService', () => {
                 'vlocity_cmt__Version__c'
             ]);
             expect(DatapackExportDefinitions.omniStudioStandard.definitions.OmniScript.matchingKeyFields)
-                .toEqual([ 'Type', 'SubType', 'Language', 'Version' ]);
+                .toEqual([ 'Type', 'SubType', 'Language', 'VersionNumber' ]);
             expect(DatapackExportDefinitions.omniStudioStandard.definitions.IntegrationProcedure.matchingKeyFields)
-                .toEqual([ 'Type', 'SubType', 'Language', 'Version' ]);
+                .toEqual([ 'Type', 'SubType', 'Language', 'VersionNumber' ]);
             expect(DatapackExportDefinitions.omniStudioStandard.definitions.IntegrationProcedure.name)
                 .toEqual([ 'Type', 'SubType' ]);
             expect(DatapackExportDefinitions.omniStudioManaged.definitions.OmniScript.matchingKeyFields)
