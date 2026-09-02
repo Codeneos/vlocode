@@ -4,6 +4,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+### Bug Fixes
+
+* **datapackExpander:** simplify sorting logic by using utility function ([72166d3](https://github.com/Codeneos/vlocode/commit/72166d31a5288cad98c095fb34668938f8b81b31))
+* **vlocity-deploy:** restore CI validation ([ffbf74c](https://github.com/Codeneos/vlocode/commit/ffbf74ce756b14fa1134c8d04c86d90190ab4faf))
+* **vlocity-deploy:** use sortFields for embedded records ([8a1e60a](https://github.com/Codeneos/vlocode/commit/8a1e60a608500c5aa691c1ab469352065a8a25b2))
+* **vlocity:** update matching key fields and ignore fields in OmniStudio datapack definitions ([2f720a7](https://github.com/Codeneos/vlocode/commit/2f720a7da101940c67a7403cf51c420f9a3cf787))
+* **vlocity:** update matching key fields to use OmniProcessVersionNumber ([4d3b01a](https://github.com/Codeneos/vlocode/commit/4d3b01a32346f9935477a05d36290dd6f212ac7b))
+
+### Features
+
+* **vlocity:** allow purging of just extra records during a deployment ([f2e20a7](https://github.com/Codeneos/vlocode/commit/f2e20a77639f9a7a03506bdd1d94ce1836f48ec5))
+
 ## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
 
 ### Bug Fixes

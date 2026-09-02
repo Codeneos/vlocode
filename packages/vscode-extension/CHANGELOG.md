@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.4](https://github.com/codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+### Features
+
+* **vlocity:** allow purging of just extra records during a deployment ([f2e20a7](https://github.com/codeneos/vlocode/commit/f2e20a77639f9a7a03506bdd1d94ce1836f48ec5))
+
 ## [2.4.3](https://github.com/codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
 
 ### Bug Fixes
