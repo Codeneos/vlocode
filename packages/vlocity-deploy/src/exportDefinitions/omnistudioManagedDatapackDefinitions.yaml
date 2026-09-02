@@ -38,6 +38,9 @@ definitions:
           - _Element
           - Name
         expandArray: true
+        orderBy:
+          - '%vlocity_namespace%__Level__c'
+          - '%vlocity_namespace%__Order__c'
 
   IntegrationProcedure:
     <<: *managedOmniScriptBase
@@ -103,3 +106,5 @@ definitions:
     matchingKeyFields:
       - '%vlocity_namespace%__MapId__c'
       - Name
+    ignoreFields:
+      - '%vlocity_namespace%__FormulaConverted__c'

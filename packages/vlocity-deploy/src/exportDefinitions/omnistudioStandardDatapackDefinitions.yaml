@@ -37,6 +37,9 @@ definitions:
           - _Element
           - Name
         expandArray: true
+        orderBy:
+          - Level
+          - SequenceNumber
 
   IntegrationProcedure:
     <<: *omniProcessBase
@@ -86,6 +89,10 @@ definitions:
       - Name
     ignoreFields:
       - Level
+      - OmniProcessVersionNumber
+      - IsOmniScriptEmbeddable
+      - ParentElementName
+      - ParentElementType
     fields:
       PropertySetConfig:
         fileName:
@@ -96,3 +103,5 @@ definitions:
     objectType: OmniDataTransformItem
     name:
       - GlobalKey
+    ignoreFields:
+      - FormulaConverted
