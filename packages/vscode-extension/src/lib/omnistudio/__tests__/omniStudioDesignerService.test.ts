@@ -13,7 +13,6 @@ interface TestOmniStudioDesignerService {
             describeSObject: jest.Mock;
         };
     };
-    accessibleSObjects: Map<string, Promise<boolean>>;
     isSObjectAccessible(sobjectType: string): Promise<boolean>;
 }
 
@@ -24,7 +23,6 @@ function createService(describeSObject: jest.Mock): TestOmniStudioDesignerServic
             describeSObject
         }
     };
-    service.accessibleSObjects = new Map();
     return service;
 }
 
@@ -35,13 +33,15 @@ describe('OmniStudioDesignerService', () => {
         await expect(service.isSObjectAccessible('OmniDataTransform')).resolves.toBe(true);
     });
 
-    it('caches object access checks', async () => {
-        const describeSObject = jest.fn().mockResolvedValue({ name: 'OmniDataTransform' });
+    it('uses updated schema access results instead of retaining an earlier result', async () => {
+        const describeSObject = jest.fn()
+            .mockResolvedValueOnce(undefined)
+            .mockResolvedValueOnce({ name: 'OmniDataTransform' })
+            .mockResolvedValueOnce(undefined);
         const service = createService(describeSObject);
 
-        await service.isSObjectAccessible('OmniDataTransform');
-        await service.isSObjectAccessible('OmniDataTransform');
-
-        expect(describeSObject).toHaveBeenCalledTimes(1);
+        await expect(service.isSObjectAccessible('OmniDataTransform')).resolves.toBe(false);
+        await expect(service.isSObjectAccessible('OmniDataTransform')).resolves.toBe(true);
+        await expect(service.isSObjectAccessible('OmniDataTransform')).resolves.toBe(false);
     });
 });

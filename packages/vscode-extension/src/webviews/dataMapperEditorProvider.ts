@@ -92,7 +92,6 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         super(context, service, fileSystem, datapackInfo, datapackWriter);
     }
 
-    private sObjectSuggestions?: Promise<FieldSuggestion[]>;
     protected readonly view = {
         resourceRoot: 'resources/datamapper-editor',
         savedMessage: 'DataMapper saved',
@@ -176,29 +175,22 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 debug.warnings.push(warning);
             }
         };
-        const fieldValidationCache = new Map<string, Promise<boolean>>();
         const validateField = (objectName: string, fieldName: string): Promise<boolean> => {
             if (!this.service.isInitialized) {
                 return Promise.resolve(true);
             }
-            const cacheKey = `${objectName}\u001f${fieldName}`.toLowerCase();
-            let validation = fieldValidationCache.get(cacheKey);
-            if (!validation) {
-                validation = this.service.salesforceService.schema
-                    .describeSObjectFieldPath(objectName, fieldName, false)
-                    .then(result => !!result)
-                    .catch(error => {
-                        onWarning({
-                            code: 'fieldValidationFailed',
-                            objectName,
-                            fieldName,
-                            message: `Could not validate field "${fieldName}" on ${objectName}: ${getErrorMessage(error)}`
-                        });
-                        return true;
+            return this.service.salesforceService.schema
+                .describeSObjectFieldPath(objectName, fieldName, false)
+                .then(result => !!result)
+                .catch(error => {
+                    onWarning({
+                        code: 'fieldValidationFailed',
+                        objectName,
+                        fieldName,
+                        message: `Could not validate field "${fieldName}" on ${objectName}: ${getErrorMessage(error)}`
                     });
-                fieldValidationCache.set(cacheKey, validation);
-            }
-            return validation;
+                    return true;
+                });
         };
         const queryRunner = {
             query: async (soql: string): Promise<Record<string, unknown>[]> => {
@@ -298,12 +290,11 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         if (!this.service.isInitialized) {
             return [];
         }
-        this.sObjectSuggestions ??= this.service.salesforceService.schema.describeSObjects().then(objects => objects.map(object => ({
+        return this.service.salesforceService.schema.describeSObjects().then(objects => objects.map(object => ({
             name: object.name,
             label: object.label,
             path: object.name
         })).sort((a, b) => a.path.localeCompare(b.path))).catch(() => []);
-        return this.sObjectSuggestions;
     }
 
     private getExistingInputFields(items: DataMapperItem[]): FieldSuggestion[] {

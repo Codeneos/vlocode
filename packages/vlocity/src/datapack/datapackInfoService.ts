@@ -1,6 +1,6 @@
 import { Logger, injectable } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
-import { cache, filterUndefined, forEachAsyncParallel, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
+import { filterUndefined, forEachAsyncParallel, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
 import { DatapackTypeDefinition, DatapackTypeDefinitions } from './datapackTypeDefinitions';
 import { DatapackConfigAccess } from './datapackConfigAccess';
 
@@ -90,7 +90,6 @@ export class DatapackInfoService {
      * Get the SObject Type and Datapack Type of all datapacks defined in Salesforce through a Datapack Configuration record.
      * @returns {Promise<VlocityDatapackDefinition[]>} Array of datapack info objects linking datapacks to SObjects
      */
-    @cache()
     public async getDatapackDefinitions() : Promise<DatapackTypeDefinition[]> {
         const configurationRecords = await this.datapackConfiguration.all();
         const orgConfigs = new Map(configurationRecords.map(record => [
