@@ -50,6 +50,7 @@ command with `vlocode <command> --help`.
 | Command | Summary |
 | --- | --- |
 | `deploy <paths...>` | Deploy datapacks from disk into a Salesforce org. |
+| `lint [paths...]` | Validate DataPack JSON, references, source keys, CPQ conditions, and configurable formula rules offline. |
 | `export [ids...]` | Export records from an org into datapack files. |
 | `bulk-export [sobject]` | Export raw record data via the Bulk API v2 as NDJSON. |
 | `activate [scriptFilter]` | Activate OmniScripts and deploy their LWC components. |
@@ -59,6 +60,18 @@ command with `vlocode <command> --help`.
 
 See the [CLI reference](https://github.com/Codeneos/vlocode/blob/main/docs/cli.md)
 for the full options of every command.
+
+### DataPack linting
+
+```sh
+vlocode lint catalog --config dplint.config.yaml
+vlocode lint catalog --format sarif --output dplint.sarif --max-warnings 0
+```
+
+Linting requires no Salesforce authentication. The same linter is available as
+the standalone `dplint` executable and the `@vlocode/dplint` library. See the
+[dplint README](../dplint/README.md) for rules, YAML/JSON configuration, formula
+syntax, API extension points, and CI exit codes.
 
 ## Authentication
 

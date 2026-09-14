@@ -1,0 +1,14 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "composite": true,
+        "isolatedModules": false,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "rootDir": "src",
+        "outDir": "dist",
+        "declaration": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["**/__tests__/**", "**/*.test.ts"]
+}

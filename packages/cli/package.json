@@ -55,6 +55,7 @@
         "@types/js-yaml": "^4.0.2",
         "@vlocode/apex": "workspace:*",
         "@vlocode/core": "workspace:*",
+        "@vlocode/dplint": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",

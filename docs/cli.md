@@ -59,6 +59,7 @@ vlocode help <command>  # equivalent to <command> --help
 | Command | Summary |
 | --- | --- |
 | [`deploy`](#vlocode-deploy) | Deploy datapacks from disk into a Salesforce org. |
+| [`lint`](#vlocode-lint) | Validate DataPack JSON, references, source keys, CPQ conditions, and formula rules offline. |
 | [`export`](#vlocode-export) | Export records from an org into datapack files. |
 | [`bulk-export`](#vlocode-bulk-export) | Export raw record data via the Bulk API v2 as NDJSON. |
 | [`activate`](#vlocode-activate) | Activate OmniScripts and deploy their LWC components. |
@@ -109,7 +110,7 @@ These options are available on **every** command and primarily control logging.
 ## Salesforce connection options
 
 These options are available on every command that talks to an org — that is,
-all commands **except** [`impacted-tests`](#vlocode-impacted-tests), which works
+all commands **except** [`lint`](#vlocode-lint) and [`impacted-tests`](#vlocode-impacted-tests), which work
 entirely offline.
 
 | Option | Description |
@@ -163,12 +164,40 @@ failure so pipelines fail fast.
 | `0` | The command completed. |
 | `1` | The command terminated with an unhandled error. |
 
+`lint` uses `0` for successful validation, `1` for lint errors or an exceeded
+`--max-warnings` limit, and `2` for configuration or file I/O failures.
+
 > **Note.** A `deploy` run that finishes but reports per-record errors still
 > exits `0`; inspect the deployment summary (and the NDJSON log) to gate a
 > pipeline on individual record failures. See
 > [Importing / deploying datapacks](./import.md#what-the-command-reports).
 
 ## Command reference
+
+### vlocode lint
+
+Validate DataPacks offline using [`@vlocode/dplint`](../packages/dplint/README.md).
+No Salesforce authentication is required. Inputs can be files, directories,
+or quoted glob patterns. Expanded child JSON files share their header's local
+reference scope; lookup references are resolved across the full validated set.
+
+```sh
+vlocode lint [paths...] [options]
+vlocode lint catalog --config dplint.config.yaml
+vlocode lint catalog --format sarif --output dplint.sarif --max-warnings 0
+```
+
+| Option | Description |
+| --- | --- |
+| `-c, --config <file>` | YAML or JSON rule configuration; otherwise discover a config in the current directory. |
+| `-f, --format <format>` | `text` (default), `json`, or `sarif`. |
+| `-o, --output <file>` | Write the report to a file instead of stdout. |
+| `--max-warnings <count>` | Fail when warnings exceed this non-negative limit. |
+| `--list-rules` | Print built-in rule IDs, severities, and descriptions. |
+
+See the [dplint README](../packages/dplint/README.md) for configuration discovery,
+reference exclusions, custom Salesforce-style formula rules, and the library
+extension API. Omit verbose/debug logging when redirecting machine reports.
 
 ### vlocode deploy
 
