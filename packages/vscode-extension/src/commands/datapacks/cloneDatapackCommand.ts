@@ -1,6 +1,5 @@
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
-import { container } from '@vlocode/core';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 
@@ -25,7 +24,7 @@ export default class CloneDatapackCommand extends DatapackCommand {
     }
 
     protected async cloneDatapack(datapack: VlocityDatapack, options?: { updateGlobalKey?: boolean }) : Promise<any> {
-        const matchingFields = [ ...(await container.get(MatchingKeyService).getMatchingKey(datapack.sobjectType)).fields ];
+        const matchingFields = [ ...(await this.vlocode.services.get(MatchingKeyService).getMatchingKey(datapack.sobjectType)).fields ];
         const datapackName = datapack.name || datapack.sourceKey;
 
         if (!matchingFields.length) {

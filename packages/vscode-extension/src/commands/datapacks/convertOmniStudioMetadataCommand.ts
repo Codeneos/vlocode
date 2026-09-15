@@ -24,7 +24,7 @@ export default class ConvertOmniStudioMetadataCommand extends CommandBase {
     protected outputChannelName = 'Vlocity Datapacks';
 
     private readonly metadataConverter = container.get(MetadataConverter);
-    private readonly datapackLoader = container.get(DatapackLoader);
+    private get datapackLoader() { return this.vlocode.services.get(DatapackLoader); }
 
     public async validate(): Promise<void> {
         const validationMessage = this.vlocode.validateWorkspaceFolder();

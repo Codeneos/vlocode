@@ -5,8 +5,6 @@ import * as fs from 'fs-extra';
 import fg from 'fast-glob';
 import itemTemplates from '../../data/metadataTemplates.yaml';
 import type { NewItemTemplate } from '../../data/metadataTemplates.yaml';
-import { container } from '@vlocode/core';
-import { VlocityNamespaceService } from '@vlocode/vlocity';
 import MetadataCommand from './metadataCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
@@ -33,7 +31,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
 
         const contextValues = {
             apiVersion: this.vlocode.config.salesforce?.apiVersion,
-            vlocityNamespace: container.get(VlocityNamespaceService).getNamespace()
+            vlocityNamespace: this.vlocode.getNamespace()
         };
 
         for (const [key, input] of Object.entries(newItemType.input ?? {})) {

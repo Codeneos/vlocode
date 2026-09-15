@@ -4,7 +4,6 @@ import { randomUUID } from 'crypto';
 
 import { forEachAsyncParallel, unique } from '@vlocode/util';
 import { DatapackUtil } from '@vlocode/vlocity';
-import { container } from '@vlocode/core';
 
 import { DatapackCommand } from './datapackCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
@@ -26,9 +25,9 @@ export class DeployDatapackCommand extends DatapackCommand {
 
     private get strategy(): VlocityDeploy {
         if (this.vlocode.config.deploymentMode === 'direct' || !this.vlocode.isVlocityAvailable) {
-            return container.get(VlocodeDirectDeployment);
+            return this.vlocode.services.get(VlocodeDirectDeployment);
         }
-        return container.get(VlocityToolsDeployment);
+        return this.vlocode.services.get(VlocityToolsDeployment);
     }
 
     public execute(...args: any[]): void | Promise<void> {

@@ -3,7 +3,6 @@ import * as constants from '../../constants';
 
 import { DatapackCommand } from './datapackCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
-import { container } from '@vlocode/core';
 import { DatapackImportService } from '@vlocode/vlocity';
 import { sortBy } from '@vlocode/util';
 
@@ -64,7 +63,7 @@ export default class ImportMultipackCommand extends DatapackCommand {
     private install(name: string) { 
         return this.vlocode.withActivity(`Installing multipack`, async (progress, token) => {
             progress.report({ message: `initializing VF remoting...` });
-            const multipackService = await container.get(DatapackImportService).initialize(
+            const multipackService = await this.vlocode.services.get(DatapackImportService).initialize(
                 this.vlocode.getNamespace()
             );
             return await multipackService.installMultipack(name, {
