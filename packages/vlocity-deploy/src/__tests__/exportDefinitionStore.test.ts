@@ -4,6 +4,18 @@ import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
 
 describe('DatapackExportDefinitionStore', () => {
 
+    it('resolves scoped export field lists without inheriting a sibling definition or changing matching keys', () => {
+        const store = new DatapackExportDefinitionStore();
+        store.load({
+            OmniScript: { objectType: 'OmniProcess', name: ['Name'], exportKey: ['Type', 'SubType', 'Language'], matchingKeyFields: ['Name', 'VersionNumber'] },
+            Generic: { objectType: 'OmniProcess', name: ['Name'] }
+        });
+        store.load({ OmniScript: { objectType: 'OmniProcess', name: ['Name'], exportKey: ['Name', 'VersionNumber'] } }, { scope: 'versions' });
+        expect(store.getExportKey({ objectType: 'OmniProcess', datapackType: 'OmniScript', scope: 'versions' })).toEqual(['Name', 'VersionNumber']);
+        expect(store.getExportKey({ objectType: 'OmniProcess', datapackType: 'Generic' })).toBeUndefined();
+        expect(store.getMatchingKeyFields({ objectType: 'OmniProcess', datapackType: 'OmniScript', scope: 'versions' })).toEqual(['Name', 'VersionNumber']);
+    });
+
     describe('definition identity', () => {
         it('keeps definitions for different SObject runtimes under the same Datapack type and scope', () => {
             const store = new DatapackExportDefinitionStore();

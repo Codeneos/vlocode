@@ -6,5 +6,6 @@ export const DATAPACK_RESERVED_FIELDS = [
     'VlocityMatchingRecordSourceKey',
     'VlocityLookupRecordSourceKey',
     'VlocityRecordSourceKey',
-    'VlocityRecordSObjectType'
+    'VlocityRecordSObjectType',
+    'VlocityRecordExportKeyValues'
 ];

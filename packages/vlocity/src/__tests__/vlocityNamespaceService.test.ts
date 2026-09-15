@@ -5,6 +5,19 @@ import { VlocityNamespaceService } from '../vlocityNamespaceService';
 
 describe('VlocityNamespaceService', () => {
 
+    it('round-trips namespaced API paths in JSON strings without replacing ordinary text', () => {
+        const service = new VlocityNamespaceService('vlocity_cmt');
+        const value = { sample: '{"url":"/services/apexrest/vlocity_cmt/v1/catalog","label":"vlocity_cmt","other":"/vlocity_cmt_extra/v1"}' };
+        const original = value.sample;
+        const portable = service.replaceObjectNamespace(value);
+        expect(JSON.parse(portable.sample)).toEqual({
+            url: '/services/apexrest/%vlocity_namespace%/v1/catalog',
+            label: 'vlocity_cmt',
+            other: '/vlocity_cmt_extra/v1'
+        });
+        expect(service.updateNamespace(portable.sample)).toBe(original);
+    });
+
     function createConnectionProvider(connection: any) {
         return {
             getJsForceConnection: jest.fn().mockResolvedValue(connection)

@@ -1,7 +1,9 @@
 import 'jest';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { DatapackLookupService } from '../datapackLookupService';
 import { DatapackExporter } from '../export/datapackExporter';
 import { DatapackExpander } from '../export/datapackExpander';
 import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
@@ -51,6 +53,9 @@ describe('DatapackExporter', () => {
         const definitions = options?.definitions ?? {
             getEmbeddedObjects: jest.fn((item: any) => options?.embeddedObjects?.(item) ?? []),
             getDatapackTypes: jest.fn(() => []),
+            get: jest.fn(),
+            getExportKey: jest.fn(),
+            getFieldConfig: jest.fn(),
             getFieldsWith: jest.fn(() => []),
             isEmbeddedObject: jest.fn(() => false),
             isFieldIgnored: jest.fn(() => false)
@@ -193,7 +198,6 @@ describe('DatapackExporter', () => {
         const [embeddedObject] = definitions.getEmbeddedObjects(datapack);
 
         expect(embeddedObject.sortFields).toEqual([
-            '%vlocity_namespace%__Level__c',
             '%vlocity_namespace%__Order__c'
         ]);
         expect(exporter.resolveEmbeddedLookup(datapack, embeddedObject)).toEqual({
@@ -1072,7 +1076,8 @@ describe('DatapackExporter', () => {
             childRelationships: []
         };
         const definitions = {
-            getDatapackTypes: jest.fn(() => [])
+            getDatapackTypes: jest.fn(() => []),
+            getExportKey: jest.fn()
         };
         const salesforce = {
             data: {
@@ -1160,7 +1165,7 @@ describe('DatapackExporter', () => {
             VlocityRecordSObjectType: 'OmniProcess',
             VlocityRecordSourceKey: 'OmniProcess/Test'
         };
-        exporter.exportObject = jest.fn(async () => [{
+        exporter.exportRawObjects = jest.fn(async () => [{
             datapack,
             objectType: 'OmniProcess',
             parentKeys: [],
@@ -1178,7 +1183,7 @@ describe('DatapackExporter', () => {
             VlocityRecordSObjectType: 'OmniProcess',
             VlocityRecordSourceKey: 'OmniProcess/Test'
         };
-        exporter.exportObject = jest.fn(async () => [{
+        exporter.exportRawObjects = jest.fn(async () => [{
             datapack,
             objectType: 'OmniProcess',
             parentKeys: [],
@@ -1253,6 +1258,9 @@ describe('DatapackExporter', () => {
         const definitions = {
             getEmbeddedObjects: jest.fn(() => []),
             getDatapackTypes: jest.fn(() => []),
+            get: jest.fn(),
+            getExportKey: jest.fn(),
+            getFieldConfig: jest.fn(),
             getFieldsWith: jest.fn(() => []),
             isEmbeddedObject: jest.fn(() => false),
             isFieldIgnored: jest.fn(() => false)
@@ -1374,6 +1382,9 @@ describe('DatapackExporter', () => {
                 }]
                 : []),
             getDatapackTypes: jest.fn(() => []),
+            get: jest.fn(),
+            getExportKey: jest.fn(),
+            getFieldConfig: jest.fn(),
             getFieldsWith: jest.fn(() => []),
             isEmbeddedObject: jest.fn(() => false),
             isFieldIgnored: jest.fn(() => false)
@@ -1488,6 +1499,276 @@ describe('DatapackExporter', () => {
         expect(datapack.data).not.toHaveProperty('ManagerId');
     });
 
+
+    describe.each(['omniStudioStandard', 'omniStudioManaged'] as const)('%s export compatibility', runtime => {
+        function fixture(datapackType = 'IntegrationProcedure') {
+            const config = DatapackExportDefinitions[runtime];
+            const definitions = new DatapackExportDefinitionStore();
+            definitions.load(config.definitions, { scope: config.id });
+            const managed = runtime === 'omniStudioManaged';
+            const field = (standard: string, custom: string) => managed ? `%vlocity_namespace%__${custom}__c` : standard;
+            const objectType = config.definitions[datapackType].objectType;
+            const elementType = field('OmniProcessElement', 'Element');
+            const typeField = field('Type', 'Type');
+            const subtype = field('SubType', 'SubType');
+            const language = field('Language', 'Language');
+            const version = field('VersionNumber', 'Version');
+            const order = field('SequenceNumber', 'Order');
+            const parent = field('ParentElementId', 'ParentElementId');
+            const owner = field('OmniProcessId', 'OmniScriptId');
+            const propertySet = field('PropertySetConfig', 'PropertySet');
+            const script = field('CustomJavaScript', 'CustomJavaScript');
+            const rootId = 'a00000000000001AAA';
+            const ids = ['a01000000000001AAA', 'a01000000000002AAA', 'a01000000000003AAA'];
+            const records = [
+                { Id: rootId, __type: objectType, Name: 'Example', [typeField]: 'Type', [subtype]: 'Sub',
+                    [language]: 'English', [version]: 64, [script]: datapackType === 'IntegrationProcedure' ? '{"z":2,"a":1}' : 'console.log("example");',
+                    [propertySet]: '{"z":[{"Name":"Z"},{"Name":"A"}],"a":1}', JsonText: '{"z":2,"a":1}', Empty: null },
+                { Id: ids[0], __type: elementType, Name: 'Second', [owner]: rootId, [order]: 2, [parent]: null },
+                { Id: ids[1], __type: elementType, Name: 'Child', [owner]: rootId, [order]: 1, [parent]: ids[0] },
+                { Id: ids[2], __type: elementType, Name: 'First', [owner]: rootId, [order]: 1, [parent]: null }
+            ];
+            const describes = Object.fromEntries([objectType, elementType].map(name => [name, {
+                name,
+                fields: [...new Set(records.filter(r => r.__type === name).flatMap(Object.keys))]
+                    .filter(key => key !== '__type')
+                    .map(key => ({ name: key, referenceTo: key === owner ? [objectType] : key === parent ? [elementType] : [] })),
+                childRelationships: []
+            }]));
+            const setup = createExporter({ definitions, records, describes, matchingKeyFieldsByType: {
+                [objectType]: [typeField, subtype, language, version], [elementType]: [owner, 'Name']
+            } });
+            setup.exporter.expander = new DatapackExpander(definitions, createLogger() as any);
+            return { ...setup, definitions, rootId, objectType, elementType, order, owner, parent, version, propertySet, script,
+                context: { scope: config.id, datapackType, maxDepth: 0, failOnError: true } };
+        }
+
+        it.each(['IntegrationProcedure', 'OmniScript'])('exports %s with legacy identity, hierarchy and serialization', async datapackType => {
+            const f = fixture(datapackType);
+            const [result] = await f.exporter.exportObjectAndExpand(f.rootId, f.context);
+            const files = result.files as Record<string, Buffer>;
+            const root = JSON.parse(files[Object.keys(files).find(name => name.endsWith('_DataPack.json'))!].toString());
+            expect(root.VlocityRecordSourceKey).toBe(`${f.objectType}/Type/Sub/English`);
+            expect(root).not.toHaveProperty(f.version);
+            expect(root).not.toHaveProperty('Empty');
+            expect(root.JsonText).toBe('{"z":2,"a":1}');
+            const elements = root[f.elementType].map((name: string) => JSON.parse(files[name].toString()));
+            expect(elements.map((element: any) => element.Name)).toEqual(['First', 'Second', 'Child']);
+            expect(elements.every((element: any) => !(f.order in element))).toBe(true);
+            expect(elements[2][f.parent].VlocityMatchingRecordSourceKey).toBe(elements[1].VlocityRecordSourceKey);
+            expect(elements[2][f.owner].VlocityMatchingRecordSourceKey).toBe(root.VlocityRecordSourceKey);
+            const properties = JSON.parse(files[root[f.propertySet]].toString());
+            expect(Object.keys(properties)).toEqual(['a', 'z']);
+            expect(properties.z.map((value: any) => value.Name)).toEqual(['Z', 'A']);
+            if (datapackType === 'IntegrationProcedure') {
+                expect(root[f.script]).toMatch(/_SampleInput.json$/);
+                expect(JSON.parse(files[root[f.script]].toString())).toEqual({ a: 1, z: 2 });
+            } else {
+                expect(root[f.script]).toMatch(/_JavaScript.js$/);
+                expect(files[root[f.script]].toString()).toBe('console.log("example");');
+            }
+            expect(f.definitions.getMatchingKeyFields({ objectType: f.objectType, scope: f.context.scope })).toContain(f.version);
+        });
+
+        it('applies the same hierarchy and field exclusions to consolidated and streamed exports', async () => {
+            const f = fixture();
+            const [result] = await f.exporter.exportObject(f.rootId, f.context);
+            expect(result.datapack[f.elementType].map((element: any) => element.Name)).toEqual(['First', 'Second', 'Child']);
+            expect(result.datapack[f.elementType].every((element: any) => !(f.order in element))).toBe(true);
+            const stream = fixture();
+            const onResults = jest.fn();
+            expect(await stream.exporter.exportObject(stream.rootId, { ...stream.context, onResults })).toEqual([]);
+            expect(onResults.mock.calls[0][0][0].datapack).toEqual(result.datapack);
+        });
+    });
+
+    describe('Build Tools 1.14.18 export parity (#476)', () => {
+        const fixturePath = path.join(__dirname, '__fixtures__', 'exportParity');
+        const fixtures = ['standard', 'managed'].flatMap(runtime =>
+            ['DataRaptor', 'IntegrationProcedure', 'OmniScript'].map(type => `${runtime}-${type}.json`));
+
+        // Internal matching objects only need their source key. Build Tools also emits redundant
+        // matching fields. Unreferenced managed mapping source keys are likewise optional metadata.
+        // Do not normalize field values, array order, filenames, JSON types or source-key values.
+        function comparable(value: any): any {
+            if (Array.isArray(value)) return value.map(comparable);
+            if (!value || typeof value !== 'object') return value;
+            if (value.VlocityDataPackType === 'VlocityMatchingKeyObject') {
+                return Object.fromEntries(['VlocityDataPackType', 'VlocityRecordSObjectType', 'VlocityMatchingRecordSourceKey'].map(field => [field, value[field]]));
+            }
+            return Object.fromEntries(Object.entries(value)
+                .filter(([field]) => !(value.VlocityRecordSObjectType === '%vlocity_namespace%__DRMapItem__c' && field === 'VlocityRecordSourceKey'))
+                .map(([field, value]) => [field, comparable(value)]));
+        }
+
+        it.each(fixtures)('matches files, hierarchy, mapping order, identity and serialization: %s', async filename => {
+            const { input, expectedFiles, toolsVersion } = JSON.parse(fs.readFileSync(path.join(fixturePath, filename), 'utf8'));
+            expect(toolsVersion).toBe('1.14.18');
+            const definitions = new DatapackExportDefinitionStore();
+            definitions.load(DatapackExportDefinitions[input.runtime === 'managed' ? 'omniStudioManaged' : 'omniStudioStandard'].definitions);
+            const describes = Object.fromEntries([input.rootType, input.childType].map(name => [name, {
+                name,
+                fields: [...new Set<string>(input.records.filter((record: any) => record.__type === name).flatMap(Object.keys))]
+                    .filter(field => field !== '__type')
+                    .map(field => ({ name: field, referenceTo: input.references[name]?.[field] ? [input.references[name][field]] : [] })),
+                childRelationships: []
+            }]));
+            const { exporter } = createExporter({ definitions, records: input.records, describes, matchingKeyFieldsByType: input.matchingKeys });
+            exporter.expander = new DatapackExpander(definitions, createLogger() as any);
+            const [result] = await exporter.exportObjectAndExpand(input.rootId, { datapackType: input.datapackType, maxDepth: 0, failOnError: true });
+            const files = Object.fromEntries(Object.entries(result.files).map(([file, data]) => [path.posix.join(result.folder, file), String(data)]));
+            expect(Object.keys(files).sort()).toEqual(Object.keys(expectedFiles).sort());
+            for (const [file, expected] of Object.entries(expectedFiles)) {
+                if (file.endsWith('.json')) {
+                    expect({ file, data: JSON.stringify(comparable(JSON.parse(files[file]))) })
+                        .toEqual({ file, data: JSON.stringify(comparable(JSON.parse(expected as string))) });
+                } else {
+                    expect({ file, data: files[file] }).toEqual({ file, data: expected });
+                }
+            }
+        });
+    });
+
+    it.each(['omniStudioStandard', 'omniStudioManaged'] as const)('expands external %s references with export keys while retaining matching fields and raw lookup keys', async runtime => {
+        const config = DatapackExportDefinitions[runtime];
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load(config.definitions);
+        const managed = runtime === 'omniStudioManaged';
+        const field = (native: string, custom: string) => managed ? `%vlocity_namespace%__${custom}__c` : native;
+        const type = config.definitions.OmniScript.objectType;
+        const parentId = 'a00000000000001AAA', childId = 'a01000000000001AAA';
+        const parent = { Id: parentId, __type: type, Name: 'Parent', [field('Type', 'Type')]: 'Fixture',
+            [field('SubType', 'SubType')]: 'Parent', [field('Language', 'Language')]: 'English', [field('VersionNumber', 'Version')]: 64 };
+        const { exporter, salesforce, matchingKeys } = createExporter({ definitions,
+            records: [parent, { Id: childId, __type: 'Dependent', Name: 'Dependent', Parent: parentId }],
+            describes: {
+                [type]: { name: type, fields: Object.keys(parent).map(name => ({ name, referenceTo: [] })), childRelationships: [] },
+                Dependent: { name: 'Dependent', fields: [{ name: 'Name' }, { name: 'Parent', referenceTo: [type] }], childRelationships: [] }
+            },
+            matchingKeyFieldsByType: { [type]: [...config.definitions.OmniScript.matchingKeyFields!], Dependent: ['Name'] }
+        });
+        const [raw] = await exporter.exportObject(childId, { maxDepth: 0, failOnError: true });
+        const rawReference = raw.datapack.Parent;
+        expect(rawReference.VlocityLookupRecordSourceKey).toBe(`${type}/Fixture/Parent/English/64`);
+        const lookupCalls = salesforce.data.lookupById.mock.calls.length;
+        const matchingCalls = matchingKeys.getMatchingKey.mock.calls.length;
+        const expanded = new DatapackExpander(definitions, createLogger() as any).expandDatapack(raw.datapack);
+        const body = JSON.parse(expanded.files['Dependent_DataPack.json'].toString());
+        expect(body.Parent).toEqual({ ...rawReference, VlocityLookupRecordSourceKey: `${type}/Fixture/Parent/English` });
+        expect(expanded.parentKeys).toEqual([`${type}/Fixture/Parent/English`]);
+        expect(salesforce.data.lookupById).toHaveBeenCalledTimes(lookupCalls);
+        expect(matchingKeys.getMatchingKey).toHaveBeenCalledTimes(matchingCalls);
+        expect(rawReference.VlocityLookupRecordSourceKey).toBe(`${type}/Fixture/Parent/English/64`);
+    });
+
+    it.each([
+        { fields: ['ExportCode__c'], key: 'Script__c/PortableParent' },
+        { fields: ['Name', 'ExportCode__c'], key: 'Script__c/Parent/PortableParent' },
+        { fields: ['Group__c', 'ExportCode__c'], key: 'Script__c/Group__c/PortableGroup/PortableParent' }
+    ].flatMap(test => [false, true].map(ignored => ({ ...test, ignored }))))(
+        'retains independent export fields $fields (ignored: $ignored) without changing lookup criteria',
+        async ({ fields, key, ignored }) => {
+            const definitions = new DatapackExportDefinitionStore();
+            definitions.load({
+                Script: { objectType: 'Script__c', name: ['Name'], exportKey: fields, ignoreFields: ignored ? ['ExportCode__c', 'Group__c'] : [] },
+                Group: { objectType: 'Group__c', name: ['Name'], exportKey: ['Code__c'] }
+            });
+            const parentId = 'a00000000000001AAA', childId = 'a01000000000001AAA', groupId = 'a02000000000001AAA';
+            const { exporter } = createExporter({ definitions,
+                records: [
+                    { Id: parentId, __type: 'Script__c', Name: 'Parent', ExportCode__c: 'PortableParent', Group__c: groupId },
+                    { Id: childId, __type: 'Dependent', Name: 'Dependent', Parent: parentId },
+                    { Id: groupId, __type: 'Group__c', Name: 'Group', Code__c: 'PortableGroup' }
+                ],
+                describes: {
+                    Script__c: { name: 'Script__c', fields: [{ name: 'Name' }, { name: 'ExportCode__c' }, { name: 'Group__c', referenceTo: ['Group__c'] }], childRelationships: [] },
+                    Dependent: { name: 'Dependent', fields: [{ name: 'Name' }, { name: 'Parent', referenceTo: ['Script__c'] }], childRelationships: [] },
+                    Group__c: { name: 'Group__c', fields: [{ name: 'Name' }, { name: 'Code__c' }], childRelationships: [] }
+                },
+                matchingKeyFieldsByType: { Script__c: ['Name'], Dependent: ['Name'], Group__c: ['Name'] }
+            });
+            const expander = new DatapackExpander(definitions, createLogger() as any);
+            exporter.expander = expander;
+            const context = { maxDepth: 0, failOnError: true };
+            const [raw] = await exporter.exportObject(childId, context);
+            expect(raw.datapack.Parent.VlocityLookupRecordSourceKey).toBe('Script__c/Parent');
+            expect(raw.datapack.Parent).not.toHaveProperty('ExportCode__c');
+            expect(raw.datapack.Parent).not.toHaveProperty('Group__c');
+
+            // Consolidated JSON must retain the export values for later expansion, without
+            // adding them to deployment lookup filters before or after expansion.
+            const roundTripped = JSON.parse(JSON.stringify(raw.datapack));
+            const expanded = expander.expandDatapack(roundTripped);
+            const body = JSON.parse(expanded.files['Dependent_DataPack.json'].toString());
+            expect(body.Parent).toEqual({
+                Name: 'Parent', VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+                VlocityRecordSObjectType: 'Script__c', VlocityLookupRecordSourceKey: key
+            });
+            expect(expanded.parentKeys).toEqual([key]);
+            expect(JSON.stringify(expanded.files)).not.toContain('VlocityRecordExportKeyValues');
+
+            for (const reference of [roundTripped.Parent, body.Parent]) {
+                const lookup = new DatapackLookupService(new VlocityNamespaceService(''), {} as any, {} as any, createLogger() as any);
+                const lookupMultiple = jest.spyOn(lookup as any, 'lookupMultiple').mockResolvedValue([[parentId]]);
+                expect(await lookup.resolveDependency(reference, {} as any)).toBe(parentId);
+                expect(lookupMultiple.mock.calls[0][0]).toEqual([expect.objectContaining({ filter: { Name: 'Parent' } })]);
+            }
+
+            const [direct] = await exporter.exportObjectAndExpand(childId, context);
+            expect(direct.files).toEqual(expanded.files);
+            const [parent] = await exporter.exportObjectAndExpand(parentId, context);
+            expect(parent.sourceKey).toBe(key);
+            const [savedParent] = await exporter.exportObject(parentId, context);
+            expect(savedParent.sourceKey).toBe('Script__c/Parent');
+            const restoredParent = expander.expandDatapack(JSON.parse(JSON.stringify(savedParent.datapack)), savedParent);
+            expect(restoredParent.sourceKey).toBe(key);
+            expect(restoredParent.files).toEqual(parent.files);
+            expect(Object.values(parent.files).map(String).join('')).not.toContain('VlocityRecordExportKeyValues');
+
+            const onResults = jest.fn();
+            await exporter.exportObject(parentId, { ...context, onResults });
+            expect(onResults.mock.calls[0][0][0].datapack).toEqual(savedParent.datapack);
+        }
+    );
+
+    it.each([
+        { exclusion: 'configured', field: { name: 'Version__c' }, ignoreFields: ['Version__c'] },
+        { exclusion: 'calculated', field: { name: 'Version__c', calculated: true }, ignoreFields: [] },
+        { exclusion: 'auto-number', field: { name: 'Version__c', autoNumber: true }, ignoreFields: [] }
+    ])('preserves $exclusion identity inputs across consolidated exports', async ({ field, ignoreFields }) => {
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load({ Script: { objectType: 'Script__c', name: ['Name'], exportKey: ['Name', 'Version__c'], ignoreFields } });
+        const describe = { name: 'Script__c', fields: [{ name: 'Name' }, field] };
+        const { exporter } = createExporter({ definitions, describe, matchingKeyFields: ['Name', 'Version__c'],
+            records: [{ Id: 'a00000000000001AAA', __type: 'Script__c', Name: 'Example', Version__c: 64 }] });
+        const expander = new DatapackExpander(definitions, createLogger() as any);
+        exporter.expander = expander;
+        const [direct] = await exporter.exportObjectAndExpand('a00000000000001AAA', { failOnError: true });
+        const [consolidated] = await exporter.exportObject('a00000000000001AAA', { failOnError: true });
+        const later = expander.expandDatapack(JSON.parse(JSON.stringify(consolidated.datapack)));
+        expect(direct.sourceKey).toBe('Script__c/Example/64');
+        expect(later.sourceKey).toBe(direct.sourceKey);
+        expect(consolidated.datapack).not.toHaveProperty('Version__c');
+        const [file] = Object.values(later.files);
+        const body = JSON.parse(String(file));
+        expect(body).not.toHaveProperty('Version__c');
+        expect(body).not.toHaveProperty('VlocityRecordExportKeyValues');
+    });
+
+    it('does not use exportKey when generating matching keys or resolving external lookups', async () => {
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load({ Script: { objectType: 'Script__c', name: ['Name'], exportKey: ['ExportCode__c'] } });
+        const describe = { name: 'Script__c', fields: [{ name: 'Name' }, { name: 'Version__c' }, { name: 'ExportCode__c' }] };
+        const { exporter, salesforce } = createExporter({ definitions, describe, matchingKeyFields: ['Name', 'Version__c'],
+            records: [{ Id: 'a00000000000001AAA', __type: 'Script__c', Name: 'Example', Version__c: 64, ExportCode__c: 'Portable' }] });
+        const [result] = await exporter.exportObject('a00000000000001AAA', { failOnError: true });
+        expect(result.sourceKey).toBe('Script__c/Example/64');
+        exporter.matchingKeys.clear();
+        salesforce.schema.describeSObjectField.mockClear();
+        expect(await exporter.getReferencedMatchingKey('a00000000000001AAA', undefined, new Set())).toBe(result.sourceKey);
+        expect(salesforce.schema.describeSObjectField).not.toHaveBeenCalledWith('Script__c', 'ExportCode__c');
+    });
+
 });
 
 describe('DatapackExpander', () => {
@@ -1504,6 +1785,9 @@ describe('DatapackExpander', () => {
 
     it('expands configured array fields into separate files', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : field === 'Children' ? ['_Child', 'Name'] : undefined),
             getName: jest.fn(() => ['Name']),
             getFieldConfig: jest.fn((_item, field, configKey) => field === 'Children' && configKey === 'expandArray')
@@ -1566,6 +1850,9 @@ describe('DatapackExpander', () => {
 
     it('prefers VlocityRecordSourceKey over Name as the default record-array sort field', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : undefined),
             getName: jest.fn(() => ['Name']),
             getFieldConfig: jest.fn()
@@ -1590,6 +1877,9 @@ describe('DatapackExpander', () => {
 
     it('sorts record arrays alphabetically by Name when no source keys are present', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : undefined),
             getName: jest.fn(() => ['Name']),
             getFieldConfig: jest.fn()
@@ -1613,6 +1903,9 @@ describe('DatapackExpander', () => {
 
     it('preserves record-array order when no configured or default sort field is available', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : undefined),
             getName: jest.fn(() => ['Name']),
             getFieldConfig: jest.fn()
@@ -1636,6 +1929,9 @@ describe('DatapackExpander', () => {
 
     it('keeps configured null fields inline instead of expanding them into files', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : field === 'PropertySet' ? ['_PropertySet'] : undefined),
             getName: jest.fn(() => ['Name']),
             getFieldConfig: jest.fn()
@@ -1658,6 +1954,9 @@ describe('DatapackExpander', () => {
 
     it('uses the source key name for unconfigured generic SObject folders', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn(),
             getName: jest.fn(),
             getFieldConfig: jest.fn()
@@ -1679,6 +1978,9 @@ describe('DatapackExpander', () => {
 
     it('sanitizes separators in configured folder and file names', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['FolderName'] : undefined),
             getName: jest.fn(() => ['FolderName']),
             getFieldConfig: jest.fn()
@@ -1700,6 +2002,9 @@ describe('DatapackExpander', () => {
 
     it('falls back to the source key name when a configured folder field is empty', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['FolderName'] : undefined),
             getName: jest.fn(() => ['FolderName']),
             getFieldConfig: jest.fn()
@@ -1721,6 +2026,9 @@ describe('DatapackExpander', () => {
 
     it('keeps configured field file extensions and writes non-json strings raw', () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : field === 'Code__c' ? ['_Script.js'] : undefined),
             getName: jest.fn(() => ['Name']),
             getFieldConfig: jest.fn()
@@ -1744,6 +2052,9 @@ describe('DatapackExpander', () => {
 
     it('writes expanded files to the filesystem', async () => {
         const definitions = {
+            get: jest.fn(),
+            isFieldIgnored: jest.fn(() => false),
+            getExportKey: jest.fn(),
             getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : field === 'Children' ? ['_Child', 'Name'] : undefined),
             getName: jest.fn(() => ['Name']),
             getFieldConfig: jest.fn((_item, field, configKey) => field === 'Children' && configKey === 'expandArray')
