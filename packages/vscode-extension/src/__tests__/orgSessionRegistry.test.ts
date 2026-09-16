@@ -6,7 +6,7 @@ import { OrgSessionManager } from '../lib/orgSessionManager';
 import type { OrgSession } from '../lib/orgSession';
 
 jest.mock('vscode', () => ({
-    ...jest.requireActual('vscode'),
+    ...jest.requireActual('../__mocks__/vscode'),
     Disposable: {
         from: (...subscriptions: { dispose(): void }[]) => ({
             dispose: () => subscriptions.forEach(subscription => subscription.dispose())

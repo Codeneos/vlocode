@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { SfdxConfigManager } from '../lib/sfdxConfigManager';
 
 jest.mock('vscode', () => {
-    const mock = jest.requireActual('vscode');
+    const mock = jest.requireActual('../__mocks__/vscode');
     return { ...mock, workspace: { ...mock.workspace, getWorkspaceFolder: jest.fn() } };
 });
 
