@@ -8,6 +8,12 @@ definitions:
       - Type
       - SubType
       - Language
+    exportKey:
+      - Type
+      - SubType
+      - Language
+    nullValues: omit
+    parseJson: false
     matchingKeyFields:
       - Type
       - SubType
@@ -18,16 +24,17 @@ definitions:
       - VersionNumber
     filter:
       IsIntegrationProcedure: false
-    fields:
+    fields: &standardScriptFields
       CustomJavaScript:
         fileName:
-          - _JavaScript
+          - _JavaScript.js
       PropertySetConfig:
+        parseJson: true
         fileName:
           - _PropertySetConfig
       CustomHtmlTemplates:
         fileName:
-          - _HTMLTemplates
+          - _HTMLTemplates.html
     embeddedObjects:
       OmniProcessElement:
         objectType: OmniProcessElement
@@ -37,8 +44,8 @@ definitions:
           - _Element
           - Name
         expandArray: true
+        sortParentField: ParentElementId
         sortFields:
-          - Level
           - SequenceNumber
 
   IntegrationProcedure:
@@ -48,29 +55,48 @@ definitions:
       - SubType
     filter:
       IsIntegrationProcedure: true
+    ignoreFields:
+      - IsActive
+      - VersionNumber
+      - WebComponentKey
+    fields:
+      <<: *standardScriptFields
+      CustomJavaScript:
+        parseJson: true
+        fileName:
+          - _SampleInput
 
   DataRaptor: &omniDataTransform
     objectType: OmniDataTransform
     name:
       - Name
+    nullValues: emptyString
+    parseJson: false
     matchingKeyFields:
       - Name
+    ignoreFields:
+      - IsActive
     fields:
+      GlobalKey:
+        processor: return datapack.Name;
       ExpectedInputJson:
+        parseJson: true
         fileName:
           - _InputJson
       PreviewJsonData:
+        parseJson: true
         fileName:
           - _SampleInputJson
       PreviewXmlData:
         fileName:
-          - _SampleInputXML
+          - _SampleInputXML.xml
       ExpectedOutputJson:
+        parseJson: true
         fileName:
           - _TargetOutJson
       ExpectedOutputXml:
         fileName:
-          - _TargetOutXml
+          - _TargetOutXml.xml
     embeddedObjects:
       OmniDataTransformItem:
         objectType: OmniDataTransformItem
@@ -78,16 +104,30 @@ definitions:
           OmniDataTransformationId: '{OmniDataTransform:Id}'
         fileName:
           - _Items
+        sortMode: vlocity
+        sortFields:
+          - InputObjectQuerySequence
+          - FilterGroup
+          - OutputCreationSequence
+          - OutputObjectName
+          - OutputFieldName
+          - InputFieldName
 
   OmniProcessElement:
     dependent: true
     objectType: OmniProcessElement
     name:
       - Name
+    exportKey:
+      - OmniProcessId
+      - Name
     matchingKeyFields:
       - OmniProcessId
       - Name
+    nullValues: omit
+    parseJson: false
     ignoreFields:
+      - SequenceNumber
       - Level
       - OmniProcessVersionNumber
       - IsOmniScriptEmbeddable
@@ -95,6 +135,7 @@ definitions:
       - ParentElementType
     fields:
       PropertySetConfig:
+        parseJson: true
         fileName:
           - _PropertySetConfig
 
@@ -103,5 +144,7 @@ definitions:
     objectType: OmniDataTransformItem
     name:
       - GlobalKey
+    nullValues: omit
+    parseJson: false
     ignoreFields:
       - FormulaConverted

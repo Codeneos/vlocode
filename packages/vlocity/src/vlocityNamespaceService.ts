@@ -34,7 +34,9 @@ export class VlocityNamespaceService extends NamespaceService {
             return name;
         }
         const namespacePattern = new RegExp(`${this.escapeRegExp(this.vlocityNamespace)}__`, 'g');
-        return name.replace(namespacePattern, `${constants.NAMESPACE_PLACEHOLDER}__`);
+        const namespacePathPattern = new RegExp(`/${this.escapeRegExp(this.vlocityNamespace)}(?=/)`, 'g');
+        return name.replace(namespacePattern, `${constants.NAMESPACE_PLACEHOLDER}__`)
+            .replace(namespacePathPattern, `/${constants.NAMESPACE_PLACEHOLDER}`);
     }
 
     /**

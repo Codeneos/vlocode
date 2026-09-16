@@ -21,12 +21,12 @@ This library is built from scratch to provide a fast and reliable way to deploy 
 
 ### Also...
 
+-   Vlocode supports exporting datapacks with configurable export definitions
 -   Vlocode does client-side OmniScript to LWC compilation and deployment
 -   Vlocode does client-side OmniScript Activation avoiding SOQL limit exceptions when activating big scripts
 
 ## What does it **not** do...
 
--   Vlocode vlocity-deploy library is meant for deploying datapacks **not** for exporting/extracting them from an org
 -   Activation of flex cards
 -   Provide you with a (fancy) UI
 
@@ -228,3 +228,29 @@ interface DatapackDeploymentSpec {
     afterDeployRecord?(event: readonly DatapackDeploymentRecord[]): Promise<any> | any;
 }
 ```
+
+## Export identity and output
+
+An export definition can specify `exportKey` independently of `matchingKeyFields`:
+
+```yaml
+OmniScript:
+  objectType: OmniProcess
+  name: [Type, SubType, Language]
+  exportKey: [Type, SubType, Language]
+  matchingKeyFields: [Type, SubType, Language, VersionNumber]
+```
+
+During expansion, this writes `OmniProcess/Type/SubType/Language` to `VlocityRecordSourceKey`. `exportKey` is an ordered field list: values are joined with slashes and prefixed with the object type. It only reads the exported datapack; it does not query Salesforce or affect record matching, lookup resolution, or the keys returned by `exportObject`.
+
+Expansion applies the referenced object's `exportKey` to both internal matching references and external lookup references, including nested lookup fields. This also works when the referenced datapack is exported separately: its key is computed from the fields on the reference. Full records retain their original identity inputs in reserved `VlocityRecordExportKeyValues` metadata; references use it for fields outside their matching key. This metadata survives consolidated JSON exports and is removed during expansion. Identity lookup fields are resolved even when omitted from output, so records and references produce the same portable key. These values do not become deployment lookup criteria. Matching fields remain unchanged; only serialized source-key values and parent keys are rewritten. References without an `exportKey` retain their original keys. Namespace-qualified field names are supported. Omitted or empty field lists retain the original source key. Different source versions may share an output key, preserving the existing overwrite behavior. Include `VersionNumber` in the list when deliberately writing version-specific keys. Fields used in the list remain available until `ignoreFields` is applied.
+
+Output settings apply to expanded files and consolidated exports:
+
+- `ignoreFields` removes fields after ordering and filename evaluation, so excluded fields can still control output order and names.
+- `sortParentField` names a parent lookup for depth-first traversal of an embedded array. `sortFields` orders siblings. Circular parent links fail the export.
+- `sortMode: vlocity` uses the configured sort fields with empty values last and canonical JSON as the final tie-breaker. OmniStudio mapping definitions use the six legacy mapping priorities.
+- `nullValues` defaults to `preserve`; `omit` excludes null and empty-string fields, and `emptyString` converts nulls to empty strings. These rules apply to SObject bodies, preserving external matching instructions.
+- `parseJson` controls JSON parsing of text fields and can be overridden per field. OmniStudio definitions preserve text unless a field explicitly contains structured JSON. Arrays inside JSON payloads retain their order unless `sortFields` is explicitly configured.
+
+The bundled native and managed OmniStudio definitions use versionless script keys, hierarchical elements, legacy mapping order and type-specific empty-field policies. Integration Procedures expand sample input into `_SampleInput.json`; OmniScript JavaScript and HTML fields retain their file extensions.

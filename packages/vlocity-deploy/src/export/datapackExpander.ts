@@ -2,10 +2,13 @@ import path from "path/posix";
 import nativePath from "path";
 
 import { injectable, Logger } from "@vlocode/core";
-import { formatString, normalizeName, sortBy, substringAfter } from "@vlocode/util";
+import { formatString, normalizeName, substringAfter } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
 import * as fs from "fs-extra";
 
+import { DatapackNormalizer } from "./datapackNormalizer";
+import { applyExportKeys } from "./datapackExportKeys";
+import { DatapackObject, DatapackValue, sortObjectKeys } from "./datapackValue";
 import { DatapackExportDefinitionStore, ObjectRef } from "./exportDefinitionStore";
 
 export interface DatapackExpandResult {
@@ -44,6 +47,8 @@ type FieldRef = ObjectRef & { field: string };
  */
 @injectable.transient()
 export class DatapackExpander {
+
+    private readonly normalizer = new DatapackNormalizer(this.definitions);
 
     private static datapackFileName = 'DataPack.json';
 
@@ -89,6 +94,8 @@ export class DatapackExpander {
             datapackType: context?.datapackType
         };
 
+        datapack = applyExportKeys(datapack, itemRef, this.definitions);
+
         const baseSourceKey = substringAfter(datapack.VlocityRecordSourceKey, '/');
         const fileNameFormat = this.definitions.getFileName(itemRef) ?? baseSourceKey;
         const baseName = this.evalPathFormat(fileNameFormat, { context: datapack, fallback: baseSourceKey });
@@ -100,29 +107,30 @@ export class DatapackExpander {
             this.evalPathFormat(folderFormat, { context: datapack, fallback: baseSourceKey })
         );
         
-        const data: Record<string, unknown> = {};
+        const data: DatapackObject = {};
         const files = new DatapackFiles(baseName, folder, this.logger);
 
-        for (const field of Object.keys(datapack).sort()) {
+        for (const { field, sourceValue, value: preparedValue } of this.normalizer.prepareFields(datapack, itemRef)) {
             if (this.datapackStandardFields.includes(field)) {
                 continue;
             }
 
             const fileNameFormat = this.definitions.getFileName(itemRef, field);
-            let value = this.sortFieldArray({ ...itemRef, field }, datapack[field]);
+            let value = preparedValue;
 
-            if (fileNameFormat && value !== null) {
+            if (fileNameFormat && value !== null && value !== '') {
                 const defaultExt = 'json';
                 if (this.expandFieldArray({ ...itemRef, field }, value)) {
-                    value = value.map(item => {
+                    value = value.map((item, index) => {
                         if (item === null) {
                             return null;
                         }
-                        const fileName = this.evalPathFormat(fileNameFormat, { context: item ?? datapack, defaultExt });
+                        const original = Array.isArray(sourceValue) ? sourceValue[index] : datapack;
+                        const fileName = this.evalPathFormat(fileNameFormat, { context: original, defaultExt });
                         return files.addFile(fileName, item);
                     });
                 } else {
-                    const fileName = this.evalPathFormat(fileNameFormat, { context: value, defaultExt });
+                    const fileName = this.evalPathFormat(fileNameFormat, { context: sourceValue, defaultExt });
                     value = files.addFile(fileName, value);
                 }
             }
@@ -179,49 +187,9 @@ export class DatapackExpander {
         return false;
     }
 
-    /**
-     * Sort record arrays at the expansion boundary, after their source keys have been finalized.
-     * Configured sort fields take precedence. Without configuration, a source key is preferred and
-     * Name is used when a source key is not available on every record. Other arrays retain their
-     * original order because their values may be intentionally positional.
-     */
-    private sortFieldArray(ref: FieldRef, value: unknown): unknown {
-        if (!Array.isArray(value) || value.length < 2 || !value.every(this.isRecord)) {
-            return value;
-        }
-
-        const configuredSortFields = this.definitions.getFieldConfig(ref, ref.field, 'sortFields');
-        const sortFields = Array.isArray(configuredSortFields)
-            ? configuredSortFields.filter(field => typeof field === 'string' && field.length > 0)
-            : [];
-
-        const fields = sortFields.length > 0
-            ? sortFields
-            : this.getDefaultSortFields(value);
-
-        if (!fields) {
-            return value;
-        }
-
-        return sortBy(value, fields);
-    }
-
-    private readonly isRecord = (value: unknown): value is Record<string, unknown> =>
-        typeof value === 'object' && value !== null && !Array.isArray(value) && !Buffer.isBuffer(value);
-
-    private getDefaultSortFields(records: Record<string, unknown>[]): string[] | undefined {
-        if (records.every(record => record.VlocityRecordSourceKey !== undefined && record.VlocityRecordSourceKey !== null)) {
-            return ['VlocityRecordSourceKey'];
-        }
-        if (records.every(record => record.Name !== undefined && record.Name !== null)) {
-            return ['Name'];
-        }
-        return undefined;
-    }
-
-    private evalPathFormat(format: string | string[], options?: { context?: object; defaultExt?: string; fallback?: string; }) {
+    private evalPathFormat(format: string | string[], options?: { context?: DatapackValue; defaultExt?: string; fallback?: string; }) {
         const name = Array.isArray(format) 
-            ? format.map(f => f.startsWith('_') ? f.substring(1) : options?.context?.[f] ?? '').join('_')
+            ? format.map(f => f.startsWith('_') ? f.substring(1) : Object(options?.context)[f] ?? '').join('_')
             : (options?.context ? formatString(format, options?.context) : format);
         const configuredExtension = this.getConfiguredExtension(format);
         const extension = configuredExtension && name.endsWith(configuredExtension) ? configuredExtension : (options?.defaultExt ? `.${options.defaultExt}` : '');
@@ -283,7 +251,7 @@ class DatapackFiles {
         private readonly logger: Logger
     ) { }
 
-    public addFile(fileName: string, value: unknown) {
+    public addFile(fileName: string, value: DatapackValue) {
         if (Object.hasOwn(this.files, fileName)) {
             // Overwriting would silently drop the earlier value from the expanded datapack;
             // this happens when the configured fileName format does not evaluate to a unique
@@ -312,13 +280,13 @@ class DatapackFiles {
         return options?.withFolder ? path.join(this.folder, fileName) : fileName;
     }
 
-    private getFileData(fileName: string, value: unknown): Buffer | string {
+    private getFileData(fileName: string, value: DatapackValue): Buffer | string {
         if (Buffer.isBuffer(value)) {
             return value;
         }
         if (typeof value === 'string' && path.extname(fileName).toLowerCase() !== '.json') {
             return Buffer.from(value);
         }
-        return Buffer.from(JSON.stringify(value, null, 4));
+        return Buffer.from(JSON.stringify(sortObjectKeys(value), null, 4));
     }
 }
