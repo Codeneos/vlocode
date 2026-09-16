@@ -2,10 +2,9 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import chalk from 'chalk';
 
-import { Logger, injectable ,container, LifecyclePolicy, inject } from '@vlocode/core';
-import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, singleFlight, clearCache, filterAsyncParallel } from '@vlocode/util';
-import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { Logger, injectable, container, Container, LifecyclePolicy } from '@vlocode/core';
+import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, singleFlight, filterAsyncParallel } from '@vlocode/util';
+import { SalesforceService } from '@vlocode/salesforce';
 import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
@@ -16,8 +15,10 @@ import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
 import { SfdxConfigManager } from './sfdxConfigManager';
 import { getWorkspaceFileCandidates } from './workspaceFiles';
+import { createOrgServices, OrgSession, OrgSessionIdentity } from './orgSession';
+import { OrgSessionManager } from './orgSessionManager';
 
-@injectable({ lifecycle: LifecyclePolicy.singleton, provides: [SalesforceConnectionProvider, VlocodeService] })
+@injectable({ lifecycle: LifecyclePolicy.singleton })
 /**
  * Core service class for the Vlocode extension, responsible for managing Salesforce connections,
  * datapack services, and extension state.
@@ -31,75 +32,108 @@ import { getWorkspaceFileCandidates } from './workspaceFiles';
  * - Manages OAuth token refresh when credentials expire
  *
  * @implements {vscode.Disposable}
- * @implements {SalesforceConnectionProvider}
  */
-export default class VlocodeService implements vscode.Disposable, SalesforceConnectionProvider {
+export default class VlocodeService implements vscode.Disposable {
 
     // Privates
     private disposables: { dispose() : any }[] = [];
     private statusItems: { [id: string] : vscode.StatusBarItem } = {};
-    private connector?: SalesforceConnectionProvider;
+    private readonly sessionManager = new OrgSessionManager(identity => this.createOrgSession(identity));
+    private offlineServices?: Container;
+    private selectionVersion = 0;
+    private pendingUsername?: string;
+    private configUpdate = Promise.resolve();
     private sfUsername?: string;
     private initializePromise?: Promise<void>;
     private refreshOAuthTokensPromise?: Promise<boolean>;
-    private errorHandlerMarker = Symbol('errorHandlerAttached');
-
-    private isNativeOmniStudioInstalled?: boolean;
-    private isManagedOmniStudioInstalled?: boolean;
-    private isVlocityInstalled?: boolean;
+    private readonly credentialRefreshes = new Map<string | undefined, Promise<void>>();
 
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
     private readonly events = {
         activitiesChanged: new vscode.EventEmitter<VlocodeActivity[]>(),
         usernameChanged: new vscode.EventEmitter<string | undefined>(),
     }
-    @inject(VlocityNamespaceService) private readonly nsService: VlocityNamespaceService;
 
     // Publics
     public readonly activities: ObservableArray<Observable<VlocodeActivity>> = observeArray([]);
 
     // Properties
-    private _datapackService?: VlocityDatapackService;
+    /**
+     * Gets the session captured by the current operation, or the selected session outside an operation.
+     */
+    public get session(): OrgSession | undefined {
+        return this.sessionManager.session;
+    }
+
+    /**
+     * Gets services belonging to the current operation's org.
+     *
+     * Without an org session, editors use a disconnected child container for bundled definitions.
+     * Keeping those instances out of the root prevents later org sessions from inheriting their caches.
+     */
+    public get services(): Container {
+        return this.session?.services ?? (this.offlineServices ??= createOrgServices(container, {
+            getJsForceConnection: async () => { throw new Error('Select a Salesforce org to connect'); },
+            isProductionOrg: async () => { throw new Error('Select a Salesforce org to connect'); },
+            getApiVersion: () => this.config.salesforce.apiVersion
+        }));
+    }
+
+    /**
+     * Gets the session currently selected in the UI, even when the caller is running for an older org.
+     */
+    public get selectedSession(): OrgSession | undefined {
+        return this.sessionManager.current;
+    }
+
+    /**
+     * Keeps a callback's service lookups on the same org and retains that session until the callback settles.
+     * If no session is available and no override is supplied, the callback can select an org during startup.
+     *
+     * @param task - The asynchronous operation to run.
+     * @param options - An explicit session override; `{ session: undefined }` captures offline state.
+     * @returns The callback's result.
+     */
+    public withSession<T>(task: () => Promise<T>, options?: { session: OrgSession | undefined }): Promise<T> {
+        return this.sessionManager.run(task, options);
+    }
+
     public get datapackService(): VlocityDatapackService {
-        if (!this._datapackService) {
+        if (!this.session) {
             throw new Error('Vlocode datapack services are not initialized');
         }
-        return this._datapackService;
+        return this.session.datapacks;
     }
 
     public get isVlocityAvailable(): boolean {
-        return this.isVlocityInstalled === true;
+        return this.session?.isVlocityAvailable ?? false;
     }
 
     public get isNativeOmniStudioAvailable(): boolean {
-        return this.isNativeOmniStudioInstalled === true;
+        return this.session?.isNativeOmniStudioAvailable ?? false;
     }
 
     public get isManagedOmniStudioAvailable(): boolean {
-        return this.isManagedOmniStudioInstalled === true || this.isVlocityAvailable;
+        return this.session?.isManagedOmniStudioAvailable ?? false;
     }
 
     public get isOmniStudioAvailable(): boolean {
         return this.isNativeOmniStudioAvailable || this.isManagedOmniStudioAvailable;
     }
 
-    private _salesforceService?: SalesforceService;
     public get salesforceService(): SalesforceService {
-        if (!this._salesforceService) {
+        if (!this.session) {
             throw new Error('Vlocode is yet not initialized...');
         }
-        return this._salesforceService;
+        return this.session.salesforce;
     }
 
-    public get sfdxUsername() : string | undefined {
-        return this.sfUsername;
+    public get sfdxUsername(): string | undefined {
+        return this.session?.identity.username ?? this.pendingUsername ?? this.sfUsername;
     }
 
-    /**
-     * Validate that the Vlocode primary services are initailized.
-     */
     public get isInitialized() {
-        return this._salesforceService !== undefined;
+        return this.session !== undefined;
     }
 
     public get commands() : CommandRouter {
@@ -107,7 +141,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     public get apiVersion() {
-        return this.config.salesforce.apiVersion;
+        return this.session?.identity.apiVersion ?? this.config.salesforce.apiVersion;
     }
 
     public get onActivitiesChanged() {
@@ -131,104 +165,119 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     public dispose() {
+        this.selectionVersion++;
         this.disposables.forEach(disposable => disposable.dispose());
         this.disposables = [];
-        if (this._datapackService) {
-            this._datapackService.dispose();
-            delete this._datapackService;
-        }
+        this.sessionManager.dispose();
+        this.offlineServices?.dispose();
     }
 
-    public async setUsername(username: string | undefined) {
-        if (this.sfUsername === username) {
-            return;
+    public setUsername(username: string | undefined): Promise<void> {
+        if (this.pendingUsername === username && this.initializePromise) {
+            return this.initializePromise;
         }
-        this.sfUsername = username;
-        try {
-            this.logger.info(`Connecting to Salesforce as: ${username}`);
-            await this.sfdxConfig.update({ defaultusername: username });
-            await this.initializeConnection();
-        } finally {
-            this.events.usernameChanged.fire(username);
+        if (this.sfUsername === username && this.sessionManager.current && !this.initializePromise) {
+            return Promise.resolve();
         }
+        return this.startConnection(username);
     }
 
-    @singleFlight('initializePromise')
-    public async initializeConnection() : Promise<void> {
-        try {
-            this.resetConnection();
-            this.showStatus('$(sync~spin) Connecting to Salesforce...');
-            if (this.sfUsername) {
-                this._salesforceService = container.get(SalesforceService);                
-                this.showStatus('$(sync~spin) Initializing SF services...');
-                await this.nsService.initialize(this._salesforceService);
-                const namespace = this.nsService.getNamespace() ?? '';
-                this.isVlocityInstalled = /vlocity/i.test(namespace);
-                this.isManagedOmniStudioInstalled = /omnistudio/i.test(namespace);
-                this.isNativeOmniStudioInstalled = await this.hasAccessibleSObject([ 'OmniProcess', 'OmniDataTransform' ]);
-                this._datapackService = container.get(VlocityDatapackService);
-                if (this.isVlocityInstalled) {
-                    this.showStatus('$(sync~spin) Initializing SF-Industries Services...');
-                    this._datapackService = await this._datapackService.initialize();
-                    await container.get(MatchingKeyService).initialize();
-                } else {
-                    vscode.window.showWarningMessage('Vlocity managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
-                    this.logger.warn('Salesforce Industries Managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
-                }
+    public initializeConnection(): Promise<void> {
+        return this.initializePromise ?? this.startConnection(this.pendingUsername ?? this.sfUsername);
+    }
+
+    private startConnection(username: string | undefined): Promise<void> {
+        const version = ++this.selectionVersion;
+        this.pendingUsername = username;
+        const attempt = this.selectSession(username, version).finally(() => {
+            if (this.initializePromise === attempt) {
+                this.initializePromise = undefined;
+                this.pendingUsername = undefined;
             }
-            this.updateExtensionStatus();
-        } catch (err: any) {
-            if (err?.message == 'NamedOrgNotFound') {
-                this.logger.error(`Unknown username/alias ${this.sfUsername} -- select a different org or re-authenticate with the target org`);
-                this.showStatus(`$(error) Unknown Salesforce user - ${this.sfUsername}`, VlocodeCommand.selectOrg);
-            } else if (err?.message == 'The org cannot be found') {
-                this.logger.error(err?.message);
-                this.showStatus(`$(error) Org not found - ${this.sfUsername}`, VlocodeCommand.selectOrg);
-            } else if (this.isTokenExpiredError(err)) {
-                if (await this.handleAuthTokenExpiredError()) {
-                    this.initializePromise = undefined;
-                    return this.initializeConnection();
+        });
+        this.initializePromise = attempt;
+        return attempt;
+    }
+
+    private async selectSession(username: string | undefined, version: number): Promise<void> {
+        try {
+            this.showStatus('$(sync~spin) Connecting to Salesforce...');
+            const publish = async (session: OrgSession | undefined) => {
+                if (version !== this.selectionVersion) {
+                    return;
                 }
-            } else if (err?.code == 'ENOTFOUND') {
-                this.logger.error(`Unable to reach Salesforce; are you connected to the internet?`);
-                this.showStatus(`$(cloud-offline) Unable to reach Salesforce`, VlocodeCommand.selectOrg);
+                // Finish earlier config writes before persisting this selection. Recheck the version
+                // after waiting so an org selected in the meantime keeps ownership of the UI state.
+                this.configUpdate = this.configUpdate.catch(() => undefined).then(async () => {
+                    if (version === this.selectionVersion) {
+                        await this.sfdxConfig.update({ defaultusername: username });
+                    }
+                });
+                await this.configUpdate;
+                if (version !== this.selectionVersion) {
+                    return;
+                }
+                this.sessionManager.activate(session);
+                this.sfUsername = username;
+                this.updateExtensionStatus();
+                await this.sessionManager.run(async () => this.events.usernameChanged.fire(username), { session });
+            };
+            if (username) {
+                this.logger.info(`Connecting to Salesforce as: ${username}`);
+                const auth = await sfdx.getOrgDetails(username);
+                // Authentication can finish after a newer selection or disposal. Check before
+                // creating a session so obsolete lookups cannot repopulate the session cache.
+                if (version !== this.selectionVersion) {
+                    return;
+                }
+                if (!auth) {
+                    throw new Error('NamedOrgNotFound');
+                }
+                await this.sessionManager.use({
+                    orgId: auth.orgId,
+                    username: auth.username,
+                    apiVersion: `${Number(this.config.salesforce.apiVersion)}.0`
+                }, publish);
             } else {
-                this.logger.error(err);
+                await publish(undefined);
+            }
+        } catch (err: any) {
+            if (version !== this.selectionVersion) {
+                return;
+            }
+            this.logger.error(err);
+            if (err?.message === 'NamedOrgNotFound' || err?.message === 'The org cannot be found') {
+                this.showStatus(`$(error) Unknown Salesforce user - ${username}`, VlocodeCommand.selectOrg);
+            } else if (this.isTokenExpiredError(err)) {
+                await this.promptRefreshOAuthToken(username);
+            } else if (err?.code === 'ENOTFOUND') {
+                this.showStatus('$(cloud-offline) Unable to reach Salesforce', VlocodeCommand.selectOrg);
+            } else {
                 this.showStatus('$(alert) Could not connect to Salesforce', VlocodeCommand.selectOrg);
             }
         }
     }
 
-    private async hasAccessibleSObject(sobjectTypes: readonly string[]) {
-        for (const sobjectType of sobjectTypes) {
-            try {
-                if (await this._salesforceService?.schema.describeSObject(sobjectType, false)) {
-                    return true;
-                }
-            } catch {
-                // Ignore describe failures during capability detection; the explorer filters inaccessible definitions separately.
+    private async createOrgSession(identity: OrgSessionIdentity): Promise<OrgSession> {
+        const session = new OrgSession(identity, container);
+        try {
+            await this.applyMatchingKeyFiles(session);
+            await session.initialize();
+            if (!session.isVlocityAvailable) {
+                vscode.window.showWarningMessage('Vlocity managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
+                this.logger.warn('Salesforce Industries Managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
             }
+            const connection = await session.connector.getJsForceConnection();
+            connection.on('error', err => {
+                if (this.sessionManager.current === session) {
+                    void this.withSession(async () => this.handleConnectionError(err), { session });
+                }
+            });
+            return session;
+        } catch (error) {
+            session.dispose();
+            throw error;
         }
-        return false;
-    }
-
-    private resetConnection(): void {
-        if (this._salesforceService) {
-            container.removeInstance(this._salesforceService);
-        }
-
-        if (this._datapackService) {
-            container.removeInstance(this._datapackService);
-        }
-
-        this.connector = undefined;
-        this._datapackService = undefined;
-        this._salesforceService = undefined;
-        this.isNativeOmniStudioInstalled = undefined;
-        this.isManagedOmniStudioInstalled = undefined;
-        this.isVlocityInstalled = undefined;
-
-        this.updateExtensionStatus();
     }
 
     public getDiagnostics(name : string): vscode.DiagnosticCollection {
@@ -439,34 +488,15 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.activities.push(activityRecord);
         this.registerDisposable(activityRecord);
 
-        return vscode.window.withProgress({
+        return this.withSession(async () => vscode.window.withProgress({
             title: options.progressTitle || options.activityTitle,
             cancellable: options.cancellable === true,
             location: options.location ?? vscode.ProgressLocation.Notification
-        }, taskRunner) as Promise<T>;
+        }, taskRunner)) as Promise<T>;
     }
 
-    public async getJsForceConnection() {
-        if (this.refreshOAuthTokensPromise) {
-            const refreshed = await this.refreshOAuthTokensPromise;
-            if (!refreshed) {
-                throw new Error('Unable to refresh OAuth refresh tokens; re-authenticate with the target org or select a different org');
-            }
-        }
-
-        const connection = await this.getConnector().getJsForceConnection();
-
-        if (connection[this.errorHandlerMarker] !== true) {
-            Object.defineProperty(connection,
-                this.errorHandlerMarker, {
-                    value: true,
-                    writable: false,
-                    enumerable: false
-            });
-            connection.on('error', err => this.handleConnectionError(err));
-        }
-
-        return connection;
+    public getJsForceConnection() {
+        return this.getConnector().getJsForceConnection();
     }
 
     private handleConnectionError(err: Error | undefined) {
@@ -503,41 +533,31 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     public getApiVersion() {
-        return this.config.salesforce.apiVersion;
+        return this.session?.identity.apiVersion ?? this.config.salesforce.apiVersion;
     }
 
     public getNamespace() {
-        return this.nsService.getNamespace();
+        return this.session?.namespace.getNamespace();
     }
 
     private getConnector() {
-        if (this.connector) {
-            return this.connector;
+        if (!this.session) {
+            throw new Error('Cannot connect to Salesforce; no org session is initialized');
         }
-
-        if (!this.sfdxUsername) {
-            throw new Error('Cannot connect to Salesforce; no username specified in configuration');
-        }
-
-        this.connector = new SfdxConnectionProvider(
-            this.sfdxUsername, {
-                version: this.config.salesforce.apiVersion
-            }
-        );
-
-        return this.connector;
+        return this.session.connector;
     }
 
-    private async promptRefreshOAuthToken(): Promise<boolean> {
+    private async promptRefreshOAuthToken(username = this.sfdxUsername): Promise<boolean> {
+        const version = this.selectionVersion;
         const action = await vscode.window.showWarningMessage(
-            `Authorization for ${this.sfdxUsername} has expired. Do you want to refresh it?`,
+            `Authorization for ${username} has expired. Do you want to refresh it?`,
             { title: 'Refresh', refresh: true },
             { title: 'Cancel', refresh: false }
         );
 
         if (action?.refresh) {
             try {
-                await this.refreshOAuthTokens();
+                await this.refreshOrgConnection(username, version);
                 return true;
             } catch (err) {
                 this.logger.error(err);
@@ -547,18 +567,41 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return false;
     }
 
-    @singleFlight()
-    public refreshOAuthTokens() : Promise<void> {
-        return this.withActivity({
-            progressTitle: `Refreshing ${this.sfdxUsername} org credentials...`,
+    /**
+     * Refreshes a user's credentials and reconnects if no newer org selection has been made.
+     * Concurrent requests for the same user share only the credential refresh, so a failed
+     * reconnection can prompt for another refresh without waiting on itself.
+     */
+    public refreshOAuthTokens(username = this.sfdxUsername) : Promise<void> {
+        return this.refreshOrgConnection(username, this.selectionVersion);
+    }
+
+    private async refreshOrgConnection(username: string | undefined, version: number): Promise<void> {
+        await this.refreshOrgCredentials(username);
+        // A prompt may have opened before the user selected another org. Its credential
+        // refresh can still finish, but it must not restore the prompt's original selection.
+        if (version === this.selectionVersion) {
+            await this.startConnection(username);
+        }
+    }
+
+    private refreshOrgCredentials(username: string | undefined): Promise<void> {
+        const pending = this.credentialRefreshes.get(username);
+        if (pending) {
+            return pending;
+        }
+        const refresh = this.withActivity({
+            progressTitle: `Refreshing ${username} org credentials...`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true
         }, async (_, cancelationToken) => {
-            await sfdx.refreshOAuthTokens(this.sfdxUsername!, cancelationToken);
-            this.resetConnection();
-            vscode.window.showInformationMessage(`Successfully refreshed ${this.sfdxUsername} org credentials`);
-        });
+            await sfdx.refreshOAuthTokens(username!, cancelationToken);
+            this.sessionManager.invalidate(username);
+            vscode.window.showInformationMessage(`Successfully refreshed ${username} org credentials`);
+        }).finally(() => this.credentialRefreshes.delete(username));
+        this.credentialRefreshes.set(username, refresh);
+        return refresh;
     }
 
     /**
@@ -586,8 +629,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
         this.setExtensionContext('orgSelected', true);
         this.showStatus(`$(cloud-upload) Vlocode ${this.sfUsername}`, VlocodeCommand.selectOrg);
-        void sfdx.resolveAlias(this.sfUsername).then(userAliasOrName => {
-            if (this.getStatusText() !== `$(cloud-upload) Vlocode ${this.sfdxUsername}`) {
+        const username = this.sfUsername;
+        void sfdx.resolveAlias(username).then(userAliasOrName => {
+            if (this.getStatusText() !== `$(cloud-upload) Vlocode ${username}`) {
                 // Avoid overwriting more up to date status bar text during extension start-up
                 return;
             }
@@ -626,8 +670,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     /**
      * Register the default and configured (`matchingKeyFiles` setting) matching key files on the
      * {@link MatchingKeyService}; relative paths are resolved against the workspace folders.
+     *
+     * @param session - A newly created session to configure, or omitted to update every retained session.
      */
-    private async applyMatchingKeyFiles() {
+    private async applyMatchingKeyFiles(session?: OrgSession) {
         const configuredFiles = (this.config.matchingKeyFiles ?? []).filter(file => typeof file === 'string' && file.trim());
         const files = new Array<string>();
         for (const file of [ ...MatchingKeyService.defaultMatchingKeyFiles, ...configuredFiles ]) {
@@ -639,13 +685,18 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 this.logger.warn(`Configured matching key file does not exist: ${file}`);
             }
         }
-        container.get(MatchingKeyService).setMatchingKeyFiles(...files);
+        const sessions = session ? [session] : this.sessionManager.retainedSessions;
+        for (const target of sessions) {
+            target.services.get(MatchingKeyService).setMatchingKeyFiles(...files);
+        }
     }
 
     private async processConfigurationChange() {
         this.showStatus('$(sync~spin) Processing config changes...', VlocodeCommand.selectOrg);
         this.showApiVersionStatusItem();
-        await this.initializeConnection();
+        const username = this.pendingUsername ?? this.sfUsername;
+        this.sessionManager.clear();
+        await this.startConnection(username);
     }
 
     @singleFlight()
@@ -717,12 +768,17 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.config.salesforce.apiVersion = `${apiVersion}.0`;
     }
 
+    /**
+     * Replaces the current user's sessions so subsequent operations load fresh org data.
+     * Other users' cached sessions remain available, and active operations can finish on the old session.
+     */
     public flushCaches() {
         if (!this.isInitialized) {
             return;
         }
-        clearCache(this.datapackService);
-        clearCache(this.salesforceService.schema);
+        const username = this.sfdxUsername;
+        this.sessionManager.invalidate(username);
+        return this.startConnection(username);
     }
 }
 

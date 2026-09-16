@@ -9,7 +9,6 @@ import {
     DataMapperExecutor,
     DataMapperItemRecord,
     DataMapperRecord,
-    DatapackInfoService,
     getDatapackHeaders,
     OmniDataTransformItemRecord,
     OmniDataTransformRecord,
@@ -84,12 +83,11 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         context: VlocodeContext,
         service: VlocodeService,
         fileSystem: FileSystem,
-        datapackInfo: DatapackInfoService,
         datapackWriter: DatapackWriter,
         private readonly metadataConverter: MetadataConverter,
         private readonly omniStudioConverter: OmniStudioConverter
     ) {
-        super(context, service, fileSystem, datapackInfo, datapackWriter);
+        super(context, service, fileSystem, datapackWriter);
     }
 
     protected readonly view = {
@@ -103,6 +101,9 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         switch (message.type) {
             case 'refreshFields': {
                 const state = await this.createEditorState(message.model ?? document.data.model, this.stringArray(message.objects));
+                if (this.service.session !== this.service.selectedSession) {
+                    return true;
+                }
                 panel.webview.postMessage({
                     type: 'fields',
                     objectSuggestions: state.objectSuggestions,
@@ -118,10 +119,14 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 try {
                     const output = await this.executePreview(message.model ?? document.data.model, message.input, debug);
                     debug.totalDurationMs = Date.now() - start;
-                    panel.webview.postMessage({ type: 'previewResult', result: { output, debug } });
+                    if (this.service.session === this.service.selectedSession) {
+                        panel.webview.postMessage({ type: 'previewResult', result: { output, debug } });
+                    }
                 } catch (error) {
                     debug.totalDurationMs = Date.now() - start;
-                    panel.webview.postMessage({ type: 'previewError', message: getErrorMessage(error), debug });
+                    if (this.service.session === this.service.selectedSession) {
+                        panel.webview.postMessage({ type: 'previewError', message: getErrorMessage(error), debug });
+                    }
                 }
                 return true;
             }

@@ -5,7 +5,7 @@ import * as jsforce from 'jsforce';
 import * as vscode from 'vscode';
 import vlocity from 'vlocity';
 
-import { Logger, container, injectable } from '@vlocode/core';
+import { Logger, Container, injectable } from '@vlocode/core';
 import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, type DatapackTypeDefinition } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
@@ -348,11 +348,11 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private async expandDatapackDirect(datapack: VlocityDatapack, targetPath: string) {
-        const scope: string | undefined = container.get(DatapackExportDefinitionStore).getAvailableScopes({
+        const scope: string | undefined = Container.get(this)!.get(DatapackExportDefinitionStore).getAvailableScopes({
             datapackType: datapack.datapackType,
             objectType: datapack.sobjectType
         })[0];
-        const expander = container.get(DatapackExpander);
+        const expander = Container.get(this)!.get(DatapackExpander);
         const expanded = expander.expandDatapack(datapack.data as any, { datapackType: datapack.datapackType, scope });
         this.logger.verbose(`Expanding datapack ${expanded.sourceKey} with direct expander${scope ? ` (${scope})` : ''}`);
         const filesWritten = await expanded.writeToFilesystem(targetPath);
