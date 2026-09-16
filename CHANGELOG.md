@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+### Bug Fixes
+
+* **ci:** declare extension dplint dependency ([78b8047](https://github.com/codeneos/vlocode/commit/78b80473712701474d79c73714ead6990b48b683))
+* **export:** Restore OmniStudio Build Tools output compatibility ([#477](https://github.com/codeneos/vlocode/issues/477)) ([fdc8d20](https://github.com/codeneos/vlocode/commit/fdc8d20d00ef579b639822e2fbcb4e9de276a0c5)), closes [#476](https://github.com/codeneos/vlocode/issues/476)
+* remove redundant schema and metadata caches ([5a90e3c](https://github.com/codeneos/vlocode/commit/5a90e3c88b282b358b0fbe41beeec2aa7e758c39))
+
+### Features
+
+* add dplint package for linting Datapacks ([91f451c](https://github.com/codeneos/vlocode/commit/91f451cdf326dd7650422c10d6ace264859c6f2f))
+
 ## [2.4.5](https://github.com/codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
 
 ### Bug Fixes

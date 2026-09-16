@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+### Bug Fixes
+
+* **export:** Restore OmniStudio Build Tools output compatibility ([#477](https://github.com/Codeneos/vlocode/issues/477)) ([fdc8d20](https://github.com/Codeneos/vlocode/commit/fdc8d20d00ef579b639822e2fbcb4e9de276a0c5)), closes [#476](https://github.com/Codeneos/vlocode/issues/476)
+
 ## [2.4.5](https://github.com/Codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
 
 ### Bug Fixes

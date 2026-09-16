@@ -1,18 +1,26 @@
 {
     "name": "@vlocode/dplint",
-    "version": "2.4.4",
+    "version": "2.4.6",
     "description": "Configurable, offline validation for Vlocity/SFI DataPacks",
     "license": "MIT",
     "main": "src/index.ts",
     "types": "dist/index.d.ts",
-    "bin": { "dplint": "bin/dplint.cjs" },
+    "bin": {
+        "dplint": "bin/dplint.cjs"
+    },
     "publishConfig": {
         "main": "dist/index.js",
         "types": "dist/index.d.ts",
         "access": "public"
     },
-    "files": ["dist", "bin", "README.md"],
-    "engines": { "node": ">=22" },
+    "files": [
+        "dist",
+        "bin",
+        "README.md"
+    ],
+    "engines": {
+        "node": ">=22"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Codeneos/vlocode.git",

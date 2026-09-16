@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+### Bug Fixes
+
+* **ci:** declare extension dplint dependency ([78b8047](https://github.com/codeneos/vlocode/commit/78b80473712701474d79c73714ead6990b48b683))
+* remove redundant schema and metadata caches ([5a90e3c](https://github.com/codeneos/vlocode/commit/5a90e3c88b282b358b0fbe41beeec2aa7e758c39))
+
 ## [2.4.5](https://github.com/codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
 
 **Note:** Version bump only for package vlocode
