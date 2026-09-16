@@ -159,6 +159,9 @@ export class DatapackExportDefinitionStore {
             // Normalize as loaded YAML definitions can specify a single field as scalar value
             config.matchingKeyFields = asArray(config.matchingKeyFields).map(String);
         }
+        if (config.exportKey !== undefined) {
+            config.exportKey = asArray(config.exportKey).map(String);
+        }
         const definitions = this.getDefinitionStore(context);
         const objectType = normalizeSObjectTypeName(config.objectType ?? datapackType);
         (definitions[datapackType] ??= {})[objectType] = config;
@@ -212,6 +215,20 @@ export class DatapackExportDefinitionStore {
         return undefined;
     }
 
+    public getExportKey(item: ObjectRef): string[] | undefined {
+        for (const definition of this.findObjectDefinitions(item)) {
+            // An export selected by name must not pick up a sibling's export key from another scope.
+            if (item.datapackType && definition.datapackType !== item.datapackType
+                && normalizeSObjectTypeName(definition.datapackType) !== normalizeSObjectTypeName(item.objectType)) {
+                continue;
+            }
+            if (definition.exportKey !== undefined) {
+                return [...definition.exportKey];
+            }
+        }
+        return undefined;
+    }
+
     /**
      * Iterate definitions matching an SObject type. A selected datapack definition is yielded first,
      * followed by other object definitions in the selected scope and then global fallbacks. Without
@@ -242,12 +259,18 @@ export class DatapackExportDefinitionStore {
     }
 
     private getDefinition(scope: string | symbol, datapackType: string, objectType: string) {
-        return this.config[scope]?.[datapackType]?.[normalizeSObjectTypeName(objectType)];
+        const definitions = this.config[scope];
+        const byType = definitions?.[datapackType] ?? Object.entries(definitions ?? {}).find(([name]) =>
+            normalizeSObjectTypeName(name) === normalizeSObjectTypeName(datapackType))?.[1];
+        return byType?.[normalizeSObjectTypeName(objectType)];
     }
 
     public getFieldConfig(item: ObjectRef, field: string, configKey?: keyof ExportFieldDefinition) {
-        const fieldConfig = this.get(item, 'fields')?.[field];
-        const embeddedConfig = this.get(item, 'embeddedObjects')?.[field];
+        const findField = <T>(fields: Record<string, T> | undefined): T | undefined =>
+            fields?.[field] ?? Object.entries(fields ?? {}).find(([name]) =>
+                removeNamespacePrefix(name).toLowerCase() === removeNamespacePrefix(field).toLowerCase())?.[1];
+        const fieldConfig = findField(this.get(item, 'fields'));
+        const embeddedConfig = findField(this.get(item, 'embeddedObjects'));
         if (configKey) {
             return fieldConfig?.[configKey] ?? embeddedConfig?.[configKey];
         }

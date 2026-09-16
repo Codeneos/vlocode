@@ -1,0 +1,122 @@
+{
+  "toolsVersion": "1.14.18",
+  "input": {
+    "runtime": "managed",
+    "datapackType": "OmniScript",
+    "rootId": "a00000000000001AAA",
+    "rootType": "%vlocity_namespace%__OmniScript__c",
+    "childType": "%vlocity_namespace%__Element__c",
+    "references": {
+      "%vlocity_namespace%__Element__c": {
+        "%vlocity_namespace%__OmniScriptId__c": "%vlocity_namespace%__OmniScript__c",
+        "%vlocity_namespace%__ParentElementId__c": "%vlocity_namespace%__Element__c"
+      }
+    },
+    "matchingKeys": {
+      "%vlocity_namespace%__OmniScript__c": [
+        "%vlocity_namespace%__Type__c",
+        "%vlocity_namespace%__SubType__c",
+        "%vlocity_namespace%__Language__c",
+        "%vlocity_namespace%__Version__c"
+      ],
+      "%vlocity_namespace%__Element__c": [
+        "%vlocity_namespace%__OmniScriptId__c",
+        "Name"
+      ]
+    },
+    "records": [
+      {
+        "Id": "a00000000000001AAA",
+        "__type": "%vlocity_namespace%__OmniScript__c",
+        "Name": "ScriptParity",
+        "%vlocity_namespace%__Type__c": "Fixture",
+        "%vlocity_namespace%__SubType__c": "OmniScript",
+        "%vlocity_namespace%__Language__c": "English",
+        "%vlocity_namespace%__Version__c": 64,
+        "%vlocity_namespace%__IsProcedure__c": false,
+        "%vlocity_namespace%__IsActive__c": true,
+        "%vlocity_namespace%__PropertySet__c": "{\"z\":[{\"Name\":\"Z\"},{\"Name\":\"A\"}],\"a\":1}",
+        "%vlocity_namespace%__CustomJavaScript__c": "console.log(\"fixture\");",
+        "%vlocity_namespace%__OmniScriptDefinitions__c": "{\"z\":2,\"a\":1}",
+        "Description": null
+      },
+      {
+        "Id": "a01000000000001AAA",
+        "__type": "%vlocity_namespace%__Element__c",
+        "Name": "First",
+        "%vlocity_namespace%__OmniScriptId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__ParentElementId__c": null,
+        "%vlocity_namespace%__Order__c": 1,
+        "%vlocity_namespace%__Level__c": 0,
+        "%vlocity_namespace%__PropertySet__c": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000002AAA",
+        "__type": "%vlocity_namespace%__Element__c",
+        "Name": "ChildB",
+        "%vlocity_namespace%__OmniScriptId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__ParentElementId__c": "a01000000000005AAA",
+        "%vlocity_namespace%__Order__c": 1,
+        "%vlocity_namespace%__Level__c": 1,
+        "%vlocity_namespace%__PropertySet__c": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000003AAA",
+        "__type": "%vlocity_namespace%__Element__c",
+        "Name": "ChildA",
+        "%vlocity_namespace%__OmniScriptId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__ParentElementId__c": "a01000000000004AAA",
+        "%vlocity_namespace%__Order__c": 1,
+        "%vlocity_namespace%__Level__c": 1,
+        "%vlocity_namespace%__PropertySet__c": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000004AAA",
+        "__type": "%vlocity_namespace%__Element__c",
+        "Name": "ParentA",
+        "%vlocity_namespace%__OmniScriptId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__ParentElementId__c": null,
+        "%vlocity_namespace%__Order__c": 2,
+        "%vlocity_namespace%__Level__c": 0,
+        "%vlocity_namespace%__PropertySet__c": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000005AAA",
+        "__type": "%vlocity_namespace%__Element__c",
+        "Name": "ParentB",
+        "%vlocity_namespace%__OmniScriptId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__ParentElementId__c": null,
+        "%vlocity_namespace%__Order__c": 3,
+        "%vlocity_namespace%__Level__c": 0,
+        "%vlocity_namespace%__PropertySet__c": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000006AAA",
+        "__type": "%vlocity_namespace%__Element__c",
+        "Name": "Last",
+        "%vlocity_namespace%__OmniScriptId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__ParentElementId__c": null,
+        "%vlocity_namespace%__Order__c": 4,
+        "%vlocity_namespace%__Level__c": 0,
+        "%vlocity_namespace%__PropertySet__c": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      }
+    ]
+  },
+  "expectedFiles": {
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_DataPack.json": "{\n    \"%vlocity_namespace%__CustomJavaScript__c\": \"Fixture_OmniScript_English_JavaScript.js\",\n    \"%vlocity_namespace%__Element__c\": [\n        \"Fixture_OmniScript_English_Element_First.json\",\n        \"Fixture_OmniScript_English_Element_ParentA.json\",\n        \"Fixture_OmniScript_English_Element_ChildA.json\",\n        \"Fixture_OmniScript_English_Element_ParentB.json\",\n        \"Fixture_OmniScript_English_Element_ChildB.json\",\n        \"Fixture_OmniScript_English_Element_Last.json\"\n    ],\n    \"%vlocity_namespace%__IsProcedure__c\": false,\n    \"%vlocity_namespace%__Language__c\": \"English\",\n    \"%vlocity_namespace%__OmniScriptDefinitions__c\": \"{\\\"z\\\":2,\\\"a\\\":1}\",\n    \"%vlocity_namespace%__PropertySet__c\": \"Fixture_OmniScript_English_PropertySet.json\",\n    \"%vlocity_namespace%__SubType__c\": \"OmniScript\",\n    \"%vlocity_namespace%__Type__c\": \"Fixture\",\n    \"Name\": \"ScriptParity\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__OmniScript__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ChildA.json": "{\n    \"%vlocity_namespace%__OmniScriptId__c\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__OmniScript__c\"\n    },\n    \"%vlocity_namespace%__ParentElementId__c\": {\n        \"Name\": \"ParentA\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/ParentA\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\"\n    },\n    \"%vlocity_namespace%__PropertySet__c\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"Name\": \"ChildA\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/ChildA\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ChildB.json": "{\n    \"%vlocity_namespace%__OmniScriptId__c\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__OmniScript__c\"\n    },\n    \"%vlocity_namespace%__ParentElementId__c\": {\n        \"Name\": \"ParentB\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/ParentB\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\"\n    },\n    \"%vlocity_namespace%__PropertySet__c\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"Name\": \"ChildB\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/ChildB\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_First.json": "{\n    \"%vlocity_namespace%__OmniScriptId__c\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__OmniScript__c\"\n    },\n    \"%vlocity_namespace%__PropertySet__c\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"Name\": \"First\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/First\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_Last.json": "{\n    \"%vlocity_namespace%__OmniScriptId__c\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__OmniScript__c\"\n    },\n    \"%vlocity_namespace%__PropertySet__c\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"Name\": \"Last\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/Last\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ParentA.json": "{\n    \"%vlocity_namespace%__OmniScriptId__c\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__OmniScript__c\"\n    },\n    \"%vlocity_namespace%__PropertySet__c\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"Name\": \"ParentA\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/ParentA\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ParentB.json": "{\n    \"%vlocity_namespace%__OmniScriptId__c\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__OmniScript__c\"\n    },\n    \"%vlocity_namespace%__PropertySet__c\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"Name\": \"ParentB\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__Element__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__Element__c/%vlocity_namespace%__OmniScript__c/Fixture/OmniScript/English/ParentB\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_JavaScript.js": "console.log(\"fixture\");",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_PropertySet.json": "{\n    \"a\": 1,\n    \"z\": [\n        {\n            \"Name\": \"Z\"\n        },\n        {\n            \"Name\": \"A\"\n        }\n    ]\n}"
+  }
+}

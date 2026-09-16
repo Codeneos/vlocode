@@ -8,6 +8,12 @@ definitions:
       - '%vlocity_namespace%__Type__c'
       - '%vlocity_namespace%__SubType__c'
       - '%vlocity_namespace%__Language__c'
+    exportKey:
+      - "%vlocity_namespace%__Type__c"
+      - "%vlocity_namespace%__SubType__c"
+      - "%vlocity_namespace%__Language__c"
+    nullValues: omit
+    parseJson: false
     matchingKeyFields:
       - '%vlocity_namespace%__Type__c'
       - '%vlocity_namespace%__SubType__c'
@@ -18,16 +24,18 @@ definitions:
     ignoreFields:
       - '%vlocity_namespace%__IsActive__c'
       - '%vlocity_namespace%__Version__c'
-    fields:
+      - '%vlocity_namespace%__LwcId__c'
+    fields: &managedScriptFields
       '%vlocity_namespace%__CustomJavaScript__c':
         fileName:
-          - _JavaScript
+          - _JavaScript.js
       '%vlocity_namespace%__PropertySet__c':
+        parseJson: true
         fileName:
           - _PropertySet
       '%vlocity_namespace%__TestHTMLTemplates__c':
         fileName:
-          - _HTMLTemplates
+          - _HTMLTemplates.html
     embeddedObjects:
       '%vlocity_namespace%__Element__c':
         objectType: '%vlocity_namespace%__Element__c'
@@ -38,8 +46,8 @@ definitions:
           - _Element
           - Name
         expandArray: true
+        sortParentField: '%vlocity_namespace%__ParentElementId__c'
         sortFields:
-          - '%vlocity_namespace%__Level__c'
           - '%vlocity_namespace%__Order__c'
 
   IntegrationProcedure:
@@ -49,31 +57,42 @@ definitions:
       - '%vlocity_namespace%__SubType__c'
     filter:
       '%vlocity_namespace%__IsProcedure__c': true
+    fields:
+      <<: *managedScriptFields
+      '%vlocity_namespace%__CustomJavaScript__c':
+        parseJson: true
+        fileName:
+          - _SampleInput
 
   DataRaptor: &managedDataRaptor
     objectType: '%vlocity_namespace%__DRBundle__c'
     name:
       - Name
+    nullValues: emptyString
+    parseJson: false
     matchingKeyFields:
       - Name
     ignoreFields:
       - '%vlocity_namespace%__FormulaConverted__c'
     fields:
       '%vlocity_namespace%__InputJson__c':
+        parseJson: true
         fileName:
           - _InputJson
       '%vlocity_namespace%__SampleInputJSON__c':
+        parseJson: true
         fileName:
           - _SampleInputJson
       '%vlocity_namespace%__SampleInputXML__c':
         fileName:
-          - _SampleInputXML
+          - _SampleInputXML.xml
       '%vlocity_namespace%__TargetOutJson__c':
+        parseJson: true
         fileName:
           - _TargetOutJson
       '%vlocity_namespace%__TargetOutXml__c':
         fileName:
-          - _TargetOutXml
+          - _TargetOutXml.xml
     embeddedObjects:
       '%vlocity_namespace%__DRMapItem__c':
         objectType: '%vlocity_namespace%__DRMapItem__c'
@@ -81,20 +100,35 @@ definitions:
           Name: '{%vlocity_namespace%__DRBundle__c:Name}'
         fileName:
           - _Mappings
+        sortMode: vlocity
+        sortFields:
+          - '%vlocity_namespace%__InterfaceObjectLookupOrder__c'
+          - '%vlocity_namespace%__FilterGroup__c'
+          - '%vlocity_namespace%__DomainObjectCreationOrder__c'
+          - '%vlocity_namespace%__DomainObjectAPIName__c'
+          - '%vlocity_namespace%__DomainObjectFieldAPIName__c'
+          - '%vlocity_namespace%__InterfaceFieldAPIName__c'
 
   '%vlocity_namespace%__Element__c':
     dependent: true
     objectType: '%vlocity_namespace%__Element__c'
     name:
       - Name
+    exportKey:
+      - '%vlocity_namespace%__OmniScriptId__c'
+      - Name
     matchingKeyFields:
       - '%vlocity_namespace%__OmniScriptId__c'
       - Name
+    nullValues: omit
+    parseJson: false
     ignoreFields:
+      - '%vlocity_namespace%__Order__c'
       - '%vlocity_namespace%__OmniScriptVersion__c'
       - '%vlocity_namespace%__Level__c'
     fields:
       '%vlocity_namespace%__PropertySet__c':
+        parseJson: true
         fileName:
           - _PropertySet
 
@@ -106,5 +140,7 @@ definitions:
     matchingKeyFields:
       - '%vlocity_namespace%__MapId__c'
       - Name
+    nullValues: omit
+    parseJson: false
     ignoreFields:
       - '%vlocity_namespace%__FormulaConverted__c'
