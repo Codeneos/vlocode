@@ -79,12 +79,10 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
         context: VlocodeContext,
         service: VlocodeService,
         fileSystem: FileSystem,
-        private readonly datapackInfo: DatapackInfoService,
         datapackWriter: DatapackWriter,
-        private readonly matchingKeys: MatchingKeyService,
         private readonly logger: Logger
     ) {
-        super(context, service, fileSystem, datapackInfo, datapackWriter);
+        super(context, service, fileSystem, datapackWriter);
     }
 
     protected readonly view = {
@@ -246,12 +244,12 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
             id,
             name: typeof record.Name === 'string' ? record.Name : undefined,
             sobjectType,
-            datapackType: await this.datapackInfo.getDatapackType(sobjectType) ?? sobjectType.replace(/__c$/i, '')
+            datapackType: await this.service.services.get(DatapackInfoService).getDatapackType(sobjectType) ?? sobjectType.replace(/__c$/i, '')
         };
     }
 
     private async createReferenceFilter(reference: VlocityDatapackReference): Promise<Record<string, unknown>> {
-        const matchingKeyFields = await this.matchingKeys.getMatchingKey(reference.VlocityRecordSObjectType)
+        const matchingKeyFields = await this.service.services.get(MatchingKeyService).getMatchingKey(reference.VlocityRecordSObjectType)
             .then(matchingKey => matchingKey.fields)
             .catch(error => {
                 this.logger.warn(`Unable to resolve matching key for ${reference.VlocityRecordSObjectType}: ${getErrorMessage(error)}`);

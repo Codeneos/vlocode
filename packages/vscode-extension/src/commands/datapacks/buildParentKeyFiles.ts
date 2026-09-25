@@ -4,7 +4,6 @@ import * as fs from 'fs-extra';
 
 import { getDocumentBodyAsString , filterUndefined , substringAfterLast } from '@vlocode/util';
 import { VlocityDatapack, VlocityDatapackReference, DatapackLoader } from '@vlocode/vlocity';
-import { container } from '@vlocode/core';
 import { DatapackCommand } from './datapackCommand';
 import { getDatapackHeadersInWorkspace } from '../../lib/vlocity/datapackUtil';
 import { vscodeCommand } from '../../lib/commandRouter';
@@ -26,7 +25,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
     }
 
     protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; progress?: number, total?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
-        const datapackLoader = container.get(DatapackLoader);
+        const datapackLoader = this.vlocode.services.get(DatapackLoader);
         const datapackHeaders = await getDatapackHeadersInWorkspace();
         const loadedDatapacks = new Array<VlocityDatapack>();
 

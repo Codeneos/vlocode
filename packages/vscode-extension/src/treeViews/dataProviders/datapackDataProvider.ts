@@ -29,7 +29,7 @@ export class DatapackDataProvider extends TreeDataProvider<DatapackNode> {
     }
 
     protected initialize() {
-        this.vlocode.onUsernameChanged(() => this.onRefresh());
+        this.vlocode.onUsernameChanged(() => super.refresh());
     }
 
     private async onExport(node: DatapackNode) {
@@ -164,6 +164,10 @@ export class DatapackDataProvider extends TreeDataProvider<DatapackNode> {
     }
 
     public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
+        return this.vlocode.withSession(() => this.loadChildren(node));
+    }
+
+    private async loadChildren(node?: DatapackNode): Promise<DatapackNode[]> {
         if (!this.vlocode.sfdxUsername) {
             return [];
         }
@@ -171,7 +175,7 @@ export class DatapackDataProvider extends TreeDataProvider<DatapackNode> {
         try {
             await this.vlocode.validateAll(true);
             const nodeSorter = (a: DatapackNode, b: DatapackNode) => a.getItemLabel().localeCompare(b.getItemLabel());
-            const nodes = await this.getNodes(node);
+            const nodes = await this.vlocode.withSession(() => this.getNodes(node));
             return node ? nodes.sort(nodeSorter) : nodes;
         } catch (err) {
             return [ new DatapackErrorNode(getErrorMessage(err)) ];

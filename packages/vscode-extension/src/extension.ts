@@ -41,6 +41,7 @@ import { DatapackEditorProvider } from './webviews/datapackEditorProvider';
 import { IntegrationProcedureEditorProvider } from './webviews/integrationProcedureEditorProvider';
 import { VlocodeLogLinkProvider } from './lib/vlocodeLogLinkProvider';
 import { DatapackDefinitionRegistry } from './lib/vlocity/datapackDefinitionRegistry';
+import { configureOrgSessionRoot } from './lib/orgSession';
 
 import './commands';
 import './lib/vlocity/datapackExpansionService';
@@ -157,6 +158,7 @@ class Vlocode {
         container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION), LifecyclePolicy.singleton);
         container.add(VlocityNamespaceService);
         container.add(NodeFileSystem);
+        configureOrgSessionRoot(container);
 
         this.service = container.get(VlocodeService);
         context.subscriptions.push(this.service);

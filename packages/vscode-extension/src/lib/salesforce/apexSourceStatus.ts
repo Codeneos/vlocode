@@ -156,6 +156,7 @@ export class ApexSourceStatus {
 
     public async codeCoverage(apexClassName: string) : Promise<ApexTestCoverage | undefined>
     public async codeCoverage(apexClassName: string[]) : Promise<ApexTestCoverage[]>
+    @cache({ ttl: 30 })
     public async codeCoverage(apexClassName: string | string[]) : Promise<ApexTestCoverage | undefined | ApexTestCoverage[]> {
         const connection = await this.connectionProvider.getJsForceConnection();
         const records: { Coverage: ApexTestCoverage, ApexClassOrTrigger: { Name: string } }[] = 
