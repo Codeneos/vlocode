@@ -551,15 +551,24 @@ export class DatapackDeploymentRecord {
         })];
 
         const lookupResults = await resolver.resolveDependencies(lookupRequests);
+        let resolutionError: unknown;
 
-        for (const [index, { resolution }] of lookupResults.entries()) {
+        for (const [index, { resolution, error }] of lookupResults.entries()) {
             if (resolution !== undefined) {
                 const { field } = lookupRequests[index];
                 if (!field.startsWith('$')) {
                     this.values[field] = resolution;
                 }
                 this._unresolvedDependencies.delete(field);
+            } else if (error !== undefined) {
+                resolutionError ??= error;
             }
+        }
+
+        if (resolutionError !== undefined) {
+            // Surface resolution errors (e.g. a missing datapack record) instead of leaving the
+            // dependency unresolved, which would otherwise be reported as a cascade failure
+            throw resolutionError;
         }
 
         return this._unresolvedDependencies.size === 0;

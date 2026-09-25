@@ -214,6 +214,31 @@ describe('DatapackDeployment', () => {
         });
     });
 
+    describe('resolveDatapackDependencies', () => {
+        it('should fail records with a missing matching dependency as RECORD_MISSING_DEPENDENCY instead of a cascade failure', async () => {
+            // Arrange
+            const deployment = container.new(DatapackDeployment);
+            const record = mockDatapackRecord({ sourceKey: 'A/1', datapackKey: 'A' });
+            record.addDependency({
+                VlocityRecordSObjectType: 'Product2',
+                VlocityDataPackType: 'VlocityMatchingKeyObject',
+                VlocityMatchingRecordSourceKey: 'A/Missing',
+                VlocityLookupRecordSourceKey: undefined,
+            });
+            deployment.add(record);
+
+            // Act
+            await deployment['resolveDatapackDependencies'](new Map([[record.sourceKey, record]]));
+
+            // Assert
+            expect(record.isFailed).toBe(true);
+            expect(record.isCascadeFailure).toBe(false);
+            expect(record.errorCode).toBe('RECORD_MISSING_DEPENDENCY');
+            expect(record.errorMessage).toContain('A/Missing');
+            expect(deployment.getMessages().filter(m => m.type === 'error')).toHaveLength(1);
+        });
+    });
+
     describe('hasCircularDependencies', () => {
         it('should return path when circular dependencies (A->B->A) exist', () => {
             // Arrange
