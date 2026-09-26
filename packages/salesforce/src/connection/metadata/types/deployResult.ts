@@ -268,7 +268,7 @@ export interface DeployOptions {
      * 
      * _Note: Apex tests that run as part of a deployment always run synchronously and serially._
      */
-    testLevel?: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg';
+    testLevel?: 'NoTestRun' | 'RunRelevantTests' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg';
     /**
      * Indicates whether the specified .zip file points to a directory 
      * structure with a single package (`true`) or a set of packages (`false`).
