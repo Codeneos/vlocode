@@ -39,13 +39,17 @@ export abstract class ModelBackedEditorProvider<
     protected constructor(
         protected readonly context: VlocodeContext,
         protected readonly service: VlocodeService,
-        private readonly fileSystem: FileSystem,
-        private readonly datapackInfoService: DatapackInfoService,
-        protected readonly datapackWriter: DatapackWriter
+        private readonly fileSystem: FileSystem
     ) {
         this.service.registerDisposable(vscode.Disposable.from(
             vscode.workspace.onDidOpenTextDocument(document => this.syncSourceDocumentOnOpen(document)),
-            vscode.workspace.onDidChangeTextDocument(event => this.syncSourceDocumentOnChange(event))
+            vscode.workspace.onDidChangeTextDocument(event => this.syncSourceDocumentOnChange(event)),
+            this.service.onUsernameChanged(() => {
+                for (const document of this.documents) {
+                    void this.service.withSession(() => this.postStateToDocument(document)).catch(error =>
+                        this.postToDocument(document, { type: 'error', message: getErrorMessage(error) }));
+                }
+            })
         ));
     }
 
@@ -58,6 +62,11 @@ export abstract class ModelBackedEditorProvider<
     protected abstract getDeployCommand(document: TData): string | undefined;
     protected abstract getRefreshCommand(document: TData): string | undefined;
     protected abstract getOpenSalesforceCommand(document: TData): string | undefined;
+
+    /** Resolves a writer backed by the current operation's definition store. */
+    protected get datapackWriter(): DatapackWriter {
+        return this.service.services.get(DatapackWriter);
+    }
 
     protected handleEditorMessage(context: EditorMessageContext<TModel, TData>): boolean | Promise<boolean> {
         void context;
@@ -96,7 +105,7 @@ export abstract class ModelBackedEditorProvider<
         webviewPanel.onDidDispose(() => document.webviews.delete(webviewPanel.webview));
 
         webviewPanel.webview.onDidReceiveMessage(rawMessage =>
-            void this.handleRawMessage(document, webviewPanel, rawMessage)
+            void this.service.withSession(() => this.handleRawMessage(document, webviewPanel, rawMessage))
         );
     }
 
@@ -149,12 +158,14 @@ export abstract class ModelBackedEditorProvider<
     protected async loadDatapackWithOpenDocuments(headerFile: string | vscode.Uri): Promise<VlocityDatapack> {
         const fileName = headerFile instanceof vscode.Uri ? headerFile.fsPath : headerFile;
         const fileSystem = OpenTextDocumentFileSystem.fromWorkspace(this.fileSystem);
-        return new DatapackLoader(fileSystem, this.datapackInfoService).loadDatapack(fileName);
+        return new DatapackLoader(fileSystem, this.service.services.get(DatapackInfoService)).loadDatapack(fileName);
     }
 
     protected async writeDatapack(datapack: VlocityDatapack): Promise<void> {
-        await confirmDatapackWrite(datapack, this.datapackWriter.getWritePlan(datapack), this.fileSystem);
-        await this.datapackWriter.write(datapack);
+        const writer = this.datapackWriter;
+        // Keep the confirmed layout's writer if the selected org changes while the prompt is open.
+        await confirmDatapackWrite(datapack, writer.getWritePlan(datapack), this.fileSystem);
+        await writer.write(datapack);
     }
 
     protected sourceTextMap(entries: Iterable<readonly [string | vscode.Uri, string]>): Map<string, string> {
@@ -203,7 +214,11 @@ export abstract class ModelBackedEditorProvider<
     }
 
     protected async postStateToDocument(document: ModelBackedDocument<TModel, TData>): Promise<void> {
-        this.postToDocument(document, { type: 'load', state: await this.createEditorState(document.data.model) });
+        const session = this.service.session;
+        const state = await this.createEditorState(document.data.model);
+        if (session === this.service.selectedSession) {
+            this.postToDocument(document, { type: 'load', state });
+        }
     }
 
     protected postToDocument(document: ModelBackedDocument<TModel, TData>, message: unknown): void {
@@ -297,7 +312,11 @@ export abstract class ModelBackedEditorProvider<
     }
 
     private async postStateToWebview(document: ModelBackedDocument<TModel, TData>, webview: vscode.Webview): Promise<void> {
-        webview.postMessage({ type: 'load', state: await this.createEditorState(document.data.model) });
+        const session = this.service.session;
+        const state = await this.createEditorState(document.data.model);
+        if (session === this.service.selectedSession) {
+            webview.postMessage({ type: 'load', state });
+        }
     }
 
     private acceptModelChange(document: ModelBackedDocument<TModel, TData>, model: TModel): void {

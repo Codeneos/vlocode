@@ -8,7 +8,7 @@ import { DatapackDefinitionRegistry } from '../lib/vlocity/datapackDefinitionReg
 describe('DatapackDefinitionRegistry', () => {
 
     function createRegistry() {
-        return new DatapackDefinitionRegistry({} as any, {} as any, {} as any, Logger.null) as any;
+        return new DatapackDefinitionRegistry({} as any, Logger.null) as any;
     }
 
     function createRegistryForCapabilities(capabilities: {
@@ -30,7 +30,10 @@ describe('DatapackDefinitionRegistry', () => {
         const datapackInfo = {
             getDatapackDefinitions: jest.fn().mockResolvedValue([])
         };
-        const registry = new DatapackDefinitionRegistry(vlocode as any, datapackInfo as any, definitions, Logger.null) as any;
+        Object.assign(vlocode, {
+            services: { get: (type: unknown) => type === DatapackExportDefinitionStore ? definitions : datapackInfo }
+        });
+        const registry = new DatapackDefinitionRegistry(vlocode as any, Logger.null) as any;
         return { registry, definitions };
     }
 

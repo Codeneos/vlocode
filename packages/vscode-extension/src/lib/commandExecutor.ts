@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 
-import { Container, container, Logger, LogManager } from '@vlocode/core';
+import { container, Logger, LogManager } from '@vlocode/core';
 import { Command } from '../lib/command';
 import { CommandOptions } from './commandRouter';
-import { SalesforceService } from '@vlocode/salesforce';
-import { get } from 'http';
 import { getErrorMessage } from '@vlocode/util';
+import VlocodeService from './vlocodeService';
 
 export class CommandExecutor implements Command {
 
@@ -17,10 +16,14 @@ export class CommandExecutor implements Command {
     ) { }
 
     public get salesforce() {
-       return container.get(SalesforceService)
+       return container.get(VlocodeService).salesforceService
     }
 
-    public async execute(...args: any[]): Promise<void> {
+    public execute(...args: any[]): Promise<void> {
+        return container.get(VlocodeService).withSession(() => this.executeCommand(args));
+    }
+
+    private async executeCommand(args: any[]): Promise<void> {
         this.logger.verbose(`Running command ${this.name}`);
 
         // Prevent prod deployment if not intended
@@ -36,7 +39,7 @@ export class CommandExecutor implements Command {
 
         try {
             if (this.options?.executeParams) {
-                args = [...this.options?.executeParams, ...args];
+                args = [...this.options.executeParams, ...args];
             }
             if (this.options?.focusLog) {
                 this.logger.focus();
@@ -44,7 +47,9 @@ export class CommandExecutor implements Command {
             if (typeof this.command.validate === 'function') {
                 await this.command.validate(...args);
             }
-            await this.command.execute(...args);
+            // Validation can select an org when the command starts disconnected. Capture that
+            // session here; commands that started connected keep the session captured by execute().
+            await container.get(VlocodeService).withSession(async () => this.command.execute(...args));
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch (err) {
             console.error(err);
@@ -56,7 +61,7 @@ export class CommandExecutor implements Command {
 
     public validate(...args: any[]): Promise<void> | void {
         if (this.options?.executeParams) {
-            args = [...this.options?.executeParams, ...args];
+            args = [...this.options.executeParams, ...args];
         }
         return this.command.validate?.(...args);
     }

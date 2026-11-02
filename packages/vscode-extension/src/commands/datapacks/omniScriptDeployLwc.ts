@@ -6,7 +6,6 @@ import { VlocityDatapack } from '@vlocode/vlocity';
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackCommand } from './datapackCommand';
-import { container } from '@vlocode/core';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
 
 @vscodeCommand(VlocodeCommand.omniScriptDeployLwc, { focusLog: true, showProductionWarning: true })
@@ -41,9 +40,9 @@ export default class DeployLwcCommand extends DatapackCommand {
     protected async deployLwc(datapacks: VlocityDatapack[], progress: ActivityProgress) : Promise<void> {
         for (const [i, datapack] of datapacks.entries()) {
             progress.report({ message: `Generating ${datapack.name} definitions...`, total: datapacks.length, progress: i });
-            const definition = await container.get(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
+            const definition = await this.vlocode.services.get(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
             progress.report({ message: `Deploying ${datapack.name} LWC...` });
-            container.get(OmniScriptActivator).deployLwc(definition, { toolingApi: true });
+            await this.vlocode.services.get(OmniScriptActivator).deployLwc(definition, { toolingApi: true });
         }
         void vscode.window.showInformationMessage(`Deployed LWC components for ${datapacks.length} OmniScript(s)`);
     }

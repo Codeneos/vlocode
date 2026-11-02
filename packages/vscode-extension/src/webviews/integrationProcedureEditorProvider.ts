@@ -4,8 +4,8 @@ import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
 import { deepClone, isRecord } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
-import { DatapackInfoService, getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
-import { DatapackWriter, MetadataConverter, OmniStudioConverter } from '@vlocode/vlocity-deploy';
+import { getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
+import { MetadataConverter, OmniStudioConverter } from '@vlocode/vlocity-deploy';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { ModelBackedEditorProvider, type EditorMessageContext } from './modelBackedEditorProvider';
 import { ApexWorkspaceIndex } from '../lib/salesforce/apexWorkspaceIndex';
@@ -108,14 +108,12 @@ export class IntegrationProcedureEditorProvider extends ModelBackedEditorProvide
         context: VlocodeContext,
         service: VlocodeService,
         fileSystem: FileSystem,
-        datapackInfo: DatapackInfoService,
-        datapackWriter: DatapackWriter,
         private readonly metadataConverter: MetadataConverter,
         private readonly omniStudioConverter: OmniStudioConverter,
         private readonly dataMappers: DataMapperWorkspaceIndex,
         private readonly apexClasses: ApexWorkspaceIndex
     ) {
-        super(context, service, fileSystem, datapackInfo, datapackWriter);
+        super(context, service, fileSystem);
     }
 
     protected override async createEditorState(model: IntegrationProcedureModel): Promise<EditorState> {

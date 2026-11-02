@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 import open from 'open';
 
-import { DeployResult, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployResult, RetrieveDeltaStrategy, SalesforceConnectionProvider, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 
 import { VlocodeCommand } from '../../constants';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
 import { vscodeCommand } from '../../lib/commandRouter';
 import MetadataCommand from './metadataCommand';
-import { container } from '@vlocode/core';
 import { DateTime } from 'luxon';
+import { wait } from '@vlocode/util';
 import { TokenReplacementPlugin } from '@vlocode/salesforce/src/deploy/plugins/tokenReplacementPlugin';
 
 /**
@@ -23,12 +23,13 @@ export default class DeployMetadataCommand extends MetadataCommand {
         'SucceededPartial': 'Partially Deployed'
     };
 
-    /** 
-     * In order to prevent double deployment keep a list of pending deploy ops
+    /**
+     * Packages waiting for the selected org. Changing orgs discards all pending packages;
+     * a deployment already submitted keeps its original connection until completion.
      */
     private readonly pendingPackages = new Array<SalesforcePackage>();
 
-    private deploymentTaskRef?: NodeJS.Timeout;
+    private deploymentTaskRef?: Promise<void>;
     private deploymentRunning = false;
     private enabled = true;
 
@@ -42,7 +43,14 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     public initialize() {
+        this.registerDisposable(this.vlocode.onUsernameChanged(() => this.clearQueue()));
         this.setEnabled(true);
+    }
+
+    public override dispose() {
+        this.enabled = false;
+        this.clearQueue();
+        super.dispose();
     }
 
     private getNextPackage(): SalesforcePackage | undefined {
@@ -92,6 +100,11 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     private async queueDeployment(sfPackage: SalesforcePackage) {
+        // Package building can finish after an org switch has already cleared the queue.
+        if (this.vlocode.session !== this.vlocode.selectedSession) {
+            this.logger.info('Discarding deployment package because the selected org changed while it was being built');
+            return;
+        }
         this.pendingPackages.push(sfPackage);
         const components = sfPackage.getComponentNames()
 
@@ -109,7 +122,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     private async buildDeployPackage(files: Iterable<(vscode.Uri | string)>, options?: { delta?: boolean }) {
-        const packageBuilder = container.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion())
+        const packageBuilder = this.vlocode.services.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion())
         const connection = await this.vlocode.getJsForceConnection();
         const identity = await connection.identity();
 
@@ -148,29 +161,35 @@ export default class DeployMetadataCommand extends MetadataCommand {
             return;
         }
 
-        this.deploymentTaskRef = setTimeout(async () => {
+        const session = this.vlocode.selectedSession;
+        // The returned promise includes the delay, so the session cannot be disposed between
+        // scheduling the worker and submitting its first deployment.
+        this.deploymentTaskRef = this.vlocode.withSession(async () => {
+            await wait(250);
             this.deploymentRunning = true;
-            try {
-                while (this.pendingPackages.length && this.enabled) {
-                    const deployPackage = this.getNextPackage();
-                    if (!deployPackage) {
-                        break;
-                    }
-                    const deployment = new SalesforceDeployment(deployPackage);
-                    await this.vlocode.withActivity({
-                        progressTitle: `Deploy ${deployPackage.componentsDescription}`,
-                        location: vscode.ProgressLocation.Notification,
-                        propagateExceptions: false,
-                        cancellable: true
-                    }, async (progress: ActivityProgress, token: vscode.CancellationToken) => {
-                        await this.monitorDeployment(deployment, progress, token);
-                    });
+            while (this.pendingPackages.length && this.enabled && session === this.vlocode.selectedSession) {
+                const deployPackage = this.getNextPackage();
+                if (!deployPackage) {
+                    break;
                 }
-            } finally {
-                this.deploymentRunning = false;
-                this.deploymentTaskRef = undefined;
+                const deployment = new SalesforceDeployment(deployPackage, this.vlocode.services.get(SalesforceConnectionProvider));
+                await this.vlocode.withActivity({
+                    progressTitle: `Deploy ${deployPackage.componentsDescription}`,
+                    location: vscode.ProgressLocation.Notification,
+                    propagateExceptions: false,
+                    cancellable: true
+                }, async (progress: ActivityProgress, token: vscode.CancellationToken) => {
+                    await this.monitorDeployment(deployment, progress, token);
+                });
             }
-        }, 250);
+        }, { session }).catch(error => this.logger.error(error)).finally(() => {
+            this.deploymentRunning = false;
+            this.deploymentTaskRef = undefined;
+            // Work queued after an org switch belongs to a new worker with a new capture.
+            if (this.pendingPackages.length && this.enabled) {
+                this.startDeploymentTask();
+            }
+        });
     }
 
     protected async monitorDeployment(deployment: SalesforceDeployment, progress: ActivityProgress, token: vscode.CancellationToken) {
@@ -208,7 +227,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         return this.onDeploymentComplete(deployment, result);
     }
 
-    private onDeploymentComplete(deployment: SalesforceDeployment, result: DeployResult) {
+    private async onDeploymentComplete(deployment: SalesforceDeployment, result: DeployResult) {
         // Clear errors before starting the deployment
         this.clearPreviousErrors(deployment.deploymentPackage.files());
         void this.logDeployResult(deployment.deploymentPackage, result);
@@ -218,6 +237,8 @@ export default class DeployMetadataCommand extends MetadataCommand {
         const partialSuccess = !!result.details?.componentFailures?.length;
 
         if (partialSuccess || !result.success) {
+            const session = this.vlocode.session;
+            const detailsUrl = await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true });
             // Partial success
             if (partialSuccess) {
                 this.logger.warn(`Deployment ${result?.id} -- partially completed; see log for details`);
@@ -230,9 +251,15 @@ export default class DeployMetadataCommand extends MetadataCommand {
                 'Retry', 'See details'
             ).then(async selected => {
                 if (selected === 'Retry') {
-                    this.queueDeployment(deployment.deploymentPackage);
+                    // A notification can outlive its deployment and the selected org. A retry
+                    // must not put the old org's package into the new org's cleared queue.
+                    if (session === this.vlocode.selectedSession) {
+                        await this.queueDeployment(deployment.deploymentPackage);
+                    } else {
+                        void vscode.window.showWarningMessage('The org has changed. Run the deployment again to retry.');
+                    }
                 } else if (selected === 'See details') {
-                    void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }));
+                    void open(detailsUrl);
                 }
             });
         } else {

@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import VlocodeService from '../lib/vlocodeService';
 import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
-import { cache } from '@vlocode/util';
 import { ApexSourceStatus, ApexTestCoverage } from '../lib/salesforce/apexSourceStatus';
 
 /**
@@ -19,7 +18,7 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
     ];
 
     private get sourceStatus() {
-        return container.get(ApexSourceStatus);
+        return this.vlocode.services.get(ApexSourceStatus);
     }
 
     constructor(private readonly vlocode: VlocodeService) {
@@ -32,7 +31,11 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
         );
     }
 
-    public async provideCodeLenses(document: vscode.TextDocument) {
+    public provideCodeLenses(document: vscode.TextDocument) {
+        return this.vlocode.withSession(() => this.getCodeLenses(document));
+    }
+
+    private async getCodeLenses(document: vscode.TextDocument) {
         const details = this.sourceStatus.classNameFromDocument(document);
         if (!details) {
             return;
@@ -46,7 +49,6 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
         }
     }
 
-    @cache({ ttl: 30 })
     private getCoverage(className: string) {
         return this.sourceStatus.codeCoverage(className)
     }

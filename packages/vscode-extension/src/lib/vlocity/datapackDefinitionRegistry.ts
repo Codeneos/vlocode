@@ -4,7 +4,7 @@ import * as yaml from 'js-yaml';
 import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
-import { filterAsyncParallel, getErrorMessage, getObjectProperty, removeNamespacePrefix, singleFlight } from '@vlocode/util';
+import { filterAsyncParallel, getErrorMessage, getObjectProperty, removeNamespacePrefix } from '@vlocode/util';
 import { QueryConditionBuilder, QueryParser, type SalesforceQueryData } from '@vlocode/salesforce';
 import { DatapackInfoService, DatapackTypeDefinition, DatapackTypeDefinitions } from '@vlocode/vlocity';
 import {
@@ -16,6 +16,7 @@ import {
 } from '@vlocode/vlocity-deploy';
 
 import VlocodeService from '../vlocodeService';
+import type { OrgSession } from '../orgSession';
 import { getWorkspaceFileCandidates } from '../workspaceFiles';
 import { ConfigurationManager } from '../config';
 
@@ -37,22 +38,46 @@ interface ExportDefinitionFileInfo {
 
 type ExplorerWhereCondition = SalesforceQueryData['whereCondition'];
 
+/**
+ * Maintains the selected org's DataPack definition collections for the explorer and export commands.
+ *
+ * This registry lives for the extension's lifetime. Org services are resolved through VlocodeService
+ * for each operation so its configuration listeners do not retain a previous org's service instances.
+ */
 @injectable()
 export class DatapackDefinitionRegistry {
 
     private entries: DatapackDefinitionCollection[] = [];
+    private entriesSession?: OrgSession;
+    private loadingEntries?: DatapackDefinitionCollection[];
+    private reloadPromise?: Promise<DatapackDefinitionCollection[]>;
+    private reloadVersion = 0;
 
     constructor(
         private readonly vlocode: VlocodeService,
-        private readonly datapackInfo: DatapackInfoService,
-        private readonly definitions: DatapackExportDefinitionStore,
         private readonly logger: Logger
     ) {
     }
 
+    private get datapackInfo(): DatapackInfoService {
+        return this.vlocode.services.get(DatapackInfoService);
+    }
+
+    private get definitions(): DatapackExportDefinitionStore {
+        return this.vlocode.services.get(DatapackExportDefinitionStore);
+    }
+
+    /**
+     * Gets definition collections for the caller's captured org session, waiting for queued reloads.
+     * A command that outlives an org switch receives its own org's definitions.
+     */
     public async getDefinitionCollections(): Promise<DatapackDefinitionCollection[]> {
-        if (!this.entries.length && this.vlocode.isInitialized) {
-            await this.reload();
+        const session = this.vlocode.session;
+        while (this.reloadPromise) {
+            await this.reloadPromise;
+        }
+        if (session !== this.entriesSession || (!this.entries.length && this.vlocode.isInitialized)) {
+            return this.loadCollections(session);
         }
         return this.entries;
     }
@@ -85,24 +110,56 @@ export class DatapackDefinitionRegistry {
             ConfigurationManager.onConfigChange(
                 this.vlocode.config,
                 'customExportDefinitionFiles',
-                () => this.reload(),
+                () => this.loadCollections(this.vlocode.selectedSession),
                 { initial: true }
             ),
-            this.vlocode.onUsernameChanged(() => this.reload())
+            this.vlocode.onUsernameChanged(() => this.loadCollections(this.vlocode.selectedSession))
         );
     }
 
-    @singleFlight()
-    public async reload() {
-        this.entries = [];
-        this.definitions.clear();
+    /**
+     * Reloads bundled and workspace definitions into the current operation's org store.
+     * The explorer's collections are replaced only if this is still the latest reload for the selected org.
+     */
+    public reload(): Promise<void> {
+        return this.loadCollections(this.vlocode.session).then(() => undefined);
+    }
 
-        if (!this.vlocode.isInitialized) {
-            return;
+    private loadCollections(session: OrgSession | undefined): Promise<DatapackDefinitionCollection[]> {
+        const version = ++this.reloadVersion;
+        if (session === this.vlocode.selectedSession) {
+            this.entries = [];
+            this.entriesSession = undefined;
         }
-
-        await this.loadDatapackDefinitions();
-        await this.loadCustomDefinitions();
+        // Serialize reloads because loadingEntries is shared by this extension-wide registry.
+        // Capture the requested session before waiting so queued work still updates the correct org's store.
+        const previous = this.reloadPromise ?? Promise.resolve();
+        const reload = this.vlocode.withSession(async () => {
+            await previous.catch(() => undefined);
+            this.loadingEntries = [];
+            try {
+                this.definitions.clear();
+                if (this.vlocode.isInitialized) {
+                    await this.loadDatapackDefinitions();
+                    await this.loadCustomDefinitions();
+                }
+                // Return results to the requesting operation even if a newer org selection or reload
+                // prevents them from becoming the collections displayed by the explorer.
+                if (version === this.reloadVersion && session === this.vlocode.selectedSession) {
+                    this.entries = this.loadingEntries;
+                    this.entriesSession = session;
+                }
+                return this.loadingEntries;
+            } finally {
+                this.loadingEntries = undefined;
+            }
+        }, { session }).finally(() => {
+            if (this.reloadPromise === reload) {
+                this.reloadPromise = undefined;
+            }
+        });
+        this.reloadPromise = reload;
+        return reload;
     }
 
     private async loadDatapackDefinitions() {
@@ -142,7 +199,7 @@ export class DatapackDefinitionRegistry {
 
         this.definitions.load(file.definitions, { scope: file.id });
         const exportMode = file.id === DatapackExportDefinitions.industries.id ? 'tools' : 'direct';
-        this.entries.push({
+        (this.loadingEntries ?? this.entries).push({
             id: file.id,
             label: file.label,
             description: file.description,
@@ -175,7 +232,7 @@ export class DatapackDefinitionRegistry {
         for (const file of await this.readCustomExportDefinitionFiles()) {
             const definitions = await this.loadCustomDefinitionFile(file.file);
             if (definitions.length) {
-                this.entries.push({
+                (this.loadingEntries ?? this.entries).push({
                     id: file.id,
                     label: file.label,
                     description: file.description,

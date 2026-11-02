@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import open from 'open';
 
 import { deepClone } from '@vlocode/util';
-import { container } from '@vlocode/core';
 import { ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { VlocodeCommand } from '../../constants';
@@ -137,7 +136,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
     }
 
     private async getPreferredOmniStudioDesignerUrl(record: object, typeDef: DatapackTypeDefinition, options: SalesforceUrlOption[]) {
-        const designerService = container.get(OmniStudioDesignerService);
+        const designerService = this.vlocode.services.get(OmniStudioDesignerService);
         if (!designerService.isOmniStudioDesignerDatapack(typeDef)) {
             return undefined;
         }

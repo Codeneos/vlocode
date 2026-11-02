@@ -1,6 +1,7 @@
+import type VlocodeService from '../lib/vlocodeService';
 import * as vscode from 'vscode';
 import { SalesforceConnectionProvider } from '@vlocode/salesforce';
-import { container, injectable, Logger } from '@vlocode/core';
+import { injectable, Logger } from '@vlocode/core';
 import { cache, clearCache } from '@vlocode/util';
 
 /**
@@ -36,16 +37,18 @@ export class SalesforceApexContentProvider implements vscode.TextDocumentContent
      * 
      * @param service - An object that provides a `registerDisposable` method for managing disposables within the extension's lifecycle.
      */
-    public static register(service: { registerDisposable: (...disposable: vscode.Disposable[]) => void }) {
-        const provider = container.get(SalesforceApexContentProvider);
-        service.registerDisposable(
-            vscode.workspace.registerTextDocumentContentProvider('apex', provider),
+    public static register(service: VlocodeService) {
+        service.registerDisposable(vscode.Disposable.from(
+            vscode.workspace.registerTextDocumentContentProvider('apex', {
+                provideTextDocumentContent: (uri, token) => service.withSession(() =>
+                    service.services.get(SalesforceApexContentProvider).provideTextDocumentContent(uri, token))
+            }),
             vscode.workspace.onDidChangeTextDocument(async (event) => {
                 if (event.document.uri.scheme === 'apex') {
                     await vscode.languages.setTextDocumentLanguage(event.document, 'apex');
                 }
             })
-        );
+        ));
     }
 
     /**
