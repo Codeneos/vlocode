@@ -58,6 +58,8 @@ function fixture(runtime, datapackType) {
         const specs = [['First',1,0,null],['ChildB',1,1,5],['ChildA',1,1,4],['ParentA',2,0,null],['ParentB',3,0,null],['Last',4,0,null]];
         children = specs.map(([Name, order, level, parent], index) => ({ Id: `a0100000000000${index+1}AAA`, __type: childType, Name,
             [ownerField]: rootId, [parentField]: parent ? `a0100000000000${parent}AAA` : null,
+            [field('ParentElementName', 'ParentElementName')]: parent ? specs[parent - 1][0] : null,
+            [field('ParentElementType', 'ParentElementType')]: parent ? 'Type Ahead Block' : null,
             [field('SequenceNumber', 'Order')]: order, [field('Level', 'Level')]: level,
             [field('PropertySetConfig', 'PropertySet')]: '{"z":2,"a":1}', Empty: null }));
     }
@@ -71,7 +73,14 @@ function toolsTransport(f) {
     const convert = (record, reference = false) => {
         const output = { VlocityDataPackType: reference ? 'VlocityMatchingKeyObject' : 'SObject', VlocityRecordSObjectType: record.__type,
             [reference ? 'VlocityMatchingRecordSourceKey' : 'VlocityRecordSourceKey']: `fixture/${record.Id}` };
-        if (reference) { output.Name = record.Name; return output; }
+        if (reference) {
+            output.Name = record.Name;
+            if (record.__type === f.childType && f.datapackType !== 'DataRaptor') {
+                const owner = f.runtime === 'managed' ? '%vlocity_namespace%__OmniScriptId__c' : 'OmniProcessId';
+                output[owner] = convert(byId.get(record[owner]), true);
+            }
+            return output;
+        }
         for (const [name, value] of Object.entries(record)) {
             if (name === '__type' || (f.datapackType === 'DataRaptor' && f.runtime === 'standard' && name === 'IsActive')) continue;
             output[name] = f.references[record.__type]?.[name] && value ? convert(byId.get(value), true) : value;

@@ -2,7 +2,8 @@ import 'jest';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { VlocityDatapack, VlocityNamespaceService } from '@vlocode/vlocity';
+import { DatapackRecordFactory } from '../datapackRecordFactory';
 import { DatapackLookupService } from '../datapackLookupService';
 import { DatapackExporter } from '../export/datapackExporter';
 import { DatapackExpander } from '../export/datapackExpander';
@@ -1501,7 +1502,7 @@ describe('DatapackExporter', () => {
 
 
     describe.each(['omniStudioStandard', 'omniStudioManaged'] as const)('%s export compatibility', runtime => {
-        function fixture(datapackType = 'IntegrationProcedure') {
+        function fixture(datapackType = 'IntegrationProcedure', payload = '{"z":[{"Name":"Z"},{"Name":"A"}],"a":1}') {
             const config = DatapackExportDefinitions[runtime];
             const definitions = new DatapackExportDefinitionStore();
             definitions.load(config.definitions, { scope: config.id });
@@ -1523,7 +1524,7 @@ describe('DatapackExporter', () => {
             const records = [
                 { Id: rootId, __type: objectType, Name: 'Example', [typeField]: 'Type', [subtype]: 'Sub',
                     [language]: 'English', [version]: 64, [script]: datapackType === 'IntegrationProcedure' ? '{"z":2,"a":1}' : 'console.log("example");',
-                    [propertySet]: '{"z":[{"Name":"Z"},{"Name":"A"}],"a":1}', JsonText: '{"z":2,"a":1}', Empty: null },
+                    [propertySet]: payload, JsonText: '{"z":2,"a":1}', Empty: null },
                 { Id: ids[0], __type: elementType, Name: 'Second', [owner]: rootId, [order]: 2, [parent]: null },
                 { Id: ids[1], __type: elementType, Name: 'Child', [owner]: rootId, [order]: 1, [parent]: ids[0] },
                 { Id: ids[2], __type: elementType, Name: 'First', [owner]: rootId, [order]: 1, [parent]: null }
@@ -1570,6 +1571,38 @@ describe('DatapackExporter', () => {
             expect(f.definitions.getMatchingKeyFields({ objectType: f.objectType, scope: f.context.scope })).toContain(f.version);
         });
 
+        it.each(['object', 'empty array', 'array', 'record-shaped JSON', 'reference-shaped JSON', 'reference array'])('round-trips %s field values through expanded files and deployment serialization', async shape => {
+            const document = {
+                label: null, empty: '', false: false, zero: 0, message: {}, custom: [],
+                nested: { null: null, empty: '', array: [null, '', false, 0, {}, []] },
+                records: [{ VlocityDataPackType: 'SObject', VlocityRecordSObjectType: 'OmniProcessElement',
+                    VlocityRecordSourceKey: 'payload/key', VlocityRecordExportKeyValues: { keep: null },
+                    Name: '', ParentElementName: '', SequenceNumber: 42 }]
+            };
+            const reference = { VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+                VlocityRecordSObjectType: 'Account', VlocityLookupRecordSourceKey: 'Account/Example', Name: 'Example' };
+            const payload = shape === 'empty array' ? [] : shape === 'array' ? [null, '', false, 0, {}, []]
+                : shape === 'record-shaped JSON' ? document.records[0]
+                : shape === 'reference-shaped JSON' ? reference : shape === 'reference array' ? [reference] : document;
+            const f = fixture('OmniScript', JSON.stringify(payload));
+            const [result] = await f.exporter.exportObjectAndExpand(f.rootId, f.context);
+            const files = result.files as Record<string, Buffer>;
+            const root = JSON.parse(files[Object.keys(files).find(name => name.endsWith('_DataPack.json'))!].toString());
+            const expanded = JSON.parse(files[root[f.propertySet]].toString());
+            expect(expanded).toEqual(payload);
+            const deploymentSchema = { schema: {
+                describeSObject: jest.fn().mockResolvedValue({ name: f.objectType }),
+                describeSObjectField: jest.fn(async (_type: string, field: string) => ({ name: field, type: 'textarea' }))
+            } };
+            const factory = new DatapackRecordFactory(new VlocityNamespaceService(''), deploymentSchema as any,
+                mockMatchingKeyService() as any, createLogger() as any);
+            const pack = new VlocityDatapack('OmniScript', { VlocityDataPackType: 'SObject',
+                VlocityRecordSObjectType: f.objectType, VlocityRecordSourceKey: root.VlocityRecordSourceKey,
+                [f.propertySet]: expanded });
+            const [record] = await factory.createRecords(pack);
+            expect(JSON.parse(record.values[f.propertySet] as string)).toEqual(payload);
+        });
+
         it('applies the same hierarchy and field exclusions to consolidated and streamed exports', async () => {
             const f = fixture();
             const [result] = await f.exporter.exportObject(f.rootId, f.context);
@@ -1587,15 +1620,10 @@ describe('DatapackExporter', () => {
         const fixtures = ['standard', 'managed'].flatMap(runtime =>
             ['DataRaptor', 'IntegrationProcedure', 'OmniScript'].map(type => `${runtime}-${type}.json`));
 
-        // Internal matching objects only need their source key. Build Tools also emits redundant
-        // matching fields. Unreferenced managed mapping source keys are likewise optional metadata.
-        // Do not normalize field values, array order, filenames, JSON types or source-key values.
+        // Only unreferenced managed mapping identities differ from Build Tools.
         function comparable(value: any): any {
             if (Array.isArray(value)) return value.map(comparable);
             if (!value || typeof value !== 'object') return value;
-            if (value.VlocityDataPackType === 'VlocityMatchingKeyObject') {
-                return Object.fromEntries(['VlocityDataPackType', 'VlocityRecordSObjectType', 'VlocityMatchingRecordSourceKey'].map(field => [field, value[field]]));
-            }
             return Object.fromEntries(Object.entries(value)
                 .filter(([field]) => !(value.VlocityRecordSObjectType === '%vlocity_namespace%__DRMapItem__c' && field === 'VlocityRecordSourceKey'))
                 .map(([field, value]) => [field, comparable(value)]));
@@ -1610,7 +1638,7 @@ describe('DatapackExporter', () => {
                 name,
                 fields: [...new Set<string>(input.records.filter((record: any) => record.__type === name).flatMap(Object.keys))]
                     .filter(field => field !== '__type')
-                    .map(field => ({ name: field, referenceTo: input.references[name]?.[field] ? [input.references[name][field]] : [] })),
+                    .map(field => ({ name: field, calculated: /ParentElement(Name|Type)/.test(field), referenceTo: input.references[name]?.[field] ? [input.references[name][field]] : [] })),
                 childRelationships: []
             }]));
             const { exporter } = createExporter({ definitions, records: input.records, describes, matchingKeyFieldsByType: input.matchingKeys });

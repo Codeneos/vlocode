@@ -88,6 +88,13 @@
           "description": "Parse JSON-looking field strings. Defaults to true; individual fields can override this.",
           "type": "boolean"
         },
+        "referenceFields": {
+          "description": "Fields included in internal references for compatibility with legacy exports; not lookup criteria.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "relatedObjects": {
           "description": "List of related objects that are exported as separate datapacks but are related to this object and should be included in the export.",
           "items": {
@@ -139,6 +146,10 @@
                 "type": "string"
               },
               "type": "array"
+            },
+            "includeReadOnly": {
+              "description": "Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only.",
+              "type": "boolean"
             },
             "limit": {
               "description": "Optional maximum number of records to return when querying this object.",
@@ -217,6 +228,10 @@
               },
               "type": "array"
             },
+            "includeReadOnly": {
+              "description": "Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only.",
+              "type": "boolean"
+            },
             "parseJson": {
               "description": "Override JSON parsing for this field. Does not affect strings inside JSON documents.",
               "type": "boolean"
@@ -291,6 +306,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "includeReadOnly": {
+          "description": "Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only.",
+          "type": "boolean"
         },
         "parseJson": {
           "description": "Override JSON parsing for this field. Does not affect strings inside JSON documents.",

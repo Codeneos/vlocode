@@ -46,6 +46,31 @@ describe('datapackRecordFactory', () => {
 
     beforeAll(() =>  container.add(Logger.null));
 
+    it.each(['string', 'textarea'])('keeps single and array references in other %s fields as dependencies', async type => {
+        const reference = {
+            VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+            VlocityRecordSObjectType: 'Account',
+            VlocityLookupRecordSourceKey: 'Account/Example',
+            Name: 'Example'
+        };
+        const salesforce = { schema: {
+            describeSObject: jest.fn().mockResolvedValue({ name: 'OmniProcess' }),
+            describeSObjectField: jest.fn(async (_object: string, name: string) => ({ name, type }))
+        } };
+        const factory = new DatapackRecordFactory(new VlocityNamespaceService(''), salesforce as any,
+            mockMatchingKeyService(), Logger.null);
+        const pack = new VlocityDatapack('OmniScript', {
+            VlocityDataPackType: 'SObject', VlocityRecordSObjectType: 'OmniProcess',
+            VlocityRecordSourceKey: 'OmniProcess/Example', Name: 'Example',
+            SingleReference: reference, ArrayReference: [reference]
+        });
+        const [record] = await factory.createRecords(pack);
+        expect(record.getLookup('SingleReference')).toEqual(reference);
+        expect(record.getLookup('ArrayReference')).toEqual(reference);
+        expect(record.values).not.toHaveProperty('SingleReference');
+        expect(record.values).not.toHaveProperty('ArrayReference');
+    });
+
     it('should convert datapack to multiple deployable records', async () => {
         // Arrange
         const schemaDataFile = path.join(__dirname, './data/schema.json');

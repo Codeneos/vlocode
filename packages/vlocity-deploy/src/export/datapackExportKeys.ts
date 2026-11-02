@@ -50,7 +50,9 @@ class ExportKeyResolver {
                     this.records.set(sourceKey, { record: value, ref });
                 }
             }
-            Object.values(value).forEach(item => this.collect(item));
+            for (const [field, item] of Object.entries(value)) {
+                if (!this.isJsonField(value, field)) this.collect(item);
+            }
         }
     }
 
@@ -89,6 +91,12 @@ class ExportKeyResolver {
         return value;
     }
 
+    private isJsonField(record: DatapackObject, field: string): boolean {
+        const objectType = record.VlocityRecordSObjectType;
+        return typeof objectType === 'string' && this.definitions.getFieldConfig(
+            record === this.datapack ? this.ref : { objectType, scope: this.ref.scope }, field, 'parseJson') === true;
+    }
+
     private rewrite(value: DatapackValue): DatapackValue {
         if (Array.isArray(value)) {
             return value.map(item => this.rewrite(item));
@@ -97,8 +105,21 @@ class ExportKeyResolver {
             return value;
         }
         const output: DatapackObject = {};
-        for (const [field, original] of Object.entries(value)) {
+        // Internal references can carry legacy display/matching fields without changing lookups.
+        const item = value.VlocityDataPackType === 'VlocityMatchingKeyObject'
+            ? this.records.get(value.VlocityMatchingRecordSourceKey as string) : undefined;
+        const fields = { ...value };
+        if (item) {
+            for (const field of this.definitions.get(item.ref, 'referenceFields') ?? []) {
+                fields[field] = getFieldValue(item.record, field);
+            }
+        }
+        for (const [field, original] of Object.entries(fields)) {
             if (field === DatapackFields.exportKeyValues) {
+                continue;
+            }
+            if (this.isJsonField(value, field)) {
+                output[field] = original;
                 continue;
             }
             output[field] = sourceKeyFields.has(field) && typeof original === 'string'

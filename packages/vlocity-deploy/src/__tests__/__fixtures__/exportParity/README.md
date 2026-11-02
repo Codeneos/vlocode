@@ -18,12 +18,11 @@ Coverage of the four reported differences:
 
 ## Explicit comparison boundaries
 
-Only two known optional metadata differences are normalized by the test:
+Only the source key on an unreferenced managed mapping is normalized by the test:
 
-- Extra matching fields on **internal** `VlocityMatchingKeyObject` references. Their object type and source-key value are still compared. External lookup objects are not normalized.
 - A source key on an unreferenced managed `DRMapItem__c` record. Build Tools omits it; direct export can retain it. Mapping fields, record count and order are still compared.
 
-The fixtures do not represent byte-identical output in those two respects and do not test Salesforce's server-side DataPack export API or deployment. The tools transport adapter provides SObject/reference envelopes from synthetic records, using the empty-string transport convention and native DataRaptor IsActive exclusion observed in the live investigation. Build Tools handles key generation, sorting, pruning, parsing and file expansion itself.
+The fixtures do not represent byte-identical output in that respect and do not test Salesforce's server-side DataPack export API or deployment. The tools transport adapter provides SObject/reference envelopes from synthetic records, using the empty-string transport convention and native DataRaptor IsActive exclusion observed in the live investigation. Build Tools handles key generation, sorting, pruning, parsing and file expansion itself.
 
 ## Regeneration
 
@@ -34,3 +33,5 @@ node packages/vlocity-deploy/src/__tests__/__fixtures__/exportParity/generate.mj
 ```
 
 This runs offline using the extension's pinned Build Tools dependency and this repository's dependency patches. It does not call the direct exporter. It checks the Build Tools version, rejects attempted network requests and removes its temporary directory afterwards. Review oracle changes rather than regenerating fixtures merely to make a failing direct-export test pass.
+
+Parent name/type fields use calculated-field schema metadata. Internal reference fields, including nested script references, are compared without normalization.

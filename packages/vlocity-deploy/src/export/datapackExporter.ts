@@ -1496,7 +1496,7 @@ export class DatapackExporter {
 
     private ignoreField(datapack: ExportDatapack, field: Field) {
         const type = datapack.schema;
-        if (field.autoNumber || field.calculated) {
+        if ((field.autoNumber || field.calculated) && !this.definitions.getFieldConfig(datapack, field.name, 'includeReadOnly')) {
             this.logger.debug(`Ignore field ${field.name} on ${type.name} as it is auto-number or calculated`);
             return true;
         }

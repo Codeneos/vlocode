@@ -57,6 +57,8 @@ export interface DatapackExportDefinition extends ObjectFilter {
      * When omitted or empty, the original source key is retained.
      */
     exportKey?: string[];
+    /** Fields included in internal references for compatibility with legacy exports; not lookup criteria. */
+    referenceFields?: string[];
     /** How null/empty SObject fields are serialized. Defaults to preserving their values. */
     nullValues?: 'preserve' | 'omit' | 'emptyString';
     /** Parse JSON-looking field strings. Defaults to true; individual fields can override this. */
@@ -92,6 +94,8 @@ export interface DatapackExportDefinition extends ObjectFilter {
 }
 
 export interface ExportFieldDefinition extends ExpandFileDefinition {
+    /** Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only. */
+    includeReadOnly?: boolean;
     /** Override JSON parsing for this field. Does not affect strings inside JSON documents. */
     parseJson?: boolean;
     /**

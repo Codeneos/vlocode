@@ -12,6 +12,7 @@ definitions:
       - "%vlocity_namespace%__Type__c"
       - "%vlocity_namespace%__SubType__c"
       - "%vlocity_namespace%__Language__c"
+    referenceFields: [Name]
     nullValues: omit
     parseJson: false
     matchingKeyFields:
@@ -68,6 +69,7 @@ definitions:
     objectType: '%vlocity_namespace%__DRBundle__c'
     name:
       - Name
+    referenceFields: [Name]
     nullValues: emptyString
     parseJson: false
     matchingKeyFields:
@@ -120,6 +122,7 @@ definitions:
     matchingKeyFields:
       - '%vlocity_namespace%__OmniScriptId__c'
       - Name
+    referenceFields: ['%vlocity_namespace%__OmniScriptId__c', Name]
     nullValues: omit
     parseJson: false
     ignoreFields:
@@ -127,6 +130,10 @@ definitions:
       - '%vlocity_namespace%__OmniScriptVersion__c'
       - '%vlocity_namespace%__Level__c'
     fields:
+      '%vlocity_namespace%__ParentElementName__c':
+        includeReadOnly: true
+      '%vlocity_namespace%__ParentElementType__c':
+        includeReadOnly: true
       '%vlocity_namespace%__PropertySet__c':
         parseJson: true
         fileName:
@@ -140,6 +147,7 @@ definitions:
     matchingKeyFields:
       - '%vlocity_namespace%__MapId__c'
       - Name
+    referenceFields: [Name]
     nullValues: omit
     parseJson: false
     ignoreFields:
