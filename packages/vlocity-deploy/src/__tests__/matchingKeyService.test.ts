@@ -83,6 +83,23 @@ describe('MatchingKeyService', () => {
         returnKeyField: 'Id'
     };
 
+    it('creates a resolver with independent definitions and preserves configured matching-key files', async () => {
+        const { service } = createService({
+            describes: [testObject],
+            definitions: { Test: { objectType: 'Test__c', name: 'Name', matchingKeyFields: ['Name'] } },
+            files: { 'custom-keys.json': JSON.stringify({ Test__c: ['vlocity_cmt__FileField__c'] }) }
+        });
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load({ Test: { objectType: 'Test__c', name: 'Name', matchingKeyFields: ['vlocity_cmt__DefField__c'] } });
+        const fork = service.createForDefinitions(definitions);
+        expect((await fork.getMatchingKey('vlocity_cmt__Test__c')).fields).toEqual(['vlocity_cmt__DefField__c']);
+        expect((await service.getMatchingKey('vlocity_cmt__Test__c')).fields).toEqual(['Name']);
+
+        service.setMatchingKeyFiles('custom-keys.json');
+        const configuredFork = service.createForDefinitions(definitions);
+        expect((await configuredFork.getMatchingKey('vlocity_cmt__Test__c')).fields).toEqual(['vlocity_cmt__FileField__c']);
+    });
+
     describe('#getMatchingKey', () => {
         it('prefers matching key files over export definitions and org matching keys', async () => {
             const { service } = createService({

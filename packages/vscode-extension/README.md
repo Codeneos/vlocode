@@ -106,3 +106,21 @@ This extension contributes the following settings:
 -   `vlocity.activate`: Automatically activate deployed datapacks
 -   `vlocity.customJobOptionsYaml`: Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.
 -   `vlocity.sfdxUsername`: SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored.
+
+### Running export jobs
+
+Keep repeatable export manifests in an `export-jobs/` folder in your workspace (or anywhere else you prefer). Refresh the **Jobs** explorer to discover YAML or JSON manifests anywhere in the workspace, then use their **Run job** button. You can also right-click a file and choose **Datapack: Run Export Job**, or use that command from the Command Palette and select a file. Jobs run against the currently selected Vlocode Salesforce org.
+
+For example, `export-jobs/products.yaml`:
+
+```yaml
+exportDefinitions: ../export-definitions.yaml
+folder: ../datapacks
+expand: true
+depth: -1
+export:
+  Product2:
+    - SELECT Id FROM Product2 WHERE IsActive = true
+```
+
+`exportDefinitions` and `folder` are relative to the job file. Without `folder`, the extension uses the configured Vlocity project path, falling back to the job file's directory. Queries must select `Id`. The format is shared with `vlocode export --file`; `expand`, `depth`, and `suppressNulls` are supported. Job-specific definitions apply only to that run.

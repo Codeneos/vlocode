@@ -77,7 +77,7 @@ exportDefinitions: ./export-definitions.yaml
 # Expand each datapack into separate files. Equivalent to --expand.
 expand: true
 
-# Output folder. Equivalent to --output.
+# Output folder, relative to this manifest.
 folder: ./datapacks
 
 # Dependency depth; -1 follows all dependencies. Equivalent to --depth.
@@ -98,10 +98,10 @@ export:
 
 Notes:
 
-- `export` is the only required key; every other key has a default and can be
-  overridden on the command line.
+- `export` is the only required key. Manifest settings take precedence over
+  CLI defaults; `--definitions` overrides the manifest definitions file.
 - Each value under `export` may be a single query string or a list of strings.
-- `exportDefinitions` is resolved relative to the manifest file and must exist.
+- `exportDefinitions` and `folder` are resolved relative to the manifest file. The definitions file must exist.
 - The depth key in a manifest is `depth` (a negative value means "all
   dependencies").
 
@@ -179,7 +179,7 @@ what you typically commit to source control and deploy from.
 | `No datapacks matched the export input` | The query returned no rows, or no Ids were supplied. Verify the query and the target org. |
 | Matching-key collision error | Two records resolved to the same [matching key](./concepts.md#matching-key). Refine `matchingKeyFields` in the definition so the key is unique. |
 | Top-level record has no matching key | A top-level object lacks `matchingKeyFields` and no key could be inferred. Add `matchingKeyFields` to its [definition](./export-definitions.md#matchingkeyfields). |
-| Expanded export path collision | Two datapacks resolve to the same folder/file name. Adjust the `name`/`fileName` formats so they are unique. |
+| Export path collision | Two datapacks resolve to the same folder/file name. Adjust the `name`/`fileName` formats so they are unique. |
 
 To investigate a run, raise the log level with `-v`/`--debug` and inspect the
 NDJSON log file — see [Logging and diagnostics](./cli.md#logging-and-diagnostics).
@@ -221,3 +221,9 @@ consolidated datapacks without file expansion.
 - [Build export definitions](./export-definitions.md) to control exactly how
   records are shaped into datapacks.
 - [Deploy the exported datapacks](./import.md) to a target org.
+
+## Shared executor
+
+The CLI and VS Code Jobs explorer both run manifests through `DatapackExportJobExecutor` from `@vlocode/vlocity-deploy`. It loads YAML/JSON, queries and deduplicates record IDs, applies export definitions for that run, and writes expanded or consolidated DataPacks. A run owns its definition store and matching-key resolver, leaving the connected org's shared services unchanged. The CLI also uses the executor for direct IDs and single SOQL queries.
+
+Manifest settings override caller defaults. An explicitly supplied definitions file overrides `exportDefinitions`. Without a manifest `folder`, the CLI uses `--output` (the working directory by default); VS Code uses its configured project folder, falling back to the manifest directory. Callers provide progress callbacks and an optional cancellation token. Output collisions and filesystem failures fail the job; each output folder is cleared once per run to remove stale files.

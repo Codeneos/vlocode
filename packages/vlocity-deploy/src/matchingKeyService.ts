@@ -141,6 +141,12 @@ export class MatchingKeyService {
         }
     }
 
+    /** Creates an independent matching-key resolver using this session's configured files. */
+    public createForDefinitions(definitions: DatapackExportDefinitionStore): MatchingKeyService {
+        return new MatchingKeyService(this.logger, this.salesforce, definitions, this.fs)
+            .setMatchingKeyFiles(...this.extraMatchingKeyFiles);
+    }
+
     @cache({ unwrapPromise: true, cacheExceptions: true })
     private get orgMatchingKeys() {
         return this.loadOrgMatchingKeys();

@@ -50,6 +50,15 @@ vlocode.exportDatapack:
   group: v_vlocity
   menus:
     - menu: commandPalette
+vlocode.runExportJob:
+  title: 'Datapack: Run Export Job'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+    - menu: explorer/context
+      when: 'resourceExtname =~ /\.(yaml|yml|json)$/'
+    - menu: editor/context
+      when: 'resourceExtname =~ /\.(yaml|yml|json)$/'
 vlocode.importMultipack:
   title: 'Datapack: Import Multipack...'
   group: v_vlocity

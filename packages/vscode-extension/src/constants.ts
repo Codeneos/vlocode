@@ -32,6 +32,7 @@ export enum VlocodeCommand {
     deployDatapack = 'vlocode.deployDatapack',
     viewDatapackGeneric = 'vlocode.viewDatapack.generic',
     exportDatapack = 'vlocode.exportDatapack',
+    runExportJob = 'vlocode.runExportJob',
     selectOrg = 'vlocode.selectOrg',
     buildDatapack  = 'vlocode.buildDatapack',
     openInSalesforce  = 'vlocode.openSalesforce',

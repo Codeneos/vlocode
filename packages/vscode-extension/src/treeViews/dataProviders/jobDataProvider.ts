@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import VlocityDatapackService from '../../lib/vlocity/vlocityDatapackService';
-import { LogManager, Logger, inject, injectable } from '@vlocode/core';
+import { LogManager, Logger, injectable } from '@vlocode/core';
 import * as yaml from 'js-yaml';
 
 import VlocityJobFile from '../../lib/vlocity/vlocityJobFile';
@@ -10,6 +10,7 @@ import * as vlocity from 'vlocity';
 import { filterUndefined, getErrorMessage } from '@vlocode/util';
 import { TreeDataProvider } from '../treeDataProvider';
 import VlocodeService from '../../lib/vlocodeService';
+import { VlocodeCommand } from '../../constants';
 
 @injectable()
 export class JobDataProvider extends TreeDataProvider<JobNode> {
@@ -41,6 +42,10 @@ export class JobDataProvider extends TreeDataProvider<JobNode> {
     }
 
     private async runJob(node: JobNode) {
+        if (node.exportManifest) {
+            await this.executeCommand(VlocodeCommand.runExportJob, node.jobFile);
+            return;
+        }
         const jobCommand = await vscode.window.showQuickPick(this.jobCommandOptions, {
             placeHolder: 'Select how to run this job',
             ignoreFocusOut: true
@@ -93,8 +98,16 @@ export class JobDataProvider extends TreeDataProvider<JobNode> {
         return false;
     }
 
+    private isExportManifest(body: unknown): boolean {
+        if (!body || typeof body !== 'object' || !body['export'] || typeof body['export'] !== 'object' || Array.isArray(body['export'])) {
+            return false;
+        }
+        return Object.values(body['export']).every(queries =>
+            typeof queries === 'string' || (Array.isArray(queries) && queries.every(query => typeof query === 'string')));
+    }
+
     public async getChildren(): Promise<JobNode[]> {
-        const yamlFiles = await vscode.workspace.findFiles('**/*.yaml');
+        const yamlFiles = await vscode.workspace.findFiles('**/*.{yaml,yml,json}');
         const yamlFilesWithBody = await Promise.all(yamlFiles.map(async file => {
             try {
                 return {
@@ -106,18 +119,19 @@ export class JobDataProvider extends TreeDataProvider<JobNode> {
             }
         }));
 
-        // remote any non-job files
-        this.logger.info(`Found ${yamlFilesWithBody.length} YAML files in workspace folders`);
-        const validJobFiles = filterUndefined(yamlFilesWithBody).filter(file => this.isVlocityJobFile(file.body));
+        // Remove non-job files
+        this.logger.info(`Found ${yamlFilesWithBody.length} potential job files in workspace folders`);
+        const validJobFiles = filterUndefined(yamlFilesWithBody).filter(file => this.isVlocityJobFile(file.body) || this.isExportManifest(file.body));
         this.logger.info(`Displaying ${validJobFiles.length} valid Job files in Job explorer`);
 
-        return validJobFiles.map(({ file }) => new JobNode( file ));
+        return validJobFiles.map(({ file, body }) => new JobNode(file, this.isExportManifest(body)));
     }
 }
 
 class JobNode {
     constructor(
-        public readonly jobFile: vscode.Uri
+        public readonly jobFile: vscode.Uri,
+        public readonly exportManifest = false
     ) { }
 
     public get label() : string {

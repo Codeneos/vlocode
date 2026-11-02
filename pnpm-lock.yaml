@@ -580,6 +580,9 @@ importers:
       fs-extra:
         specifier: '11'
         version: 11.3.3
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.2.0
       luxon:
         specifier: ^3.4.4
         version: 3.7.2
@@ -599,9 +602,6 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@25.2.1)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@25.2.1)(typescript@5.9.3))
-      js-yaml:
-        specifier: ^4.1.0
-        version: 4.2.0
       shx:
         specifier: ^0.3.4
         version: 0.3.4

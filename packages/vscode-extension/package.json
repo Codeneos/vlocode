@@ -206,6 +206,10 @@
                 "title": "Datapack: Export from Org"
             },
             {
+                "command": "vlocode.runExportJob",
+                "title": "Datapack: Run Export Job"
+            },
+            {
                 "command": "vlocode.importMultipack",
                 "title": "Datapack: Import Multipack..."
             },
@@ -865,6 +869,11 @@
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
+                    "command": "vlocode.runExportJob",
+                    "group": "v_vlocity",
+                    "when": "resourceExtname =~ /\\.(yaml|yml|json)$/"
+                },
+                {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
@@ -1025,6 +1034,11 @@
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.runExportJob",
+                    "group": "v_vlocity",
+                    "when": "resourceExtname =~ /\\.(yaml|yml|json)$/"
                 },
                 {
                     "command": "vlocode.deployMetadata",

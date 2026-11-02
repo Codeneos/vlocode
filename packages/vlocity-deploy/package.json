@@ -60,7 +60,6 @@
         "@types/js-yaml": "^4.0.2",
         "@types/luxon": "^3.3.0",
         "jest": "^29.7.0",
-        "js-yaml": "^4.1.0",
         "shx": "^0.3.4",
         "ts-jest": "^29.4.9",
         "ts-json-schema-generator": "^2.3.0",
@@ -74,6 +73,7 @@
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity": "workspace:*",
         "fs-extra": "^11",
+        "js-yaml": "^4.1.0",
         "luxon": "^3.4.4",
         "moment": "^2.29.4"
     },

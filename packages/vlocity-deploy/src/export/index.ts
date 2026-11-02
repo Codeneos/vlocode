@@ -5,3 +5,5 @@ export * from './exportDefinitionStore';
 export * from './exportDefinitions';
 export * from './datapacksExpandDefinition';
 export * from './expandDefinitionAccessor';
+export * from './datapackExportFileLoader';
+export * from './datapackExportJobExecutor';
