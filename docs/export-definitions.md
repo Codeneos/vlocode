@@ -325,6 +325,11 @@ sortFields:
   - '%vlocity_namespace%__SequenceNumber__c'
 ```
 
+Ties use canonical exported content, so equal sort-field values do not preserve
+an arbitrary query order. Record collections without configured sort fields use
+source keys or names when available, then canonical content. Positional arrays
+inside parsed JSON fields keep their original order unless sorting is configured.
+
 ### processor — transform a value
 
 A JavaScript snippet that processes the field value before it is written. The

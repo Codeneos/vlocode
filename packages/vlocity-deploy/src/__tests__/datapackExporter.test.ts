@@ -1901,7 +1901,7 @@ describe('DatapackExpander', () => {
             .toEqual(['Alpha', 'Zulu']);
     });
 
-    it('preserves record-array order when no configured or default sort field is available', () => {
+    it('canonicalizes record arrays when no configured or default sort field is available', () => {
         const definitions = {
             get: jest.fn(),
             isFieldIgnored: jest.fn(() => false),
@@ -1924,7 +1924,7 @@ describe('DatapackExpander', () => {
         });
 
         expect(JSON.parse(result.files['Parent_DataPack.json'].toString()).Children.map(child => child.Value))
-            .toEqual(['second', 'first']);
+            .toEqual(['first', 'second']);
     });
 
     it('keeps configured null fields inline instead of expanding them into files', () => {

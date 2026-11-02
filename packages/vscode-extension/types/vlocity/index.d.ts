@@ -72,6 +72,7 @@ declare module 'vlocity' {
         }
 
         export class DataPacksExpand {
+            generateListSortKey(record: Record<string, unknown>, fields: string[]): string;
             generateFolderPath(dataPackType: string, parentName: string) : string;
             generateFolderOrFilename(filename: string, extension: string) : string;
             generateFilepath(dataPackType: string, parentName: string, filename: string, extension: string) : string;

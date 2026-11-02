@@ -89,6 +89,52 @@ describe('Datapack normalization', () => {
         expect(Object.keys(output.Payload[0])).toEqual(['Name', 'a', 'z']);
     });
 
+    it('produces identical output across org IDs, query order and equal configured sort fields', () => {
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load({
+            Root: { objectType: 'Root', name: 'Name', fields: { Children: { sortFields: ['Priority'] } } },
+            Child: { objectType: 'Child', name: 'Name', ignoreFields: ['Id'] }
+        });
+        const normalizer = new DatapackNormalizer(definitions);
+        const root = (org: string, reversed: boolean) => {
+            const children = ['Alpha', 'Beta', 'Gamma'].map(name => sobject('Child', {
+                Name: name, Priority: 1, Id: `${org}-${name}`, VlocityRecordSourceKey: `Child/${name}`
+            }));
+            return sobject('Root', { Name: 'Example', Children: reversed ? children.reverse() : children });
+        };
+        const before = root('A', false);
+        const expected = normalizer.normalizeRecord(before, { objectType: 'Root' });
+        expect(normalizer.normalizeRecord(root('B', true), { objectType: 'Root' })).toEqual(expected);
+        expect(expected.Children.map((child: any) => child.Name)).toEqual(['Alpha', 'Beta', 'Gamma']);
+        expect(before.Children[0].Id).toBe('A-Alpha');
+    });
+
+    it('orders keyless record collections deterministically while preserving positional JSON', () => {
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load({ Root: { objectType: 'Root', name: 'Name', fields: { Payload: { parseJson: true } } } });
+        const normalizer = new DatapackNormalizer(definitions);
+        const children = [{ Value: 'C' }, { Value: 'A' }, { Value: 'B' }];
+        const first = normalizer.normalizeRecord(sobject('Root', { Children: children, Payload: children }), { objectType: 'Root' });
+        const second = normalizer.normalizeRecord(sobject('Root', { Children: [...children].reverse(), Payload: children }), { objectType: 'Root' });
+        expect(second).toEqual(first);
+        expect(first.Children.map((child: any) => child.Value)).toEqual(['A', 'B', 'C']);
+        expect(first.Payload).toEqual(children);
+    });
+
+    it('breaks tied sibling order consistently without moving descendants ahead of parents', () => {
+        const definitions = new DatapackExportDefinitionStore();
+        definitions.load({ Root: { objectType: 'Root', name: 'Name', fields: { Children: { sortFields: ['Priority'], sortParentField: 'Parent' } } } });
+        const normalizer = new DatapackNormalizer(definitions);
+        const children = [
+            sobject('Child', { VlocityRecordSourceKey: 'root', Name: 'Root', Priority: 1 }),
+            sobject('Child', { VlocityRecordSourceKey: 'beta', Name: 'Beta', Priority: 1, Parent: { VlocityMatchingRecordSourceKey: 'root' } }),
+            sobject('Child', { VlocityRecordSourceKey: 'alpha', Name: 'Alpha', Priority: 1, Parent: { VlocityMatchingRecordSourceKey: 'root' } })
+        ];
+        const ordered = normalizer.sortField({ objectType: 'Root' }, 'Children', children) as any[];
+        expect(ordered.map(child => child.Name)).toEqual(['Root', 'Alpha', 'Beta']);
+        expect(normalizer.sortField({ objectType: 'Root' }, 'Children', [...children].reverse())).toEqual(ordered);
+    });
+
     it('reports a circular hierarchy rather than losing rootless elements', () => {
         const definitions = new DatapackExportDefinitionStore();
         definitions.load({ Root: { objectType: 'Root', name: ['Name'], fields: { Children: { sortParentField: 'Parent' } } } });

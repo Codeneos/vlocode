@@ -4,16 +4,26 @@ import { DatapackObject, DatapackValue, getFieldValue, isDatapackObject, sortObj
 type RecordComparator = (left: DatapackObject, right: DatapackObject) => number;
 type SortValue = string | number | boolean | null;
 
-export function createFieldComparator(fields: readonly string[]): RecordComparator {
+export function createFieldComparator(
+    fields: readonly string[],
+    normalize: (record: DatapackObject) => DatapackValue = sortObjectKeys
+): RecordComparator {
+    const compareJson = createJsonComparator(normalize);
     return (left, right) => {
         for (const field of fields) {
-            const comparison = primitiveCompare(getFieldValue(left, field), getFieldValue(right, field));
+            const comparison = compareFieldValues(getFieldValue(left, field), getFieldValue(right, field));
             if (comparison !== 0) {
                 return comparison;
             }
         }
-        return 0;
+        return compareJson(left, right);
     };
+}
+
+function compareFieldValues(left: DatapackValue, right: DatapackValue): number {
+    if (left == null) return right == null ? 0 : -1;
+    if (right == null) return 1;
+    return primitiveCompare(left, right);
 }
 
 /** Build Tools places empty values last and breaks field ties using normalized JSON. */
@@ -22,22 +32,13 @@ export function createVlocityComparator(
     normalize: (record: DatapackObject) => DatapackValue
 ): RecordComparator {
     const fieldValues = new Map<DatapackObject, SortValue[]>();
-    const normalizedJson = new Map<DatapackObject, string>();
+    const compareJson = createJsonComparator(normalize);
 
     function values(record: DatapackObject): SortValue[] {
         let result = fieldValues.get(record);
         if (!result) {
             result = fields.map(field => toSortValue(getFieldValue(record, field)));
             fieldValues.set(record, result);
-        }
-        return result;
-    }
-
-    function json(record: DatapackObject): string {
-        let result = normalizedJson.get(record);
-        if (result === undefined) {
-            result = JSON.stringify(normalize(record));
-            normalizedJson.set(record, result);
         }
         return result;
     }
@@ -51,8 +52,21 @@ export function createVlocityComparator(
                 return comparison;
             }
         }
-        return compareSortValues(json(left), json(right));
+        return compareJson(left, right);
     };
+}
+
+function createJsonComparator(normalize: (record: DatapackObject) => DatapackValue): RecordComparator {
+    const cache = new Map<DatapackObject, string>();
+    const json = (record: DatapackObject) => {
+        let value = cache.get(record);
+        if (value === undefined) {
+            value = JSON.stringify(normalize(record));
+            cache.set(record, value);
+        }
+        return value;
+    };
+    return (left, right) => compareSortValues(json(left), json(right));
 }
 
 function toSortValue(value: DatapackValue): SortValue {

@@ -157,7 +157,7 @@
               "type": "string"
             },
             "sortFields": {
-              "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record; otherwise the original array order is preserved.",
+              "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record. Ties and record arrays without these fields use canonical JSON for deterministic ordering. Positional parsed JSON arrays retain their order.",
               "items": {
                 "type": "string"
               },
@@ -230,7 +230,7 @@
               "type": "string"
             },
             "sortFields": {
-              "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record; otherwise the original array order is preserved.",
+              "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record. Ties and record arrays without these fields use canonical JSON for deterministic ordering. Positional parsed JSON arrays retain their order.",
               "items": {
                 "type": "string"
               },
@@ -301,7 +301,7 @@
           "type": "string"
         },
         "sortFields": {
-          "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record; otherwise the original array order is preserved.",
+          "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record. Ties and record arrays without these fields use canonical JSON for deterministic ordering. Positional parsed JSON arrays retain their order.",
           "items": {
             "type": "string"
           },

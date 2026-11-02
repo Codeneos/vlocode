@@ -120,7 +120,8 @@ export interface ExportFieldDefinition extends ExpandFileDefinition {
     /**
      * List of fields by which to sort a record array during expansion. Fields are evaluated in the
      * configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`,
-     * when either field is present on every record; otherwise the original array order is preserved.
+     * when either field is present on every record. Ties and record arrays without these fields use
+     * canonical JSON for deterministic ordering. Positional parsed JSON arrays retain their order.
      */
     sortFields?: string[];
     /** Parent lookup field used for depth-first traversal; sortFields order siblings. */

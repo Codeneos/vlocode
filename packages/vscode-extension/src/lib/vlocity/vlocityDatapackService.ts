@@ -13,6 +13,7 @@ import { groupBy, mapAsync , getDocumentBodyAsString , getErrorMessage } from '@
 import DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { SalesforceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { DatapackExportQueries } from './datapackExportQueries';
+import { stabilizeBuildToolsSorting } from './stableBuildToolsSorting';
 import { DatapackExpander, DatapackExportDefinitionStore } from '@vlocode/vlocity-deploy';
 
 export interface ManifestEntry {
@@ -219,6 +220,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         buildTools.datapacksexportbuildfile.saveFile = () => { /* replace with no-op */ };
         buildTools.datapacksutils.updateStatusIPC  = () => { /* replace with no-op */ };
         await buildTools.utilityservice.checkLogin();
+        stabilizeBuildToolsSorting(buildTools.datapacksexpand);
 
         // patch SASS compiler
         // buildTools.datapacksbuilder.compile = function(lang, source, options, cb) 
@@ -340,6 +342,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }
 
         const expander = new DataPacksExpand(this.vlocityBuildTools);
+        stabilizeBuildToolsSorting(expander);
         expander.targetPath = targetPath;
         const jobOptions = {...await this.getCustomJobOptions(), ...this.config};
         const parentName = expander.getDataPackFolder(datapack.datapackType, datapack.VlocityRecordSObjectType, datapack);

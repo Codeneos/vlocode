@@ -68,7 +68,7 @@ export class DatapackNormalizer {
         const mode = this.definitions.getFieldConfig(ref, field, 'sortMode');
         const compare = mode === 'vlocity'
             ? createVlocityComparator(fields, record => this.normalizeValue(record, ref.scope))
-            : createFieldComparator(fields);
+            : createFieldComparator(fields, record => this.normalizeValue(record, ref.scope));
         const parentField = this.definitions.getFieldConfig(ref, field, 'sortParentField');
         return typeof parentField === 'string'
             ? sortRecordHierarchy(value, parentField, compare)

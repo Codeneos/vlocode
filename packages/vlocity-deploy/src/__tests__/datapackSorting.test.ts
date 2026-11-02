@@ -1,5 +1,5 @@
 import 'jest';
-import { createVlocityComparator } from '../export/datapackSorting';
+import { createFieldComparator, createVlocityComparator } from '../export/datapackSorting';
 
 describe('Vlocity record ordering', () => {
     it('normalizes each tied record once per sort and reads fresh values on the next sort', () => {
@@ -20,5 +20,14 @@ describe('Vlocity record ordering', () => {
         const updated = [...records].sort(createVlocityComparator(['Priority'], normalize));
         expect(updated.map(record => record.Name)).toEqual(['0', 'A', 'B']);
         expect(normalize).toHaveBeenCalledTimes(records.length * 2);
+    });
+});
+
+describe('deterministic field ordering', () => {
+    it('orders absent, null and zero sort fields without relying on input order', () => {
+        const records = [{ Name: 'B', Priority: null }, { Name: 'A' }, { Name: 'C', Priority: 0 }];
+        const compare = createFieldComparator(['Priority']);
+        expect([...records].sort(compare).map(record => record.Name)).toEqual(['A', 'B', 'C']);
+        expect([...records].reverse().sort(compare)).toEqual([...records].sort(compare));
     });
 });
