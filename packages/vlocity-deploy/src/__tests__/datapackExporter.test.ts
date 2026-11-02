@@ -2,7 +2,8 @@ import 'jest';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { VlocityDatapack, VlocityNamespaceService } from '@vlocode/vlocity';
+import { DatapackRecordFactory } from '../datapackRecordFactory';
 import { DatapackLookupService } from '../datapackLookupService';
 import { DatapackExporter } from '../export/datapackExporter';
 import { DatapackExpander } from '../export/datapackExpander';
@@ -1501,7 +1502,7 @@ describe('DatapackExporter', () => {
 
 
     describe.each(['omniStudioStandard', 'omniStudioManaged'] as const)('%s export compatibility', runtime => {
-        function fixture(datapackType = 'IntegrationProcedure') {
+        function fixture(datapackType = 'IntegrationProcedure', payload = '{"z":[{"Name":"Z"},{"Name":"A"}],"a":1}') {
             const config = DatapackExportDefinitions[runtime];
             const definitions = new DatapackExportDefinitionStore();
             definitions.load(config.definitions, { scope: config.id });
@@ -1523,7 +1524,7 @@ describe('DatapackExporter', () => {
             const records = [
                 { Id: rootId, __type: objectType, Name: 'Example', [typeField]: 'Type', [subtype]: 'Sub',
                     [language]: 'English', [version]: 64, [script]: datapackType === 'IntegrationProcedure' ? '{"z":2,"a":1}' : 'console.log("example");',
-                    [propertySet]: '{"z":[{"Name":"Z"},{"Name":"A"}],"a":1}', JsonText: '{"z":2,"a":1}', Empty: null },
+                    [propertySet]: payload, JsonText: '{"z":2,"a":1}', Empty: null },
                 { Id: ids[0], __type: elementType, Name: 'Second', [owner]: rootId, [order]: 2, [parent]: null },
                 { Id: ids[1], __type: elementType, Name: 'Child', [owner]: rootId, [order]: 1, [parent]: ids[0] },
                 { Id: ids[2], __type: elementType, Name: 'First', [owner]: rootId, [order]: 1, [parent]: null }
@@ -1568,6 +1569,31 @@ describe('DatapackExporter', () => {
                 expect(files[root[f.script]].toString()).toBe('console.log("example");');
             }
             expect(f.definitions.getMatchingKeyFields({ objectType: f.objectType, scope: f.context.scope })).toContain(f.version);
+        });
+
+        it.each(['object', 'empty array', 'array'])('round-trips %s field values through expanded files and deployment serialization', async shape => {
+            const document = {
+                label: null, empty: '', false: false, zero: 0, message: {}, custom: [],
+                nested: { null: null, empty: '', array: [null, '', false, 0, {}, []] }
+            };
+            const payload = shape === 'empty array' ? [] : shape === 'array' ? [null, '', false, 0, {}, []] : document;
+            const f = fixture('OmniScript', JSON.stringify(payload));
+            const [result] = await f.exporter.exportObjectAndExpand(f.rootId, f.context);
+            const files = result.files as Record<string, Buffer>;
+            const root = JSON.parse(files[Object.keys(files).find(name => name.endsWith('_DataPack.json'))!].toString());
+            const expanded = JSON.parse(files[root[f.propertySet]].toString());
+            expect(expanded).toEqual(payload);
+            const deploymentSchema = { schema: {
+                describeSObject: jest.fn().mockResolvedValue({ name: f.objectType }),
+                describeSObjectField: jest.fn(async (_type: string, field: string) => ({ name: field, type: 'textarea' }))
+            } };
+            const factory = new DatapackRecordFactory(new VlocityNamespaceService(''), deploymentSchema as any,
+                mockMatchingKeyService() as any, createLogger() as any);
+            const pack = new VlocityDatapack('OmniScript', { VlocityDataPackType: 'SObject',
+                VlocityRecordSObjectType: f.objectType, VlocityRecordSourceKey: root.VlocityRecordSourceKey,
+                [f.propertySet]: expanded });
+            const [record] = await factory.createRecords(pack);
+            expect(JSON.parse(record.values[f.propertySet] as string)).toEqual(payload);
         });
 
         it('applies the same hierarchy and field exclusions to consolidated and streamed exports', async () => {

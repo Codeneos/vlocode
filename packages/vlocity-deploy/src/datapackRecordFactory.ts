@@ -90,6 +90,10 @@ export class DatapackRecordFactory {
 
             // Objects are dependencies
             if (typeof value === 'object' && value !== null) {
+                // Empty JSON arrays have no items to visit but still need serialization.
+                if (Array.isArray(value) && value.length === 0 && field && this.isStringLikeField(field)) {
+                    record.values[field.name] = this.convertValue(value, field);
+                }
                 // handle lookups and embedded datapacks
                 for (const item of Array.isArray(value) ? value : [ value ]) {
                     if (item?.VlocityDataPackType === 'SObject') {
