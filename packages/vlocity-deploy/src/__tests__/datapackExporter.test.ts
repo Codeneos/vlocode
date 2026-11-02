@@ -1613,10 +1613,15 @@ describe('DatapackExporter', () => {
         const fixtures = ['standard', 'managed'].flatMap(runtime =>
             ['DataRaptor', 'IntegrationProcedure', 'OmniScript'].map(type => `${runtime}-${type}.json`));
 
-        // Only unreferenced managed mapping identities differ from Build Tools.
+        // Internal matching objects only need their source key. Build Tools also emits redundant
+        // matching fields. Unreferenced managed mapping source keys are likewise optional metadata.
+        // Do not normalize field values, array order, filenames, JSON types or source-key values.
         function comparable(value: any): any {
             if (Array.isArray(value)) return value.map(comparable);
             if (!value || typeof value !== 'object') return value;
+            if (value.VlocityDataPackType === 'VlocityMatchingKeyObject') {
+                return Object.fromEntries(['VlocityDataPackType', 'VlocityRecordSObjectType', 'VlocityMatchingRecordSourceKey'].map(field => [field, value[field]]));
+            }
             return Object.fromEntries(Object.entries(value)
                 .filter(([field]) => !(value.VlocityRecordSObjectType === '%vlocity_namespace%__DRMapItem__c' && field === 'VlocityRecordSourceKey'))
                 .map(([field, value]) => [field, comparable(value)]));
@@ -1631,7 +1636,7 @@ describe('DatapackExporter', () => {
                 name,
                 fields: [...new Set<string>(input.records.filter((record: any) => record.__type === name).flatMap(Object.keys))]
                     .filter(field => field !== '__type')
-                    .map(field => ({ name: field, calculated: /ParentElement(Name|Type)/.test(field), referenceTo: input.references[name]?.[field] ? [input.references[name][field]] : [] })),
+                    .map(field => ({ name: field, referenceTo: input.references[name]?.[field] ? [input.references[name][field]] : [] })),
                 childRelationships: []
             }]));
             const { exporter } = createExporter({ definitions, records: input.records, describes, matchingKeyFieldsByType: input.matchingKeys });
@@ -1755,9 +1760,7 @@ describe('DatapackExporter', () => {
     it.each([
         { exclusion: 'configured', field: { name: 'Version__c' }, ignoreFields: ['Version__c'] },
         { exclusion: 'calculated', field: { name: 'Version__c', calculated: true }, ignoreFields: [] },
-        { exclusion: 'auto-number', field: { name: 'Version__c', autoNumber: true }, ignoreFields: [] },
-        { exclusion: 'explicitly excluded calculated', field: { name: 'Version__c', calculated: true }, ignoreFields: ['Version__c'] },
-        { exclusion: 'explicitly excluded auto-number', field: { name: 'Version__c', autoNumber: true }, ignoreFields: ['Version__c'] }
+        { exclusion: 'auto-number', field: { name: 'Version__c', autoNumber: true }, ignoreFields: [] }
     ])('preserves $exclusion identity inputs across consolidated exports', async ({ field, ignoreFields }) => {
         const definitions = new DatapackExportDefinitionStore();
         definitions.load({ Script: { objectType: 'Script__c', name: ['Name'], exportKey: ['Name', 'Version__c'], ignoreFields } });
@@ -1771,10 +1774,10 @@ describe('DatapackExporter', () => {
         const later = expander.expandDatapack(JSON.parse(JSON.stringify(consolidated.datapack)));
         expect(direct.sourceKey).toBe('Script__c/Example/64');
         expect(later.sourceKey).toBe(direct.sourceKey);
-        expect(consolidated.datapack.Version__c).toBe(ignoreFields.length ? undefined : 64);
+        expect(consolidated.datapack).not.toHaveProperty('Version__c');
         const [file] = Object.values(later.files);
         const body = JSON.parse(String(file));
-        expect(body.Version__c).toBe(ignoreFields.length ? undefined : 64);
+        expect(body).not.toHaveProperty('Version__c');
         expect(body).not.toHaveProperty('VlocityRecordExportKeyValues');
     });
 

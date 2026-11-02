@@ -97,16 +97,7 @@ class ExportKeyResolver {
             return value;
         }
         const output: DatapackObject = {};
-        // Internal references can carry legacy display/matching fields without changing lookups.
-        const item = value.VlocityDataPackType === 'VlocityMatchingKeyObject'
-            ? this.records.get(value.VlocityMatchingRecordSourceKey as string) : undefined;
-        const fields = { ...value };
-        if (item) {
-            for (const field of this.definitions.get(item.ref, 'referenceFields') ?? []) {
-                fields[field] = getFieldValue(item.record, field);
-            }
-        }
-        for (const [field, original] of Object.entries(fields)) {
+        for (const [field, original] of Object.entries(value)) {
             if (field === DatapackFields.exportKeyValues) {
                 continue;
             }

@@ -12,7 +12,6 @@ definitions:
       - Type
       - SubType
       - Language
-    referenceFields: [Name]
     nullValues: omit
     parseJson: false
     matchingKeyFields:
@@ -71,7 +70,6 @@ definitions:
     objectType: OmniDataTransform
     name:
       - Name
-    referenceFields: [Name]
     nullValues: emptyString
     parseJson: false
     matchingKeyFields:
@@ -126,7 +124,6 @@ definitions:
     matchingKeyFields:
       - OmniProcessId
       - Name
-    referenceFields: [OmniProcessId, Name]
     nullValues: omit
     parseJson: false
     ignoreFields:
@@ -134,6 +131,8 @@ definitions:
       - Level
       - OmniProcessVersionNumber
       - IsOmniScriptEmbeddable
+      - ParentElementName
+      - ParentElementType
     fields:
       PropertySetConfig:
         parseJson: true
@@ -145,7 +144,6 @@ definitions:
     objectType: OmniDataTransformItem
     name:
       - GlobalKey
-    referenceFields: [Name]
     nullValues: omit
     parseJson: false
     ignoreFields:

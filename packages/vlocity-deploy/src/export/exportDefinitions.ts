@@ -57,8 +57,6 @@ export interface DatapackExportDefinition extends ObjectFilter {
      * When omitted or empty, the original source key is retained.
      */
     exportKey?: string[];
-    /** Fields included in internal references for compatibility with legacy exports; not lookup criteria. */
-    referenceFields?: string[];
     /** How null/empty SObject fields are serialized. Defaults to preserving their values. */
     nullValues?: 'preserve' | 'omit' | 'emptyString';
     /** Parse JSON-looking field strings. Defaults to true; individual fields can override this. */

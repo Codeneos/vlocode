@@ -88,13 +88,6 @@
           "description": "Parse JSON-looking field strings. Defaults to true; individual fields can override this.",
           "type": "boolean"
         },
-        "referenceFields": {
-          "description": "Fields included in internal references for compatibility with legacy exports; not lookup criteria.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
         "relatedObjects": {
           "description": "List of related objects that are exported as separate datapacks but are related to this object and should be included in the export.",
           "items": {
