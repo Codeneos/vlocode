@@ -39,8 +39,7 @@ export abstract class ModelBackedEditorProvider<
     protected constructor(
         protected readonly context: VlocodeContext,
         protected readonly service: VlocodeService,
-        private readonly fileSystem: FileSystem,
-        protected readonly datapackWriter: DatapackWriter
+        private readonly fileSystem: FileSystem
     ) {
         this.service.registerDisposable(vscode.Disposable.from(
             vscode.workspace.onDidOpenTextDocument(document => this.syncSourceDocumentOnOpen(document)),
@@ -63,6 +62,11 @@ export abstract class ModelBackedEditorProvider<
     protected abstract getDeployCommand(document: TData): string | undefined;
     protected abstract getRefreshCommand(document: TData): string | undefined;
     protected abstract getOpenSalesforceCommand(document: TData): string | undefined;
+
+    /** Resolves a writer backed by the current operation's definition store. */
+    protected get datapackWriter(): DatapackWriter {
+        return this.service.services.get(DatapackWriter);
+    }
 
     protected handleEditorMessage(context: EditorMessageContext<TModel, TData>): boolean | Promise<boolean> {
         void context;
@@ -158,8 +162,10 @@ export abstract class ModelBackedEditorProvider<
     }
 
     protected async writeDatapack(datapack: VlocityDatapack): Promise<void> {
-        await confirmDatapackWrite(datapack, this.datapackWriter.getWritePlan(datapack), this.fileSystem);
-        await this.datapackWriter.write(datapack);
+        const writer = this.datapackWriter;
+        // Keep the confirmed layout's writer if the selected org changes while the prompt is open.
+        await confirmDatapackWrite(datapack, writer.getWritePlan(datapack), this.fileSystem);
+        await writer.write(datapack);
     }
 
     protected sourceTextMap(entries: Iterable<readonly [string | vscode.Uri, string]>): Map<string, string> {

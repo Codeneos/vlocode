@@ -11,7 +11,7 @@ import {
     VlocityDatapack,
     type VlocityDatapackReference
 } from '@vlocode/vlocity';
-import { DatapackWriter, MatchingKeyService } from '@vlocode/vlocity-deploy';
+import { MatchingKeyService } from '@vlocode/vlocity-deploy';
 import { getDatapackHeadersInWorkspace } from '../lib/vlocity/datapackUtil';
 import { WorkspaceDocuments } from '../lib/workspaceDocuments';
 import { VlocodeContext } from '../lib/vlocodeContext';
@@ -79,10 +79,9 @@ export class DatapackEditorProvider extends ModelBackedEditorProvider<DatapackEd
         context: VlocodeContext,
         service: VlocodeService,
         fileSystem: FileSystem,
-        datapackWriter: DatapackWriter,
         private readonly logger: Logger
     ) {
-        super(context, service, fileSystem, datapackWriter);
+        super(context, service, fileSystem);
     }
 
     protected readonly view = {

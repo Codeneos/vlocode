@@ -17,7 +17,7 @@ import {
     type DataMapperExecutionWarning,
     type DataMapperItem
 } from '@vlocode/vlocity';
-import { DatapackWriter, MetadataConverter, OmniStudioConverter } from '@vlocode/vlocity-deploy';
+import { MetadataConverter, OmniStudioConverter } from '@vlocode/vlocity-deploy';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
 
@@ -83,11 +83,10 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         context: VlocodeContext,
         service: VlocodeService,
         fileSystem: FileSystem,
-        datapackWriter: DatapackWriter,
         private readonly metadataConverter: MetadataConverter,
         private readonly omniStudioConverter: OmniStudioConverter
     ) {
-        super(context, service, fileSystem, datapackWriter);
+        super(context, service, fileSystem);
     }
 
     protected readonly view = {

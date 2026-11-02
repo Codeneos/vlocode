@@ -1,7 +1,7 @@
 import { Container } from '@vlocode/core';
 import { SalesforceConnectionProvider, SalesforceSchemaService, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
-import { DatapackExportDefinitionStore, MatchingKeyService } from '@vlocode/vlocity-deploy';
+import { DatapackExportDefinitionStore, DatapackWriter, MatchingKeyService } from '@vlocode/vlocity-deploy';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 
 /**
@@ -39,6 +39,7 @@ export function createOrgServices(root: Container, connector: SalesforceConnecti
     // Register them locally so parent instances cannot share their mutable state across orgs.
     services.add(VlocityNamespaceService);
     services.add(DatapackExportDefinitionStore);
+    services.add(DatapackWriter);
     return services;
 }
 
