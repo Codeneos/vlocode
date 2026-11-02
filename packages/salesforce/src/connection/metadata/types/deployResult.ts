@@ -239,6 +239,8 @@ export interface FailureDeployMessage extends DeployMessage {
     lineNumber: number | null;
 }
 
+export type DeployTestLevel = 'NoTestRun' | 'RunRelevantTests' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg';
+
 export interface DeployOptions {
     /**
      * Defaults to `false`. Set to true to perform a test deployment (validation) 
@@ -263,12 +265,14 @@ export interface DeployOptions {
      * Optional. Specifies which tests are run as part of a deployment. 
      * The test level is enforced regardless of the types of components 
      * that are present in the deployment package.
+     * `RunRelevantTests` (beta) runs tests relevant to the deployment payload.
      * 
      * __If you don’t specify a test level, the default test execution behavior is used__
      * 
      * _Note: Apex tests that run as part of a deployment always run synchronously and serially._
+     * @see https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html
      */
-    testLevel?: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg';
+    testLevel?: DeployTestLevel;
     /**
      * Indicates whether the specified .zip file points to a directory 
      * structure with a single package (`true`) or a set of packages (`false`).

@@ -4,6 +4,7 @@ export abstract class VlocodeSalesforceConfiguration extends BaseConfiguration {
     enabled: boolean;
     deployOnSave: boolean;
     apiVersion: string;
+    productionDeployTestLevel: 'RunRelevantTests' | 'RunLocalTests' | 'RunAllTestsInOrg';
     manageMetaXmlFiles: boolean;
     developerLogsVisible: boolean;
     developerLogsAutoRefresh: boolean;
