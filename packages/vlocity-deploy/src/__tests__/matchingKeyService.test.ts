@@ -4,6 +4,7 @@ import { Logger } from '@vlocode/core';
 import { removeNamespacePrefix } from '@vlocode/util';
 import { MatchingKeyService } from '../matchingKeyService';
 import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
+import { DatapackExportDefinitions } from '../exportDefinitions';
 
 describe('MatchingKeyService', () => {
 
@@ -108,6 +109,170 @@ describe('MatchingKeyService', () => {
             expect(matchingKey.fields).toEqual([ 'vlocity_cmt__DefField__c' ]);
         });
 
+        it('prefers matching keys from the selected export-definition scope', async () => {
+            const product = describeOf('Product2', [
+                field('Name', { nameField: true }),
+                field('GlobalKey__c'),
+                field('ProductCode')
+            ]);
+            const { service, store } = createService({ describes: [ product ] });
+            store.load({
+                Product2: { objectType: 'Product2', matchingKeyFields: [ 'GlobalKey__c' ] }
+            }, { scope: 'industries' });
+            store.load({
+                Product2: { objectType: 'Product2', matchingKeyFields: [ 'ProductCode' ] }
+            }, { scope: '/workspace/custom-export-definitions.yaml' });
+
+            const customKey = await service.getMatchingKey('Product2', {
+                scope: '/workspace/custom-export-definitions.yaml'
+            });
+            const industriesKey = await service.getMatchingKey('Product2', { scope: 'industries' });
+
+            expect(customKey.fields).toEqual([ 'ProductCode' ]);
+            expect(industriesKey.fields).toEqual([ 'GlobalKey__c' ]);
+        });
+
+        it('falls through from a scoped definition without a key to org metadata', async () => {
+            const product = describeOf('Product2', [
+                field('Name', { nameField: true }),
+                field('ProductCode')
+            ]);
+            const { service, store } = createService({
+                describes: [ product ],
+                orgMatchingKeys: [{
+                    objectAPIName: 'Product2',
+                    matchingKeyFields: 'ProductCode',
+                    returnKeyField: 'Id'
+                }]
+            });
+            store.load({
+                Product2: { objectType: 'Product2', name: [ 'Name' ] }
+            }, { scope: '/workspace/custom-export-definitions.yaml' });
+
+            const matchingKey = await service.getMatchingKey('Product2', {
+                scope: '/workspace/custom-export-definitions.yaml'
+            });
+
+            expect(matchingKey.fields).toEqual([ 'ProductCode' ]);
+        });
+
+        it('resolves matching keys by object type when datapack definitions share an object', async () => {
+            const omniProcess = describeOf('OmniProcess', [
+                field('Name', { nameField: true }),
+                field('Type'),
+                field('SubType'),
+                field('Language')
+            ]);
+            const { service, store } = createService({ describes: [ omniProcess ] });
+            store.load({
+                OmniScript: {
+                    objectType: 'OmniProcess',
+                    matchingKeyFields: [ 'Type', 'SubType', 'Language' ]
+                },
+                IntegrationProcedure: {
+                    objectType: 'OmniProcess',
+                    matchingKeyFields: [ 'Type', 'SubType', 'Language' ]
+                }
+            }, { scope: 'std' });
+
+            const matchingKey = await service.getMatchingKey('OmniProcess', { scope: 'std' });
+
+            expect(matchingKey.fields).toEqual([ 'Type', 'SubType', 'Language' ]);
+        });
+
+        it('resolves OmniStudio matching keys from bundled definitions by object type', async () => {
+            const omniProcess = describeOf('OmniProcess', [
+                field('Name', { nameField: true }),
+                field('Type'),
+                field('SubType'),
+                field('Language'),
+                field('VersionNumber')
+            ]);
+            const managedOmniScript = describeOf('vlocity_cmt__OmniScript__c', [
+                field('Name', { nameField: true }),
+                field('vlocity_cmt__Type__c'),
+                field('vlocity_cmt__SubType__c'),
+                field('vlocity_cmt__Language__c'),
+                field('vlocity_cmt__Version__c')
+            ]);
+            const { service } = createService({ describes: [ omniProcess, managedOmniScript ] });
+
+            const matchingKey = await service.getMatchingKey('OmniProcess', { scope: '/workspace/custom.yaml' });
+            const managedMatchingKey = await service.getMatchingKey('vlocity_cmt__OmniScript__c', {
+                scope: '/workspace/custom.yaml'
+            });
+
+            expect(matchingKey.fields).toEqual([ 'Type', 'SubType', 'Language', 'VersionNumber' ]);
+            expect(managedMatchingKey.fields).toEqual([
+                'vlocity_cmt__Type__c',
+                'vlocity_cmt__SubType__c',
+                'vlocity_cmt__Language__c',
+                'vlocity_cmt__Version__c'
+            ]);
+            expect(DatapackExportDefinitions.omniStudioStandard.definitions.OmniScript.matchingKeyFields)
+                .toEqual([ 'Type', 'SubType', 'Language', 'VersionNumber' ]);
+            expect(DatapackExportDefinitions.omniStudioStandard.definitions.IntegrationProcedure.matchingKeyFields)
+                .toEqual([ 'Type', 'SubType', 'Language', 'VersionNumber' ]);
+            expect(DatapackExportDefinitions.omniStudioStandard.definitions.IntegrationProcedure.name)
+                .toEqual([ 'Type', 'SubType' ]);
+            expect(DatapackExportDefinitions.omniStudioManaged.definitions.OmniScript.matchingKeyFields)
+                .toEqual([
+                    '%vlocity_namespace%__Type__c',
+                    '%vlocity_namespace%__SubType__c',
+                    '%vlocity_namespace%__Language__c',
+                    '%vlocity_namespace%__Version__c'
+                ]);
+            expect(DatapackExportDefinitions.omniStudioManaged.definitions.IntegrationProcedure.matchingKeyFields)
+                .toEqual([
+                    '%vlocity_namespace%__Type__c',
+                    '%vlocity_namespace%__SubType__c',
+                    '%vlocity_namespace%__Language__c',
+                    '%vlocity_namespace%__Version__c'
+                ]);
+        });
+
+        it('prefers consumer definitions over bundled matching key definitions', async () => {
+            const omniProcess = describeOf('OmniProcess', [
+                field('Name', { nameField: true }),
+                field('Type'),
+                field('SubType')
+            ]);
+            const { service } = createService({
+                describes: [ omniProcess ],
+                definitions: {
+                    IntegrationProcedure: {
+                        objectType: 'OmniProcess',
+                        matchingKeyFields: [ 'Name' ]
+                    }
+                }
+            });
+
+            const matchingKey = await service.getMatchingKey('OmniProcess', { allowFallback: false });
+
+            expect(matchingKey.fields).toEqual([ 'Name' ]);
+        });
+
+        it('prefers org matching keys over bundled matching key definitions', async () => {
+            const omniProcess = describeOf('OmniProcess', [
+                field('Name', { nameField: true }),
+                field('Type'),
+                field('SubType'),
+                field('Language')
+            ]);
+            const { service } = createService({
+                describes: [ omniProcess ],
+                orgMatchingKeys: [{
+                    objectAPIName: 'OmniProcess',
+                    matchingKeyFields: 'Name',
+                    returnKeyField: 'Id'
+                }]
+            });
+
+            const matchingKey = await service.getMatchingKey('OmniProcess', { allowFallback: false });
+
+            expect(matchingKey.fields).toEqual([ 'Name' ]);
+        });
+
         it('uses org matching keys when no file or export definition defines a key', async () => {
             const { service } = createService({
                 describes: [ testObject ],
@@ -139,17 +304,18 @@ describe('MatchingKeyService', () => {
                 describes: [ describeOf('OmniDataTransform', [ field('Name', { nameField: true }), field('VersionNumber') ]) ]
             });
 
-            const matchingKey = await service.getMatchingKey('OmniDataTransform');
+            const matchingKey = await service.getMatchingKey('OmniDataTransform', { scope: '/workspace/custom.yaml' });
 
             expect(matchingKey.fields).toEqual([ 'VersionNumber', 'Name' ]);
         });
 
-        it('returns an empty matching key for objects with an explicitly empty built-in default', async () => {
+        it('keeps OmniDataTransformItem key-less with the standard export definitions loaded', async () => {
             const { service } = createService({
                 describes: [ describeOf('OmniDataTransformItem', [
                     field('Name', { nameField: true }),
-                    field('OmniDataTransformId', { type: 'reference', cascadeDelete: true, nillable: false, referenceTo: [ 'OmniDataTransform' ] })
-                ]) ]
+                    field('OmniDataTransformationId', { type: 'reference', cascadeDelete: true, nillable: false, referenceTo: [ 'OmniDataTransform' ] })
+                ]) ],
+                definitions: DatapackExportDefinitions.omniStudioStandard.definitions
             });
 
             const matchingKey = await service.getMatchingKey('OmniDataTransformItem');
@@ -205,6 +371,29 @@ describe('MatchingKeyService', () => {
             expect(matchingKey.fields).toEqual([ 'Name' ]);
         });
 
+        it('does not infer a matching key when schema fallback is disabled', async () => {
+            const { service } = createService({
+                describes: [ describeOf('Account', [ field('Name', { nameField: true }) ]) ]
+            });
+
+            const withoutFallback = await service.getMatchingKey('Account', { allowFallback: false });
+            const withFallback = await service.getMatchingKey('Account');
+
+            expect(withoutFallback.fields).toEqual([]);
+            expect(withFallback.fields).toEqual([ 'Name' ]);
+        });
+
+        it('uses a configured matching key when schema fallback is disabled', async () => {
+            const { service } = createService({
+                describes: [ testObject ],
+                orgMatchingKeys: [ testOrgKey ]
+            });
+
+            const matchingKey = await service.getMatchingKey('Test__c', { allowFallback: false });
+
+            expect(matchingKey.fields).toEqual([ 'vlocity_cmt__OrgField__c' ]);
+        });
+
         it('returns an empty matching key when none can be determined', async () => {
             const { service } = createService({
                 describes: [ describeOf('Junction__c', [ field('Name', { nameField: true, autoNumber: true }) ]) ]
@@ -240,6 +429,21 @@ describe('MatchingKeyService', () => {
             const matchingKey = await service.getMatchingKey('PricebookEntry');
 
             expect(matchingKey.fields).toEqual([ 'Pricebook2Id', 'Product2Id' ]);
+        });
+
+        it('treats objects with a single master-detail field and no other key fields as key-less', async () => {
+            // A single parent field would match all sibling records under the same parent; such
+            // records are matched by their record data instead (SBQQ__ErrorCondition__c-like objects)
+            const { service } = createService({
+                describes: [ describeOf('SBQQ__ErrorCondition__c', [
+                    field('Name', { nameField: true, autoNumber: true }),
+                    field('SBQQ__Rule__c', { type: 'reference', cascadeDelete: true, nillable: false, referenceTo: [ 'SBQQ__ProductRule__c' ] })
+                ]) ]
+            });
+
+            const matchingKey = await service.getMatchingKey('SBQQ__ErrorCondition__c');
+
+            expect(matchingKey.fields).toEqual([]);
         });
 
         it('does not include optional cascade-delete lookups in the matching key', async () => {

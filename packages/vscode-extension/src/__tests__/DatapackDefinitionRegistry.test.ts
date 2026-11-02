@@ -1,15 +1,161 @@
 import 'jest';
+import * as path from 'path';
 
 import { Logger } from '@vlocode/core';
+import { DatapackExportDefinitions, DatapackExportDefinitionStore } from '@vlocode/vlocity-deploy';
 import { DatapackDefinitionRegistry } from '../lib/vlocity/datapackDefinitionRegistry';
 
 describe('DatapackDefinitionRegistry', () => {
 
     function createRegistry() {
-        return new DatapackDefinitionRegistry({} as any, {} as any, {} as any, Logger.null) as any;
+        return new DatapackDefinitionRegistry({} as any, Logger.null) as any;
     }
 
+    function createRegistryForCapabilities(capabilities: {
+        nativeOmniStudio?: boolean;
+        managedOmniStudio?: boolean;
+        industries?: boolean;
+    }) {
+        const definitions = new DatapackExportDefinitionStore();
+        const vlocode = {
+            isNativeOmniStudioAvailable: capabilities.nativeOmniStudio === true,
+            isManagedOmniStudioAvailable: capabilities.managedOmniStudio === true || capabilities.industries === true,
+            isVlocityAvailable: capabilities.industries === true,
+            salesforceService: {
+                schema: {
+                    isSObjectAccessible: jest.fn().mockResolvedValue(true)
+                }
+            }
+        };
+        const datapackInfo = {
+            getDatapackDefinitions: jest.fn().mockResolvedValue([])
+        };
+        Object.assign(vlocode, {
+            services: { get: (type: unknown) => type === DatapackExportDefinitionStore ? definitions : datapackInfo }
+        });
+        const registry = new DatapackDefinitionRegistry(vlocode as any, Logger.null) as any;
+        return { registry, definitions };
+    }
+
+    describe('predefined definitions', () => {
+        it('does not load product definitions without the corresponding org capabilities', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({});
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries).toEqual([]);
+            expect(definitions.objectDefinitions()).toEqual([]);
+            expect(registry.datapackInfo.getDatapackDefinitions).not.toHaveBeenCalled();
+        });
+
+        it('loads native OmniStudio definitions as their own scoped collection', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({ nativeOmniStudio: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([ 'omnistudio-standard' ]);
+            expect(registry.entries[0].definitions).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    datapackType: 'OmniScript',
+                    exportMode: 'direct',
+                    scope: 'omnistudio-standard'
+                })
+            ]));
+            expect(definitions.objectDefinitions().every(definition => definition.scope === 'omnistudio-standard')).toBe(true);
+        });
+
+        it('loads managed OmniStudio through direct export and Industries through build tools', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({ industries: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([ 'omnistudio-managed', 'industries' ]);
+            expect(registry.entries.find((entry: any) => entry.id === 'omnistudio-managed').definitions
+                .every((definition: any) => definition.exportMode === 'direct')).toBe(true);
+            expect(registry.entries.find((entry: any) => entry.id === 'industries').definitions
+                .every((definition: any) => definition.exportMode === 'tools')).toBe(true);
+            expect(new Set(definitions.objectDefinitions().map(definition => definition.scope))).toEqual(
+                new Set([ 'omnistudio-managed', 'industries' ])
+            );
+        });
+
+        it('loads managed OmniStudio without Industries for the standalone managed package', async () => {
+            const { registry } = createRegistryForCapabilities({ managedOmniStudio: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([ 'omnistudio-managed' ]);
+        });
+
+        it('loads both native and managed definition sets when both runtimes are available', async () => {
+            const { registry } = createRegistryForCapabilities({ nativeOmniStudio: true, industries: true });
+
+            await registry.loadDatapackDefinitions();
+
+            expect(registry.entries.map((entry: any) => entry.id)).toEqual([
+                'omnistudio-standard',
+                'omnistudio-managed',
+                'industries'
+            ]);
+        });
+    });
+
+    describe('custom definitions', () => {
+        it('loads global defaults and key-less dependent children without adding them as explorer roots', async () => {
+            const { registry, definitions } = createRegistryForCapabilities({});
+            const file = path.join(__dirname, 'fixtures', 'support-export-definitions.yaml');
+
+            const explorerDefinitions = await registry.loadCustomDefinitionFile(file);
+
+            expect(explorerDefinitions.map((definition: any) => definition.datapackType)).toEqual([ 'Product2' ]);
+            expect(definitions.isFieldIgnored({
+                datapackType: 'SBQQ__ConfigurationAttribute__c',
+                objectType: 'SBQQ__ConfigurationAttribute__c',
+                scope: file
+            }, 'CurrencyIsoCode')).toBe(true);
+            expect(definitions.getMatchingKeyFields({
+                datapackType: 'SBQQ__ConfigurationAttribute__c',
+                objectType: 'SBQQ__ConfigurationAttribute__c',
+                scope: file
+            })).toEqual([]);
+        });
+    });
+
     describe('toDatapackTypeDefinition', () => {
+        it('keeps native OmniScripts and Integration Procedures in separate explorer queries', () => {
+            const registry = createRegistry();
+            const definitions = DatapackExportDefinitions.omniStudioStandard.definitions;
+
+            const omniScript = registry.toDatapackTypeDefinition('OmniScript', definitions.OmniScript);
+            const integrationProcedure = registry.toDatapackTypeDefinition(
+                'IntegrationProcedure',
+                definitions.IntegrationProcedure
+            );
+
+            expect(omniScript.source.whereCondition).toBe('IsIntegrationProcedure = false');
+            expect(integrationProcedure.source.whereCondition).toBe('IsIntegrationProcedure = true');
+            expect(integrationProcedure.displayName({ Type: 'TMF', SubType: '651AgreementManagement' }))
+                .toBe('TMF 651AgreementManagement');
+        });
+
+        it('keeps managed OmniScripts and Integration Procedures in separate explorer queries', () => {
+            const registry = createRegistry();
+            const definitions = DatapackExportDefinitions.omniStudioManaged.definitions;
+
+            const omniScript = registry.toDatapackTypeDefinition('OmniScript', definitions.OmniScript);
+            const integrationProcedure = registry.toDatapackTypeDefinition(
+                'IntegrationProcedure',
+                definitions.IntegrationProcedure
+            );
+
+            expect(omniScript.source.whereCondition).toBe('%vlocity_namespace%__IsProcedure__c = false');
+            expect(integrationProcedure.source.whereCondition).toBe('%vlocity_namespace%__IsProcedure__c = true');
+            expect(integrationProcedure.displayName({
+                '%vlocity_namespace%__Type__c': 'TMF',
+                '%vlocity_namespace%__SubType__c': '651AgreementManagement'
+            })).toBe('TMF 651AgreementManagement');
+        });
+
         it('uses object filters as explorer where conditions', () => {
             const registry = createRegistry();
 

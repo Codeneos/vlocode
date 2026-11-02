@@ -24,6 +24,12 @@ export class ContentVersion implements DatapackDeploymentSpec {
         }
     }
 
+    public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
+        // The content document reference is resolved for the target org just before deployment;
+        // clear any stale source value so the delta check does not compare it against the target org
+        records.forEach(record => record.value('ContentDocumentId', undefined));
+    }
+
     public afterDeploy(event: DatapackDeploymentEvent) {
         return this.createContentDocumentLinks(event);
     }

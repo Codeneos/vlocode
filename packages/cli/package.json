@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/cli",
-    "version": "2.3.0",
+    "version": "2.4.6",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment CLI",
     "keywords": [
         "Vlocity",
@@ -55,6 +55,7 @@
         "@types/js-yaml": "^4.0.2",
         "@vlocode/apex": "workspace:*",
         "@vlocode/core": "workspace:*",
+        "@vlocode/dplint": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",

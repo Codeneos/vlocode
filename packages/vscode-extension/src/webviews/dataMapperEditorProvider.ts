@@ -3,43 +3,29 @@ import path from 'path';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
-import { deepClone, getErrorMessage, isRecord } from '@vlocode/util';
+import { getErrorMessage, normalizeSObjectTypeName } from '@vlocode/util';
 import { FileSystem, injectable } from '@vlocode/core';
-import { DataMapperExecutor, DatapackInfoService, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition, type DataMapperExecutionWarning } from '@vlocode/vlocity';
-import { MetadataConverter } from '@vlocode/vlocity-deploy';
-import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
+import {
+    DataMapperExecutor,
+    DataMapperItemRecord,
+    DataMapperRecord,
+    getDatapackHeaders,
+    OmniDataTransformItemRecord,
+    OmniDataTransformRecord,
+    VlocityDatapack,
+    type DataMapperDefinition,
+    type DataMapperExecutionWarning,
+    type DataMapperItem
+} from '@vlocode/vlocity';
+import { MetadataConverter, OmniStudioConverter } from '@vlocode/vlocity-deploy';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { EditorMessageContext, ModelBackedEditorProvider } from './modelBackedEditorProvider';
 
 interface DataMapperModel {
-    header: Record<string, unknown>;
+    header: Omit<DataMapperRecord, 'OmniDataTransformItem'>;
     items: DataMapperItem[];
     sourceFormat: 'json' | 'xml';
     title: string;
-}
-
-interface DataMapperItem {
-    DefaultValue?: string;
-    FilterGroup?: number | string;
-    FilterOperator?: string;
-    FilterValue?: string;
-    FormulaExpression?: string;
-    FormulaResultPath?: string;
-    FormulaSequence?: number | string;
-    GlobalKey?: string;
-    InputFieldName?: string;
-    InputObjectName?: string;
-    InputObjectQuerySequence?: number | string;
-    IsDisabled?: boolean;
-    IsLookup?: boolean;
-    IsRequiredForUpsert?: boolean;
-    IsUpsertKey?: boolean;
-    LinkedObjectSequence?: number | string;
-    OutputCreationSequence?: number | string;
-    OutputFieldFormat?: string;
-    OutputFieldName?: string;
-    OutputObjectName?: string;
-    [key: string]: unknown;
 }
 
 interface FieldSuggestion {
@@ -97,14 +83,12 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         context: VlocodeContext,
         service: VlocodeService,
         fileSystem: FileSystem,
-        datapackInfo: DatapackInfoService,
-        datapackExpansion: DatapackExpansionService,
-        private readonly metadataConverter: MetadataConverter
+        private readonly metadataConverter: MetadataConverter,
+        private readonly omniStudioConverter: OmniStudioConverter
     ) {
-        super(context, service, fileSystem, datapackInfo, datapackExpansion);
+        super(context, service, fileSystem);
     }
 
-    private sObjectSuggestions?: Promise<FieldSuggestion[]>;
     protected readonly view = {
         resourceRoot: 'resources/datamapper-editor',
         savedMessage: 'DataMapper saved',
@@ -116,6 +100,9 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         switch (message.type) {
             case 'refreshFields': {
                 const state = await this.createEditorState(message.model ?? document.data.model, this.stringArray(message.objects));
+                if (this.service.session !== this.service.selectedSession) {
+                    return true;
+                }
                 panel.webview.postMessage({
                     type: 'fields',
                     objectSuggestions: state.objectSuggestions,
@@ -131,10 +118,14 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 try {
                     const output = await this.executePreview(message.model ?? document.data.model, message.input, debug);
                     debug.totalDurationMs = Date.now() - start;
-                    panel.webview.postMessage({ type: 'previewResult', result: { output, debug } });
+                    if (this.service.session === this.service.selectedSession) {
+                        panel.webview.postMessage({ type: 'previewResult', result: { output, debug } });
+                    }
                 } catch (error) {
                     debug.totalDurationMs = Date.now() - start;
-                    panel.webview.postMessage({ type: 'previewError', message: getErrorMessage(error), debug });
+                    if (this.service.session === this.service.selectedSession) {
+                        panel.webview.postMessage({ type: 'previewError', message: getErrorMessage(error), debug });
+                    }
                 }
                 return true;
             }
@@ -188,29 +179,22 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 debug.warnings.push(warning);
             }
         };
-        const fieldValidationCache = new Map<string, Promise<boolean>>();
         const validateField = (objectName: string, fieldName: string): Promise<boolean> => {
             if (!this.service.isInitialized) {
                 return Promise.resolve(true);
             }
-            const cacheKey = `${objectName}\u001f${fieldName}`.toLowerCase();
-            let validation = fieldValidationCache.get(cacheKey);
-            if (!validation) {
-                validation = this.service.salesforceService.schema
-                    .describeSObjectFieldPath(objectName, fieldName, false)
-                    .then(result => !!result)
-                    .catch(error => {
-                        onWarning({
-                            code: 'fieldValidationFailed',
-                            objectName,
-                            fieldName,
-                            message: `Could not validate field "${fieldName}" on ${objectName}: ${getErrorMessage(error)}`
-                        });
-                        return true;
+            return this.service.salesforceService.schema
+                .describeSObjectFieldPath(objectName, fieldName, false)
+                .then(result => !!result)
+                .catch(error => {
+                    onWarning({
+                        code: 'fieldValidationFailed',
+                        objectName,
+                        fieldName,
+                        message: `Could not validate field "${fieldName}" on ${objectName}: ${getErrorMessage(error)}`
                     });
-                fieldValidationCache.set(cacheKey, validation);
-            }
-            return validation;
+                    return true;
+                });
         };
         const queryRunner = {
             query: async (soql: string): Promise<Record<string, unknown>[]> => {
@@ -310,12 +294,11 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         if (!this.service.isInitialized) {
             return [];
         }
-        this.sObjectSuggestions ??= this.service.salesforceService.schema.describeSObjects().then(objects => objects.map(object => ({
+        return this.service.salesforceService.schema.describeSObjects().then(objects => objects.map(object => ({
             name: object.name,
             label: object.label,
             path: object.name
         })).sort((a, b) => a.path.localeCompare(b.path))).catch(() => []);
-        return this.sObjectSuggestions;
     }
 
     private getExistingInputFields(items: DataMapperItem[]): FieldSuggestion[] {
@@ -335,19 +318,15 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
                 name: String(item.OutputFieldName).split(':').pop() ?? String(item.OutputFieldName),
                 path: String(item.OutputFieldName)
             }));
-        const expectedOutput = typeof model.header.ExpectedOutputJson === 'string'
-            ? this.flattenJsonPaths(model.header.ExpectedOutputJson)
-            : [];
+        const expectedOutput = model.header.ExpectedOutputJson === undefined
+            ? []
+            : this.flattenJsonPaths(model.header.ExpectedOutputJson);
         return this.mergeSuggestions(existing, expectedOutput);
     }
 
-    private flattenJsonPaths(json: string): FieldSuggestion[] {
-        if (!json.trim()) {
-            return [];
-        }
-
+    private flattenJsonPaths(value: unknown): FieldSuggestion[] {
         try {
-            const data = JSON.parse(json);
+            const data = typeof value === 'string' ? JSON.parse(value) : value;
             const fields = new Array<FieldSuggestion>();
             const visit = (value: unknown, prefix: string) => {
                 if (prefix) {
@@ -422,47 +401,46 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
             await vscode.workspace.fs.writeFile(destination, Buffer.from(`${JSON.stringify(document.datapack.data, undefined, 4)}\n`, 'utf8'));
             return;
         }
-        await this.datapackExpansion.saveDatapack(document.datapack);
+        await this.writeDatapack(document.datapack);
     }
 
     private createModel(datapack: VlocityDatapack, sourceFormat: 'json' | 'xml'): DataMapperModel {
-        const record = datapack as unknown as Record<string, unknown>;
-        const header = { ...datapack.data };
-        delete header.OmniDataTransformItem;
+        const { OmniDataTransformItem: items, ...header } = DataMapperRecord.fromDatapack(datapack);
         return {
             header,
-            items: this.dataMapperItems(record.OmniDataTransformItem),
+            items,
             sourceFormat,
-            title: String(record.Name ?? path.basename(datapack.headerFile ?? 'DataMapper', '_DataPack.json'))
+            title: String(header.Name ?? path.basename(datapack.headerFile ?? 'DataMapper', '_DataPack.json'))
         };
     }
 
     protected override applyModel(document: LoadedDocument, model: DataMapperModel): void {
         const data = document.datapack.data;
-        for (const key of Object.keys(data)) {
-            if (key !== 'OmniDataTransformItem' && !(key in model.header)) {
-                delete data[key];
-            }
-        }
-        Object.assign(data, model.header);
-        data.OmniDataTransformItem = this.updateItems(data.OmniDataTransformItem, model.items);
+        const currentModel = DataMapperRecord.fromDatapack(document.datapack);
+        const currentItems = this.sourceItems(document.datapack);
+        const currentByKey = new Map(currentModel.OmniDataTransformItem.map((item, index) =>
+            [this.itemKey(item) ?? `index:${index}`, currentItems[index]]));
+        const items = model.items.map((item, index) => {
+            const target = currentByKey.get(this.itemKey(item) ?? `index:${index}`) ??
+                this.createItemRecord(document.datapack, item, index);
+            this.omniStudioConverter.updateDatapackRecord(target, item);
+            return target;
+        });
+        this.omniStudioConverter.updateDatapackRecord(data, {
+            ...model.header,
+            OmniDataTransformItem: items
+        });
         document.model = this.createModel(document.datapack, document.sourceFormat);
     }
 
-    private updateItems(current: unknown, next: DataMapperItem[]): DataMapperItem[] {
-        if (!Array.isArray(current)) {
-            return [...next];
+    private sourceItems(datapack: VlocityDatapack): Array<Record<string, unknown>> {
+        const value = datapack.data[this.isDataRaptor(datapack)
+            ? DataMapperRecord.ItemsField
+            : OmniDataTransformRecord.ItemsField];
+        if (Array.isArray(value)) {
+            return value;
         }
-
-        const currentByKey = new Map(current
-            .filter((item): item is Record<string, unknown> => isRecord(item))
-            .map((item, index) => [this.itemKey(item) ?? `index:${index}`, item]));
-        const updated = next.map((item, index) => this.mergeItem(
-            currentByKey.get(this.itemKey(item) ?? `index:${index}`),
-            item
-        ));
-        current.splice(0, current.length, ...updated);
-        return current;
+        return value && typeof value === 'object' ? [value] : [];
     }
 
     private async resolveDatapackHeaderUri(uri: vscode.Uri): Promise<vscode.Uri> {
@@ -480,35 +458,28 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
         return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : undefined;
     }
 
-    private dataMapperItems(value: unknown): DataMapperItem[] {
-        const items: unknown[] = [];
-        if (Array.isArray(value)) {
-            for (let i = 0; i < value.length; i++) {
-                items.push(value[i]);
-            }
-        } else if (value !== undefined) {
-            items.push(value);
+    private createItemRecord(datapack: VlocityDatapack, item: DataMapperItem, index: number): Record<string, unknown> {
+        const isDataRaptor = this.isDataRaptor(datapack);
+        const sObjectType = isDataRaptor
+            ? DataMapperItemRecord.SObjectType
+            : OmniDataTransformItemRecord.SObjectType;
+        const key = item.GlobalKey ?? item.Name ?? index;
+        const record: Record<string, unknown> = {
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: sObjectType
+        };
+        if (isDataRaptor) {
+            record.VlocityRecordSourceKey = item.vlocityRecordSourceKey ?? `${datapack.sourceKey}/${sObjectType}/${key}`;
         }
-        return items
-            .filter((item): item is Record<string, unknown> => isRecord(item))
-            .map(item => deepClone(item) as DataMapperItem);
-    }
-
-    private mergeItem(target: unknown, source: DataMapperItem): DataMapperItem {
-        if (!isRecord(target)) {
-            return { ...source };
-        }
-        for (const key of Object.keys(target)) {
-            if (!(key in source)) {
-                delete target[key];
-            }
-        }
-        Object.assign(target, source);
-        return target as DataMapperItem;
+        return record;
     }
 
     private itemKey(item: Record<string, unknown>): string | undefined {
-        const key = item.GlobalKey ?? item.VlocityRecordSourceKey;
+        const key = item.GlobalKey ?? item.vlocityRecordSourceKey ?? item.id;
         return typeof key === 'string' && key ? key : undefined;
+    }
+
+    private isDataRaptor(datapack: VlocityDatapack): boolean {
+        return normalizeSObjectTypeName(datapack.sobjectType) === normalizeSObjectTypeName(DataMapperRecord.SObjectType);
     }
 }

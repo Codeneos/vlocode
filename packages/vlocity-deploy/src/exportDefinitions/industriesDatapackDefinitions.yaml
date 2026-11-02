@@ -277,26 +277,6 @@ definitions:
       - '%vlocity_namespace%__DRProgressData__c'
       - '%vlocity_namespace%__DRError__c'
       - '%vlocity_namespace%__DRStatus__c'
-  DataRaptor:
-    name:
-      - Name
-    objectType: '%vlocity_namespace%__DRBundle__c'
-    filter:
-      - Id: '{Id}'
-      - Name: '{Id}'
-    matchingKeyFields:
-      - Name
-    ignoreFields:
-      - '%vlocity_namespace%__DRBundleName__c'
-      - '%vlocity_namespace%__DRProgressData__c'
-      - '%vlocity_namespace%__DRError__c'
-      - '%vlocity_namespace%__DRStatus__c'
-      - '%vlocity_namespace%__FormulaConverted__c'
-    embeddedObjects:
-      '%vlocity_namespace%__DRMapItem__c':
-        objectType: '%vlocity_namespace%__DRMapItem__c'
-        filter:
-          Name: '{%vlocity_namespace%__DRBundle__c:Name}'
   Document:
     name:
       - Name
@@ -408,37 +388,7 @@ definitions:
       - '%vlocity_namespace%__DRProgressData__c'
       - '%vlocity_namespace%__DRError__c'
       - '%vlocity_namespace%__DRStatus__c'
-  IntegrationProcedure:
-    name:
-      - Type__c
-      - SubType__c
-    objectType: '%vlocity_namespace%__OmniScript__c'
-    filter:
-      - Id: '{Id}'
-      - '%vlocity_namespace%__Type__c': '{Type}'
-        '%vlocity_namespace%__SubType__c': '{Sub Type}'
-        '%vlocity_namespace%__Language__c': '{Language}'
-        '%vlocity_namespace%__IsActive__c': true
-      - '%vlocity_namespace%__ProcedureKey__c': '{Id}'
-        '%vlocity_namespace%__IsActive__c': true
-    matchingKeyFields:
-      - Type__c
-      - SubType__c
-      - Language__c
-    ignoreFields:
-      - '%vlocity_namespace%__DRBundleName__c'
-      - '%vlocity_namespace%__DRProgressData__c'
-      - '%vlocity_namespace%__DRError__c'
-      - '%vlocity_namespace%__DRStatus__c'
-      - IsActive__c
-      - Version__c
-      - LwcId__c
-    embeddedObjects:
-      '%vlocity_namespace%__Element__c':
-        objectType: '%vlocity_namespace%__Element__c'
-        filter:
-          '%vlocity_namespace%__OmniScriptId__c': '{%vlocity_namespace%__OmniScript__c:Id}'
-        limit: 5000
+
   IntegrationRetryPolicy:
     name:
       - Name
@@ -599,38 +549,7 @@ definitions:
       - '%vlocity_namespace%__DRProgressData__c'
       - '%vlocity_namespace%__DRError__c'
       - '%vlocity_namespace%__DRStatus__c'
-  OmniScript:
-    name:
-      - Type__c
-      - SubType__c
-      - Language__c
-    objectType: '%vlocity_namespace%__OmniScript__c'
-    filter:
-      - Id: '{Id}'
-      - '%vlocity_namespace%__Type__c': '{Type}'
-        '%vlocity_namespace%__SubType__c': '{Sub Type}'
-        '%vlocity_namespace%__Language__c': '{Language}'
-        '%vlocity_namespace%__IsActive__c': true
-      - '%vlocity_namespace%__ProcedureKey__c': '{Id}'
-        '%vlocity_namespace%__IsActive__c': true
-    matchingKeyFields:
-      - Type__c
-      - SubType__c
-      - Language__c
-    ignoreFields:
-      - '%vlocity_namespace%__DRBundleName__c'
-      - '%vlocity_namespace%__DRProgressData__c'
-      - '%vlocity_namespace%__DRError__c'
-      - '%vlocity_namespace%__DRStatus__c'
-      - IsActive__c
-      - Version__c
-      - LwcId__c
-    embeddedObjects:
-      '%vlocity_namespace%__Element__c':
-        objectType: '%vlocity_namespace%__Element__c'
-        filter:
-          '%vlocity_namespace%__OmniScriptId__c': '{%vlocity_namespace%__OmniScript__c:Id}'
-        limit: 5000
+
   OrchestrationDependencyDefinition:
     name:
       - Name

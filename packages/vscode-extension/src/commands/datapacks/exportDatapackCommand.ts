@@ -252,7 +252,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         const results = new DatapackResultCollection();
 
         if (directEntries.length) {
-            results.join(await container.get(VlocodeDirectExport).export(directEntries, exportPath, dependencyExportDepth, progress, token));
+            results.join(await this.vlocode.services.get(VlocodeDirectExport).export(directEntries, exportPath, dependencyExportDepth, progress, token));
         }
 
         if (buildToolsEntries.length) {

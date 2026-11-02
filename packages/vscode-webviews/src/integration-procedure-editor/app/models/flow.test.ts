@@ -1,6 +1,6 @@
 import 'jest';
 
-import type { IntegrationProcedureElement } from './integration-procedure.model';
+import type { OmniScriptElementRecord } from '@vlocode/omniscript';
 import {
     buildFlowTree,
     flattenElements,
@@ -22,7 +22,7 @@ describe('Integration Procedure flow helpers', () => {
             element('childA', 1, 'group')
         ]);
 
-        expect(rows.map(row => `${row.depth}:${row.element.key}:${row.hasChildren}`)).toEqual([
+        expect(rows.map(row => `${row.depth}:${row.element.id}:${row.hasChildren}`)).toEqual([
             '0:group:true',
             '1:childA:false',
             '1:childB:false',
@@ -38,9 +38,9 @@ describe('Integration Procedure flow helpers', () => {
         ]);
 
         expect(tree).toHaveLength(1);
-        expect(tree[0].element.key).toBe('group');
-        expect(tree[0].children[0].element.key).toBe('child');
-        expect(tree[0].children[0].children[0].element.key).toBe('grandchild');
+        expect(tree[0].element.id).toBe('group');
+        expect(tree[0].children[0].element.id).toBe('child');
+        expect(tree[0].children[0].children[0].element.id).toBe('grandchild');
     });
 
     it('inserts new elements after a sibling and resequences the root level', () => {
@@ -69,7 +69,7 @@ describe('Integration Procedure flow helpers', () => {
             'newChild:1:2'
         ]);
         expect(visualOrder(inserted)).toEqual(['before', 'group', 'existingChild', 'newChild', 'after']);
-        expect(inserted.find(item => item.key === 'newChild')?.parentKey).toBe('group');
+        expect(inserted.find(item => item.id === 'newChild')?.parentElementId).toBe('group');
     });
 
     it('removes a node with all descendants and resequences remaining siblings', () => {
@@ -120,7 +120,7 @@ describe('Integration Procedure flow helpers', () => {
 
         expect(order(moved)).toEqual(['group:0:1', 'child:1:1', 'outside:1:2']);
         expect(visualOrder(moved)).toEqual(['group', 'child', 'outside']);
-        expect(moved.find(item => item.key === 'outside')?.parentKey).toBe('group');
+        expect(moved.find(item => item.id === 'outside')?.parentElementId).toBe('group');
     });
 
     it('rejects moving a parent below or into its own descendant', () => {
@@ -150,24 +150,25 @@ describe('Integration Procedure flow helpers', () => {
     });
 });
 
-function element(key: string, sequenceNumber = 1, parentKey?: string): IntegrationProcedureElement {
+function element(id: string, order = 1, parentElementId?: string): OmniScriptElementRecord {
     return {
         active: true,
-        key,
-        level: parentKey ? 1 : 0,
-        name: key,
-        parentKey,
+        id,
+        level: parentElementId ? 1 : 0,
+        name: id,
+        omniScriptId: 'procedure',
+        parentElementId,
         propertySet: {},
-        sequenceNumber,
-        sourceKey: key,
+        order,
+        sObjectType: 'OmniProcessElement',
         type: 'Remote Action'
     };
 }
 
-function order(elements: IntegrationProcedureElement[]) {
-    return elements.map(element => `${element.key}:${element.level}:${element.sequenceNumber}`);
+function order(elements: OmniScriptElementRecord[]) {
+    return elements.map(element => `${element.id}:${element.level}:${element.order}`);
 }
 
-function visualOrder(elements: IntegrationProcedureElement[]) {
-    return flattenElements(elements).map(row => row.element.key);
+function visualOrder(elements: OmniScriptElementRecord[]) {
+    return flattenElements(elements).map(row => row.element.id);
 }

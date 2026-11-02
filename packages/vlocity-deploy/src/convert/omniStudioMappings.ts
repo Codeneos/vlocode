@@ -128,7 +128,7 @@ export const DataRaptorMapping: ObjectMapping = {
         "ExpectedInputJson": "%vlocity_namespace%__InputJson__c",
         "ExpectedInputOtherData": "%vlocity_namespace%__InputCustom__c",
         "ExpectedInputXml": "%vlocity_namespace%__InputXml__c",
-        "ExpectedOutputJson": "%vlocity_namespace%__TargetOutJson__c", 
+        "ExpectedOutputJson": "%vlocity_namespace%__TargetOutJson__c",
         "ExpectedOutputOtherData": "%vlocity_namespace%__TargetOutCustom__c",
         "ExpectedOutputXml": "%vlocity_namespace%__TargetOutXml__c",
         "GlobalKey": "%vlocity_namespace%__GlobalKey__c",
@@ -145,11 +145,9 @@ export const DataRaptorMapping: ObjectMapping = {
         "IsSourceObjectDefault": "%vlocity_namespace%__IsDefaultForInterface__c",
         "IsXmlDeclarationRemoved": "%vlocity_namespace%__XmlRemoveDeclaration__c",
         "Name": "Name",
-        //"Namespace": null, // No direct mapping found
         "OmniDataTransformItem": "%vlocity_namespace%__DRMapItem__c",
         "OutputParsingClass": "%vlocity_namespace%__CustomOutputClass__c",
         "OutputType": "%vlocity_namespace%__OutputType__c",
-        //"OverrideKey": null, // No direct mapping found
         "PreprocessorClassName": "%vlocity_namespace%__PreprocessorClassName__c",
         "PreviewJsonData": "%vlocity_namespace%__SampleInputJSON__c",
         "PreviewOtherData": "%vlocity_namespace%__SampleInputCustom__c",
@@ -164,7 +162,6 @@ export const DataRaptorMapping: ObjectMapping = {
         "TargetOutputFileName": "%vlocity_namespace%__OutboundConfigurationName__c",
         "Type": "%vlocity_namespace%__Type__c",
         "UniqueName": "%vlocity_namespace%__DRMapName__c",
-        //"VersionNumber": null, // No direct mapping found
         "XmlOutputTagsOrder": "%vlocity_namespace%__XmlOutputSequence__c"
     },
     postProcess: (record: Record<string, any>) => {
@@ -187,7 +184,6 @@ export const DataRaptorItemMapping: ObjectMapping = {
     sobjectType: "OmniDataTransformItem",
     fields: {
         "DefaultValue": "%vlocity_namespace%__DefaultValue__c",
-        //"FilterDataType": null, // No direct mapping available
         "FilterGroup": "%vlocity_namespace%__FilterGroup__c",
         "FilterOperator": "%vlocity_namespace%__FilterOperator__c",
         "FilterValue": "%vlocity_namespace%__FilterValue__c",
@@ -220,7 +216,7 @@ export const DataRaptorItemMapping: ObjectMapping = {
         "OutputFieldFormat": "%vlocity_namespace%__DomainObjectFieldType__c",
         "OutputFieldName": "%vlocity_namespace%__DomainObjectFieldAPIName__c",
         "OutputObjectName": "%vlocity_namespace%__DomainObjectAPIName__c",
-        "TransformValueMappings": "%vlocity_namespace%__TransformValuesMap__c",
+        "TransformValuesMappings": "%vlocity_namespace%__TransformValuesMap__c"
     }
 }
 

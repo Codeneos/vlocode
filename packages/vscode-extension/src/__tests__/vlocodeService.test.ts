@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { Logger } from '@vlocode/core';
 import { observeArray } from '@vlocode/util';
 import VlocodeService from '../lib/vlocodeService';
+import { OrgSessionManager } from '../lib/orgSessionManager';
 
 describe('VlocodeService', () => {
     beforeEach(() => {
@@ -14,6 +15,7 @@ describe('VlocodeService', () => {
         activities: VlocodeService['activities'];
         disposables: { dispose(): unknown }[];
         logger: Pick<Logger, 'debug' | 'error'>;
+        sessionManager: OrgSessionManager;
     }
 
     function createService(): VlocodeService {
@@ -21,10 +23,37 @@ describe('VlocodeService', () => {
         Object.assign(service, {
             activities: observeArray([]),
             disposables: [],
+            sessionManager: new OrgSessionManager(jest.fn()),
             logger: Logger.null
         } satisfies TestServiceState);
         return service;
     }
+
+    describe('OmniStudio capabilities', () => {
+        it('distinguishes native and managed OmniStudio runtimes', () => {
+            const service = createService() as any;
+
+            service.sessionManager.activate({ isNativeOmniStudioAvailable: true, isManagedOmniStudioAvailable: false });
+            expect(service.isNativeOmniStudioAvailable).toBe(true);
+            expect(service.isManagedOmniStudioAvailable).toBe(false);
+            expect(service.isOmniStudioAvailable).toBe(true);
+
+            service.sessionManager.activate({ isNativeOmniStudioAvailable: false, isManagedOmniStudioAvailable: true });
+            expect(service.isNativeOmniStudioAvailable).toBe(false);
+            expect(service.isManagedOmniStudioAvailable).toBe(true);
+            expect(service.isOmniStudioAvailable).toBe(true);
+        });
+
+        it('treats the Industries package as managed OmniStudio', () => {
+            const service = createService() as any;
+
+            service.sessionManager.activate({ isVlocityAvailable: true, isManagedOmniStudioAvailable: true });
+
+            expect(service.isVlocityAvailable).toBe(true);
+            expect(service.isManagedOmniStudioAvailable).toBe(true);
+            expect(service.isOmniStudioAvailable).toBe(true);
+        });
+    });
 
     describe('validateSalesforceConnectivity', () => {
         it('asks for org selection before attempting initialization', async () => {

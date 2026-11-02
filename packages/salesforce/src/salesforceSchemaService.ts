@@ -364,8 +364,13 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
             const propertyName = pathSplit[i];
             const normalizedPropertyName = normalizeSalesforceName(propertyName).toLowerCase();
             const fields = (await this.describeSObject(type)).fields;
-            const field = fields.find(field => normalizeSalesforceName(field.name).toLowerCase() === normalizedPropertyName || 
-                field.relationshipName && normalizeSalesforceName(field.relationshipName).toLowerCase() == normalizedPropertyName);
+            // Prefer an exact (case-insensitive) API name match; matching normalized names first resolves
+            // fields to a colliding doppelganger when two fields normalize to the same name (e.g.
+            // `External_ID__c` vs the standard `ExternalId` field) silently querying the wrong field
+            const field = fields.find(field => stringEqualsIgnoreCase(field.name, propertyName) ||
+                    (field.relationshipName && stringEqualsIgnoreCase(field.relationshipName, propertyName)))
+                ?? fields.find(field => normalizeSalesforceName(field.name).toLowerCase() === normalizedPropertyName ||
+                    field.relationshipName && normalizeSalesforceName(field.relationshipName).toLowerCase() == normalizedPropertyName);
             if (!field) {
                 throw new Error(`Unable to resolve salesforce field path; no such salesforce field: ${type}.${propertyName}`);
             }

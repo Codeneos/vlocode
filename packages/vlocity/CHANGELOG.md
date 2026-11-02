@@ -4,6 +4,43 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+### Bug Fixes
+
+* **export:** Restore OmniStudio Build Tools output compatibility ([#477](https://github.com/Codeneos/vlocode/issues/477)) ([fdc8d20](https://github.com/Codeneos/vlocode/commit/fdc8d20d00ef579b639822e2fbcb4e9de276a0c5)), closes [#476](https://github.com/Codeneos/vlocode/issues/476)
+* remove redundant schema and metadata caches ([5a90e3c](https://github.com/Codeneos/vlocode/commit/5a90e3c88b282b358b0fbe41beeec2aa7e758c39))
+
+## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+**Note:** Version bump only for package @vlocode/vlocity
+
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **salesforce:** generalize namespace handling ([911fee4](https://github.com/Codeneos/vlocode/commit/911fee4e4cbfea437b1363f7400c2881ad236438))
+
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+**Note:** Version bump only for package @vlocode/vlocity
+
+## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+### Bug Fixes
+
+* saving datapacks back doesn't properly expand them and can duplicate new folders as the datapack is saved into a different folder all together ([7e69dc1](https://github.com/Codeneos/vlocode/commit/7e69dc1444a1effb3787e0f244c17fe873299be2))
+
+### Features
+
+* simplify datapack type resolution and remove unused parameters in loadJson and resolveValue methods ([b20050b](https://github.com/Codeneos/vlocode/commit/b20050b797acd9dc30c354b8bee894e8f232f0a1))
+
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Features
+
+* add datapack comparison CLI reports ([ce6c47f](https://github.com/Codeneos/vlocode/commit/ce6c47f372261635e0874f3c6e4264946f077ed6))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes

@@ -159,7 +159,7 @@ export class SalesforceConnection extends Connection {
      */
     private initializeLocalVariables(options?: SalesforceConnectionOptions) {
         // Setup transport
-        this.version = options?.version ?? '60.0';
+        this.version = options?.version ?? '66.0';
         this._transport = options?.transport ?? new HttpTransport({
                 instanceUrl: this.instanceUrl,
                 baseUrl: `${this.instanceUrl}/services/data/v${this.version}`
@@ -439,6 +439,7 @@ export class SalesforceConnection extends Connection {
     private isRetryableError(req: HttpRequestInfo, err: unknown) : err is (Error & { code: string | undefined, errorCode: string | undefined }) {
         return err instanceof Error && (
             err['code'] == 'ECONNRESET' ||
+            err['code'] == 'EPIPE' ||
             err['code'] == 'ECONNREFUSED' ||
             err['code'] == 'ENOTFOUND' || (
                 (

@@ -2,7 +2,7 @@ import 'jest';
 
 import { MemoryFileSystem, Logger, container } from '@vlocode/core';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
-import { DatapackFileWriter, DatapackInfoService, DatapackLoader, getDatapackSource } from '../datapack';
+import { DatapackInfoService, DatapackLoader } from '../datapack';
 
 describe('datapackLoader', () => {
     beforeAll(() => {
@@ -33,6 +33,64 @@ describe('datapackLoader', () => {
     }
 
     describe('#loadFrom', () => {
+        it('uses the datapack type folder for custom SObject datapacks without a registered type', async () => {
+            const fileSystem = new MemoryFileSystem({
+                '/project/Account/Acme/Acme_DataPack.json': JSON.stringify({
+                    VlocityDataPackType: 'SObject',
+                    VlocityRecordSObjectType: 'Account',
+                    VlocityRecordSourceKey: 'Account/account-id',
+                    Name: 'Acme'
+                })
+            });
+            const datapackInfo = {
+                getDatapackByObject: jest.fn().mockResolvedValue(undefined)
+            } as unknown as DatapackInfoService;
+
+            const datapack = await new DatapackLoader(fileSystem, datapackInfo, Logger.null)
+                .loadDatapack('/project/Account/Acme/Acme_DataPack.json');
+
+            expect(datapack.datapackType).toBe('Account');
+            expect(datapack.key).toBe('Account/Acme');
+        });
+
+        it('does not replace the folder identity with another registered type for the same SObject', async () => {
+            const fileSystem = new MemoryFileSystem({
+                '/project/Account/Acme/Acme_DataPack.json': JSON.stringify({
+                    VlocityDataPackType: 'SObject',
+                    VlocityRecordSObjectType: 'Account',
+                    VlocityRecordSourceKey: 'Account/account-id',
+                    Name: 'Acme'
+                })
+            });
+            const getDatapackByObject = jest.fn().mockResolvedValue({ datapackType: 'OtherAccountType' });
+            const datapackInfo = { getDatapackByObject } as unknown as DatapackInfoService;
+
+            const datapack = await new DatapackLoader(fileSystem, datapackInfo, Logger.null)
+                .loadDatapack('/project/Account/Acme/Acme_DataPack.json');
+
+            expect(datapack.datapackType).toBe('Account');
+            expect(getDatapackByObject).not.toHaveBeenCalled();
+        });
+
+        it('keeps direct generic SObject exports as SObject datapacks', async () => {
+            const fileSystem = new MemoryFileSystem({
+                '/project/SObject_Account/Acme/Acme_DataPack.json': JSON.stringify({
+                    VlocityDataPackType: 'SObject',
+                    VlocityRecordSObjectType: 'Account',
+                    VlocityRecordSourceKey: 'Account/account-id',
+                    Name: 'Acme'
+                })
+            });
+            const datapackInfo = {
+                getDatapackByObject: jest.fn().mockResolvedValue(undefined)
+            } as unknown as DatapackInfoService;
+
+            const datapack = await new DatapackLoader(fileSystem, datapackInfo, Logger.null)
+                .loadDatapack('/project/SObject_Account/Acme/Acme_DataPack.json');
+
+            expect(datapack.datapackType).toBe('SObject');
+        });
+
         it('should recursively load embedded files', async () => {
             // arrange
             const testContainer = container.create();
@@ -138,92 +196,6 @@ describe('datapackLoader', () => {
             expect(loadedDatapack.files).toEqual([
                 { child: { child: { name: '3' } } }
             ]);
-        });
-        it('should retain non-enumerable source metadata for loaded files', async () => {
-            // arrange
-            const testContainer = container.create();
-            testContainer.add(new MemoryFileSystem({
-                '/project/DataRaptor/Foo/Foo_DataPack.json': JSON.stringify({
-                    ...datapackBasic,
-                    Name: 'Foo',
-                    OmniDataTransformItem: 'Foo_Items.json',
-                    Child: 'Foo_Child.json',
-                    Body: 'Foo.html'
-                }),
-                '/project/DataRaptor/Foo/Foo_Items.json': JSON.stringify([{ Name: 'Item 1', InputFieldName: 'Name' }]),
-                '/project/DataRaptor/Foo/Foo_Child.json': JSON.stringify({ Name: 'Child', GrandChild: 'Foo_GrandChild.json' }),
-                '/project/DataRaptor/Foo/Foo_GrandChild.json': JSON.stringify({ Name: 'Grand Child' }),
-                '/project/DataRaptor/Foo/Foo.html': '<template></template>'
-            }));
-
-            // test
-            const loadedDatapack = await testContainer.new(DatapackLoader).loadDatapack('/project/DataRaptor/Foo/Foo_DataPack.json');
-
-            // assert
-            expect(getDatapackSource(loadedDatapack.data)?.fileName).toBe('/project/DataRaptor/Foo/Foo_DataPack.json');
-            expect(getDatapackSource(loadedDatapack.OmniDataTransformItem)?.fileName).toBe('/project/DataRaptor/Foo/Foo_Items.json');
-            expect(getDatapackSource(loadedDatapack.Child)?.fileName).toBe('/project/DataRaptor/Foo/Foo_Child.json');
-            expect(getDatapackSource(loadedDatapack.Child.GrandChild)?.fileName).toBe('/project/DataRaptor/Foo/Foo_GrandChild.json');
-            expect(getDatapackSource(loadedDatapack.data)?.fieldFiles?.Body).toBe('/project/DataRaptor/Foo/Foo.html');
-            expect(Object.keys(loadedDatapack.data)).not.toContain('@vlocode/datapackSource');
-            expect(JSON.stringify(loadedDatapack.data)).not.toContain('@vlocode/datapackSource');
-        });
-        it('should save loaded datapacks back to their original expanded files', async () => {
-            // arrange
-            const testContainer = container.create();
-            const fileSystem = new MemoryFileSystem({
-                '/project/DataRaptor/Foo/Foo_DataPack.json': JSON.stringify({
-                    ...datapackBasic,
-                    Name: 'Foo',
-                    OmniDataTransformItem: 'Foo_Items.json'
-                }),
-                '/project/DataRaptor/Foo/Foo_Items.json': JSON.stringify([{ Name: 'Item 1', InputFieldName: 'Name' }])
-            });
-            testContainer.add(fileSystem);
-            const loadedDatapack = await testContainer.new(DatapackLoader).loadDatapack('/project/DataRaptor/Foo/Foo_DataPack.json');
-
-            // test
-            loadedDatapack.Name = 'Foo Changed';
-            loadedDatapack.OmniDataTransformItem[0].InputFieldName = 'ChangedName';
-            loadedDatapack.OmniDataTransformItem.push({ Name: 'Item 2', InputFieldName: 'AccountNumber' });
-            loadedDatapack.NewInlineObject = { Value: true };
-            await testContainer.new(DatapackFileWriter).saveDatapack(loadedDatapack);
-
-            // assert
-            const header = JSON.parse(await fileSystem.readFileAsString('/project/DataRaptor/Foo/Foo_DataPack.json'));
-            const items = JSON.parse(await fileSystem.readFileAsString('/project/DataRaptor/Foo/Foo_Items.json'));
-            expect(header.Name).toBe('Foo Changed');
-            expect(header.OmniDataTransformItem).toBe('Foo_Items.json');
-            expect(header.NewInlineObject).toEqual({ Value: true });
-            expect(items).toEqual([
-                { Name: 'Item 1', InputFieldName: 'ChangedName' },
-                { Name: 'Item 2', InputFieldName: 'AccountNumber' }
-            ]);
-        });
-        it('should preserve external child files inside array fields when saving', async () => {
-            // arrange
-            const testContainer = container.create();
-            const fileSystem = new MemoryFileSystem({
-                '/project/OmniScript/Foo/Foo_DataPack.json': JSON.stringify({
-                    ...datapackBasic,
-                    Name: 'Foo',
-                    OmniProcessElement: ['Foo_Element_Step.json']
-                }),
-                '/project/OmniScript/Foo/Foo_Element_Step.json': JSON.stringify({ Name: 'Step', Type: 'Step' })
-            });
-            testContainer.add(fileSystem);
-            const loadedDatapack = await testContainer.new(DatapackLoader).loadDatapack('/project/OmniScript/Foo/Foo_DataPack.json');
-
-            // test
-            loadedDatapack.OmniProcessElement[0].Type = 'Set Values';
-            loadedDatapack.OmniProcessElement.push({ Name: 'Inline Step', Type: 'Step' });
-            await testContainer.new(DatapackFileWriter).saveDatapack(loadedDatapack);
-
-            // assert
-            const header = JSON.parse(await fileSystem.readFileAsString('/project/OmniScript/Foo/Foo_DataPack.json'));
-            const element = JSON.parse(await fileSystem.readFileAsString('/project/OmniScript/Foo/Foo_Element_Step.json'));
-            expect(header.OmniProcessElement).toEqual(['Foo_Element_Step.json', { Name: 'Inline Step', Type: 'Step' }]);
-            expect(element).toEqual({ Name: 'Step', Type: 'Set Values' });
         });
         it('should throw exception when loading non-existing header', async () => {
             // arrange

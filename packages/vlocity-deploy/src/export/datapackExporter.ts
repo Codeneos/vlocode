@@ -1,11 +1,13 @@
 import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
-import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey } from "@vlocode/vlocity";
+import { DatapackFields, VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey } from "@vlocode/vlocity";
 import { MatchingKeyService } from "../matchingKeyService";
 import { calculateHash, defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, groupBy, Iterable, mapAsync, mapAsyncParallel, removeNamespacePrefix, visitObject, type CancellationToken } from "@vlocode/util";
 import { inject, injectable, Logger } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
+import { DatapackNormalizer } from "./datapackNormalizer";
+import { DatapackObject, getFieldValue } from "./datapackValue";
 import { NAMESPACE_PLACEHOLDER } from "../constants";
 
 interface ExportDatapack {
@@ -45,13 +47,10 @@ interface DeferredLookup {
     readonly objectType?: string;
 }
 
-interface DeferredEmbedded {
-    readonly datapack: ExportDatapack;
+interface DeferredEmbedded extends ObjectFilter {
     readonly name: string;
-    readonly objectType: string;
+    readonly datapack: ExportDatapack;
     readonly filter: Record<string, any> | Record<string, any>[];
-    readonly limit?: number;
-    readonly sortFields?: string[];
     readonly context: ExportContext;
 }
 
@@ -270,7 +269,7 @@ export class DatapackExporter {
         input: string[] | string | ExportRequest | ExportRequest[],
         context?: DatapackExportOptions
     ): Promise<DatapackExpandResult[]> {
-        const result = await this.exportObject(input, context);
+        const result = await this.exportRawObjects(input, context);
         return this.expand(result, context);
     }
 
@@ -284,6 +283,24 @@ export class DatapackExporter {
         input: string[] | string | ExportRequest | ExportRequest[], 
         context?: DatapackExportOptions
     ): Promise<ExportResult[]> {
+        const normalizer = new DatapackNormalizer(this.definitions);
+        const prepare = (results: ExportResult[]) => results.map(result => ({
+            ...result,
+            datapack: normalizer.normalizeRecord(result.datapack, {
+                objectType: result.datapack.VlocityRecordSObjectType,
+                datapackType: result.datapackType,
+                scope: result.scope
+            })
+        }));
+        const onResults = context?.onResults?.bind(context);
+        const exportContext = onResults ? {
+            ...context,
+            onResults: (results: ExportResult[]) => onResults(prepare(results))
+        } : context;
+        return this.exportRawObjects(input, exportContext).then(prepare);
+    }
+
+    private exportRawObjects(input: string[] | string | ExportRequest | ExportRequest[], context?: DatapackExportOptions): Promise<ExportResult[]> {
         this.logger.verbose(`Export SObjects ${input}`);
         this.enqueueExport(input, context);
         return this.processExportQueue(context);
@@ -412,14 +429,14 @@ export class DatapackExporter {
     }
 
     private asExportResult(datapack: ExportDatapack): ExportResult {
-        return {
+        return this.salesforce.replaceNamespace({
             parentKeys: Object.entries(datapack.foreignKeys).map(([key, id]) => ({ key, id })),
             datapack: datapack.data,
             sourceKey: datapack.data.VlocityRecordSourceKey,
             datapackType: datapack.datapackType,
             objectType: datapack.objectType,
             scope: datapack.scope
-        };
+        });
     }
 
     private expand(exportResults: ExportResult[] = [], context?: DatapackExportOptions): DatapackExpandResult[] {
@@ -446,7 +463,10 @@ export class DatapackExporter {
     private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null> {
         const describe = await this.salesforce.schema.describeSObjectById(record.Id);
         const datapackType = context.datapackType ?? this.inferDatapackType(describe.name, context?.scope);
-        const matchingKey = await this.getMatchingKey(describe, record, context.scope, { allowGeneratedKey: context.embedded === true });
+        const matchingKey = await this.getMatchingKey(describe, record, context.scope, {
+            allowGeneratedKey: context.embedded === true,
+            datapackType
+        });
         const exportStack = this.getExportPath(context.parent);
         this.logger.verbose(`Build ${describe.name} (${record.Id}) datapack: ${matchingKey}`);
 
@@ -530,6 +550,12 @@ export class DatapackExporter {
                 return;
             }
 
+            // Keep configured exclusions for sorting/naming, but do not follow discarded lookups.
+            if (this.definitions.isFieldIgnored(datapack, field.name)) {
+                resolved[index] = { fieldName: field.name, value };
+                return;
+            }
+
             // Export as reference
             if (field.referenceTo?.length && value) {
                 if (value.startsWith('005') && !field.name.endsWith('__c')) {
@@ -543,7 +569,8 @@ export class DatapackExporter {
                 } else {
                     value = this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0]);
                 }
-            } else if (typeof value === 'string') {
+            } else if (typeof value === 'string' && (this.definitions.getFieldConfig(datapack, field.name, 'parseJson')
+                ?? this.definitions.get(datapack, 'parseJson') ?? true)) {
                 value = this.tryParseAsJson(value) ?? value;
             }
 
@@ -561,15 +588,17 @@ export class DatapackExporter {
                 this.setDatapackField(datapack, field.fieldName, field.value);
             }
         }
+
+        const exportFields = this.definitions.getExportKey(datapack);
+        if (exportFields?.length) {
+            // Identity inputs must survive output filtering and JSON normalization. Resolve them
+            // from the source record just like reference fields, including ignored lookups.
+            datapack.data[DatapackFields.exportKeyValues] = await this.buildReferenceFields(
+                datapack, datapack.objectType, exportFields, record, { deferLookups: true });
+        }
     }
 
     private setDatapackField(datapack: ExportDatapack, fieldName: string, value: any) {
-        // Normalize the value
-        if (typeof value === 'string') {
-            value = this.salesforce.replaceNamespace(value);
-            value = this.tryParseAsJson(value) ?? value;
-        }
-
         // Normalize the field name and set the value, also define a getter for the original field name 
         const field = extractNamespaceAndName(fieldName);
         const isVlocityNamespace = !!field.namespace && /^vlocity/i.test(field.namespace);
@@ -598,15 +627,15 @@ export class DatapackExporter {
         // Export embedded objects
         for (const embeddedObject of this.definitions.getEmbeddedObjects(datapack)) {
             try {
-                const { name, objectType, filter, limit, sortFields } = this.resolveEmbeddedLookup(datapack, embeddedObject);
+                const { name, objectType, filter, limit } = this.resolveEmbeddedLookup(datapack, embeddedObject);
 
                 // Object filters (and arrays of object clauses) are deferred so the child records for all
                 // parents in the chunk can be looked up in a single batched query (see resolveEmbeddedObjects).
                 // Only raw SOQL string filters cannot be grouped back per parent and are resolved inline.
                 if (this.isBatchableFilter(filter)) {
-                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, sortFields, context });
+                    this.deferredEmbedded.push({ datapack, name, objectType, filter, limit, context });
                 } else {
-                    const records = this.sortRecords(await this.lookupWithFilter(objectType, filter, limit), sortFields);
+                    const records = await this.lookupWithFilter(objectType, filter, limit);
                     if (records.length) {
                         datapack.data[name] = await mapAsync(records, record => this.buildEmbeddedSObject(datapack, record, context));
                     }
@@ -620,7 +649,7 @@ export class DatapackExporter {
         }
     }
 
-    private resolveEmbeddedLookup(datapack: ExportDatapack, embeddedObject: { name: string, sortFields?: string[] } & (ObjectFilter | ObjectRelationship)) {
+    private resolveEmbeddedLookup(datapack: ExportDatapack, embeddedObject: { name: string } & (ObjectFilter | ObjectRelationship)) {
         const objectFilter = 'relationshipName' in embeddedObject
             ? this.getObjectFilterFromRelationship(datapack, embeddedObject)
             : embeddedObject;
@@ -631,42 +660,12 @@ export class DatapackExporter {
         }
 
         this.logger.verbose(`Lookup ${objectFilter.objectType} (${datapack.objectType}) using filter:`, filter);
-        return { name: embeddedObject.name, objectType: objectFilter.objectType, filter, limit: objectFilter.limit, sortFields: embeddedObject.sortFields };
-    }
-
-    /**
-     * Sort records by the configured sortFields, falling back to Id, so embedded/related record arrays
-     * are deterministic across exports -- Salesforce query order (especially batched OR queries) is not
-     * guaranteed stable. Returns a new sorted array and does not mutate the input.
-     */
-    private sortRecords<T extends Record<string, any>>(records: T[], sortFields?: string[]): T[] {
-        const fields = sortFields?.length ? sortFields : ['Id'];
-        return [...records].sort((a, b) => {
-            for (const field of fields) {
-                const compare = this.compareFieldValues(a[field], b[field]);
-                if (compare !== 0) {
-                    return compare;
-                }
-            }
-            return 0;
-        });
-    }
-
-    private compareFieldValues(a: unknown, b: unknown): number {
-        if (a === b) {
-            return 0;
-        }
-        // Sort nullish values last so they don't shuffle around between exports.
-        if (a === undefined || a === null) {
-            return 1;
-        }
-        if (b === undefined || b === null) {
-            return -1;
-        }
-        if (typeof a === 'number' && typeof b === 'number') {
-            return a - b;
-        }
-        return String(a).localeCompare(String(b));
+        return {
+            name: embeddedObject.name,
+            objectType: objectFilter.objectType,
+            filter,
+            limit: objectFilter.limit
+        };
     }
 
     private isBatchableFilter(filter: unknown): filter is Record<string, any> | Record<string, any>[] {
@@ -697,11 +696,10 @@ export class DatapackExporter {
                     }
                 });
 
-                // Sort before applying the limit so a stable, deterministic subset is kept. Limit is
-                // applied client-side; the batched OR query cannot enforce a per-parent limit.
+                // The limit is applied client-side because the batched OR query cannot enforce a
+                // separate limit per parent. Final output ordering is handled by the expander.
                 const recordsPerEntry = entries.map((entry, entryIndex) =>
-                    this.sortRecords([...recordsByEntry[entryIndex].values()], entry.sortFields)
-                        .slice(0, entry.limit || undefined));
+                    [...recordsByEntry[entryIndex].values()].slice(0, entry.limit || undefined));
 
                 // Warm the caches for records referenced from the children's matching key fields in one
                 // batched lookup so building the children does not fan out into per-record queries.
@@ -1101,7 +1099,8 @@ export class DatapackExporter {
      */
     private getDatapackValue(obj: any, prop: string): any {
         for (const propertyPath of prop.split(/[|;]/).map(path => path.trim()).filter(Boolean)) {
-            const value = this.getDatapackPathValue(obj, propertyPath.split(/[.:]/));
+            const [root, ...path] = propertyPath.split(/[.:]/);
+            const value = this.getDatapackPathValue(obj, [removeNamespacePrefix(root), ...path]);
 
             if (value !== undefined) {
                 return value;
@@ -1150,30 +1149,48 @@ export class DatapackExporter {
         }
 
         const describe = await this.salesforce.schema.describeSObjectById(data.id);
-        const fields = (await this.matchingKeyService.getMatchingKey(describe.name)).fields;
-        const matchingKeyObject = {};
-
-        for (const fieldName of fields) {
-            const value = data[fieldName] ?? null;
-            const field = await this.salesforce.schema.describeSObjectField(describe.name, fieldName);
-
-            if (field.referenceTo?.length && value) {
-                matchingKeyObject[field.name] = deferLookups
-                    ? this.buildLookup(datapack, value, 'VlocityLookupMatchingKeyObject', field.referenceTo[0])
-                    : await this.resolveLookup(datapack, value, 'VlocityLookupMatchingKeyObject');
-            } else {
-                matchingKeyObject[fieldName] = value;
-            }
-        }
+        const fields = (await this.matchingKeyService.getMatchingKey(describe.name, { scope: datapack.scope })).fields;
+        const exportFields = this.definitions.getExportKey({ objectType: describe.name, scope: datapack.scope }) ?? [];
+        const matchingKeyObject = await this.buildReferenceFields(datapack, describe.name, fields, data, { deferLookups });
+        // Ordinary reference fields become deployment lookup criteria. Retain additional
+        // identity inputs separately so exportKey cannot change those criteria.
+        const exportKeyValues = await this.buildReferenceFields(
+            datapack, describe.name, exportFields.filter(field => !fields.includes(field)), data, { deferLookups });
 
         const matchingKey = await this.getMatchingKey(describe, data, datapack.scope);
         
         return {
             ...matchingKeyObject,
+            ...(Object.keys(exportKeyValues).length ? { [DatapackFields.exportKeyValues]: exportKeyValues } : {}),
             VlocityDataPackType: refType,
             VlocityRecordSObjectType: describe.name,
             [VlocityDatapackSourceKey[refType]]: matchingKey
         } as VlocityDatapackReference;
+    }
+
+    /** Read key inputs with the same lookup representation for full records and references. */
+    private async buildReferenceFields(
+        datapack: ExportDatapack,
+        objectType: string,
+        fields: readonly string[],
+        data: DatapackObject,
+        { deferLookups }: { deferLookups: boolean }
+    ): Promise<Record<string, unknown>> {
+        const values: Record<string, unknown> = {};
+        for (const fieldName of fields) {
+            const value = getFieldValue(data, fieldName) ?? null;
+            const field = await this.salesforce.schema.describeSObjectField(objectType, fieldName);
+            if (field.referenceTo?.length && value) {
+                // Salesforce reference fields contain record IDs.
+                const id = value as string;
+                values[field.name] = deferLookups
+                    ? this.buildLookup(datapack, id, 'VlocityLookupMatchingKeyObject', field.referenceTo[0])
+                    : await this.resolveLookup(datapack, id, 'VlocityLookupMatchingKeyObject');
+            } else {
+                values[fieldName] = value;
+            }
+        }
+        return values;
     }
 
     private async resolveDeferredLookups(options?: ExportProcessOptions) {
@@ -1289,7 +1306,7 @@ export class DatapackExporter {
         this.generatedSourceKeys.delete(sourceKey);
     }
 
-    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, options?: { allowGeneratedKey?: boolean, resolving?: Set<string> }) {
+    private async getMatchingKey(describe: DescribeSObjectResult, data: object, scope?: string, options?: { allowGeneratedKey?: boolean, resolving?: Set<string>, datapackType?: string }) {
         if (!data['id']) {
             throw new Error('Missing id field in data');
         }
@@ -1302,7 +1319,7 @@ export class DatapackExporter {
         // Matching keys are deterministic: reference fields resolve to the referenced record's
         // matching key, so concurrent resolutions of the same record compute the same key and
         // the cache updates below are idempotent.
-        const matchingKeyFields = (await this.matchingKeyService.getMatchingKey(describe.name)).fields;
+        const matchingKeyFields = (await this.matchingKeyService.getMatchingKey(describe.name, { scope })).fields;
         if (!matchingKeyFields.length) {
             // Key-less object: either explicitly configured as such or no matching key could be determined
             if (!allowGeneratedKey) {
@@ -1312,7 +1329,7 @@ export class DatapackExporter {
         }
 
         // Use cached matching key if available
-        const matchingKeyEntry = [scope, data['id']].filter(p => p).join('/');
+        const matchingKeyEntry = [scope, options?.datapackType, data['id']].filter(p => p).join('/');
         const cachedMatchingKey = this.matchingKeys.get(matchingKeyEntry);
         if (cachedMatchingKey) {
             return cachedMatchingKey;
@@ -1439,7 +1456,7 @@ export class DatapackExporter {
             return;
         }
         const describe = await this.salesforce.schema.describeSObjectById(id);
-        for (const fieldName of (await this.matchingKeyService.getMatchingKey(describe.name)).fields) {
+        for (const fieldName of (await this.matchingKeyService.getMatchingKey(describe.name, { scope })).fields) {
             const value = record[fieldName];
             if (!value || typeof value !== 'string') {
                 continue;
@@ -1491,12 +1508,6 @@ export class DatapackExporter {
 
         if (DatapackExporter.UNWRITABLE_FIELDS.includes(field.name)) {
             this.logger.debug(`Ignore field ${field.name} on ${type.name} as it is unwriteable`);
-            return true;
-        }
-
-        const objectRef = { datapackType: datapack.datapackType, objectType: type.name, scope: datapack.scope };
-        if (this.definitions.isFieldIgnored(objectRef, field.name)) {
-            this.logger.debug(`Ignore field ${field.name} on ${type.name} (datapack: ${datapack.datapackType}, scope: ${datapack.scope}) as it is explicitly ignored by config`);
             return true;
         }
 

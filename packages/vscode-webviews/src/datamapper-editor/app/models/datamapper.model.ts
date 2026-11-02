@@ -1,36 +1,13 @@
+import type { DataMapperItem, DataMapperRecord } from '@vlocode/vlocity';
+
 export interface DataMapperModel {
-    header: Record<string, unknown>;
+    header: Omit<DataMapperRecord, 'OmniDataTransformItem'>;
     items: DataMapperItem[];
     sourceFormat: 'json' | 'xml';
     title: string;
 }
 
-export interface DataMapperItem {
-    DefaultValue?: string;
-    FilterGroup?: number | string;
-    FilterOperator?: string;
-    FilterValue?: string;
-    FormulaExpression?: string;
-    FormulaResultPath?: string;
-    FormulaSequence?: number | string;
-    GlobalKey?: string;
-    InputFieldName?: string;
-    InputObjectName?: string;
-    InputObjectQuerySequence?: number | string;
-    IsDisabled?: boolean;
-    IsLookup?: boolean;
-    IsRequiredForUpsert?: boolean;
-    IsUpsertKey?: boolean;
-    LinkedObjectSequence?: number | string;
-    Name?: string;
-    OutputCreationSequence?: number | string;
-    OutputFieldFormat?: string;
-    OutputFieldName?: string;
-    OutputObjectName?: string;
-    TransformValueMappings?: unknown;
-    TransformValuesMappings?: unknown;
-    [key: string]: unknown;
-}
+export type { DataMapperItem } from '@vlocode/vlocity';
 
 export type DataMapperKind = 'extract' | 'load' | 'transform';
 

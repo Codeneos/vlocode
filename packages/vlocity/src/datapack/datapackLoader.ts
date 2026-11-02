@@ -4,7 +4,6 @@ import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, 
 import { VlocityDatapack } from './datapack';
 import { getExportProjectFolder } from './datapackUtil';
 import { DatapackInfoService } from './datapackInfoService';
-import { setDatapackFieldSource, setDatapackSource } from './datapackSource';
 
 type DatapackLoaderFunc = (fileName: string) => OptionalPromise<string | object>;
 
@@ -98,11 +97,17 @@ export class DatapackLoader {
             throw new Error(`Datapack missing "VlocityDataPackType" or "VlocityRecordSObjectType" property of type string`);
         }
 
-        const datapackDef = 
-            await this.datapackInfo.getDatapackByObject(objectType, datapackTypeFolder) ||
-            await this.datapackInfo.getDatapackByObject(objectType);
+        // Custom datapack types are represented by their top-level folder. Falling back to
+        // `SObject` here loses that identity and makes a later expansion move the datapack to
+        // `SObject_<ObjectType>`. Only direct generic SObject exports use that folder prefix.
+        if (datapackTypeFolder) {
+            return /^SObject_/i.test(datapackTypeFolder)
+                ? datapackJson['VlocityDataPackType']
+                : datapackTypeFolder;
+        }
 
-        return datapackDef?.datapackType ?? 'SObject';
+        return (await this.datapackInfo.getDatapackByObject(objectType))?.datapackType
+            ?? datapackJson['VlocityDataPackType'];
     }
 
     public async loadDatapacks(datapackHeaders: string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
@@ -115,20 +120,20 @@ export class DatapackLoader {
         return filterUndefined(datapacks);
     }
 
-    private async loadJson(fileName : string, external = false) : Promise<any> {
+    private async loadJson(fileName : string) : Promise<any> {
         if (!await this.fileExists(fileName)) {
             return undefined;
         }
 
         const datapackJson = await this.fileSystem.readFile(fileName);
         const baseDir = directoryName(fileName);
-        const datapack = setDatapackSource(await this.parseJson(datapackJson), { fileName, external });
+        const datapack = await this.parseJson(datapackJson);
 
         if (datapack && typeof datapack === 'object') {
             // It can happen that the JSON file contains a primitive in which case we should not attempt to resolve references
             for (const [key, value] of Object.entries(datapack)) {
                 try {
-                    datapack[key] = await this.resolveValue(baseDir, value, datapack, key);
+                    datapack[key] = await this.resolveValue(baseDir, value);
                 } catch(err) {
                     this.logger.error(`Failed to load datapack property ${key}: ${err}`);
                 }
@@ -159,19 +164,16 @@ export class DatapackLoader {
         return this.fileSystem.readFile(fileName);
     }
 
-    private async resolveValue(baseDir: string, fieldValue: any, owner?: object, fieldName?: string) : Promise<any> {
+    private async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
             const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fieldValue));
             if (loader) {
                 try {
                     const resolvedFile = this.normalizePath(path.join(baseDir, fieldValue));
                     const value = /\.json$/i.test(fieldValue)
-                        ? await this.loadJson(resolvedFile, true)
+                        ? await this.loadJson(resolvedFile)
                         : await loader.load(resolvedFile);
                     if (value !== undefined) {
-                        if (owner && fieldName && (typeof value !== 'object' || value === null)) {
-                            setDatapackFieldSource(owner, fieldName, resolvedFile);
-                        }
                         return value;
                     }
                 } catch {
@@ -181,9 +183,8 @@ export class DatapackLoader {
         } else if (Array.isArray(fieldValue)) {
             return Promise.all(fieldValue.map(value => this.resolveValue(baseDir, value)));
         } else if (fieldValue !== null && typeof fieldValue === 'object') {
-            setDatapackSource(fieldValue, { fileName: this.normalizePath(path.join(baseDir, '.')), external: false });
             await Promise.all(Object.keys(fieldValue).map(
-                async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key], fieldValue, key)));
+                async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key])));
         }
         return fieldValue;
     }

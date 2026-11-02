@@ -4,17 +4,19 @@ import * as yaml from 'js-yaml';
 import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
-import { filterAsyncParallel, getErrorMessage, getObjectProperty, removeNamespacePrefix, singleFlight } from '@vlocode/util';
+import { filterAsyncParallel, getErrorMessage, getObjectProperty, removeNamespacePrefix } from '@vlocode/util';
 import { QueryConditionBuilder, QueryParser, type SalesforceQueryData } from '@vlocode/salesforce';
 import { DatapackInfoService, DatapackTypeDefinition, DatapackTypeDefinitions } from '@vlocode/vlocity';
 import {
     DatapackExportDefinitionStore,
     DatapackExportDefinitions,
     type DatapackExportDefinition,
+    type DatapackExportDefinitionFile,
     type LookupFilter
 } from '@vlocode/vlocity-deploy';
 
 import VlocodeService from '../vlocodeService';
+import type { OrgSession } from '../orgSession';
 import { getWorkspaceFileCandidates } from '../workspaceFiles';
 import { ConfigurationManager } from '../config';
 
@@ -36,22 +38,46 @@ interface ExportDefinitionFileInfo {
 
 type ExplorerWhereCondition = SalesforceQueryData['whereCondition'];
 
+/**
+ * Maintains the selected org's DataPack definition collections for the explorer and export commands.
+ *
+ * This registry lives for the extension's lifetime. Org services are resolved through VlocodeService
+ * for each operation so its configuration listeners do not retain a previous org's service instances.
+ */
 @injectable()
 export class DatapackDefinitionRegistry {
 
     private entries: DatapackDefinitionCollection[] = [];
+    private entriesSession?: OrgSession;
+    private loadingEntries?: DatapackDefinitionCollection[];
+    private reloadPromise?: Promise<DatapackDefinitionCollection[]>;
+    private reloadVersion = 0;
 
     constructor(
         private readonly vlocode: VlocodeService,
-        private readonly datapackInfo: DatapackInfoService,
-        private readonly definitions: DatapackExportDefinitionStore,
         private readonly logger: Logger
     ) {
     }
 
+    private get datapackInfo(): DatapackInfoService {
+        return this.vlocode.services.get(DatapackInfoService);
+    }
+
+    private get definitions(): DatapackExportDefinitionStore {
+        return this.vlocode.services.get(DatapackExportDefinitionStore);
+    }
+
+    /**
+     * Gets definition collections for the caller's captured org session, waiting for queued reloads.
+     * A command that outlives an org switch receives its own org's definitions.
+     */
     public async getDefinitionCollections(): Promise<DatapackDefinitionCollection[]> {
-        if (!this.entries.length && this.vlocode.isInitialized) {
-            await this.reload();
+        const session = this.vlocode.session;
+        while (this.reloadPromise) {
+            await this.reloadPromise;
+        }
+        if (session !== this.entriesSession || (!this.entries.length && this.vlocode.isInitialized)) {
+            return this.loadCollections(session);
         }
         return this.entries;
     }
@@ -84,83 +110,121 @@ export class DatapackDefinitionRegistry {
             ConfigurationManager.onConfigChange(
                 this.vlocode.config,
                 'customExportDefinitionFiles',
-                () => this.reload(),
+                () => this.loadCollections(this.vlocode.selectedSession),
                 { initial: true }
             ),
-            this.vlocode.onUsernameChanged(() => this.reload())
+            this.vlocode.onUsernameChanged(() => this.loadCollections(this.vlocode.selectedSession))
         );
     }
 
-    @singleFlight()
-    public async reload() {
-        this.entries = [];
-        this.definitions.clear();
+    /**
+     * Reloads bundled and workspace definitions into the current operation's org store.
+     * The explorer's collections are replaced only if this is still the latest reload for the selected org.
+     */
+    public reload(): Promise<void> {
+        return this.loadCollections(this.vlocode.session).then(() => undefined);
+    }
 
-        if (!this.vlocode.isInitialized) {
-            return;
+    private loadCollections(session: OrgSession | undefined): Promise<DatapackDefinitionCollection[]> {
+        const version = ++this.reloadVersion;
+        if (session === this.vlocode.selectedSession) {
+            this.entries = [];
+            this.entriesSession = undefined;
         }
-
-        await this.loadDatapackDefinitions();
-        await this.loadCustomDefinitions();
+        // Serialize reloads because loadingEntries is shared by this extension-wide registry.
+        // Capture the requested session before waiting so queued work still updates the correct org's store.
+        const previous = this.reloadPromise ?? Promise.resolve();
+        const reload = this.vlocode.withSession(async () => {
+            await previous.catch(() => undefined);
+            this.loadingEntries = [];
+            try {
+                this.definitions.clear();
+                if (this.vlocode.isInitialized) {
+                    await this.loadDatapackDefinitions();
+                    await this.loadCustomDefinitions();
+                }
+                // Return results to the requesting operation even if a newer org selection or reload
+                // prevents them from becoming the collections displayed by the explorer.
+                if (version === this.reloadVersion && session === this.vlocode.selectedSession) {
+                    this.entries = this.loadingEntries;
+                    this.entriesSession = session;
+                }
+                return this.loadingEntries;
+            } finally {
+                this.loadingEntries = undefined;
+            }
+        }, { session }).finally(() => {
+            if (this.reloadPromise === reload) {
+                this.reloadPromise = undefined;
+            }
+        });
+        this.reloadPromise = reload;
+        return reload;
     }
 
     private async loadDatapackDefinitions() {
-        const definitions = (await this.datapackInfo.getDatapackDefinitions())
-            .map(definition => {
-                const exportDefinition = this.getDirectExportDefinition(definition);
-                const exportMode = this.vlocode.isVlocityAvailable ? 'tools' as const : exportDefinition ? 'direct' as const : undefined;
-                return { ...definition, exportMode, exportDefinition, scope: 'std' as const };
-            })
-            .filter(definition => !!definition.exportMode);
-        const availableDefinitions = await this.filterAvailableDefinitions(definitions);
-
-        for (const definition of availableDefinitions) {
-            if (definition.exportDefinition) {
-                this.definitions.add(definition.exportDefinition, definition);
-            }
+        const files = this.getAvailablePredefinedDefinitions();
+        if (!files.length) {
+            return;
         }
-
-        if (availableDefinitions.length) {
-            this.entries.push({
-                id: 'datapacks',
-                label: 'Standard Datapacks',
-                description: `Supported ${availableDefinitions.length}`,
-                definitions: availableDefinitions
-            });
+        const knownDefinitions = await this.datapackInfo.getDatapackDefinitions();
+        for (const file of files) {
+            await this.loadPredefinedDefinitions(file, knownDefinitions);
         }
     }
 
-    private getDirectExportDefinition(definition: DatapackTypeDefinition) {
-        const matchingDefinitions = DatapackExportDefinitions.all.filter(exportDefinition =>
-            definition.datapackType === exportDefinition.datapackType && 
-            definition.source.sobjectType === exportDefinition.objectType
-        );
-        if (matchingDefinitions.length > 1) {
-            this.logger.debug(`Multiple export definitions found for datapack type ${definition.datapackType} and sobject ${definition.source.sobjectType}, using the first match`);
+    private getAvailablePredefinedDefinitions(): readonly DatapackExportDefinitionFile[] {
+        const files = new Array<DatapackExportDefinitionFile>();
+        if (this.vlocode.isNativeOmniStudioAvailable) {
+            files.push(DatapackExportDefinitions.omniStudioStandard);
         }
-        return matchingDefinitions[0];
+        if (this.vlocode.isManagedOmniStudioAvailable) {
+            files.push(DatapackExportDefinitions.omniStudioManaged);
+        }
+        if (this.vlocode.isVlocityAvailable) {
+            files.push(DatapackExportDefinitions.industries);
+        }
+        return files;
     }
 
-    // private async loadDirectExportDefinitions(file: DatapackExportDefinitionFile) {
-    //     const typeDefinitions = this.getDatapackTypeDefinitions(file.definitions);
-    //     const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
-    //     if (!availableDefinitions.length) {
-    //         return;
-    //     }
-    //     this.definitions.load(file.definitions, { scope: file.id });
-    //     this.entries.push({
-    //         id: file.id,
-    //         label: file.label,
-    //         description: file.description,
-    //         definitions: availableDefinitions.map(definition => ({ ...definition, scope: file.id }))
-    //     });
-    // }
+    private async loadPredefinedDefinitions(
+        file: DatapackExportDefinitionFile,
+        knownDefinitions: readonly DatapackTypeDefinition[]
+    ) {
+        const typeDefinitions = this.getDatapackTypeDefinitions(file.definitions, knownDefinitions);
+        const availableDefinitions = await this.filterAvailableDefinitions(typeDefinitions);
+        if (!availableDefinitions.length) {
+            return;
+        }
 
-    private getDatapackTypeDefinitions(definitions: Record<string, DatapackExportDefinition>): DatapackTypeDefinition[] {
+        this.definitions.load(file.definitions, { scope: file.id });
+        const exportMode = file.id === DatapackExportDefinitions.industries.id ? 'tools' : 'direct';
+        (this.loadingEntries ?? this.entries).push({
+            id: file.id,
+            label: file.label,
+            description: file.description,
+            definitions: availableDefinitions.map(definition => ({
+                ...definition,
+                exportMode,
+                scope: file.id
+            }))
+        });
+    }
+
+    private getDatapackTypeDefinitions(
+        definitions: Readonly<Record<string, Readonly<DatapackExportDefinition>>>,
+        knownDefinitions: readonly DatapackTypeDefinition[] = []
+    ): DatapackTypeDefinition[] {
         return Object.entries(definitions)
-            .filter(([, definition]) => !definition.dependent)
+            // Support-only entries such as the global `SObject` defaults and dependent child
+            // definitions belong in the export definition store, but cannot be explorer roots.
+            .filter(([, definition]) => !definition.dependent && this.isExportDefinition(definition))
             .map(([datapackType, definition]) => {
-                return this.toDatapackTypeDefinition(datapackType, definition);
+                return knownDefinitions.find(candidate =>
+                    candidate.datapackType === datapackType &&
+                    removeNamespacePrefix(candidate.source.sobjectType).toLowerCase() ===
+                        removeNamespacePrefix(definition.objectType).toLowerCase()
+                ) ?? this.toDatapackTypeDefinition(datapackType, definition);
             });
     }
 
@@ -168,7 +232,7 @@ export class DatapackDefinitionRegistry {
         for (const file of await this.readCustomExportDefinitionFiles()) {
             const definitions = await this.loadCustomDefinitionFile(file.file);
             if (definitions.length) {
-                this.entries.push({
+                (this.loadingEntries ?? this.entries).push({
                     id: file.id,
                     label: file.label,
                     description: file.description,
@@ -272,28 +336,29 @@ export class DatapackDefinitionRegistry {
     }
 
     private async readExportDefinitionsFromFile(file: string): Promise<Record<string, DatapackExportDefinition>> {
-        const definitionRoot = yaml.load(await fs.readFile(file, 'utf8'), { filename: file });
-        if (typeof definitionRoot !== 'object' || definitionRoot === null || Array.isArray(definitionRoot)) {
-            throw new Error(`Custom datapack definition file ${file} must contain a YAML object`);
+        const loaded = yaml.load(await fs.readFile(file, 'utf8'), { filename: file });
+        const definitionRoot = this.isObject(loaded) && this.isObject(loaded.definitions)
+            ? loaded.definitions
+            : loaded;
+        if (!this.isObject(definitionRoot) || !Object.values(definitionRoot).every(value => this.isObject(value))) {
+            throw new Error(`Custom datapack definition file ${file} must contain a YAML object mapping datapack types to definitions`);
         }
-
-        const definitions = Object.fromEntries<DatapackExportDefinition>(
-            Object.entries(definitionRoot)
-                .filter(([, value ]) => this.isExportDefinition(value))
-        );
-
-        if (!Object.keys(definitions).length) {
-            throw new Error(`No export definitions found in ${file}`);
-        }
-
-        return definitions;
+        // Do not discard support-only definitions here. In particular, global `SObject` defaults do
+        // not have an objectType/name and dependent children do not require a name. The CLI loads the
+        // same entries into the store; filtering them here made refresh exports behave differently.
+        return definitionRoot as unknown as Record<string, DatapackExportDefinition>;
     }
 
     private isExportDefinition(input: unknown): input is DatapackExportDefinition {
-        // Check input is an object and has a and object type and name
-        return typeof input === 'object' && input !== null
-            && 'objectType' in input && typeof (input as any).objectType === 'string' && (input as any).objectType.trim()
-            && 'name' in input && (typeof (input as any).name === 'string' || Array.isArray((input as any).name));
+        // A top-level explorer definition needs both an object type and a display name. Support-only
+        // definitions may omit either and are still loaded into the definition store.
+        return this.isObject(input)
+            && typeof input.objectType === 'string' && !!input.objectType.trim()
+            && (typeof input.name === 'string' || Array.isArray(input.name));
+    }
+
+    private isObject(input: unknown): input is Record<string, unknown> {
+        return typeof input === 'object' && input !== null && !Array.isArray(input);
     }
 
     private getDefinitionLabel(datapackType: string, definition: DatapackExportDefinition) {

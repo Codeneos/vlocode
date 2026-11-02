@@ -139,25 +139,37 @@ export function primitiveCompare(a: unknown, b: unknown) {
 }
 
 /**
- * Sorts an array of objects by the specified object key/property or selected by function. In comparison to the native
+ * Sorts an array of objects by the specified object key/property, properties, or selected by function. In comparison to the native
  * {@link Array.sort} arrays are not sorted in placed but a newly sorted array is returned. The original array order is not changed
  * @param iterable Iterable object or readonly array
- * @param byField Property selector function or name
+ * @param byField Property selector function, property name, or property names in precedence order
  * @param order order by which to sort; defaults to 'asc' when undefined
  * @returns Copy of the iterable or array as array sorted by the specified field in `desc` or `asc` order
  */
 export function sortBy<T extends object, K extends string | number>(
     iterable: Iterable<T> | readonly T[],
-    byField: keyof T | ((item: T) => K),
+    byField: keyof T | readonly (string | keyof T)[] | ((item: T) => K),
     order: 'asc' | 'desc' = 'asc') : Array<T> {
-    const fieldSelector = typeof byField === 'function'
-        ? byField : (item: T) => item[byField];
+    const fieldSelectors: Array<(item: T) => unknown> = typeof byField === 'function'
+        ? [byField]
+        : (Array.isArray(byField) ? byField : [byField]).map(field => (item: T) => item[field as keyof T]);
 
-    const compareFn = (a: T, b: T): number => {
-        return primitiveCompare(fieldSelector(a), fieldSelector(b));
+    const result = [...iterable];
+    if (fieldSelectors.length === 0) {
+        return result;
     }
 
-    return [...iterable].sort(order !== 'desc' ? compareFn : (a,b) => -compareFn(a,b));
+    const compareFn = (a: T, b: T): number => {
+        for (const fieldSelector of fieldSelectors) {
+            const result = primitiveCompare(fieldSelector(a), fieldSelector(b));
+            if (result !== 0) {
+                return result;
+            }
+        }
+        return 0;
+    }
+
+    return result.sort(order !== 'desc' ? compareFn : (a,b) => -compareFn(a,b));
 }
 
 /**

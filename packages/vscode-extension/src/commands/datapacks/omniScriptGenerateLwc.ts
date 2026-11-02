@@ -42,12 +42,12 @@ export default class GenerateLwcCommand extends DatapackCommand {
 
     private async compile(datapack: VlocityDatapack, options?: { useStandardRuntime?: boolean }) {      
         if (datapack.datapackType === 'OmniScript') {
-            const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
-            return container.new(OmniScriptLwcCompiler).compile(definition, options);
+            const definition = await this.vlocode.services.new(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
+            return this.vlocode.services.new(OmniScriptLwcCompiler).compile(definition, options);
         }
         if (datapack.datapackType === 'FlexCard' || datapack.datapackType === 'VlocityCard') {
             const definition = FlexCardDefinition.fromDatapack(datapack);
-            return container.new(FlexCardLwcCompiler).compile(definition, options);
+            return this.vlocode.services.new(FlexCardLwcCompiler).compile(definition, options);
         }
         throw new Error(`Unsupported datapack type: ${datapack.datapackType}`);
     }

@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 
 import { OmniScriptActivationOptions, OmniScriptActivator, OmniScriptRecord } from '@vlocode/omniscript';
 import { VlocityDatapack } from '@vlocode/vlocity';
-import { container } from '@vlocode/core';
 
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
@@ -83,7 +82,7 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
             throw new Error(`Datapack is not of type OmniScript: ${datapack.headerFile}`);
         }
         const reactivateDependentScripts = omniScriptDef.isReusable && await this.promptDependencyReactivation(omniScriptDef);
-        await container.get(OmniScriptActivator).activate({
+        await this.vlocode.services.get(OmniScriptActivator).activate({
                 type: omniScriptDef.type,
                 subType: omniScriptDef.subType,
                 language: omniScriptDef.language
@@ -92,7 +91,7 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
 
     private async activateFlexCard(datapack: VlocityDatapack, options: FlexCardActivationOptions)  {
         const cardDefinition = FlexCardDefinition.fromDatapack(datapack);
-        const deployedCards = [...(await container.get(FlexCardDefinitionAccess).getFlexCardDefinitions({ 
+        const deployedCards = [...(await this.vlocode.services.get(FlexCardDefinitionAccess).getFlexCardDefinitions({
             name: cardDefinition.Name, 
             author: cardDefinition.AuthorName, 
             version: cardDefinition.VersionNumber 
@@ -100,7 +99,7 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
         if (deployedCards.length === 0) {
             throw new Error(`Unable to find deployed FlexCard: ${cardDefinition.Name} v${cardDefinition.VersionNumber} by ${cardDefinition.AuthorName}. Resolve this issue by deploying the FlexCard before re-activating it.`);
         }
-        await container.get(FlexCardActivator).activate(deployedCards[0], options);
+        await this.vlocode.services.get(FlexCardActivator).activate(deployedCards[0], options);
     }
 
     private async promptDependencyReactivation(record: OmniScriptRecord) : Promise<boolean> {

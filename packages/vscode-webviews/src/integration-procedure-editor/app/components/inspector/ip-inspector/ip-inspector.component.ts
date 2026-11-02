@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import type { OmniScriptElementRecord } from '@vlocode/omniscript';
 
 import { iconForType } from '../../../models/element-templates';
 import type {
@@ -8,7 +9,6 @@ import type {
     ElementFieldChange,
     HeaderFieldChange,
     InspectorTab,
-    IntegrationProcedureElement,
     IntegrationProcedureModel,
     MapEntriesChange,
     PropertyValueChange,
@@ -48,7 +48,7 @@ export class IpInspectorComponent {
     readonly jsonTargetLabel = input.required<string>();
     readonly model = input.required<IntegrationProcedureModel>();
     readonly propertySet = input.required<Record<string, unknown>>();
-    readonly selectedElement = input<IntegrationProcedureElement | undefined>();
+    readonly selectedElement = input<OmniScriptElementRecord | undefined>();
 
     readonly activeTabChange = output<InspectorTab>();
     readonly applyJson = output<void>();

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import type { OmniScriptElementRecord } from '@vlocode/omniscript';
 
 import { VlocodeAutocompleteInputComponent } from '../../../../../shared/components/autocomplete-input/autocomplete-input.component';
 import { VlocodeKeyValueMapEditorComponent, type VlocodeKeyValueEntry } from '../../../../../shared/components/key-value-map-editor/key-value-map-editor.component';
@@ -10,7 +11,6 @@ import type {
     DataRaptorInputParameterFieldChange,
     ElementFieldChange,
     HeaderFieldChange,
-    IntegrationProcedureElement,
     IntegrationProcedureModel,
     MapEntriesChange,
     PropertyValueChange,
@@ -32,7 +32,7 @@ export class IpSettingsTabComponent {
     readonly dataRaptorInputParameters = input<readonly DataRaptorInputParameter[]>([]);
     readonly model = input.required<IntegrationProcedureModel>();
     readonly propertySet = input.required<Record<string, unknown>>();
-    readonly selectedElement = input<IntegrationProcedureElement | undefined>();
+    readonly selectedElement = input<OmniScriptElementRecord | undefined>();
 
     readonly dataRaptorParameterAdd = output<void>();
     readonly dataRaptorParameterChange = output<DataRaptorInputParameterFieldChange>();

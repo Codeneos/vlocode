@@ -21,5 +21,9 @@
         "../packages/vlocity/src",
         "../packages/vlocity-deploy/src",
         "../packages/sass/src"
+    ],
+    "exclude": [
+        "../packages/**/__tests__/**",
+        "../packages/**/*.test.ts"
     ]
 }

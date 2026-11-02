@@ -32,7 +32,7 @@ export class PushSourceLensProvider implements vscode.CodeLensProvider<PushSourc
     ];
 
     private get sourceStatus() {
-        return container.get(ApexSourceStatus);
+        return this.vlocode.services.get(ApexSourceStatus);
     }
 
     constructor(private readonly vlocode: VlocodeService) {
@@ -60,7 +60,11 @@ export class PushSourceLensProvider implements vscode.CodeLensProvider<PushSourc
         ];
     }
 
-    public async resolveCodeLens(codeLens: PushSourceCodeLens) {
+    public resolveCodeLens(codeLens: PushSourceCodeLens) {
+        return this.vlocode.withSession(() => this.resolveSourceCodeLens(codeLens));
+    }
+
+    private async resolveSourceCodeLens(codeLens: PushSourceCodeLens) {
         if (!codeLens.document) {
             return undefined;
         }

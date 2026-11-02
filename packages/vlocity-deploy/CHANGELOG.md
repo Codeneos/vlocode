@@ -4,6 +4,82 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+### Bug Fixes
+
+* **export:** Restore OmniStudio Build Tools output compatibility ([#477](https://github.com/Codeneos/vlocode/issues/477)) ([fdc8d20](https://github.com/Codeneos/vlocode/commit/fdc8d20d00ef579b639822e2fbcb4e9de276a0c5)), closes [#476](https://github.com/Codeneos/vlocode/issues/476)
+
+## [2.4.5](https://github.com/Codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
+
+### Bug Fixes
+
+* **vlocity-deploy:** OmniProcess datapacks with a version number did not deploy as the script did not get deactivated ([47d752b](https://github.com/Codeneos/vlocode/commit/47d752bbe667b6561657edd4eb1e69fcf803f955))
+
+## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+### Bug Fixes
+
+* **datapackExpander:** simplify sorting logic by using utility function ([72166d3](https://github.com/Codeneos/vlocode/commit/72166d31a5288cad98c095fb34668938f8b81b31))
+* **vlocity-deploy:** restore CI validation ([ffbf74c](https://github.com/Codeneos/vlocode/commit/ffbf74ce756b14fa1134c8d04c86d90190ab4faf))
+* **vlocity-deploy:** use sortFields for embedded records ([8a1e60a](https://github.com/Codeneos/vlocode/commit/8a1e60a608500c5aa691c1ab469352065a8a25b2))
+* **vlocity:** update matching key fields and ignore fields in OmniStudio datapack definitions ([2f720a7](https://github.com/Codeneos/vlocode/commit/2f720a7da101940c67a7403cf51c420f9a3cf787))
+* **vlocity:** update matching key fields to use OmniProcessVersionNumber ([4d3b01a](https://github.com/Codeneos/vlocode/commit/4d3b01a32346f9935477a05d36290dd6f212ac7b))
+
+### Features
+
+* **vlocity:** allow purging of just extra records during a deployment ([f2e20a7](https://github.com/Codeneos/vlocode/commit/f2e20a77639f9a7a03506bdd1d94ce1836f48ec5))
+
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **vlocity-deploy:** correct OmniStudio metadata conversion ([6aecadb](https://github.com/Codeneos/vlocode/commit/6aecadb1f4117f022c7c9377d543950f8c5f187b))
+* **vlocity-deploy:** resolve OmniStudio export definitions ([754dc8e](https://github.com/Codeneos/vlocode/commit/754dc8eb9ea2ac9128b7ebbc3c03bffa391b2dee))
+* **vlocity:** preserve Data Mapper metadata semantics ([de778a1](https://github.com/Codeneos/vlocode/commit/de778a18c93b9138b5571383c283df24a75f435e))
+
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+### Bug Fixes
+
+* disable inferred matching keys for deployment records and update matching key context ([bf505c8](https://github.com/Codeneos/vlocode/commit/bf505c80e5242171f8658a348fe17844bbaf30ec))
+* exporter doesn't properly sort records in datapacks ([8fb972b](https://github.com/Codeneos/vlocode/commit/8fb972bcc622938952e8076bb9e311eb68e157ce))
+* remove unnecessary matchingKeyFields and ignoreFields from OmniDataTransformItem ([7958f30](https://github.com/Codeneos/vlocode/commit/7958f308dd7b2b3b267a9c5750cf458b82c3ccb9))
+* simplify parent item linking in OmniDataTransformationSpec ([6650613](https://github.com/Codeneos/vlocode/commit/6650613d6ca6204550c0a8e9c8046198a49301fa))
+
+## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+### Bug Fixes
+
+* saving datapacks back doesn't properly expand them and can duplicate new folders as the datapack is saved into a different folder all together ([7e69dc1](https://github.com/Codeneos/vlocode/commit/7e69dc1444a1effb3787e0f244c17fe873299be2))
+
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* address datapack comparison review feedback ([897d017](https://github.com/Codeneos/vlocode/commit/897d0173e9696a64162953b93b918a9fa3029776))
+* cancelling a deployment marked unprocessed records as failed or skipped ([9f3b8c9](https://github.com/Codeneos/vlocode/commit/9f3b8c909268598f9d0ce07b90bf6bf7c4a6966d))
+* do not retry record errors that are deterministic ([3908ee3](https://github.com/Codeneos/vlocode/commit/3908ee36ec6081687fa04cb8c0e6354021f60015))
+* embedded objects defined by relationshipName always failed with an empty filter ([7a76bbd](https://github.com/Codeneos/vlocode/commit/7a76bbdb062a8728cce1b6359ca8f66ae5784124))
+* global key field detection never matched namespace-prefixed fields ([1a0b7f3](https://github.com/Codeneos/vlocode/commit/1a0b7f38414f5ad77434784cdcf282267a4cf0fb))
+* matching key regression on export ([dd67a95](https://github.com/Codeneos/vlocode/commit/dd67a9513c2902cee454f9cd7d1523f01130c5c6))
+* only verify datapack-set fields after deploy to avoid spurious global key updates ([df1867e](https://github.com/Codeneos/vlocode/commit/df1867ebe5a8b349ef9981dbd9504c3e38ba0ba8))
+* records skipped for unresolved internal dependencies not counted as skipped ([cdbe1b3](https://github.com/Codeneos/vlocode/commit/cdbe1b3fa1f67084edc8abb05d42282c2751eaa2))
+* throw on expanded datapack file name collisions instead of overwriting ([4210415](https://github.com/Codeneos/vlocode/commit/4210415b6436530fb11698a9a5b854b1dcb84fa0))
+
+### Features
+
+* add bulk-extracted datapack comparer ([a26f72d](https://github.com/Codeneos/vlocode/commit/a26f72d9c52bfb4d9f7755d0ae598b1f6b71ab49))
+* add datapack comparison CLI reports ([ce6c47f](https://github.com/Codeneos/vlocode/commit/ce6c47f372261635e0874f3c6e4264946f077ed6))
+* add embedded-aware datapack compare ([#469](https://github.com/Codeneos/vlocode/issues/469)) ([e9ae652](https://github.com/Codeneos/vlocode/commit/e9ae6523f4b35da6ef4ba52d048a3dc5a9a99d0a))
+* add handling for records with missing parent references to report them as missing ([6765821](https://github.com/Codeneos/vlocode/commit/676582196776876db4080a7c544ae0f2434ecf6e))
+* preserve in-sync embedded deployment records ([11bc505](https://github.com/Codeneos/vlocode/commit/11bc505dfcd0ebde503de1452ee044c9f1d84b45))
+
+### Performance Improvements
+
+* avoid quadratic record matching in lookupMultiple ([e7bb457](https://github.com/Codeneos/vlocode/commit/e7bb457e2df41582695c97f8e8187d80d984ec54))
+* memoize circular dependency detection ([2b8c6ec](https://github.com/Codeneos/vlocode/commit/2b8c6ecbb7a66ebd8d0eda3132c3069995f6f146))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes

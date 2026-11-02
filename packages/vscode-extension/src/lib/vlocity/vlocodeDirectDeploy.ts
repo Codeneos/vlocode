@@ -25,7 +25,7 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
     ) {
         const options: DatapackDeploymentOptions = {
             strictOrder: true,
-            purgeMatchingDependencies: false,
+            purgeMatchingDependencies: this.config.deploy.purgeMatchingDependencies,
             lookupFailedDependencies: false,
             continueOnError: true,
             maxRetries: 1,
@@ -34,6 +34,7 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
             standardRuntime: !!this.config.deploy.standardRuntime,
             disableTriggers: !!this.config.deploy.disableTriggers,
             allowUnresolvedDependencies: !!this.config.deploy.allowUnresolvedDependencies,
+            purgeMatchingRecordsFilter: this.config.deploy.purgeMatchingRecordsFilter,
         };
 
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);

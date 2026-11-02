@@ -28,7 +28,7 @@ export class RecordActivator {
     public async activateRecords(
         records: Iterable<DeployedDatapackDeploymentRecord>, 
         activator: (record: DeployedDatapackDeploymentRecord) => Record<string, unknown>,
-        options?: { recordType?: string, chunkSize?: number }
+        options?: { recordType?: string, chunkSize?: number, message?: string }
     ) {
         const recordsByType = groupBy(records, r => r.sobjectType);
 
@@ -37,8 +37,8 @@ export class RecordActivator {
                 return true;
             }
 
-            const exactMatch = sobjectType.toLowerCase() !== options?.recordType.toLowerCase();
-            const localMatch = removeNamespacePrefix(sobjectType).toLowerCase() !== options?.recordType.toLowerCase();
+            const exactMatch = sobjectType.toLowerCase() === options?.recordType.toLowerCase();
+            const localMatch = exactMatch || (removeNamespacePrefix(sobjectType).toLowerCase() === options?.recordType.toLowerCase());
 
             return exactMatch || localMatch;
         }
@@ -53,9 +53,9 @@ export class RecordActivator {
                 const datapackRecord = recordsOfType.find(r => r.recordId === record.ref)!;
                 if (!record.success) {
                     datapackRecord.updateStatus(DeploymentStatus.Failed, record.error);
-                    this.logger.error(`Activation error ${datapackRecord.datapackKey} [${datapackRecord.recordId}]: ${record.error.message}`);
+                    this.logger.error(`Record Activator Error ${datapackRecord.datapackKey} [${datapackRecord.recordId}]: ${record.error.message}`);
                 } else {
-                    this.logger.info(`Activated ${datapackRecord.datapackKey} [${datapackRecord.recordId}]`);
+                    this.logger.info(`${options?.message ?? 'Activated'} ${datapackRecord.datapackKey} [${datapackRecord.recordId}]`);
                 }
             }
         }

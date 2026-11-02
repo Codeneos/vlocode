@@ -4,6 +4,47 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+### Features
+
+* add dplint package for linting Datapacks ([91f451c](https://github.com/Codeneos/vlocode/commit/91f451cdf326dd7650422c10d6ace264859c6f2f))
+
+## [2.4.5](https://github.com/Codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
+
+**Note:** Version bump only for package @vlocode/cli
+
+## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+### Features
+
+* **vlocity:** allow purging of just extra records during a deployment ([f2e20a7](https://github.com/Codeneos/vlocode/commit/f2e20a77639f9a7a03506bdd1d94ce1836f48ec5))
+
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+**Note:** Version bump only for package @vlocode/cli
+
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+**Note:** Version bump only for package @vlocode/cli
+
+## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+**Note:** Version bump only for package @vlocode/cli
+
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* address datapack comparison review feedback ([897d017](https://github.com/Codeneos/vlocode/commit/897d0173e9696a64162953b93b918a9fa3029776))
+* inline css-tree JSON data in bundles ([63ede89](https://github.com/Codeneos/vlocode/commit/63ede8907ad8fc55a3556ff7f8d7dbc417e439e1))
+
+### Features
+
+* add createStreamLogInterceptor for redirecting formatted console logs to a separate stream ([095c7bf](https://github.com/Codeneos/vlocode/commit/095c7bf663436d350d0b0c5221aa10ae7cc84dcb))
+* add datapack comparison CLI reports ([ce6c47f](https://github.com/Codeneos/vlocode/commit/ce6c47f372261635e0874f3c6e4264946f077ed6))
+* add embedded-aware datapack compare ([#469](https://github.com/Codeneos/vlocode/issues/469)) ([e9ae652](https://github.com/Codeneos/vlocode/commit/e9ae6523f4b35da6ef4ba52d048a3dc5a9a99d0a))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Features

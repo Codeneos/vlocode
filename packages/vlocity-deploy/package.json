@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/vlocity-deploy",
-    "version": "2.3.0",
+    "version": "2.4.6",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment library",
     "keywords": [
         "Vlocity",
@@ -25,6 +25,7 @@
         "clean": "shx rm -rf ./lib ./dist ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
         "build": "tsc -b",
         "postbuild": "",
+        "prewatch": "pnpm generate-export-definitions",
         "watch": "tsc -b --watch",
         "pack": "pnpm build && pnpm pack",
         "generate-export-definitions": "node ./scripts/generate-export-definitions.mjs",

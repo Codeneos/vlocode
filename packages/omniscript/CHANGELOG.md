@@ -4,6 +4,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+**Note:** Version bump only for package @vlocode/omniscript
+
+## [2.4.5](https://github.com/Codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
+
+### Bug Fixes
+
+* **vlocity-deploy:** OmniProcess datapacks with a version number did not deploy as the script did not get deactivated ([47d752b](https://github.com/Codeneos/vlocode/commit/47d752bbe667b6561657edd4eb1e69fcf803f955))
+
+## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+**Note:** Version bump only for package @vlocode/omniscript
+
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **omniscript:** support singleton datapack elements ([2900df2](https://github.com/Codeneos/vlocode/commit/2900df28113108ea1a472ff9c26085175169ada6))
+
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+**Note:** Version bump only for package @vlocode/omniscript
+
+## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+**Note:** Version bump only for package @vlocode/omniscript
+
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* lazily initialize OmniScript LWC compiler ([078de02](https://github.com/Codeneos/vlocode/commit/078de02ab43fca9d91240b1a327889a7c5501b57))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 **Note:** Version bump only for package @vlocode/omniscript

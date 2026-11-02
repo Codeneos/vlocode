@@ -1,6 +1,5 @@
-import * as path from 'path';
 import { workspace, Uri, FileType, FileStat as vsFileStat } from 'vscode';
-import { FileSystem, StatsOptions, FileInfo, WriteOptions, FileStat } from '@vlocode/core';
+import { DeleteOptions, FileSystem, StatsOptions, FileInfo, FileStat } from '@vlocode/core';
 
 export class VSCodeFileSystemAdapter extends FileSystem {
 
@@ -31,12 +30,16 @@ export class VSCodeFileSystemAdapter extends FileSystem {
         return results.map(([name, type]) => new VSCodeFileFileInfoAdapter(name, type));
     }
 
-    public writeFile(path: string, data: Buffer, options?: WriteOptions | undefined): Promise<void> {
+    public writeFile(path: string, data: Buffer): Promise<void> {
         return workspace.fs.writeFile(this.pathToUri(path), data) as Promise<void>;
     }
 
     public createDirectory(path: string): Promise<void> {
         return workspace.fs.createDirectory(this.pathToUri(path)) as Promise<void>;
+    }
+
+    public delete(path: string, options?: DeleteOptions): Promise<void> {
+        return workspace.fs.delete(this.pathToUri(path), { recursive: options?.recursive, useTrash: false }) as Promise<void>;
     }
 
     private pathToUri(path: string): Uri {

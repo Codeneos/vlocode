@@ -10,6 +10,7 @@ describe('DatapackDataProvider', () => {
                 registerAll: jest.fn()
             },
             onUsernameChanged: jest.fn(),
+            withSession: (task: () => Promise<unknown>) => task(),
             validateAll: jest.fn()
         };
         const provider = new DatapackDataProvider(service as any);

@@ -5,8 +5,8 @@ import * as jsforce from 'jsforce';
 import * as vscode from 'vscode';
 import vlocity from 'vlocity';
 
-import { Logger, container, injectable } from '@vlocode/core';
-import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder } from '@vlocode/vlocity';
+import { Logger, Container, injectable } from '@vlocode/core';
+import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, type DatapackTypeDefinition } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
 import { groupBy, mapAsync , getDocumentBodyAsString , getErrorMessage } from '@vlocode/util';
@@ -30,6 +30,7 @@ export interface ObjectEntry {
     id?: string;
     exportMode?: DatapackExportMode;
     exportDefinitionScope?: string;
+    datapackDefinition?: DatapackTypeDefinition;
 }
 
 type ObjectEntryWithId = ObjectEntry & { id: string };
@@ -347,13 +348,16 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private async expandDatapackDirect(datapack: VlocityDatapack, targetPath: string) {
-        const scope: string | undefined = container.get(DatapackExportDefinitionStore).getAvailableScopes(datapack)[0];
-        const expander = container.get(DatapackExpander);
+        const scope: string | undefined = Container.get(this)!.get(DatapackExportDefinitionStore).getAvailableScopes({
+            datapackType: datapack.datapackType,
+            objectType: datapack.sobjectType
+        })[0];
+        const expander = Container.get(this)!.get(DatapackExpander);
         const expanded = expander.expandDatapack(datapack.data as any, { datapackType: datapack.datapackType, scope });
         this.logger.verbose(`Expanding datapack ${expanded.sourceKey} with direct expander${scope ? ` (${scope})` : ''}`);
         const filesWritten = await expanded.writeToFilesystem(targetPath);
         const headerFile = filesWritten.find(file => file.endsWith('DataPack.json'));
-        return path.join(targetPath, expanded.folder, headerFile!);
+        return headerFile!;
     }
 
     public getDatapackReferenceKey(datapack : VlocityDatapack) {

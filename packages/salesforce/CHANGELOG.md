@@ -4,6 +4,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+**Note:** Version bump only for package @vlocode/salesforce
+
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Bug Fixes
+
+* **salesforce:** generalize namespace handling ([911fee4](https://github.com/Codeneos/vlocode/commit/911fee4e4cbfea437b1363f7400c2881ad236438))
+* **salesforce:** honor RecordFactory proxy override ([6037a25](https://github.com/Codeneos/vlocode/commit/6037a251cfe872fcc9d8a4e92b545b7914006c7e))
+
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+### Bug Fixes
+
+* change socker pooling to lifo to avoid stale sockets on slow CI environments ([2415183](https://github.com/Codeneos/vlocode/commit/2415183190a1806ce77367629e82944d46d46229))
+
+## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+### Features
+
+* update default API version to 66.0 in SalesforceConnection ([155cab6](https://github.com/Codeneos/vlocode/commit/155cab6c83dc0ac2d5de2dd2e8a444a63243ee97))
+
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* address datapack comparison review feedback ([897d017](https://github.com/Codeneos/vlocode/commit/897d0173e9696a64162953b93b918a9fa3029776))
+* enhance error handling for connection interruptions in HttpTransport ([1b7bb7e](https://github.com/Codeneos/vlocode/commit/1b7bb7ec25d5763f2d470cf22ef67733b698f334))
+* harden Salesforce field and query handling ([b890ead](https://github.com/Codeneos/vlocode/commit/b890eadb9c7eced102cab8dd453b979b7e300f3d))
+
+### Features
+
+* enhance QueryFormatter to support namespace placeholders with optional namespace service ([e97178e](https://github.com/Codeneos/vlocode/commit/e97178e00c8385ff82cbd2eebd397cd3ba876e5e))
+* update TypeScriptCompilerPlugin to handle empty JS source cases ([4b1555c](https://github.com/Codeneos/vlocode/commit/4b1555c2dde53298976284c0c82a2e8cb394ece8))
+
+### Performance Improvements
+
+* parallelize chunked Salesforce lookups ([503abb9](https://github.com/Codeneos/vlocode/commit/503abb949ef606793946e224d74c07438aacbce7))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes

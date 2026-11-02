@@ -24,6 +24,13 @@ export interface WriteOptions {
     append?: boolean;
 }
 
+export interface DeleteOptions {
+    /**
+     * Delete non-empty directories recursively.
+     */
+    recursive?: boolean;
+}
+
 export interface OutputOptions extends WriteOptions {
     /**
      * Encoding to use when writing strings to a file
@@ -242,6 +249,27 @@ export abstract class FileSystem {
      * @param path path to the directory to create
      */
     public abstract createDirectory(path: string): Promise<void>;
+
+    /**
+     * Delete a file or directory.
+     * @param path Path to delete
+     * @param options Delete options
+     */
+    public abstract delete(path: string, options?: DeleteOptions): Promise<void>;
+
+    /**
+     * Delete all files and subdirectories contained in a directory while keeping the directory itself.
+     * Does nothing when the directory does not exist.
+     * @param path Directory to empty
+     */
+    public async emptyDirectory(path: string): Promise<void> {
+        if (!await this.isDirectory(path)) {
+            return;
+        }
+        for (const entry of await this.readDirectory(path)) {
+            await this.delete(join(path, entry.name), { recursive: true });
+        }
+    }
 
     /**
      * Get file statistics; returns undefined when the file does not exists

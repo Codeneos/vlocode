@@ -426,7 +426,7 @@ vlocode.omniStudio.convertMetadata:
     - menu: explorer/context
       when: &whenOmniStudioMetadataConversion
         - resourceScheme == file && resourcePath =~ /[\/\\]omniDataTransforms[\/\\].*\.rpt-meta\.xml$/
-        - resourceScheme == file && resourcePath =~ /[\/\\]omniIntegrationProcedures[\/\\].*\.ip-meta\.xml$/
+        - resourceScheme == file && resourcePath =~ /[\/\\]omniIntegrationProcedures[\/\\].*\.oip-meta\.xml$/
         - resourceScheme == file && resourcePath =~ /[\/\\](DataRaptor|OmniDataTransform)[\/\\].*_(DataPack|Items)\.json$/
         - resourceScheme == file && resourcePath =~ /[\/\\]IntegrationProcedure[\/\\].*_(DataPack|Element.*)\.json$/
     - menu: commandPalette

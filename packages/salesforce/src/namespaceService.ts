@@ -1,5 +1,3 @@
-import { visitObject } from "@vlocode/util";
-
 export abstract class NamespaceService {
 
     public abstract getNamespace(): string | undefined;
@@ -30,18 +28,29 @@ export abstract class NamespaceService {
         return this.updateObject(obj, this.updateNamespace.bind(this));
     }
 
+    /**
+     * Generic object property replacer for replacing source namespaces on objects and arrays
+     * @param obj Object
+     * @returns
+     */
+    public replaceObjectNamespace<T extends object>(obj: T): T {
+        return this.updateObject(obj, this.replaceNamespace.bind(this));
+    }
+
     private updateObject<T extends object>(obj: T, replacerFn: (value: string) => string): T {
-        return visitObject(obj, (prop, value, target) => {
-            if (typeof prop === 'string') {
-                const newProp = replacerFn(prop);
-                if (newProp !== prop) {
-                    delete target[prop];
-                }
-                prop = newProp;
+        for (const [prop, value] of Object.entries(obj)) {
+            const newProp = replacerFn(prop);
+            const newValue = typeof value === 'string'
+                ? replacerFn(value)
+                : value && typeof value === 'object'
+                    ? this.updateObject(value, replacerFn)
+                    : value;
+
+            if (newProp !== prop) {
+                delete obj[prop];
             }
-            if (typeof value === 'string') {
-                target[prop] = replacerFn(value);
-            }
-        });
+            obj[newProp] = newValue;
+        }
+        return obj;
     }
 }

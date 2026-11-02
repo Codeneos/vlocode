@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import VlocityDatapackService, { ManifestEntry } from '../../lib/vlocity/vlocityDatapackService';
+import VlocityDatapackService, { ManifestEntry, ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackDefinitionRegistry } from '../../lib/vlocity/datapackDefinitionRegistry';
 import { CommandBase } from '../../lib/commandBase';
 import { groupBy, mapAsync, mapAsyncParallel, removeNamespacePrefix } from '@vlocode/util';
@@ -72,8 +72,9 @@ export abstract class DatapackCommand extends CommandBase {
     ) {
         const getDefinition = (datapack: VlocityDatapack) =>
             options?.definitions?.get(datapack) ?? getDatapackTypeDefinition(datapack);
+        const queryEntries = datapacks.map(datapack => this.asObjectEntry(datapack, getDefinition(datapack)));
 
-        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) => {
+        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(queryEntries), async (matchedRecords, i) => {
             const type = getDefinition(datapacks[i]);
             if (!type) {
                 return matchedRecords[0];
@@ -87,14 +88,28 @@ export abstract class DatapackCommand extends CommandBase {
             const type = getDefinition(datapack);
             return {
                 datapack,
-                sobjectType: datapack.sobjectType,
-                datapackType: datapack.datapackType,
+                sobjectType: type?.source.sobjectType ?? datapack.sobjectType,
+                datapackType: type?.datapackType ?? datapack.datapackType,
                 id: matchingRecords[i]?.Id,
                 values: matchingRecords[i],
                 exportMode: type?.exportMode,
-                exportDefinitionScope: type?.scope
+                exportDefinitionScope: type?.scope,
+                datapackDefinition: type
             };
         });
+    }
+
+    protected asObjectEntry(datapack: VlocityDatapack, definition?: DatapackTypeDefinition): ObjectEntry {
+        return {
+            ...datapack.data,
+            sobjectType: definition?.source.sobjectType ?? datapack.sobjectType,
+            datapackType: definition?.datapackType ?? datapack.datapackType,
+            globalKey: datapack.globalKey,
+            name: datapack.name,
+            exportMode: definition?.exportMode,
+            exportDefinitionScope: definition?.scope,
+            datapackDefinition: definition
+        };
     }
 
     /**

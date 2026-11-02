@@ -1,7 +1,7 @@
 import { container } from '@vlocode/core';
-import { deepClone, flattenObject, Iterable } from '@vlocode/util';
+import { deepClone, escapeSoqlString, flattenObject, Iterable, last } from '@vlocode/util';
 import { QueryService } from './queryService';
-import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
+import { QueryFormatter, QueryParser, SalesforceQueryData, type QueryFormatterOptions } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 
 export interface QueryExecutor {
@@ -16,8 +16,13 @@ class QueryBuilderData {
         return { ...this.query, fieldList: [...new Set(this.query.fieldList)] };
     }
 
-    public getQuery() {
-        return QueryFormatter.format(this.getSpec());
+    /**
+     * Format the query as SOQL string. Namespace placeholders are only replaced when a namespace
+     * service is passed; without one placeholders are left untouched so the executing layer can
+     * normalize them with its own initialized namespace service.
+     */
+    public getQuery(options?: QueryFormatterOptions) {
+        return QueryFormatter.format(this.getSpec(), options);
     }
 
     public toString() {
@@ -66,16 +71,16 @@ export class QueryBuilder extends QueryBuilderData {
      */
     public async validateFields(schema: SalesforceSchemaService): Promise<string[]> {
         const removedFields = new Array<string>();
-        const resolvedFields = new Array<string>();
+        const resolvedFields = new Map<string, string>();
         for (const field of this.fields) {
             const fieldDef = await schema.describeSObjectFieldPath(this.sobjectType, field, false);
             if (fieldDef) {
-                resolvedFields.push(field);
+                resolvedFields.set(last(fieldDef)!.name, field);
             } else {
                 removedFields.push(field);
             }
         }
-        this.query.fieldList = resolvedFields;
+        this.query.fieldList = [...resolvedFields.values()];
         return removedFields;
     }
 
@@ -223,7 +228,10 @@ export class QueryConditionBuilder extends QueryBuilderData {
         else if (typeof value === 'number' || typeof value === 'boolean') {
             return `${value}`;
         }
-        return `'${value}'`;
+        // Literal values share the SOQL string escaping with QueryService.formatFieldValue. This also
+        // preserves LIKE pattern escapes: `\\%` becomes `\\\\%` in the query literal and is parsed back
+        // to `\\%` before the LIKE pattern is evaluated.
+        return `'${escapeSoqlString(String(value))}'`;
     }
 
     public getCondition() {

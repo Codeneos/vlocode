@@ -101,7 +101,6 @@ export class MigrationDataMapperConverter {
                 objectType: group.objectType,
                 filter: group.filters.length === 1 ? group.filters[0] : group.filters,
                 limit: group.limit,
-                //orderBy: undefined, // Not supported by migration dataraptors
             };
 
             const outputNode = substringAfter(group.outputNode, ':');

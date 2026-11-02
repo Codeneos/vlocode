@@ -1,0 +1,121 @@
+{
+  "toolsVersion": "1.14.18",
+  "input": {
+    "runtime": "managed",
+    "datapackType": "DataRaptor",
+    "rootId": "a00000000000001AAA",
+    "rootType": "%vlocity_namespace%__DRBundle__c",
+    "childType": "%vlocity_namespace%__DRMapItem__c",
+    "references": {
+      "%vlocity_namespace%__DRMapItem__c": {
+        "%vlocity_namespace%__DRBundleId__c": "%vlocity_namespace%__DRBundle__c"
+      }
+    },
+    "matchingKeys": {
+      "%vlocity_namespace%__DRBundle__c": [
+        "Name"
+      ],
+      "%vlocity_namespace%__DRMapItem__c": [
+        "%vlocity_namespace%__MapId__c",
+        "Name"
+      ]
+    },
+    "records": [
+      {
+        "Id": "a00000000000001AAA",
+        "__type": "%vlocity_namespace%__DRBundle__c",
+        "Name": "MappingParity",
+        "%vlocity_namespace%__GlobalKey__c": "fixture-global-key",
+        "%vlocity_namespace%__InputJson__c": "{\"z\":[{\"Name\":\"Z\"},{\"Name\":\"A\"}],\"a\":1}",
+        "%vlocity_namespace%__TargetOutXml__c": "<result>fixture</result>",
+        "Description": null
+      },
+      {
+        "Id": "a01000000000001AAA",
+        "__type": "%vlocity_namespace%__DRMapItem__c",
+        "Name": "MappingParity",
+        "%vlocity_namespace%__DRBundleId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__MapId__c": "mapping-1",
+        "%vlocity_namespace%__InterfaceObjectLookupOrder__c": 1,
+        "%vlocity_namespace%__FilterGroup__c": 1,
+        "%vlocity_namespace%__DomainObjectCreationOrder__c": 1,
+        "%vlocity_namespace%__DomainObjectAPIName__c": "Record",
+        "%vlocity_namespace%__DomainObjectFieldAPIName__c": "Z",
+        "%vlocity_namespace%__InterfaceFieldAPIName__c": "inputZ",
+        "%vlocity_namespace%__Formula__c": null,
+        "%vlocity_namespace%__FormulaConverted__c": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000002AAA",
+        "__type": "%vlocity_namespace%__DRMapItem__c",
+        "Name": "MappingParity",
+        "%vlocity_namespace%__DRBundleId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__MapId__c": "mapping-2",
+        "%vlocity_namespace%__InterfaceObjectLookupOrder__c": null,
+        "%vlocity_namespace%__FilterGroup__c": null,
+        "%vlocity_namespace%__DomainObjectCreationOrder__c": null,
+        "%vlocity_namespace%__DomainObjectAPIName__c": null,
+        "%vlocity_namespace%__DomainObjectFieldAPIName__c": null,
+        "%vlocity_namespace%__InterfaceFieldAPIName__c": null,
+        "%vlocity_namespace%__Formula__c": "Z_FORMULA",
+        "%vlocity_namespace%__FormulaConverted__c": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000003AAA",
+        "__type": "%vlocity_namespace%__DRMapItem__c",
+        "Name": "MappingParity",
+        "%vlocity_namespace%__DRBundleId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__MapId__c": "mapping-3",
+        "%vlocity_namespace%__InterfaceObjectLookupOrder__c": 1,
+        "%vlocity_namespace%__FilterGroup__c": 1,
+        "%vlocity_namespace%__DomainObjectCreationOrder__c": 1,
+        "%vlocity_namespace%__DomainObjectAPIName__c": "Record",
+        "%vlocity_namespace%__DomainObjectFieldAPIName__c": "A",
+        "%vlocity_namespace%__InterfaceFieldAPIName__c": "inputA",
+        "%vlocity_namespace%__Formula__c": null,
+        "%vlocity_namespace%__FormulaConverted__c": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000004AAA",
+        "__type": "%vlocity_namespace%__DRMapItem__c",
+        "Name": "MappingParity",
+        "%vlocity_namespace%__DRBundleId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__MapId__c": "mapping-4",
+        "%vlocity_namespace%__InterfaceObjectLookupOrder__c": null,
+        "%vlocity_namespace%__FilterGroup__c": null,
+        "%vlocity_namespace%__DomainObjectCreationOrder__c": null,
+        "%vlocity_namespace%__DomainObjectAPIName__c": null,
+        "%vlocity_namespace%__DomainObjectFieldAPIName__c": null,
+        "%vlocity_namespace%__InterfaceFieldAPIName__c": null,
+        "%vlocity_namespace%__Formula__c": "A_FORMULA",
+        "%vlocity_namespace%__FormulaConverted__c": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000005AAA",
+        "__type": "%vlocity_namespace%__DRMapItem__c",
+        "Name": "MappingParity",
+        "%vlocity_namespace%__DRBundleId__c": "a00000000000001AAA",
+        "%vlocity_namespace%__MapId__c": "mapping-5",
+        "%vlocity_namespace%__InterfaceObjectLookupOrder__c": 0,
+        "%vlocity_namespace%__FilterGroup__c": 1,
+        "%vlocity_namespace%__DomainObjectCreationOrder__c": 1,
+        "%vlocity_namespace%__DomainObjectAPIName__c": "Record",
+        "%vlocity_namespace%__DomainObjectFieldAPIName__c": "Zero",
+        "%vlocity_namespace%__InterfaceFieldAPIName__c": "inputZero",
+        "%vlocity_namespace%__Formula__c": null,
+        "%vlocity_namespace%__FormulaConverted__c": null,
+        "Empty": null
+      }
+    ]
+  },
+  "expectedFiles": {
+    "DataRaptor/MappingParity/MappingParity_DataPack.json": "{\n    \"%vlocity_namespace%__DRMapItem__c\": \"MappingParity_Mappings.json\",\n    \"%vlocity_namespace%__GlobalKey__c\": \"fixture-global-key\",\n    \"%vlocity_namespace%__InputJson__c\": \"MappingParity_InputJson.json\",\n    \"%vlocity_namespace%__TargetOutXml__c\": \"MappingParity_TargetOutXml.xml\",\n    \"Description\": \"\",\n    \"Name\": \"MappingParity\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRBundle__c\",\n    \"VlocityRecordSourceKey\": \"%vlocity_namespace%__DRBundle__c/MappingParity\"\n}",
+    "DataRaptor/MappingParity/MappingParity_InputJson.json": "{\n    \"a\": 1,\n    \"z\": [\n        {\n            \"Name\": \"Z\"\n        },\n        {\n            \"Name\": \"A\"\n        }\n    ]\n}",
+    "DataRaptor/MappingParity/MappingParity_Mappings.json": "[\n    {\n        \"%vlocity_namespace%__DRBundleId__c\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__DRBundle__c/MappingParity\",\n            \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRBundle__c\"\n        },\n        \"%vlocity_namespace%__DomainObjectAPIName__c\": \"Record\",\n        \"%vlocity_namespace%__DomainObjectCreationOrder__c\": 1,\n        \"%vlocity_namespace%__DomainObjectFieldAPIName__c\": \"Zero\",\n        \"%vlocity_namespace%__FilterGroup__c\": 1,\n        \"%vlocity_namespace%__InterfaceFieldAPIName__c\": \"inputZero\",\n        \"%vlocity_namespace%__InterfaceObjectLookupOrder__c\": 0,\n        \"%vlocity_namespace%__MapId__c\": \"mapping-5\",\n        \"Name\": \"MappingParity\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRMapItem__c\"\n    },\n    {\n        \"%vlocity_namespace%__DRBundleId__c\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__DRBundle__c/MappingParity\",\n            \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRBundle__c\"\n        },\n        \"%vlocity_namespace%__DomainObjectAPIName__c\": \"Record\",\n        \"%vlocity_namespace%__DomainObjectCreationOrder__c\": 1,\n        \"%vlocity_namespace%__DomainObjectFieldAPIName__c\": \"A\",\n        \"%vlocity_namespace%__FilterGroup__c\": 1,\n        \"%vlocity_namespace%__InterfaceFieldAPIName__c\": \"inputA\",\n        \"%vlocity_namespace%__InterfaceObjectLookupOrder__c\": 1,\n        \"%vlocity_namespace%__MapId__c\": \"mapping-3\",\n        \"Name\": \"MappingParity\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRMapItem__c\"\n    },\n    {\n        \"%vlocity_namespace%__DRBundleId__c\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__DRBundle__c/MappingParity\",\n            \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRBundle__c\"\n        },\n        \"%vlocity_namespace%__DomainObjectAPIName__c\": \"Record\",\n        \"%vlocity_namespace%__DomainObjectCreationOrder__c\": 1,\n        \"%vlocity_namespace%__DomainObjectFieldAPIName__c\": \"Z\",\n        \"%vlocity_namespace%__FilterGroup__c\": 1,\n        \"%vlocity_namespace%__InterfaceFieldAPIName__c\": \"inputZ\",\n        \"%vlocity_namespace%__InterfaceObjectLookupOrder__c\": 1,\n        \"%vlocity_namespace%__MapId__c\": \"mapping-1\",\n        \"Name\": \"MappingParity\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRMapItem__c\"\n    },\n    {\n        \"%vlocity_namespace%__DRBundleId__c\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__DRBundle__c/MappingParity\",\n            \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRBundle__c\"\n        },\n        \"%vlocity_namespace%__Formula__c\": \"A_FORMULA\",\n        \"%vlocity_namespace%__MapId__c\": \"mapping-4\",\n        \"Name\": \"MappingParity\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRMapItem__c\"\n    },\n    {\n        \"%vlocity_namespace%__DRBundleId__c\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"%vlocity_namespace%__DRBundle__c/MappingParity\",\n            \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRBundle__c\"\n        },\n        \"%vlocity_namespace%__Formula__c\": \"Z_FORMULA\",\n        \"%vlocity_namespace%__MapId__c\": \"mapping-2\",\n        \"Name\": \"MappingParity\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"%vlocity_namespace%__DRMapItem__c\"\n    }\n]",
+    "DataRaptor/MappingParity/MappingParity_TargetOutXml.xml": "<result>fixture</result>"
+  }
+}

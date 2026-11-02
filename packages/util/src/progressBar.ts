@@ -300,7 +300,6 @@ export class ProgressBar {
             gauge,
             this.paint.green(this.tracker.percentText.padStart(4)),
             this.paint.white(this.tracker.countText),
-            this.paint.dim(this.tracker.rateText),
             this.paint.dim(this.tracker.timeText)
         ].filter(Boolean) as string[];
 

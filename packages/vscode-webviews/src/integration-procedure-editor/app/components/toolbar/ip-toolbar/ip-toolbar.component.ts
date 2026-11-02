@@ -31,8 +31,8 @@ export class IpToolbarComponent {
         if (model.header.type && model.header.subType) {
             meta.push({ value: `${model.header.type}/${model.header.subType}` });
         }
-        if (model.header.versionNumber) {
-            meta.push({ value: `v${model.header.versionNumber}` });
+        if (model.header.version) {
+            meta.push({ value: `v${model.header.version}` });
         }
         meta.push({ value: model.sourceFormat.toUpperCase() });
         meta.push({ value: model.runtime });

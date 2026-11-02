@@ -21,6 +21,13 @@
           "description": "List of objects that should be embedded in this datapack. The key is the name under which embedded records are exported.",
           "type": "object"
         },
+        "exportKey": {
+          "description": "Ordered fields used to write VlocityRecordSourceKey during expansion only. Does not affect record matching, lookup resolution or unexpanded export keys. Values are joined with slashes and prefixed with the object type, using namespace-qualified field names. The same definition applies to serialized matching and lookup reference keys, preserving their matching fields. Lookup fields use the referenced export key. When omitted or empty, the original source key is retained.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "fields": {
           "additionalProperties": {
             "$ref": "#/definitions/ExportFieldDefinition"
@@ -30,10 +37,10 @@
         },
         "filter": {
           "$ref": "#/definitions/LookupFilter",
-          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accessing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
         },
         "ignoreFields": {
-          "description": "List of fields to exclude from the export.",
+          "description": "Fields omitted from serialized output, after sorting and file-name evaluation.",
           "items": {
             "type": "string"
           },
@@ -64,9 +71,29 @@
           ],
           "description": "Name format of the datapack, used to create the folder name of the datapack,  when a filename is not set this is also used as the file name.\n\nWhen this is a string the string is parsed as format and values between brackets are replace by field values from the object to export, i.e `{Name}`. When this is defined as an array each value in the array is evaluated as a field value expression and constants need to be prixed with a `_`: ```yaml name:\n- Name\n- _constantValue # OR name: \"{Name}_constantValue\" ```"
         },
+        "nullValues": {
+          "description": "How null/empty SObject fields are serialized. Defaults to preserving their values.",
+          "enum": [
+            "preserve",
+            "omit",
+            "emptyString"
+          ],
+          "type": "string"
+        },
         "objectType": {
           "description": "Type of SObject to which this filter applies",
           "type": "string"
+        },
+        "parseJson": {
+          "description": "Parse JSON-looking field strings. Defaults to true; individual fields can override this.",
+          "type": "boolean"
+        },
+        "relatedObjects": {
+          "description": "List of related objects that are exported as separate datapacks but are related to this object and should be included in the export.",
+          "items": {
+            "$ref": "#/definitions/ObjectFilter"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -104,7 +131,7 @@
             },
             "filter": {
               "$ref": "#/definitions/LookupFilter",
-              "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+              "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accessing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
             },
             "ignoreFields": {
               "description": "When the field is a lookup and embeddedLookup is true, this array defines a list of fields to  exclude from the export of the related record.\n\nThis can be used to prevent circular references when exporting related records as embedded objects.  For example when exporting an Account with related Contacts as embedded objects,  excluding the AccountId field from the Contact export will prevent circular reference  between the Account and Contact datapacks.",
@@ -121,16 +148,32 @@
               "description": "Type of SObject to which this filter applies",
               "type": "string"
             },
+            "parseJson": {
+              "description": "Override JSON parsing for this field. Does not affect strings inside JSON documents.",
+              "type": "boolean"
+            },
             "processor": {
               "description": "Processor function snippet to use for processing the field data before exporting.",
               "type": "string"
             },
             "sortFields": {
-              "description": "List of fields by which to sort the exported data when exporting as an embedded object.",
+              "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record; otherwise the original array order is preserved.",
               "items": {
                 "type": "string"
               },
               "type": "array"
+            },
+            "sortMode": {
+              "description": "Vlocity comparison puts empty values last and breaks ties with canonical JSON.",
+              "enum": [
+                "default",
+                "vlocity"
+              ],
+              "type": "string"
+            },
+            "sortParentField": {
+              "description": "Parent lookup field used for depth-first traversal; sortFields order siblings.",
+              "type": "string"
             }
           },
           "required": [
@@ -174,6 +217,10 @@
               },
               "type": "array"
             },
+            "parseJson": {
+              "description": "Override JSON parsing for this field. Does not affect strings inside JSON documents.",
+              "type": "boolean"
+            },
             "processor": {
               "description": "Processor function snippet to use for processing the field data before exporting.",
               "type": "string"
@@ -183,11 +230,23 @@
               "type": "string"
             },
             "sortFields": {
-              "description": "List of fields by which to sort the exported data when exporting as an embedded object.",
+              "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record; otherwise the original array order is preserved.",
               "items": {
                 "type": "string"
               },
               "type": "array"
+            },
+            "sortMode": {
+              "description": "Vlocity comparison puts empty values last and breaks ties with canonical JSON.",
+              "enum": [
+                "default",
+                "vlocity"
+              ],
+              "type": "string"
+            },
+            "sortParentField": {
+              "description": "Parent lookup field used for depth-first traversal; sortFields order siblings.",
+              "type": "string"
             }
           },
           "required": [
@@ -233,16 +292,32 @@
           },
           "type": "array"
         },
+        "parseJson": {
+          "description": "Override JSON parsing for this field. Does not affect strings inside JSON documents.",
+          "type": "boolean"
+        },
         "processor": {
           "description": "Processor function snippet to use for processing the field data before exporting.",
           "type": "string"
         },
         "sortFields": {
-          "description": "List of fields by which to sort the exported data when exporting as an embedded object.",
+          "description": "List of fields by which to sort a record array during expansion. Fields are evaluated in the configured order. When omitted, expansion sorts by `VlocityRecordSourceKey`, then by `Name`, when either field is present on every record; otherwise the original array order is preserved.",
           "items": {
             "type": "string"
           },
           "type": "array"
+        },
+        "sortMode": {
+          "description": "Vlocity comparison puts empty values last and breaks ties with canonical JSON.",
+          "enum": [
+            "default",
+            "vlocity"
+          ],
+          "type": "string"
+        },
+        "sortParentField": {
+          "description": "Parent lookup field used for depth-first traversal; sortFields order siblings.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -306,6 +381,27 @@
           "type": "array"
         }
       ]
+    },
+    "ObjectFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "$ref": "#/definitions/LookupFilter",
+          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accessing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+        },
+        "limit": {
+          "description": "Optional maximum number of records to return when querying this object.",
+          "type": "number"
+        },
+        "objectType": {
+          "description": "Type of SObject to which this filter applies",
+          "type": "string"
+        }
+      },
+      "required": [
+        "objectType"
+      ],
+      "type": "object"
     }
   }
 }

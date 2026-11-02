@@ -1,4 +1,3 @@
-import { inject, injectable, LifecyclePolicy } from "@vlocode/core";
 import assert from "assert";
 import { NamespaceService } from './namespaceService';
 
@@ -72,18 +71,27 @@ export interface SalesforceQueryData {
     securityEnforced?: boolean;
 }
 
-@injectable({ lifecycle: LifecyclePolicy.transient })
+export interface QueryFormatterOptions {
+    updateNamespace?(value: string): string;
+}
+
 export class QueryFormatter {
 
-    @inject(NamespaceService) private readonly namespace: NamespaceService;
+    constructor(private readonly options?: QueryFormatterOptions) {
+    }
 
     /**
      * Format structured query data into a SOQL query that can be executed against Salesforce.
+     *
+     * Namespace placeholders (`%vlocity_namespace%`) are only replaced when a namespace service is
+     * passed; without one placeholders are left untouched so the executing layer (e.g. `QueryService`
+     * or `SalesforceDataService`) can normalize them with its own initialized namespace service.
      * @param query Query data to format
+     * @param options Optional query formatter options used to replace namespace placeholders
      * @returns Formatted SOQL query
      */
-    public static format(query: SalesforceQueryData) {
-        return new QueryFormatter().format(query);
+    public static format(query: SalesforceQueryData, options?: QueryFormatterOptions): string {
+        return new QueryFormatter(options).format(query);
     }
 
     private format(query: SalesforceQueryData) {
@@ -154,7 +162,7 @@ export class QueryFormatter {
     }
 
     private updateNamespace(value: string) {
-        return value && this.namespace ? this.namespace.updateNamespace(value) : value;
+        return value && (this.options?.updateNamespace?.(value) ?? value);
     }
 }
 

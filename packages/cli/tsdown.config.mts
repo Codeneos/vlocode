@@ -1,10 +1,12 @@
 import { defineConfig, type UserConfig } from 'tsdown'
+import { createRequire } from 'node:module';
 
 import yaml from '../../build/plugins/yaml-loader.ts';
 import fileTypesPatch from '../../build/patches/file-types.ts';
 import vlocityPatch from '../../build/patches/vlocity.ts';
 import dtracePatch from '../../build/patches/dtrace.ts';
 import jsdomPatch from '../../build/patches/jsdom.ts';
+import cssTreePatch from '../../build/patches/csstree.ts';
 import commands from './build/commands.ts';
 
 /**
@@ -49,13 +51,22 @@ export default defineConfig((options: UserConfig) => {
       strictExecutionOrder: true,
     },
     plugins: [
+      {
+        name: 'jsonc-parser-esm',
+        resolveId(source) {
+          // The UMD entry's scoped require calls are not statically bundled.
+          if (source === 'jsonc-parser') {
+            return createRequire(import.meta.resolve('@vlocode/dplint')).resolve('jsonc-parser/lib/esm/main.js');
+          }
+        }
+      },
       commands(),
       yaml(), 
       fileTypesPatch(), 
       vlocityPatch(),
       jsdomPatch(),
+      cssTreePatch(),
       dtracePatch()
     ]
   };
 });
-

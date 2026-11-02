@@ -265,7 +265,7 @@ export class OmniScriptAccess {
                 "Type": scriptType, 
                 "Sub Type": scriptSubType, 
                 "Language": scriptLanguage 
-            } = JSON.parse(element.propertySet);
+            } = element.propertySet;
 
             const isMatchingScript = scripts.some(script => {
                 return script.type === scriptType && 

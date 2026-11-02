@@ -14,6 +14,12 @@ export class DocumentTemplate implements DatapackDeploymentSpec {
         datapack.data['%vlocity_namespace%__IsActive__c'] = true;
     }
 
+    public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
+        // The content document reference is resolved for the target org just before deployment;
+        // clear any stale source value so the delta check does not compare it against the target org
+        records.forEach(record => record.value('%vlocity_namespace%__TemplateContentDocumentId__c', undefined));
+    }
+
     public beforeDeployRecord(records: ReadonlyArray<DatapackDeploymentRecord>) {
         return Promise.all(records.map(rec => this.updateContentDocumentId(rec)));
     }

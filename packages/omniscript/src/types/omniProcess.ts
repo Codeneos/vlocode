@@ -2,6 +2,7 @@ import { OmniScriptSpecification } from "./omniScriptDefinition";
 
 export interface OmniProcessRecord extends Required<OmniScriptSpecification> {
     id: string;
+    vlocityRecordSourceKey?: string;
     name: string;
     description: string;
     requiredPermission: string;
@@ -22,7 +23,7 @@ export interface OmniProcessRecord extends Required<OmniScriptSpecification> {
     lastPreviewPage: string;
     webComponentKey: string;
     isTestProcedure: boolean;
-    omniProcessType: 'OmniScript' | 'IntegrationProcedure';
+    omniProcessType: 'OmniScript' | 'IntegrationProcedure' | 'Integration Procedure';
     designerCustomizationType: string;
     uniqueName: string;
     namespace: string;
@@ -37,6 +38,9 @@ export namespace OmniProcessRecord {
     export const Fields = [
         'Id', 
         'Name', 
+        'Description',
+        'RequiredPermission',
+        'ResponseCacheType',
         'VersionNumber',
         'IsActive', 
         'CustomJavaScript',
@@ -53,10 +57,12 @@ export namespace OmniProcessRecord {
 
 export interface OmniProcessElementRecord {
     id: string;
+    vlocityRecordSourceKey?: string;
     name: string;
     omniProcessId: string;
     isActive: boolean;
     description: string;
+    uniqueIndex: string;
     level: number;
     sequenceNumber: number;
     parentElementId: string;
@@ -79,6 +85,7 @@ export namespace OmniProcessElementRecord {
         'OmniProcessId',
         'IsActive',
         'Description',
+        'UniqueIndex',
         'Level',
         'SequenceNumber',
         'ParentElementId',

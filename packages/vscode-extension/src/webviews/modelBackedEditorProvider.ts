@@ -5,12 +5,13 @@ import { randomBytes } from 'crypto';
 import { FileSystem } from '@vlocode/core';
 import { escapeHtmlEntity, getErrorMessage, isRecord } from '@vlocode/util';
 import { DatapackInfoService, DatapackLoader, type VlocityDatapack } from '@vlocode/vlocity';
+import { DatapackWriter } from '@vlocode/vlocity-deploy';
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeContext } from '../lib/vlocodeContext';
-import { DatapackExpansionService } from '../lib/vlocity/datapackExpansionService';
 import { ModelBackedDocument } from './modelBackedDocument';
 import { OpenTextDocumentFileSystem } from '../lib/fs/openTextDocumentFileSystem';
 import { WorkspaceDocuments } from '../lib/workspaceDocuments';
+import { confirmDatapackWrite } from '../lib/vlocity/datapackWriteConfirmation';
 import type { EditorMessage, EditorMessageContext, EditorView, ModelBackedDocumentData } from './modelBackedEditorTypes';
 
 export { ModelBackedDocument } from './modelBackedDocument';
@@ -38,13 +39,17 @@ export abstract class ModelBackedEditorProvider<
     protected constructor(
         protected readonly context: VlocodeContext,
         protected readonly service: VlocodeService,
-        private readonly fileSystem: FileSystem,
-        private readonly datapackInfoService: DatapackInfoService,
-        protected readonly datapackExpansion: DatapackExpansionService
+        private readonly fileSystem: FileSystem
     ) {
         this.service.registerDisposable(vscode.Disposable.from(
             vscode.workspace.onDidOpenTextDocument(document => this.syncSourceDocumentOnOpen(document)),
-            vscode.workspace.onDidChangeTextDocument(event => this.syncSourceDocumentOnChange(event))
+            vscode.workspace.onDidChangeTextDocument(event => this.syncSourceDocumentOnChange(event)),
+            this.service.onUsernameChanged(() => {
+                for (const document of this.documents) {
+                    void this.service.withSession(() => this.postStateToDocument(document)).catch(error =>
+                        this.postToDocument(document, { type: 'error', message: getErrorMessage(error) }));
+                }
+            })
         ));
     }
 
@@ -57,6 +62,11 @@ export abstract class ModelBackedEditorProvider<
     protected abstract getDeployCommand(document: TData): string | undefined;
     protected abstract getRefreshCommand(document: TData): string | undefined;
     protected abstract getOpenSalesforceCommand(document: TData): string | undefined;
+
+    /** Resolves a writer backed by the current operation's definition store. */
+    protected get datapackWriter(): DatapackWriter {
+        return this.service.services.get(DatapackWriter);
+    }
 
     protected handleEditorMessage(context: EditorMessageContext<TModel, TData>): boolean | Promise<boolean> {
         void context;
@@ -95,13 +105,16 @@ export abstract class ModelBackedEditorProvider<
         webviewPanel.onDidDispose(() => document.webviews.delete(webviewPanel.webview));
 
         webviewPanel.webview.onDidReceiveMessage(rawMessage =>
-            void this.handleRawMessage(document, webviewPanel, rawMessage)
+            void this.service.withSession(() => this.handleRawMessage(document, webviewPanel, rawMessage))
         );
     }
 
     public async saveCustomDocument(document: ModelBackedDocument<TModel, TData>): Promise<void> {
         this.applyModel(document.data, document.data.model);
+        document.cancelSourceWrite();
+        await this.syncDesignerToOpenSourceDocuments(document);
         await this.saveDocument(document.data);
+        await WorkspaceDocuments.saveOpenDocuments(document.sourceFiles);
         document.hasUnsavedChanges = false;
         this.postToDocument(document, { type: 'saved' });
         void vscode.window.setStatusBarMessage(this.view.savedMessage, 2500);
@@ -145,7 +158,14 @@ export abstract class ModelBackedEditorProvider<
     protected async loadDatapackWithOpenDocuments(headerFile: string | vscode.Uri): Promise<VlocityDatapack> {
         const fileName = headerFile instanceof vscode.Uri ? headerFile.fsPath : headerFile;
         const fileSystem = OpenTextDocumentFileSystem.fromWorkspace(this.fileSystem);
-        return new DatapackLoader(fileSystem, this.datapackInfoService).loadDatapack(fileName);
+        return new DatapackLoader(fileSystem, this.service.services.get(DatapackInfoService)).loadDatapack(fileName);
+    }
+
+    protected async writeDatapack(datapack: VlocityDatapack): Promise<void> {
+        const writer = this.datapackWriter;
+        // Keep the confirmed layout's writer if the selected org changes while the prompt is open.
+        await confirmDatapackWrite(datapack, writer.getWritePlan(datapack), this.fileSystem);
+        await writer.write(datapack);
     }
 
     protected sourceTextMap(entries: Iterable<readonly [string | vscode.Uri, string]>): Map<string, string> {
@@ -155,7 +175,13 @@ export abstract class ModelBackedEditorProvider<
     /** Returns source text updates for designer-to-source synchronization. */
     protected async serializeSourceDocuments(document: TData): Promise<Map<string, string>> {
         const datapack = this.getDatapackGraph(document);
-        return datapack ? this.sourceTextMap(this.datapackExpansion.sourceTexts(datapack)) : new Map();
+        if (!datapack) {
+            return new Map();
+        }
+        return this.sourceTextMap(Array.from(this.datapackWriter.getWritePlan(datapack).files, ([fileName, data]) => [
+            fileName,
+            Buffer.isBuffer(data) ? data.toString('utf8') : data
+        ] as const));
     }
 
     protected async openEditorWith(viewType: string, missingDocumentMessage: string, uri?: vscode.Uri): Promise<void> {
@@ -188,7 +214,11 @@ export abstract class ModelBackedEditorProvider<
     }
 
     protected async postStateToDocument(document: ModelBackedDocument<TModel, TData>): Promise<void> {
-        this.postToDocument(document, { type: 'load', state: await this.createEditorState(document.data.model) });
+        const session = this.service.session;
+        const state = await this.createEditorState(document.data.model);
+        if (session === this.service.selectedSession) {
+            this.postToDocument(document, { type: 'load', state });
+        }
     }
 
     protected postToDocument(document: ModelBackedDocument<TModel, TData>, message: unknown): void {
@@ -282,7 +312,11 @@ export abstract class ModelBackedEditorProvider<
     }
 
     private async postStateToWebview(document: ModelBackedDocument<TModel, TData>, webview: vscode.Webview): Promise<void> {
-        webview.postMessage({ type: 'load', state: await this.createEditorState(document.data.model) });
+        const session = this.service.session;
+        const state = await this.createEditorState(document.data.model);
+        if (session === this.service.selectedSession) {
+            webview.postMessage({ type: 'load', state });
+        }
     }
 
     private acceptModelChange(document: ModelBackedDocument<TModel, TData>, model: TModel): void {
@@ -301,9 +335,9 @@ export abstract class ModelBackedEditorProvider<
         }
         const datapack = this.getDatapackGraph(document.data);
         if (datapack) {
-            this.datapackExpansion.sourceFiles(datapack)
-                .map(fileName => WorkspaceDocuments.normalizeFileName(fileName))
-                .forEach(fileName => document.sourceFiles.add(fileName));
+            for (const fileName of this.datapackWriter.getWritePlan(datapack).files.keys()) {
+                document.sourceFiles.add(WorkspaceDocuments.normalizeFileName(fileName));
+            }
         }
     }
 
@@ -379,8 +413,6 @@ export abstract class ModelBackedEditorProvider<
         try {
             document.data = await this.loadDocument(document.data.uri, await this.readOpenTextOrUri(document.data.uri));
             this.refreshSourceFileMembership(document);
-            document.hasUnsavedChanges = true;
-            this.changeEmitter.fire({ document });
             await this.postStateToDocument(document);
         } catch (error) {
             this.postToDocument(document, { type: 'error', message: getErrorMessage(error) });

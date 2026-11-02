@@ -26,7 +26,6 @@ const managedPackageDesignerSettingName = 'ManagedPackageDesigner';
 export class OmniStudioDesignerService {
 
     private managedPackageDesignerDisabled?: Promise<boolean>;
-    private readonly accessibleSObjects = new Map<string, Promise<boolean>>();
 
     constructor(
         private readonly salesforce: SalesforceService,
@@ -127,14 +126,7 @@ export class OmniStudioDesignerService {
     }
 
     private isSObjectAccessible(sobjectType: string): Promise<boolean> {
-        const existing = this.accessibleSObjects.get(sobjectType);
-        if (existing) {
-            return existing;
-        }
-
-        const result = this.salesforce.schema.describeSObject(sobjectType, false).then(describe => describe !== undefined);
-        this.accessibleSObjects.set(sobjectType, result);
-        return result;
+        return this.salesforce.schema.describeSObject(sobjectType, false).then(describe => describe !== undefined);
     }
 
     private toBoolean(value: unknown): boolean | undefined {

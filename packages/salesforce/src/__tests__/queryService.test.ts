@@ -210,5 +210,11 @@ describe('queryService', () => {
             expect(QueryService.formatFieldValue([1,2,3,4], { type: 'double' })).toEqual("(1,2,3,4)");
             expect(QueryService.formatFieldValue([true,false,4], { type: 'string' })).toEqual(`('true','false','4')`);
         });
+        it('quotes and backslashes are escaped in string values regardless of the field type', () => {
+            expect(QueryService.formatFieldValue(`Type of 'Mbps'`, { type: 'string' })).toEqual(`'Type of \\'Mbps\\''`);
+            expect(QueryService.formatFieldValue(`Type of 'Mbps'`, { type: 'picklist' })).toEqual(`'Type of \\'Mbps\\''`);
+            expect(QueryService.formatFieldValue(`Type of 'Mbps'`, { type: 'textarea' })).toEqual(`'Type of \\'Mbps\\''`);
+            expect(QueryService.formatFieldValue(`back\\slash`, { type: 'picklist' })).toEqual(`'back\\\\slash'`);
+        });
     });
 });

@@ -1,4 +1,4 @@
-import { QueryFormatter, SalesforceQueryData, SalesforceService } from '@vlocode/salesforce';
+import { SalesforceQueryData, SalesforceService } from '@vlocode/salesforce';
 import { injectable } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptSpecification } from './types';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';

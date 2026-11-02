@@ -4,6 +4,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
+
+**Note:** Version bump only for package @vlocode/vscode-webviews
+
+## [2.4.5](https://github.com/Codeneos/vlocode/compare/v2.4.4...v2.4.5) (2026-09-02)
+
+**Note:** Version bump only for package @vlocode/vscode-webviews
+
+## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
+
+**Note:** Version bump only for package @vlocode/vscode-webviews
+
+## [2.4.3](https://github.com/Codeneos/vlocode/compare/v2.4.2...v2.4.3) (2026-08-28)
+
+### Features
+
+* **vscode:** show Integration Procedure loading state ([0ac35a9](https://github.com/Codeneos/vlocode/commit/0ac35a9ef726be19a954a455fe69bddd292e4dab))
+
+## [2.4.2](https://github.com/Codeneos/vlocode/compare/v2.4.1...v2.4.2) (2026-08-24)
+
+**Note:** Version bump only for package @vlocode/vscode-webviews
+
+## [2.4.1](https://github.com/Codeneos/vlocode/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+**Note:** Version bump only for package @vlocode/vscode-webviews
+
+# [2.4.0](https://github.com/Codeneos/vlocode/compare/v2.3.0...v2.4.0) (2026-08-03)
+
+### Bug Fixes
+
+* render formula editor controls within modal ([0398265](https://github.com/Codeneos/vlocode/commit/0398265ceced1b4d18c719893c94e37ffe7e1e15))
+
 # [2.3.0](https://github.com/Codeneos/vlocode/compare/v2.2.1...v2.3.0) (2026-07-02)
 
 ### Bug Fixes

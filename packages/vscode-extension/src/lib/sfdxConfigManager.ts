@@ -18,6 +18,7 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
 
     private watcher: vscode.FileSystemWatcher | undefined;
     private configs = new Map<string, { config: T, path: string }>();
+    private configUpdate = Promise.resolve();
     private events = {
         change: new vscode.EventEmitter<{ 
                 config: T | undefined, 
@@ -78,12 +79,24 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
     }
 
     /**
-     * Update the SFDX config with the Vlocode SFDX username for all workspaces.
+     * Updates the SFDX configuration in every workspace folder, preserving the order of update calls.
+     * Each write is read back before file notifications are compared, so the extension's own updates
+     * do not trigger another org selection through the configuration watcher.
+     *
+     * @param config - Settings to merge into each workspace's SFDX configuration.
+     * @returns A promise that resolves after all writes and readbacks for this update complete.
      */
-    public async update(config: Partial<T>) {
-        for (const workspace of vscode.workspace.workspaceFolders ?? []) {
-            await sfdx.setConfig(workspace.uri.fsPath, config);
-        }
+    public update(config: Partial<T>): Promise<void> {
+        this.configUpdate = this.configUpdate.catch(() => undefined).then(async () => {
+            for (const workspace of vscode.workspace.workspaceFolders ?? []) {
+                await sfdx.setConfig(workspace.uri.fsPath, config);
+                const updated = await sfdx.getConfig<T>(workspace.uri.fsPath);
+                if (updated) {
+                    this.configs.set(workspace.uri.fsPath, updated);
+                }
+            }
+        });
+        return this.configUpdate;
     }
 
     /**
@@ -100,7 +113,15 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
                 return;
             }
 
+            // Wait for local writes and their readbacks before comparing the file contents.
+            // Otherwise the watcher can report our previous org selection as a new external change.
+            const update = this.configUpdate;
+            await update.catch(() => undefined);
             const newConfig = await sfdx.getConfig<T>(uri.fsPath.slice(0, -sfdx.defaultConfigPath.length));
+            if (update !== this.configUpdate) {
+                // Another update was queued during the read; its readback will establish the current state.
+                return;
+            }
             const currentConfig = this.configs.get(workspace.uri.fsPath);
             const path = currentConfig?.path ?? newConfig?.path;
             

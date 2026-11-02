@@ -29,6 +29,8 @@ export const DatapackFields = {
     matchingKey: 'VlocityMatchingRecordSourceKey',
     lookupKey: 'VlocityLookupRecordSourceKey',
     dataPackType: 'VlocityDataPackType',
+    /** Identity inputs retained until expansion; never used as lookup criteria. */
+    exportKeyValues: 'VlocityRecordExportKeyValues',
 } as const;
 
 /**

@@ -31,6 +31,51 @@ button, input, select, textarea { font: inherit; }
     }
 }
 
+.ip-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    color: var(--vscode-foreground);
+    background: color-mix(in srgb, #{$editor} 92%, transparent);
+    backdrop-filter: blur(3px);
+
+    &__content {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+        max-width: min(420px, 100%);
+        padding: 20px;
+        text-align: center;
+    }
+
+    &__spinner {
+        width: 34px;
+        height: 34px;
+        border: 3px solid color-mix(in srgb, var(--vscode-progressBar-background, #{$focus}) 20%, #{$panel});
+        border-top-color: var(--vscode-progressBar-background, #{$focus});
+        border-radius: 50%;
+        animation: ip-spin 800ms linear infinite;
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    p {
+        margin: 0;
+        color: $desc;
+    }
+}
+
+@keyframes ip-spin {
+    to { transform: rotate(360deg); }
+}
+
 .ip-button,
 .ip-icon-button {
     @include button;

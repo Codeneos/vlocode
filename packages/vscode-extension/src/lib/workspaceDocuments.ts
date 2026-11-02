@@ -39,4 +39,12 @@ export namespace WorkspaceDocuments {
     export function fullDocumentRange(document: vscode.TextDocument): vscode.Range {
         return new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
     }
+
+    /** Saves dirty open text documents that belong to a custom editor's source graph. */
+    export async function saveOpenDocuments(fileNames: ReadonlySet<string>): Promise<void> {
+        await Promise.all(vscode.workspace.textDocuments
+            .filter(document => document.isDirty && document.uri.scheme === 'file' &&
+                fileNames.has(normalizeFileName(document.uri.fsPath)))
+            .map(document => document.save()));
+    }
 }

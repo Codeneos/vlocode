@@ -6,6 +6,7 @@ import {
     ExportProgressReporter,
     ProgressAwareLogWriter,
     clearLogInterceptor,
+    createStreamLogInterceptor,
     setLogInterceptor
 } from '.';
 
@@ -80,6 +81,22 @@ describe('ProgressAwareLogWriter', () => {
         expect(calls).toBe(1);
 
         clearLogInterceptor(interceptor);
+    });
+
+    it('can redirect formatted console logs to a separate stream', () => {
+        const { stream, output } = fakeStream();
+        const inner = {
+            write: () => { throw new Error('redirected entries must not reach the console writer'); },
+            format: (entry: any) => `[fmt] ${entry.message}`
+        };
+        const writer = new ProgressAwareLogWriter(inner);
+        const interceptor = createStreamLogInterceptor(stream);
+
+        setLogInterceptor(interceptor);
+        writer.write(logEntry('comparison progress'));
+        clearLogInterceptor(interceptor);
+
+        expect(output()).toBe('[fmt] comparison progress\n');
     });
 });
 

@@ -1,0 +1,119 @@
+{
+  "toolsVersion": "1.14.18",
+  "input": {
+    "runtime": "standard",
+    "datapackType": "DataRaptor",
+    "rootId": "a00000000000001AAA",
+    "rootType": "OmniDataTransform",
+    "childType": "OmniDataTransformItem",
+    "references": {
+      "OmniDataTransformItem": {
+        "OmniDataTransformationId": "OmniDataTransform"
+      }
+    },
+    "matchingKeys": {
+      "OmniDataTransform": [
+        "Name"
+      ],
+      "OmniDataTransformItem": []
+    },
+    "records": [
+      {
+        "Id": "a00000000000001AAA",
+        "__type": "OmniDataTransform",
+        "Name": "MappingParity",
+        "GlobalKey": "fixture-global-key",
+        "ExpectedInputJson": "{\"z\":[{\"Name\":\"Z\"},{\"Name\":\"A\"}],\"a\":1}",
+        "ExpectedOutputXml": "<result>fixture</result>",
+        "Description": null,
+        "IsActive": true
+      },
+      {
+        "Id": "a01000000000001AAA",
+        "__type": "OmniDataTransformItem",
+        "Name": "MappingParity",
+        "OmniDataTransformationId": "a00000000000001AAA",
+        "GlobalKey": "mapping-1",
+        "InputObjectQuerySequence": 1,
+        "FilterGroup": 1,
+        "OutputCreationSequence": 1,
+        "OutputObjectName": "Record",
+        "OutputFieldName": "Z",
+        "InputFieldName": "inputZ",
+        "FormulaExpression": null,
+        "FormulaConverted": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000002AAA",
+        "__type": "OmniDataTransformItem",
+        "Name": "MappingParity",
+        "OmniDataTransformationId": "a00000000000001AAA",
+        "GlobalKey": "mapping-2",
+        "InputObjectQuerySequence": null,
+        "FilterGroup": null,
+        "OutputCreationSequence": null,
+        "OutputObjectName": null,
+        "OutputFieldName": null,
+        "InputFieldName": null,
+        "FormulaExpression": "Z_FORMULA",
+        "FormulaConverted": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000003AAA",
+        "__type": "OmniDataTransformItem",
+        "Name": "MappingParity",
+        "OmniDataTransformationId": "a00000000000001AAA",
+        "GlobalKey": "mapping-3",
+        "InputObjectQuerySequence": 1,
+        "FilterGroup": 1,
+        "OutputCreationSequence": 1,
+        "OutputObjectName": "Record",
+        "OutputFieldName": "A",
+        "InputFieldName": "inputA",
+        "FormulaExpression": null,
+        "FormulaConverted": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000004AAA",
+        "__type": "OmniDataTransformItem",
+        "Name": "MappingParity",
+        "OmniDataTransformationId": "a00000000000001AAA",
+        "GlobalKey": "mapping-4",
+        "InputObjectQuerySequence": null,
+        "FilterGroup": null,
+        "OutputCreationSequence": null,
+        "OutputObjectName": null,
+        "OutputFieldName": null,
+        "InputFieldName": null,
+        "FormulaExpression": "A_FORMULA",
+        "FormulaConverted": null,
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000005AAA",
+        "__type": "OmniDataTransformItem",
+        "Name": "MappingParity",
+        "OmniDataTransformationId": "a00000000000001AAA",
+        "GlobalKey": "mapping-5",
+        "InputObjectQuerySequence": 0,
+        "FilterGroup": 1,
+        "OutputCreationSequence": 1,
+        "OutputObjectName": "Record",
+        "OutputFieldName": "Zero",
+        "InputFieldName": "inputZero",
+        "FormulaExpression": null,
+        "FormulaConverted": null,
+        "Empty": null
+      }
+    ]
+  },
+  "expectedFiles": {
+    "DataRaptor/MappingParity/MappingParity_DataPack.json": "{\n    \"Description\": \"\",\n    \"ExpectedInputJson\": \"MappingParity_InputJson.json\",\n    \"ExpectedOutputXml\": \"MappingParity_TargetOutXml.xml\",\n    \"GlobalKey\": \"MappingParity\",\n    \"Name\": \"MappingParity\",\n    \"OmniDataTransformItem\": \"MappingParity_Items.json\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniDataTransform\",\n    \"VlocityRecordSourceKey\": \"OmniDataTransform/MappingParity\"\n}",
+    "DataRaptor/MappingParity/MappingParity_InputJson.json": "{\n    \"a\": 1,\n    \"z\": [\n        {\n            \"Name\": \"Z\"\n        },\n        {\n            \"Name\": \"A\"\n        }\n    ]\n}",
+    "DataRaptor/MappingParity/MappingParity_Items.json": "[\n    {\n        \"FilterGroup\": 1,\n        \"GlobalKey\": \"mapping-5\",\n        \"InputFieldName\": \"inputZero\",\n        \"InputObjectQuerySequence\": 0,\n        \"Name\": \"MappingParity\",\n        \"OmniDataTransformationId\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"OmniDataTransform/MappingParity\",\n            \"VlocityRecordSObjectType\": \"OmniDataTransform\"\n        },\n        \"OutputCreationSequence\": 1,\n        \"OutputFieldName\": \"Zero\",\n        \"OutputObjectName\": \"Record\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"OmniDataTransformItem\"\n    },\n    {\n        \"FilterGroup\": 1,\n        \"GlobalKey\": \"mapping-3\",\n        \"InputFieldName\": \"inputA\",\n        \"InputObjectQuerySequence\": 1,\n        \"Name\": \"MappingParity\",\n        \"OmniDataTransformationId\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"OmniDataTransform/MappingParity\",\n            \"VlocityRecordSObjectType\": \"OmniDataTransform\"\n        },\n        \"OutputCreationSequence\": 1,\n        \"OutputFieldName\": \"A\",\n        \"OutputObjectName\": \"Record\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"OmniDataTransformItem\"\n    },\n    {\n        \"FilterGroup\": 1,\n        \"GlobalKey\": \"mapping-1\",\n        \"InputFieldName\": \"inputZ\",\n        \"InputObjectQuerySequence\": 1,\n        \"Name\": \"MappingParity\",\n        \"OmniDataTransformationId\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"OmniDataTransform/MappingParity\",\n            \"VlocityRecordSObjectType\": \"OmniDataTransform\"\n        },\n        \"OutputCreationSequence\": 1,\n        \"OutputFieldName\": \"Z\",\n        \"OutputObjectName\": \"Record\",\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"OmniDataTransformItem\"\n    },\n    {\n        \"FormulaExpression\": \"A_FORMULA\",\n        \"GlobalKey\": \"mapping-4\",\n        \"Name\": \"MappingParity\",\n        \"OmniDataTransformationId\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"OmniDataTransform/MappingParity\",\n            \"VlocityRecordSObjectType\": \"OmniDataTransform\"\n        },\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"OmniDataTransformItem\"\n    },\n    {\n        \"FormulaExpression\": \"Z_FORMULA\",\n        \"GlobalKey\": \"mapping-2\",\n        \"Name\": \"MappingParity\",\n        \"OmniDataTransformationId\": {\n            \"Name\": \"MappingParity\",\n            \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n            \"VlocityMatchingRecordSourceKey\": \"OmniDataTransform/MappingParity\",\n            \"VlocityRecordSObjectType\": \"OmniDataTransform\"\n        },\n        \"VlocityDataPackType\": \"SObject\",\n        \"VlocityRecordSObjectType\": \"OmniDataTransformItem\"\n    }\n]",
+    "DataRaptor/MappingParity/MappingParity_TargetOutXml.xml": "<result>fixture</result>"
+  }
+}

@@ -4,6 +4,62 @@ import { DatapackExportDefinitionStore } from '../export/exportDefinitionStore';
 
 describe('DatapackExportDefinitionStore', () => {
 
+    it('resolves scoped export field lists without inheriting a sibling definition or changing matching keys', () => {
+        const store = new DatapackExportDefinitionStore();
+        store.load({
+            OmniScript: { objectType: 'OmniProcess', name: ['Name'], exportKey: ['Type', 'SubType', 'Language'], matchingKeyFields: ['Name', 'VersionNumber'] },
+            Generic: { objectType: 'OmniProcess', name: ['Name'] }
+        });
+        store.load({ OmniScript: { objectType: 'OmniProcess', name: ['Name'], exportKey: ['Name', 'VersionNumber'] } }, { scope: 'versions' });
+        expect(store.getExportKey({ objectType: 'OmniProcess', datapackType: 'OmniScript', scope: 'versions' })).toEqual(['Name', 'VersionNumber']);
+        expect(store.getExportKey({ objectType: 'OmniProcess', datapackType: 'Generic' })).toBeUndefined();
+        expect(store.getMatchingKeyFields({ objectType: 'OmniProcess', datapackType: 'OmniScript', scope: 'versions' })).toEqual(['Name', 'VersionNumber']);
+    });
+
+    describe('definition identity', () => {
+        it('keeps definitions for different SObject runtimes under the same Datapack type and scope', () => {
+            const store = new DatapackExportDefinitionStore();
+            store.load({
+                IntegrationProcedure: {
+                    objectType: 'OmniProcess',
+                    name: [ 'Type', 'SubType' ]
+                }
+            }, { scope: 'runtime' });
+            store.load({
+                IntegrationProcedure: {
+                    objectType: '%vlocity_namespace%__OmniScript__c',
+                    name: [ '%vlocity_namespace%__Type__c', '%vlocity_namespace%__SubType__c' ]
+                }
+            }, { scope: 'runtime' });
+
+            expect(store.getName({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'OmniProcess',
+                scope: 'runtime'
+            })).toEqual([ 'Type', 'SubType' ]);
+            expect(store.getName({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'vlocity_cmt__OmniScript__c',
+                scope: 'runtime'
+            })).toEqual([ '%vlocity_namespace%__Type__c', '%vlocity_namespace%__SubType__c' ]);
+            expect(store.getAvailableScopes({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'OmniProcess'
+            })).toEqual([ 'runtime' ]);
+            expect(store.getAvailableScopes({
+                datapackType: 'IntegrationProcedure',
+                objectType: 'Unrelated__c'
+            })).toEqual([]);
+            expect(store.getDatapackTypes({ objectType: 'OmniProcess', scope: 'runtime' })).toEqual([
+                { datapackType: 'IntegrationProcedure', scope: 'runtime' }
+            ]);
+            expect(store.getDatapackTypes({ objectType: 'vlocity_cmt__OmniScript__c', scope: 'runtime' })).toEqual([
+                { datapackType: 'IntegrationProcedure', scope: 'runtime' }
+            ]);
+            expect(store.objectDefinitions()).toHaveLength(2);
+        });
+    });
+
     describe('#getMatchingKeyFields', () => {
         it('should accept a scalar matchingKeyFields value as a single field', () => {
             const store = new DatapackExportDefinitionStore();
@@ -32,6 +88,49 @@ describe('DatapackExportDefinitionStore', () => {
             });
 
             expect(store.getMatchingKeyFields('AttributePicklistValue')).toEqual([]);
+        });
+
+        it('should use the explicitly selected datapack definition when multiple types share an object', () => {
+            const store = new DatapackExportDefinitionStore();
+            store.load({
+                OmniScript: {
+                    objectType: 'OmniProcess',
+                    name: [ 'Type', 'SubType', 'Language' ],
+                    matchingKeyFields: [ 'Type', 'SubType', 'Language' ]
+                },
+                IntegrationProcedure: {
+                    objectType: 'OmniProcess',
+                    name: [ 'Type', 'SubType' ],
+                    matchingKeyFields: [ 'Type', 'SubType' ]
+                }
+            }, { scope: 'std' });
+
+            expect(store.getMatchingKeyFields({
+                objectType: 'OmniProcess',
+                datapackType: 'IntegrationProcedure',
+                scope: 'std'
+            })).toEqual([ 'Type', 'SubType' ]);
+            expect(store.getMatchingKeyFields({
+                objectType: 'OmniProcess',
+                datapackType: 'OmniScript',
+                scope: 'std'
+            })).toEqual([ 'Type', 'SubType', 'Language' ]);
+        });
+
+        it('should prefer the selected scope when custom definitions use different matching keys', () => {
+            const store = new DatapackExportDefinitionStore();
+            store.load({
+                CustomType: { objectType: 'Shared__c', matchingKeyFields: [ 'StandardKey__c' ] }
+            }, { scope: 'standard.yaml' });
+            store.load({
+                CustomType: { objectType: 'Shared__c', matchingKeyFields: [ 'CustomKey__c' ] }
+            }, { scope: 'custom.yaml' });
+
+            expect(store.getMatchingKeyFields({
+                objectType: 'Shared__c',
+                datapackType: 'CustomType',
+                scope: 'custom.yaml'
+            })).toEqual([ 'CustomKey__c' ]);
         });
     });
 

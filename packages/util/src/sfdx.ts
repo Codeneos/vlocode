@@ -183,6 +183,7 @@ export namespace sfdx {
             oauthConfig: {
                 loginUrl: options.instanceUrl ?? defaultLoginUrl,
                 clientId: options.clientId,
+                useVerifier: true,
             }
         });
 

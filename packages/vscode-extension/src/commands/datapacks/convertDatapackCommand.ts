@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';
 import { OmniStudioConverter } from '@vlocode/vlocity-deploy';
 import { pluralize } from '@vlocode/util';
+import { DatapackExpansionService } from '../../lib/vlocity/datapackExpansionService';
 
 @vscodeCommand([
     VlocodeCommand.convertOmniScript, 
@@ -53,8 +54,10 @@ export default class ConvertDatapackCommand extends DatapackCommand {
         const converter = container.new(OmniStudioConverter);
         const omnistudioDatapack = converter.convertDatapack(datapack);
 
-        // execute rename and expand into new folder structure
-        const expandedHeader = await this.vlocode.datapackService.expandDatapack(omnistudioDatapack, omnistudioDatapack.projectFolder ?? '.');
+        // Expand with the bundled definitions because the target runtime may not be installed in
+        // the currently connected org and therefore may not be present in the shared definition store.
+        const filesWritten = await container.get(DatapackExpansionService).saveDatapack(omnistudioDatapack);
+        const expandedHeader = filesWritten.find(file => /_DataPack\.json$/i.test(file));
         (omnistudioDatapack as any).headerFile = expandedHeader; // Hack as headerFile is not readonly in the class
         return omnistudioDatapack;
     }

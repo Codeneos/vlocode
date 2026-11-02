@@ -8,7 +8,6 @@ export class OmniDataTransformationSpec implements DatapackDeploymentSpec {
     private itemsField = 'OmniDataTransformItem';
     private parentField = 'OmniDataTransformationId';
     private activationField = 'IsActive';
-    private matchingFields = ['GlobalKey'];
 
     public async preprocess(datapack: VlocityDatapack) {
         // Link items to parent if they are not linked
@@ -17,7 +16,8 @@ export class OmniDataTransformationSpec implements DatapackDeploymentSpec {
                 continue;
             }
             item[this.parentField] = {
-                ...this.matchingFields.reduce((acc, field) => Object.assign(acc, { [field]: item[field] }), {}),
+                GlobalKey: datapack.GlobalKey,
+                Name: datapack.Name,
                 VlocityDataPackType: 'VlocityMatchingKeyObject',
                 VlocityMatchingRecordSourceKey: datapack.sourceKey,
                 VlocityRecordSObjectType: datapack.sobjectType,

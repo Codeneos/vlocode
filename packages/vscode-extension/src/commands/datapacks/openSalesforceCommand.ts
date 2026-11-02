@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import open from 'open';
 
 import { deepClone } from '@vlocode/util';
-import { container } from '@vlocode/core';
 import { ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { VlocodeCommand } from '../../constants';
@@ -32,16 +31,20 @@ export default class OpenSalesforceCommand extends DatapackCommand {
             throw new Error(`${selectedFile.fsPath} not part of datapack`);
         }
 
-        const matchingRecords = await this.datapackService.getDatapackRecords(datapack);
+        const definitions = await this.resolveDatapackDefinitions([ datapack ], { promptOnAmbiguous: true });
+        if (definitions === undefined) {
+            return;
+        }
+        const typeDefinition = definitions.get(datapack) ?? getDatapackTypeDefinition(datapack);
+        const matchingRecords = await this.datapackService.getDatapackRecords(this.asObjectEntry(datapack, typeDefinition));
         if (!matchingRecords.length) {
             void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; datapack might not be deployed on target org.');
             return;
         }
         
-        const typeDefinition = getDatapackTypeDefinition(datapack);
         const selectedMatch = matchingRecords.length > 1 ? await this.showRecordSelection(matchingRecords, typeDefinition) : matchingRecords.pop();
         if (selectedMatch) {
-            return this.openIdInSalesforce(selectedMatch.Id, datapack.datapackType, selectedMatch);
+            return this.openIdInSalesforce(selectedMatch.Id, typeDefinition?.datapackType ?? datapack.datapackType, selectedMatch);
         }
     }
 
@@ -133,7 +136,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
     }
 
     private async getPreferredOmniStudioDesignerUrl(record: object, typeDef: DatapackTypeDefinition, options: SalesforceUrlOption[]) {
-        const designerService = container.get(OmniStudioDesignerService);
+        const designerService = this.vlocode.services.get(OmniStudioDesignerService);
         if (!designerService.isOmniStudioDesignerDatapack(typeDef)) {
             return undefined;
         }

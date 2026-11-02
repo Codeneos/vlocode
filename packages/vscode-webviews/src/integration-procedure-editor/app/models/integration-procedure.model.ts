@@ -1,3 +1,5 @@
+import type { OmniScriptElementRecord, OmniScriptRecord } from '@vlocode/omniscript';
+
 export type SourceFormat = 'json' | 'xml';
 export type RuntimeShape = 'managed' | 'standard';
 export type LeftTab = 'outline' | 'add' | 'problems';
@@ -5,36 +7,11 @@ export type InspectorTab = 'settings' | 'conditions' | 'io' | 'failure' | 'json'
 export type DropPosition = 'before' | 'after' | 'inside';
 export type ReferenceKind = 'apexClass' | 'dataMapper';
 
-export interface IntegrationProcedureHeader {
-    active?: boolean;
-    description?: string;
-    language?: string;
-    name: string;
-    requiredPermission?: string;
-    responseCacheType?: string;
-    subType: string;
-    type: string;
-    versionNumber?: number | string;
-}
-
-export interface IntegrationProcedureElement {
-    active: boolean;
-    description?: string;
-    key: string;
-    level: number;
-    name: string;
-    parentKey?: string;
-    propertySet: Record<string, unknown>;
-    sequenceNumber: number;
-    sourceKey: string;
-    type: string;
-}
-
 export interface IntegrationProcedureModel {
     datapackType: string;
-    elements: IntegrationProcedureElement[];
+    elements: OmniScriptElementRecord[];
     fileName: string;
-    header: IntegrationProcedureHeader;
+    header: Omit<OmniScriptRecord, 'propertySet'>;
     propertySet: Record<string, unknown>;
     runtime: RuntimeShape;
     sourceFormat: SourceFormat;
@@ -73,14 +50,14 @@ export type WebviewToExtensionMessage =
 
 export interface FlowRow {
     depth: number;
-    element: IntegrationProcedureElement;
+    element: OmniScriptElementRecord;
     hasChildren: boolean;
 }
 
 export interface FlowNode {
     children: FlowNode[];
     depth: number;
-    element: IntegrationProcedureElement;
+    element: OmniScriptElementRecord;
 }
 
 export interface Problem {
@@ -150,12 +127,12 @@ export interface DataRaptorInputParameterFieldChange {
 }
 
 export interface ElementFieldChange {
-    field: keyof IntegrationProcedureElement;
+    field: keyof OmniScriptElementRecord;
     value: string | boolean;
 }
 
 export interface HeaderFieldChange {
-    field: keyof IntegrationProcedureHeader;
+    field: keyof IntegrationProcedureModel['header'];
     value: string | boolean;
 }
 
@@ -179,9 +156,21 @@ export const EMPTY_MODEL: IntegrationProcedureModel = {
     elements: [],
     fileName: '',
     header: {
+        activationField: 'IsActive',
+        customJavaScript: '',
+        dataRaptorBundleId: '',
+        id: 'IntegrationProcedure',
+        isActive: false,
+        isLwcEnabled: false,
+        isReusable: false,
         name: 'Integration Procedure',
+        omniProcessType: 'IntegrationProcedure',
+        sObjectType: 'OmniProcess',
+        testHTMLTemplates: '',
         type: '',
-        subType: ''
+        subType: '',
+        language: '',
+        version: 1
     },
     propertySet: {},
     runtime: 'standard',

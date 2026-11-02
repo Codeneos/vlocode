@@ -1,6 +1,6 @@
 
 import { SalesforceService, RecordBatch, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
-import { Logger, injectable, container, LifecyclePolicy, Container, inject } from '@vlocode/core';
+import { Logger, injectable, LifecyclePolicy, Container, inject } from '@vlocode/core';
 import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
@@ -18,6 +18,7 @@ import { VlocityDatapack } from '@vlocode/vlocity';
  */
 import './deploymentSpecs';
 import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
+import { DatapackComparer } from './datapackComparer';
 
 /**
  * Filter that determines if a datapack is applicable for the given spec. The filter can be either a regular expression or a string.
@@ -104,6 +105,10 @@ export class DatapackDeployer {
         }, 8);
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
 
+        deployment.setDeltaComparisonProvider(async (target, compareOptions, cancelToken) => {
+            return this.container.new(DatapackComparer).compareDeployment(target, compareOptions, cancelToken);
+        });
+
         return deployment;
     }
 
@@ -116,6 +121,9 @@ export class DatapackDeployer {
      */
     public async deploy(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
         const deployment = await this.createDeployment(datapacks, options, cancellationToken);
+        // The deployment runs on the converted records; release the parsed datapacks so the raw
+        // datapack data does not stay on the heap for the duration of the deployment
+        datapacks = [];
         return deployment.start(cancellationToken).then(() => deployment);
     }
 
@@ -237,7 +245,7 @@ export class DatapackDeployer {
 
     /**
      * Executes the necessary actions before retrying a record deployment.
-     * 
+     *
      * @param deployment - The DatapackDeployment object.
      * @param datapackRecords - An iterable of DatapackDeploymentRecord objects.
      */

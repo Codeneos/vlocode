@@ -1,0 +1,122 @@
+{
+  "toolsVersion": "1.14.18",
+  "input": {
+    "runtime": "standard",
+    "datapackType": "OmniScript",
+    "rootId": "a00000000000001AAA",
+    "rootType": "OmniProcess",
+    "childType": "OmniProcessElement",
+    "references": {
+      "OmniProcessElement": {
+        "OmniProcessId": "OmniProcess",
+        "ParentElementId": "OmniProcessElement"
+      }
+    },
+    "matchingKeys": {
+      "OmniProcess": [
+        "Type",
+        "SubType",
+        "Language",
+        "VersionNumber"
+      ],
+      "OmniProcessElement": [
+        "OmniProcessId",
+        "Name"
+      ]
+    },
+    "records": [
+      {
+        "Id": "a00000000000001AAA",
+        "__type": "OmniProcess",
+        "Name": "ScriptParity",
+        "Type": "Fixture",
+        "SubType": "OmniScript",
+        "Language": "English",
+        "VersionNumber": 64,
+        "IsIntegrationProcedure": false,
+        "IsActive": true,
+        "PropertySetConfig": "{\"z\":[{\"Name\":\"Z\"},{\"Name\":\"A\"}],\"a\":1}",
+        "CustomJavaScript": "console.log(\"fixture\");",
+        "ElementTypeComponentMapping": "{\"z\":2,\"a\":1}",
+        "Description": null
+      },
+      {
+        "Id": "a01000000000001AAA",
+        "__type": "OmniProcessElement",
+        "Name": "First",
+        "OmniProcessId": "a00000000000001AAA",
+        "ParentElementId": null,
+        "SequenceNumber": 1,
+        "Level": 0,
+        "PropertySetConfig": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000002AAA",
+        "__type": "OmniProcessElement",
+        "Name": "ChildB",
+        "OmniProcessId": "a00000000000001AAA",
+        "ParentElementId": "a01000000000005AAA",
+        "SequenceNumber": 1,
+        "Level": 1,
+        "PropertySetConfig": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000003AAA",
+        "__type": "OmniProcessElement",
+        "Name": "ChildA",
+        "OmniProcessId": "a00000000000001AAA",
+        "ParentElementId": "a01000000000004AAA",
+        "SequenceNumber": 1,
+        "Level": 1,
+        "PropertySetConfig": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000004AAA",
+        "__type": "OmniProcessElement",
+        "Name": "ParentA",
+        "OmniProcessId": "a00000000000001AAA",
+        "ParentElementId": null,
+        "SequenceNumber": 2,
+        "Level": 0,
+        "PropertySetConfig": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000005AAA",
+        "__type": "OmniProcessElement",
+        "Name": "ParentB",
+        "OmniProcessId": "a00000000000001AAA",
+        "ParentElementId": null,
+        "SequenceNumber": 3,
+        "Level": 0,
+        "PropertySetConfig": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      },
+      {
+        "Id": "a01000000000006AAA",
+        "__type": "OmniProcessElement",
+        "Name": "Last",
+        "OmniProcessId": "a00000000000001AAA",
+        "ParentElementId": null,
+        "SequenceNumber": 4,
+        "Level": 0,
+        "PropertySetConfig": "{\"z\":2,\"a\":1}",
+        "Empty": null
+      }
+    ]
+  },
+  "expectedFiles": {
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_DataPack.json": "{\n    \"CustomJavaScript\": \"Fixture_OmniScript_English_JavaScript.js\",\n    \"ElementTypeComponentMapping\": \"{\\\"z\\\":2,\\\"a\\\":1}\",\n    \"IsIntegrationProcedure\": false,\n    \"Language\": \"English\",\n    \"Name\": \"ScriptParity\",\n    \"OmniProcessElement\": [\n        \"Fixture_OmniScript_English_Element_First.json\",\n        \"Fixture_OmniScript_English_Element_ParentA.json\",\n        \"Fixture_OmniScript_English_Element_ChildA.json\",\n        \"Fixture_OmniScript_English_Element_ParentB.json\",\n        \"Fixture_OmniScript_English_Element_ChildB.json\",\n        \"Fixture_OmniScript_English_Element_Last.json\"\n    ],\n    \"PropertySetConfig\": \"Fixture_OmniScript_English_PropertySetConfig.json\",\n    \"SubType\": \"OmniScript\",\n    \"Type\": \"Fixture\",\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniProcess\",\n    \"VlocityRecordSourceKey\": \"OmniProcess/Fixture/OmniScript/English\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ChildA.json": "{\n    \"Name\": \"ChildA\",\n    \"OmniProcessId\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcess/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"OmniProcess\"\n    },\n    \"ParentElementId\": {\n        \"Name\": \"ParentA\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/ParentA\",\n        \"VlocityRecordSObjectType\": \"OmniProcessElement\"\n    },\n    \"PropertySetConfig\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniProcessElement\",\n    \"VlocityRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/ChildA\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ChildB.json": "{\n    \"Name\": \"ChildB\",\n    \"OmniProcessId\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcess/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"OmniProcess\"\n    },\n    \"ParentElementId\": {\n        \"Name\": \"ParentB\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/ParentB\",\n        \"VlocityRecordSObjectType\": \"OmniProcessElement\"\n    },\n    \"PropertySetConfig\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniProcessElement\",\n    \"VlocityRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/ChildB\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_First.json": "{\n    \"Name\": \"First\",\n    \"OmniProcessId\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcess/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"OmniProcess\"\n    },\n    \"PropertySetConfig\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniProcessElement\",\n    \"VlocityRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/First\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_Last.json": "{\n    \"Name\": \"Last\",\n    \"OmniProcessId\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcess/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"OmniProcess\"\n    },\n    \"PropertySetConfig\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniProcessElement\",\n    \"VlocityRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/Last\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ParentA.json": "{\n    \"Name\": \"ParentA\",\n    \"OmniProcessId\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcess/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"OmniProcess\"\n    },\n    \"PropertySetConfig\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniProcessElement\",\n    \"VlocityRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/ParentA\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_Element_ParentB.json": "{\n    \"Name\": \"ParentB\",\n    \"OmniProcessId\": {\n        \"Name\": \"ScriptParity\",\n        \"VlocityDataPackType\": \"VlocityMatchingKeyObject\",\n        \"VlocityMatchingRecordSourceKey\": \"OmniProcess/Fixture/OmniScript/English\",\n        \"VlocityRecordSObjectType\": \"OmniProcess\"\n    },\n    \"PropertySetConfig\": {\n        \"a\": 1,\n        \"z\": 2\n    },\n    \"VlocityDataPackType\": \"SObject\",\n    \"VlocityRecordSObjectType\": \"OmniProcessElement\",\n    \"VlocityRecordSourceKey\": \"OmniProcessElement/OmniProcess/Fixture/OmniScript/English/ParentB\"\n}",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_JavaScript.js": "console.log(\"fixture\");",
+    "OmniScript/Fixture_OmniScript_English/Fixture_OmniScript_English_PropertySetConfig.json": "{\n    \"a\": 1,\n    \"z\": [\n        {\n            \"Name\": \"Z\"\n        },\n        {\n            \"Name\": \"A\"\n        }\n    ]\n}"
+  }
+}

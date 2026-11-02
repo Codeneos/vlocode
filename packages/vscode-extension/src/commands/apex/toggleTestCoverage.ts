@@ -2,8 +2,7 @@ import { VlocodeCommand } from '../../constants';
 import * as vscode from 'vscode';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { CommandBase } from '../../lib/commandBase';
-import { cache, clearCache, substringBetweenLast } from '@vlocode/util';
-import { container } from '@vlocode/core/src/di/container';
+import { clearCache, substringBetweenLast } from '@vlocode/util';
 import { ApexSourceStatus } from '../../lib/salesforce/apexSourceStatus';
 
 /**
@@ -36,7 +35,7 @@ export default class ToggleApexTestCoverage extends CommandBase {
     }
 
     private get sourceStatus() {
-        return container.get(ApexSourceStatus);
+        return this.vlocode.services.get(ApexSourceStatus);
     }
 
     private get activeDocumentClassName() {
@@ -74,7 +73,7 @@ export default class ToggleApexTestCoverage extends CommandBase {
         if (this.coverageShowingFor.has(this.activeDocumentClassName.toLowerCase())) {
             return this.clearCoverageDecorations(this.activeDocumentClassName);
         }
-        clearCache(this);
+        clearCache(this.sourceStatus);
         return this.showCoverageDecorations(this.activeDocumentClassName);
     }
 
@@ -144,7 +143,6 @@ export default class ToggleApexTestCoverage extends CommandBase {
      * @param className - The name of the Apex class.
      * @returns A Promise that resolves to the code coverage information.
      */
-    @cache({ ttl: 60 * 5 })
     private getCoverage(className: string) {
         return this.sourceStatus.codeCoverage(className);
     }
