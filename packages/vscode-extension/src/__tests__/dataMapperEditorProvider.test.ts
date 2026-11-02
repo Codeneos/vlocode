@@ -192,4 +192,55 @@ describe('DataMapperEditorProvider', () => {
             { name: 'name', path: 'customer:name' }
         ]);
     });
+    describe.each([
+        ['standard', 'OmniDataTransform', 'GlobalKey', 'OmniDataTransformItem'],
+        ['managed', '%vlocity_namespace%__DRBundle__c', '%vlocity_namespace%__GlobalKey__c', '%vlocity_namespace%__DRMapItem__c']
+    ])('%s DataMapper global keys', (_runtime, objectType, keyField, itemsField) => {
+        function editor(name: string, key?: string | null) {
+            const provider = createProvider(jest.fn());
+            const datapack = new VlocityDatapack('DataRaptor', {
+                VlocityDataPackType: 'SObject',
+                VlocityRecordSObjectType: objectType,
+                VlocityRecordSourceKey: `${objectType}/${name}`,
+                Name: name,
+                [keyField]: key,
+                [itemsField]: []
+            });
+            const model = provider.createModel(datapack, 'json');
+            return { provider, datapack, model, document: { datapack, model, sourceFormat: 'json' } };
+        }
+
+        it.each([undefined, null, ''])('uses the name for an empty key (%s) when it is under 36 characters', key => {
+            const name = 'A'.repeat(35);
+            const { provider, datapack, model, document } = editor(name, key);
+            provider.applyModel(document, model);
+            expect(datapack.data[keyField]).toBe(name);
+            expect(document.model.header.GlobalKey).toBe(name);
+        });
+
+        it.each([36, 70])('generates a UUID when the name has %i characters', length => {
+            const { provider, datapack, model, document } = editor('A'.repeat(length), '');
+            provider.applyModel(document, model);
+            expect(datapack.data[keyField]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+            expect(document.model.header.GlobalKey).toBe(datapack.data[keyField]);
+        });
+
+        it('preserves an existing key when the mapper is renamed', () => {
+            const { provider, datapack, model, document } = editor('Original', 'existing-key');
+            model.header.Name = 'Renamed';
+            provider.applyModel(document, model);
+            expect(datapack.data[keyField]).toBe('existing-key');
+        });
+
+        it('retains the generated UUID across updates from an editor model with an empty key', () => {
+            const { provider, datapack, model, document } = editor('A'.repeat(36), '');
+            provider.applyModel(document, model);
+            const generated = datapack.data[keyField];
+            model.header.Description = 'Updated';
+            provider.applyModel(document, model);
+            expect(datapack.data[keyField]).toBe(generated);
+            expect(document.model.header.GlobalKey).toBe(generated);
+        });
+    });
+
 });

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
@@ -426,8 +427,12 @@ export class DataMapperEditorProvider extends ModelBackedEditorProvider<DataMapp
             this.omniStudioConverter.updateDatapackRecord(target, item);
             return target;
         });
+        const name = String(model.header.Name ?? '');
+        const globalKey = model.header.GlobalKey || currentModel.GlobalKey ||
+            (name && name.length < 36 ? name : randomUUID());
         this.omniStudioConverter.updateDatapackRecord(data, {
             ...model.header,
+            GlobalKey: globalKey,
             OmniDataTransformItem: items
         });
         document.model = this.createModel(document.datapack, document.sourceFormat);
