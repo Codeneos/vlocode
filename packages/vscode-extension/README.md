@@ -130,3 +130,13 @@ export:
 ```
 
 `exportDefinitions` and `folder` are relative to the job file. Without `folder`, the extension uses the configured Vlocity project path, falling back to the job file's directory. Queries must select `Id`. The format is shared with `vlocode export --file`; `expand`, `depth`, and `suppressNulls` are supported. Job-specific definitions apply only to that run.
+
+### DataPack export mode
+
+Set `vlocity.exportMode` in VS Code settings to control exports and refreshes from the DataPacks explorer:
+
+- `auto` (default) uses the selected definition's mode.
+- `direct` always uses Vlocode's direct exporter.
+- `classic` uses the Salesforce Industries server and Vlocity Build Tools. The managed package must be installed in the selected org.
+
+This is independent of `vlocity.deploymentMode`. Export manifests run through the shared direct job executor.

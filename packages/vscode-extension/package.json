@@ -1411,6 +1411,22 @@
                         "scope": "machine-overridable",
                         "markdownDescription": "Path to the folder containing the Vlocity datapacks relative to the workspace root folder, for example:\n - `./vlocity`\n - `./datapacks`"
                     },
+                    "vlocity.exportMode": {
+                        "type": "string",
+                        "scope": "resource",
+                        "enum": [
+                            "auto",
+                            "direct",
+                            "classic"
+                        ],
+                        "default": "auto",
+                        "enumDescriptions": [
+                            "Use the selected DataPack definition's export mode.",
+                            "Export and expand DataPacks directly with Vlocode.",
+                            "Export through the Salesforce Industries server and Vlocity Build Tools. Requires the managed package."
+                        ],
+                        "markdownDescription": "Export mode for DataPack explorer exports and refreshes. Choose Classic to prefer the server and Vlocity Build Tools over direct export."
+                    },
                     "vlocity.customJobOptionsYaml": {
                         "type": "string",
                         "scope": "machine-overridable",

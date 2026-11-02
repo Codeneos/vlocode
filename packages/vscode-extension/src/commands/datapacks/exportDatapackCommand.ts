@@ -244,6 +244,9 @@ export default class ExportDatapackCommand extends DatapackCommand {
         progress?: vscode.Progress<{ message?: string; progress?: number; total?: number }>,
         token?: vscode.CancellationToken
     ) {
+        if (this.vlocode.config.exportMode === 'classic' && !this.vlocode.isVlocityAvailable) {
+            throw new Error('Classic export requires a Salesforce Industries managed package. Select Auto or Direct export mode for this org.');
+        }
         const [ directEntries, buildToolsEntries ] = entries.reduce<[ObjectEntry[], ObjectEntry[]]>((groups, entry) => {
             groups[this.useDirectExport(entry) ? 0 : 1].push(entry);
             return groups;
@@ -263,7 +266,11 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     private useDirectExport(entry: ObjectEntry) {
-        return entry.exportMode === 'direct' || !this.vlocode.isVlocityAvailable;
+        switch (this.vlocode.config.exportMode) {
+            case 'direct': return true;
+            case 'classic': return false;
+            default: return entry.exportMode === 'direct' || !this.vlocode.isVlocityAvailable;
+        }
     }
 
     protected showResultMessage(results : DatapackResultCollection) {

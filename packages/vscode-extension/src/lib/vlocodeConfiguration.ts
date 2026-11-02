@@ -43,6 +43,7 @@ export default abstract class VlocodeConfiguration extends BaseConfiguration {
     autoActivate: boolean;
     compileOnBuild: boolean;
     deploymentMode: 'direct' | 'compatibility';
+    exportMode: 'auto' | 'direct' | 'classic';
     conditionalContextMenus: boolean;
     deploy: VlocodeVlocityDeployConfiguration;
     salesforce: VlocodeSalesforceConfiguration;
