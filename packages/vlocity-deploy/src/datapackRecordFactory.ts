@@ -8,14 +8,6 @@ import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { MatchingKeyService } from './matchingKeyService';
 import { randomUUID } from 'crypto';
-import { DatapackExportDefinitions } from './exportDefinitions';
-import { DatapackExportDefinitionStore } from './export/exportDefinitionStore';
-
-// Use the bundled field declarations to distinguish JSON documents from dependencies.
-const jsonFieldDefinitions = new DatapackExportDefinitionStore();
-for (const definition of DatapackExportDefinitions.all) {
-    jsonFieldDefinitions.add(definition, { datapackType: definition.datapackType });
-}
 
 @injectable()
 export class DatapackRecordFactory {
@@ -98,12 +90,9 @@ export class DatapackRecordFactory {
 
             // Objects are dependencies
             if (typeof value === 'object' && value !== null) {
-                // JSON payloads are one text value, even when they contain DataPack-shaped
-                // objects or empty arrays. Other fields retain their dependency semantics.
-                if (field && this.isStringLikeField(field) && jsonFieldDefinitions.getFieldConfig(
-                    { datapackType: datapack.datapackType, objectType: sobject.name }, field.name, 'parseJson') === true) {
+                // Empty JSON arrays have no items to visit but still need serialization.
+                if (Array.isArray(value) && value.length === 0 && field && this.isStringLikeField(field)) {
                     record.values[field.name] = this.convertValue(value, field);
-                    continue;
                 }
                 // handle lookups and embedded datapacks
                 for (const item of Array.isArray(value) ? value : [ value ]) {

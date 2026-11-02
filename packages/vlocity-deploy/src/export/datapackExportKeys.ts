@@ -50,9 +50,7 @@ class ExportKeyResolver {
                     this.records.set(sourceKey, { record: value, ref });
                 }
             }
-            for (const [field, item] of Object.entries(value)) {
-                if (!this.isJsonField(value, field)) this.collect(item);
-            }
+            Object.values(value).forEach(item => this.collect(item));
         }
     }
 
@@ -91,12 +89,6 @@ class ExportKeyResolver {
         return value;
     }
 
-    private isJsonField(record: DatapackObject, field: string): boolean {
-        const objectType = record.VlocityRecordSObjectType;
-        return typeof objectType === 'string' && this.definitions.getFieldConfig(
-            record === this.datapack ? this.ref : { objectType, scope: this.ref.scope }, field, 'parseJson') === true;
-    }
-
     private rewrite(value: DatapackValue): DatapackValue {
         if (Array.isArray(value)) {
             return value.map(item => this.rewrite(item));
@@ -116,10 +108,6 @@ class ExportKeyResolver {
         }
         for (const [field, original] of Object.entries(fields)) {
             if (field === DatapackFields.exportKeyValues) {
-                continue;
-            }
-            if (this.isJsonField(value, field)) {
-                output[field] = original;
                 continue;
             }
             output[field] = sourceKeyFields.has(field) && typeof original === 'string'

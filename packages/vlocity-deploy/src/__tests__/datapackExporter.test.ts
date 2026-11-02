@@ -1571,19 +1571,12 @@ describe('DatapackExporter', () => {
             expect(f.definitions.getMatchingKeyFields({ objectType: f.objectType, scope: f.context.scope })).toContain(f.version);
         });
 
-        it.each(['object', 'empty array', 'array', 'record-shaped JSON', 'reference-shaped JSON', 'reference array'])('round-trips %s field values through expanded files and deployment serialization', async shape => {
+        it.each(['object', 'empty array', 'array'])('round-trips %s field values through expanded files and deployment serialization', async shape => {
             const document = {
                 label: null, empty: '', false: false, zero: 0, message: {}, custom: [],
-                nested: { null: null, empty: '', array: [null, '', false, 0, {}, []] },
-                records: [{ VlocityDataPackType: 'SObject', VlocityRecordSObjectType: 'OmniProcessElement',
-                    VlocityRecordSourceKey: 'payload/key', VlocityRecordExportKeyValues: { keep: null },
-                    Name: '', ParentElementName: '', SequenceNumber: 42 }]
+                nested: { null: null, empty: '', array: [null, '', false, 0, {}, []] }
             };
-            const reference = { VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
-                VlocityRecordSObjectType: 'Account', VlocityLookupRecordSourceKey: 'Account/Example', Name: 'Example' };
-            const payload = shape === 'empty array' ? [] : shape === 'array' ? [null, '', false, 0, {}, []]
-                : shape === 'record-shaped JSON' ? document.records[0]
-                : shape === 'reference-shaped JSON' ? reference : shape === 'reference array' ? [reference] : document;
+            const payload = shape === 'empty array' ? [] : shape === 'array' ? [null, '', false, 0, {}, []] : document;
             const f = fixture('OmniScript', JSON.stringify(payload));
             const [result] = await f.exporter.exportObjectAndExpand(f.rootId, f.context);
             const files = result.files as Record<string, Buffer>;

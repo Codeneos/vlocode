@@ -26,11 +26,7 @@ export class DatapackNormalizer {
                 continue;
             }
             const sourceValue = this.sortField(ref, field, record[field]);
-            // A parsed JSON field is a document, not an SObject graph. Preserve its values.
-            const value = (isDatapackObject(sourceValue) || Array.isArray(sourceValue))
-                && this.definitions.getFieldConfig(ref, field, 'parseJson') === true
-                ? sortObjectKeys(sourceValue)
-                : this.normalizeField(ref, sourceValue);
+            const value = this.normalizeField(ref, sourceValue);
             if (value !== undefined) {
                 yield { field, sourceValue, value };
             }
