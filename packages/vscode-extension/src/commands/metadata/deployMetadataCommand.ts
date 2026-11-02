@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import open from 'open';
 
-import { DeployOptions, DeployResult, RetrieveDeltaStrategy, SalesforceConnectionProvider, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import {
+    DeployOptions, DeployResult, RetrieveDeltaStrategy, SalesforceConnectionProvider,
+    SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType
+} from '@vlocode/salesforce';
 
 import { VlocodeCommand } from '../../constants';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
