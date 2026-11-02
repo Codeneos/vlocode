@@ -504,32 +504,32 @@
                 {
                     "command": "vlocode.refreshDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.deployDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.renameDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.buildParentKeyFiles",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.buildDatapack",
@@ -544,27 +544,27 @@
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.deployDeltaMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "(vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata) && resourceSet"
+                    "when": "(resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)) && resourceSet"
                 },
                 {
                     "command": "vlocode.selectApiVersion",
@@ -846,27 +846,27 @@
                 {
                     "command": "vlocode.refreshDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.deployDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.renameDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.runExportJob",
@@ -876,27 +876,27 @@
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.deployDeltaMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "(vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata) && !explorerResourceIsFolder"
+                    "when": "(resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)) && !explorerResourceIsFolder"
                 },
                 {
                     "command": "vlocode.execAnonymousCommand",
@@ -1018,22 +1018,22 @@
                 {
                     "command": "vlocode.refreshDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.deployDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                    "when": "resourceFilename =~ /_DataPack\\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)"
                 },
                 {
                     "command": "vlocode.runExportJob",
@@ -1043,27 +1043,27 @@
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.deployDeltaMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "resourceFilename =~ /-meta\\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)"
                 },
                 {
                     "command": "vlocode.addToProfile",
@@ -1382,7 +1382,7 @@
                     "vlocity.conditionalContextMenus": {
                         "type": "boolean",
                         "default": true,
-                        "markdownDescription": "When enabled context menu options on the workspace-explorer and editor are displayed only when applicable; when enabled Vlocode monitors your workspace folders and keeps track of a list of files which are either Salesforce metadata of Vlocity datapacks. If you disabled this both Vlocity and Salesforce context menu options will always be visible. __Note: if you don't see any context menu options disable this.__"
+                        "markdownDescription": "When enabled, Vlocode monitors your workspace and shows Salesforce and Vlocity actions for related files and folders. Actions for `*-meta.xml` and `*_DataPack.json` files are always shown."
                     },
                     "vlocity.suggestRefactoringOnRename": {
                         "type": "boolean",

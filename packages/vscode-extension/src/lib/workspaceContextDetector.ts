@@ -72,8 +72,10 @@ export class WorkspaceContextDetector implements vscode.Disposable {
             this.scheduleContextUpdate();
         });
 
-        this.workspaceFileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, true, false);
+        this.workspaceFileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, false, false);
         this.workspaceFileWatcher.onDidCreate(async newFile => this.onDidCreateHandler(newFile.fsPath));
+        // Fast create/recreate operations can be coalesced into a change event by the file watcher.
+        this.workspaceFileWatcher.onDidChange(async changedFile => this.onDidChangeHandler(changedFile.fsPath));
         this.workspaceFileWatcher.onDidDelete(async newFile => this.onDidDeleteHandler(newFile.fsPath));
 
         // Builtin delay for macOS to allow for file system to settle
@@ -96,6 +98,12 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         }
         this.removeAll(filePath);
         this.scheduleContextUpdate();
+    }
+
+    private async onDidChangeHandler(filePath: string) {
+        if (!this.contextFiles[filePath]) {
+            await this.onDidCreateHandler(filePath);
+        }
     }
 
     private async onDidCreateHandler(filePath: string) {

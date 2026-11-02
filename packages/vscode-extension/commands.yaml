@@ -9,7 +9,7 @@ vlocode.selectOrg:
 vlocode.refreshDatapack:
   title: 'Datapack: Refresh from Org'
   group: v_vlocity
-  when: &vlocityFileActionWhen 'vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks'
+  when: &vlocityFileActionWhen 'resourceFilename =~ /_DataPack\.json$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.datapacks)'
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -120,7 +120,7 @@ vlocode.admin.clearPlatformCache:
 vlocode.deployMetadata:
   title: 'Salesforce: Deploy to Org'
   group: v_salesforce
-  when: &salesforceFileActionWhen 'vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata'
+  when: &salesforceFileActionWhen 'resourceFilename =~ /-meta\.xml$/ || (vlocode.conditionalContextMenus && resourcePath in vlocode.metadata)'
   menus: &salesforceFileActionMenus
     - menu: commandPalette
     - menu: editor/context
