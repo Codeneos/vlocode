@@ -32,7 +32,7 @@ function fixture(runtime, datapackType) {
     if (dr) {
         Object.assign(root, { [field('GlobalKey', 'GlobalKey')]: 'fixture-global-key',
             [field('ExpectedInputJson', 'InputJson')]: '{"z":[{"Name":"Z"},{"Name":"A"}],"a":1}',
-            [field('ExpectedOutputXml', 'TargetOutXml')]: '<result>fixture</result>', Description: null });
+            [field('ExpectedOutputXml', 'TargetOutXml')]: '<result>fixture</result>', Description: '' });
         if (!managed) root.IsActive = true;
         const priorities = ['InputObjectQuerySequence', 'FilterGroup', 'OutputCreationSequence', 'OutputObjectName', 'OutputFieldName', 'InputFieldName']
             .map((name, index) => field(name, ['InterfaceObjectLookupOrder', 'FilterGroup', 'DomainObjectCreationOrder', 'DomainObjectAPIName', 'DomainObjectFieldAPIName', 'InterfaceFieldAPIName'][index]));
@@ -75,7 +75,7 @@ function toolsTransport(f) {
         for (const [name, value] of Object.entries(record)) {
             if (name === '__type' || (f.datapackType === 'DataRaptor' && f.runtime === 'standard' && name === 'IsActive')) continue;
             output[name] = f.references[record.__type]?.[name] && value ? convert(byId.get(value), true) : value;
-            // The DataPack service transport represents empty fields as strings.
+            // Synthetic transport convention for these fixtures, not a server-side guarantee.
             if (value === null) output[name] = '';
         }
         return output;

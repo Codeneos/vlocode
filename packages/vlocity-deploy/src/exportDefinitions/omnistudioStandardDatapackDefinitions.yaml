@@ -70,7 +70,6 @@ definitions:
     objectType: OmniDataTransform
     name:
       - Name
-    nullValues: emptyString
     parseJson: false
     matchingKeyFields:
       - Name

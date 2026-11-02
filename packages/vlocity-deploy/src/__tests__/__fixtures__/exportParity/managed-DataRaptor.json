@@ -28,7 +28,7 @@
         "%vlocity_namespace%__GlobalKey__c": "fixture-global-key",
         "%vlocity_namespace%__InputJson__c": "{\"z\":[{\"Name\":\"Z\"},{\"Name\":\"A\"}],\"a\":1}",
         "%vlocity_namespace%__TargetOutXml__c": "<result>fixture</result>",
-        "Description": null
+        "Description": ""
       },
       {
         "Id": "a01000000000001AAA",

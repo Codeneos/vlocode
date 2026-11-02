@@ -25,7 +25,7 @@
         "GlobalKey": "fixture-global-key",
         "ExpectedInputJson": "{\"z\":[{\"Name\":\"Z\"},{\"Name\":\"A\"}],\"a\":1}",
         "ExpectedOutputXml": "<result>fixture</result>",
-        "Description": null,
+        "Description": "",
         "IsActive": true
       },
       {

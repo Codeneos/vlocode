@@ -5,7 +5,7 @@ import * as path from 'path';
 import datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { SalesforceConnectionProvider, SalesforceService, SchemaDataStore } from '@vlocode/salesforce';
+import { RecordBatch, SalesforceConnection, SalesforceConnectionProvider, SalesforceService, SchemaDataStore } from '@vlocode/salesforce';
 import { VlocityDatapack, VlocityNamespaceService } from '@vlocode/vlocity';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 import { MatchingKeyService, VlocityMatchingKey } from '../matchingKeyService';
@@ -45,6 +45,48 @@ describe('datapackRecordFactory', () => {
     }
 
     beforeAll(() =>  container.add(Logger.null));
+
+    it.each(['insert', 'update'] as const)('preserves explicit nulls through conversion and the %s request', async operation => {
+        const schema = await new SchemaDataStore().loadFromFile(path.join(__dirname, './data/schema.json'));
+        const salesforce = mockSalesforceService(schema);
+        const testContainer = container.create();
+        testContainer.use(salesforce, SalesforceService);
+        testContainer.use(mockMatchingKeyService(), MatchingKeyService);
+        testContainer.use(new VlocityNamespaceService('vlocity_cmt'));
+        const datapack = new VlocityDatapack('Product2', {
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Product2',
+            VlocityRecordSourceKey: 'Product2/NullFields',
+            Name: 'NullFields',
+            Description: null,
+            ExternalDataSourceId: null,
+            NumberOfQuantityInstallments: null
+        });
+        const [record] = await testContainer.new(DatapackRecordFactory).createRecords(datapack);
+        const batch = new RecordBatch(salesforce.schema, { useBulkApi: false }, Logger.null);
+        const recordId = '01t000000000001AAA';
+        if (operation === 'update') {
+            batch.addUpdate(record.sobjectType, record.values, recordId);
+        } else {
+            batch.addInsert(record.sobjectType, record.values);
+        }
+        const send = jest.fn().mockResolvedValue([{ id: recordId, success: true }]);
+        const connection = { [operation]: send } as unknown as SalesforceConnection;
+        for await (const result of batch.execute(connection)) {
+            expect(result.success).toBe(true);
+        }
+        expect(send).toHaveBeenCalledTimes(1);
+        // Inspect the serialized API payload: null fields must be sent, omitted fields must stay absent.
+        const [payload] = JSON.parse(JSON.stringify(send.mock.calls[0][1]));
+        expect(payload).toEqual({
+            ...(operation === 'update' ? { Id: recordId } : {}),
+            Name: 'NullFields',
+            Description: null,
+            ExternalDataSourceId: null,
+            NumberOfQuantityInstallments: null
+        });
+        expect(payload).not.toHaveProperty('ProductCode');
+    });
 
     it('should convert datapack to multiple deployable records', async () => {
         // Arrange

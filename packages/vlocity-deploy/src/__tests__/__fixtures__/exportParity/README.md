@@ -23,7 +23,7 @@ Only two known optional metadata differences are normalized by the test:
 - Extra matching fields on **internal** `VlocityMatchingKeyObject` references. Their object type and source-key value are still compared. External lookup objects are not normalized.
 - A source key on an unreferenced managed `DRMapItem__c` record. Build Tools omits it; direct export can retain it. Mapping fields, record count and order are still compared.
 
-The fixtures do not represent byte-identical output in those two respects and do not test Salesforce's server-side DataPack export API or deployment. The tools transport adapter provides SObject/reference envelopes from synthetic records, using the empty-string transport convention and native DataRaptor IsActive exclusion observed in the live investigation. Build Tools handles key generation, sorting, pruning, parsing and file expansion itself.
+The fixtures do not represent byte-identical output in those two respects and do not test Salesforce's server-side DataPack export API or deployment. The tools transport adapter provides SObject/reference envelopes from synthetic records, using a synthetic empty-string convention and native DataRaptor IsActive exclusion. This convention is a fixture assumption, not a guarantee of server-side null conversion. DataRaptor header input explicitly uses an empty string; null preservation is covered separately in datapackNormalization.test.ts and datapackRecordFactory.test.ts. Build Tools handles key generation, sorting, pruning, parsing and file expansion itself.
 
 ## Regeneration
 

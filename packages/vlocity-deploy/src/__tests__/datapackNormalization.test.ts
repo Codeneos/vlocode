@@ -37,7 +37,7 @@ describe.each(['omniStudioStandard', 'omniStudioManaged'] as const)('%s output',
         expect(output.sortField(ref, embedded.name, input)).toEqual(rows);
         expect(input).toEqual([...rows].reverse());
         const root = output.normalizeRecord(sobject(ref.objectType, { Empty: null, Zero: 0, False: false, [embedded.name]: input }), ref);
-        expect(root.Empty).toBe('');
+        expect(root.Empty).toBeNull();
         expect(root.Zero).toBe(0);
         expect(root.False).toBe(false);
         expect(root[embedded.name][8]).not.toHaveProperty(fields[0]);

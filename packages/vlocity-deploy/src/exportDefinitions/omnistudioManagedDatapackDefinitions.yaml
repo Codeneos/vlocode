@@ -68,7 +68,6 @@ definitions:
     objectType: '%vlocity_namespace%__DRBundle__c'
     name:
       - Name
-    nullValues: emptyString
     parseJson: false
     matchingKeyFields:
       - Name
