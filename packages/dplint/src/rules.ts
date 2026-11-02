@@ -15,13 +15,20 @@ function noOptions(options: JsonObject) {
 
 function sharesPack(a: LintNode, b: LintNode): boolean { return [...a.packIds].some(id => b.packIds.has(id)); }
 
-export const builtinRules: RuleDefinition[] = [
+interface BuiltinRule extends RuleDefinition {
+    /** Record fields needed when checking cached workspace data. */
+    cacheFields: readonly string[];
+}
+
+export const builtinRules: BuiltinRule[] = [
     ...['json-syntax', 'file-reference'].map(id => ({
         id, description: id === 'json-syntax' ? 'Files must parse as strict JSON' : 'Child JSON files must exist and have no reference cycles',
+        cacheFields: [],
         defaultSeverity: 'error' as const, create: (options: JsonObject) => { noOptions(options); return () => {}; }
     })),
     {
         id: 'matching-reference', description: 'Matching references must resolve in the current DataPack', defaultSeverity: 'error',
+        cacheFields: ['VlocityMatchingRecordSourceKey'],
         create(options) {
             noOptions(options);
             return context => {
@@ -37,6 +44,7 @@ export const builtinRules: RuleDefinition[] = [
     },
     {
         id: 'lookup-reference', description: 'Lookup references must resolve across the validated DataPacks', defaultSeverity: 'error',
+        cacheFields: ['VlocityLookupRecordSourceKey', 'VlocityRecordSObjectType'],
         create(options) {
             if (Object.keys(options).some(key => key !== 'excludeObjects')) { throw new Error('Only excludeObjects is supported'); }
             const excluded = options.excludeObjects ?? ['RecordType', 'User'];
@@ -55,6 +63,7 @@ export const builtinRules: RuleDefinition[] = [
     },
     {
         id: 'unique-source-key', description: 'Record source keys must be unique', defaultSeverity: 'error',
+        cacheFields: ['VlocityRecordSourceKey'],
         create(options) {
             noOptions(options);
             return context => {
@@ -69,6 +78,7 @@ export const builtinRules: RuleDefinition[] = [
     },
     {
         id: 'datapack-type', description: 'Records and references must declare a consistent DataPack type and source key', defaultSeverity: 'error',
+        cacheFields: [...keyFields, 'VlocityDataPackType', 'VlocityRecordSObjectType'],
         create(options) {
             if (Object.keys(options).some(key => key !== 'lookupTypes')) { throw new Error('Only lookupTypes is supported'); }
             const allowedLookupTypes = options.lookupTypes ?? lookupTypes;
@@ -95,6 +105,7 @@ export const builtinRules: RuleDefinition[] = [
     },
     {
         id: 'price-rule-conditions', description: 'Custom price rule logic must reference existing condition indexes', defaultSeverity: 'error',
+        cacheFields: ['SBQQ__ConditionsMet__c', 'SBQQ__AdvancedCondition__c', 'SBQQ__Index__c', 'SBQQ__Rule__c'],
         create(options) {
             noOptions(options);
             return context => {
@@ -111,7 +122,11 @@ export const builtinRules: RuleDefinition[] = [
                     let indexes: number[];
                     try { indexes = parseConditionReferences(rule.value[field]); }
                     catch (error) { context.report(rule, (error as Error).message, field); continue; }
-                    const children = new Set((byRule.get(rule.value.VlocityRecordSourceKey) ?? []).filter(condition => sharesPack(condition, rule)));
+                    const children = new Set((byRule.get(rule.value.VlocityRecordSourceKey) ?? []).filter(condition => {
+                        const ref = condition.value.SBQQ__Rule__c as JsonObject;
+                        // Lookup ownership can cross DataPack boundaries; matching ownership stays local.
+                        return sharesPack(condition, rule) || ref.VlocityLookupRecordSourceKey === rule.value.VlocityRecordSourceKey;
+                    }));
                     // Inline conditions can omit the back-reference to their containing rule.
                     for (const condition of conditions) {
                         if (!sharesPack(condition, rule) || condition.value.SBQQ__Rule__c) { continue; }
@@ -127,6 +142,18 @@ export const builtinRules: RuleDefinition[] = [
         }
     }
 ];
+
+const cachedFields = [...new Set(builtinRules.flatMap(rule => rule.cacheFields))];
+
+/** Compact inputs for the built-in rules, preserving absent fields and reference keys. */
+export function cacheRuleValue(record: JsonObject): JsonObject {
+    const value = Object.fromEntries(cachedFields.filter(field => Object.hasOwn(record, field)).map(field => [field, record[field]]));
+    const owner = value.SBQQ__Rule__c;
+    if (owner && typeof owner === 'object') {
+        value.SBQQ__Rule__c = Object.fromEntries(keyFields.filter(field => Object.hasOwn(owner, field)).map(field => [field, owner[field]]));
+    }
+    return value;
+}
 
 /** Validate the CPQ Boolean grammar while collecting indexes, including unevaluated branches. */
 export function parseConditionReferences(value: unknown): number[] {

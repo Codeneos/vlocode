@@ -6,19 +6,21 @@ import { JsonObject, LintNode, Location } from './types';
 import { configNames } from './config';
 
 export interface LoadIssue { ruleId: string; location: Location; message: string }
-interface Document {
+export interface Document {
     file: string;
     text: string;
     lines: number[];
     packIds: Set<string>;
-    references: { target: string; location: Location }[];
+    references: { target: string; location: Location; packId?: string }[];
+    nodes: SourceNode[];
+    issues: LoadIssue[];
 }
 
-interface SourceNode extends LintNode { offset: number }
+export interface SourceNode extends LintNode { offset: number }
 
 export function pointerPart(value: string): string { return value.replace(/~/g, '~0').replace(/\//g, '~1'); }
 
-export async function loadFiles(inputs: string[], cwd: string, ignore: string[] = []) {
+export async function discoverFiles(inputs: string[], cwd: string, ignore: string[] = []) {
     const ignored = new Set(await glob(ignore, { cwd, absolute: true, nodir: true, dot: true }));
     const selected = new Set<string>();
     for (const input of inputs) {
@@ -35,7 +37,11 @@ export async function loadFiles(inputs: string[], cwd: string, ignore: string[] 
         files.filter(file => !ignored.has(file)).forEach(file => selected.add(file));
     }
     if (!selected.size) { throw new Error('No input files remain after applying ignore patterns'); }
+    return { selected, ignored };
+}
 
+export async function loadFiles(inputs: string[], cwd: string, ignore: string[] = [], contents: ReadonlyMap<string, string> = new Map()) {
+    const { selected, ignored } = await discoverFiles(inputs, cwd, ignore);
     const documents = new Map<string, Document>();
     const nodes: SourceNode[] = [];
     const issues: LoadIssue[] = [];
@@ -43,44 +49,10 @@ export async function loadFiles(inputs: string[], cwd: string, ignore: string[] 
     const queued = new Set(queue);
     for (let i = 0; i < queue.length; i++) {
         const file = queue[i];
-        const text = await readFile(file, 'utf8');
-        const doc: Document = { file, text, lines: [0], packIds: new Set(), references: [] };
-        for (let offset = 0; offset < text.length; offset++) { if (text[offset] === '\n') { doc.lines.push(offset + 1); } }
+        const doc = parseDocument(file, contents.get(file) ?? await readFile(file, 'utf8'));
         documents.set(file, doc);
-        let data: unknown;
-        try { data = JSON.parse(text); }
-        catch (error) {
-            const message = (error as Error).message;
-            const position = /position (\d+)/.exec(message);
-            const offset = position ? Number(position[1]) : /end of JSON/.test(message) ? text.length : 0;
-            issues.push({ ruleId: 'json-syntax', location: atOffset(doc, '', offset), message });
-            continue;
-        }
-
-        const parents: SourceNode[] = [];
-        // Keep parsed records and object offsets, not a second tree for every JSON token.
-        // Expanded rate tables can be hundreds of megabytes in a single file.
-        visit(text, {
-            onObjectBegin(offset, _length, line, column, getPath) {
-                const path = getPath();
-                const pointer = path.length ? '/' + path.map(part => pointerPart(String(part))).join('/') : '';
-                const value = path.reduce<unknown>((value, key) => value![key], data) as JsonObject;
-                const packIds = path[0] === 'dataPacks' && typeof path[1] === 'number'
-                    ? new Set([`${file}#/dataPacks/${path[1]}`]) : doc.packIds;
-                const node: SourceNode = { value, offset, location: { file, pointer, line: line + 1, column: column + 1 }, packIds, parent: parents.at(-1) };
-                nodes.push(node);
-                parents.push(node);
-            },
-            onObjectEnd() { parents.pop(); },
-            onLiteralValue(value, _offset, _length, line, column, getPath) {
-                if (typeof value === 'string' && /\.json$/i.test(value) && !isAbsolute(value) && !value.includes('://') && !/[\r\n]/.test(value)) {
-                    const path = getPath();
-                    doc.references.push({ target: resolve(dirname(file), value), location: {
-                        file, pointer: path.length ? '/' + path.map(part => pointerPart(String(part))).join('/') : '', line: line + 1, column: column + 1
-                    } });
-                }
-            }
-        });
+        for (const node of doc.nodes) { nodes.push(node); }
+        issues.push(...doc.issues);
         for (const ref of doc.references) {
             if (queued.has(ref.target) || ignored.has(ref.target)) { continue; }
             try {
@@ -116,7 +88,7 @@ export async function loadFiles(inputs: string[], cwd: string, ignore: string[] 
                     cycles.add(id);
                     issues.push({ ruleId: 'file-reference', location: ref.location, message: `Circular child JSON reference to ${relative(cwd, ref.target)}` });
                 }
-            } else { assign(ref.target, packId, stack); }
+            } else { assign(ref.target, ref.packId ?? packId, stack); }
         }
     }
     for (const file of roots) {
@@ -130,11 +102,52 @@ export async function loadFiles(inputs: string[], cwd: string, ignore: string[] 
     for (const doc of documents.values()) { if (!doc.packIds.size) { assign(doc.file, doc.file); } }
 
     return {
-        files: [...documents.keys()].sort(), nodes, issues,
+        files: [...documents.keys()].sort(), documents, nodes, issues,
         location(node: LintNode, field?: string): Location {
             return field === undefined ? node.location : fieldLocation(documents.get(node.location.file)!, node as SourceNode, field);
         }
     };
+}
+
+export function parseDocument(file: string, text: string): Document {
+    const doc: Document = { file, text, lines: [0], packIds: new Set(), references: [], nodes: [], issues: [] };
+    for (let offset = 0; offset < text.length; offset++) { if (text[offset] === '\n') { doc.lines.push(offset + 1); } }
+    let data: unknown;
+    try { data = JSON.parse(text); }
+    catch (error) {
+        const message = (error as Error).message;
+        const position = /position (\d+)/.exec(message);
+        const offset = position ? Number(position[1]) : /end of JSON/.test(message) ? text.length : 0;
+        doc.issues.push({ ruleId: 'json-syntax', location: atOffset(doc, '', offset), message });
+        return doc;
+    }
+
+    const parents: SourceNode[] = [];
+    // Keep parsed records and object offsets, not a second tree for every JSON token.
+    // Expanded rate tables can be hundreds of megabytes in a single file.
+    visit(text, {
+        onObjectBegin(offset, _length, line, column, getPath) {
+            const path = getPath();
+            const pointer = path.length ? '/' + path.map(part => pointerPart(String(part))).join('/') : '';
+            const value = path.reduce<unknown>((value, key) => value![key], data) as JsonObject;
+            const packIds = path[0] === 'dataPacks' && typeof path[1] === 'number'
+                ? new Set([`${file}#/dataPacks/${path[1]}`]) : doc.packIds;
+            const node: SourceNode = { value, offset, location: { file, pointer, line: line + 1, column: column + 1 }, packIds, parent: parents.at(-1) };
+            doc.nodes.push(node);
+            parents.push(node);
+        },
+        onObjectEnd() { parents.pop(); },
+        onLiteralValue(value, _offset, _length, line, column, getPath) {
+            if (typeof value === 'string' && /\.json$/i.test(value) && !isAbsolute(value) && !value.includes('://') && !/[\r\n]/.test(value)) {
+                const path = getPath();
+                const packId = path[0] === 'dataPacks' && typeof path[1] === 'number' ? `${file}#/dataPacks/${path[1]}` : undefined;
+                doc.references.push({ packId, target: resolve(dirname(file), value), location: {
+                    file, pointer: path.length ? '/' + path.map(part => pointerPart(String(part))).join('/') : '', line: line + 1, column: column + 1
+                } });
+            }
+        }
+    });
+    return doc;
 }
 
 function atOffset(doc: Document, pointer: string, offset: number): Location {
@@ -147,7 +160,7 @@ function atOffset(doc: Document, pointer: string, offset: number): Location {
     return { file: doc.file, pointer, line: lo + 1, column: offset - doc.lines[lo] + 1 };
 }
 
-function fieldLocation(doc: Document, node: SourceNode, field: string): Location {
+export function fieldLocation(doc: Document, node: SourceNode, field: string): Location {
     const pointer = `${node.location.pointer}/${pointerPart(field)}`;
     if (!Object.hasOwn(node.value, field)) { return { ...node.location, pointer }; }
     const scanner = createScanner(doc.text, true);

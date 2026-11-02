@@ -141,7 +141,7 @@ rules:
     - lookupTypes: [VlocityLookupKeyObject]
 ```
 
-CPQ advanced logic supports positive condition indexes, parentheses, `AND`, `OR`, and `NOT`, for example `1 AND (2 OR 3)`. Every branch is checked. Conditions are associated using their `SBQQ__Rule__c` reference, or their containing rule for inline children without that reference. Conditions belonging to another rule cannot satisfy the expression.
+CPQ advanced logic supports positive condition indexes, parentheses, `AND`, `OR`, and `NOT`, for example `1 AND (2 OR 3)`. Every branch is checked. Conditions are associated using their `SBQQ__Rule__c` reference, or their containing rule for inline children without that reference. A lookup can associate a condition from another validated DataPack; matching references stay within the same DataPack. Conditions belonging to another rule cannot satisfy the expression.
 
 Disabling or downgrading `json-syntax` skips invalid files for other checks. References into those files can consequently be reported as missing.
 
@@ -205,6 +205,33 @@ process.exitCode = result.errorCount ? 1 : 0;
 ```
 
 `lint` does not automatically load config files: pass a config object or call `loadConfig`. It returns findings without logging or changing process exit status. Operational/configuration failures reject the promise. Configured formula rules work identically through the API and CLI.
+
+For repeated checks in an editor or another long-running process, create a `LintSession` for the complete catalog:
+
+```ts
+import { LintSession, loadConfig } from '@vlocode/dplint';
+
+const session = new LintSession(['catalog'], {
+    cwd: process.cwd(),
+    config: await loadConfig('dplint.config.yaml')
+});
+const initialReport = await session.refresh();
+const updatedReport = await session.lintFile('catalog/Product2/Example/Example_DataPack.json');
+const batchReport = await session.lintFiles(changedFileNames);
+
+// Optional unsaved editor content; the file on disk is never changed.
+const bufferReport = await session.lintFile(fileName, documentText);
+
+await session.clear();
+```
+
+The session caches source declarations, matching/lookup references, DataPack ownership, CPQ condition inputs, source positions, and diagnostics. It releases the full parsed records and file text after indexing. A single-file check reparses that file, updates its source keys, and checks built-in rules against the cached workspace metadata. Formula rules run against the edited file's complete records; unchanged formula diagnostics are retained. Removing or renaming a key also updates diagnostics in other files that reference it. Duplicate ordering and related locations remain deterministic. Each result is a complete workspace report, so callers can replace their previous diagnostics without leaving stale findings elsewhere.
+
+Call `lintFile` for individual changes, `lintFiles` for a batch of disk changes, or `refresh` after external changes. Include deletions in change notifications. This is an explicit cache: the library does not watch the filesystem or silently rescan unchanged files. The first check indexes the workspace automatically. Unrelated and ignored changes return the cached report without reading or validating DataPacks. Unknown filenames are checked against input discovery and child references so genuine additions still trigger a rebuild. New/deleted inputs, changed child-file references, and batches with multiple selected files rebuild the index. Unsaved buffers are retained across refreshes; disk change notifications discard the corresponding buffers, and `clear` releases all buffers and cached data. Calls on one session are serialized. Create a new session when the configuration changes.
+
+Custom JavaScript rules can inspect arbitrary records across files, so sessions with supplied `RuleDefinition` objects perform full checks to preserve that behavior. Built-in rules and configured formula rules support incremental checks. The standalone `lint` function and CLI always perform fresh validation for CI.
+
+When adding a built-in rule, declare its `cacheFields` beside the rule. The cache derives retained fields and their source locations from these declarations.
 
 For checks that need more than formulas, supply `RuleDefinition` objects:
 

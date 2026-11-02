@@ -1,5 +1,6 @@
 export * from './types';
 export { lint } from './linter';
+export { LintSession } from './lintSession';
 export { loadConfig, validateConfig, configNames } from './config';
 export { compileFormula } from './formula';
 export { builtinRules, createFormulaRule } from './rules';
