@@ -5,6 +5,7 @@ import ExportDatapackCommand from './exportDatapackCommand';
 import { DatapackUtil } from '@vlocode/vlocity';
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
+import { DatapackResultCollection } from '../../lib/vlocity/vlocityDatapackService';
 
 @vscodeCommand(VlocodeCommand.refreshDatapack, { focusLog: true  })
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
@@ -27,12 +28,11 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
             async () => groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder));
 
         // determine what to refresh, get IDs for all relevant datapacks and select the best matching record Id
-        const flatDatapackList = Object.values(datapacksByProject).flat();     
-        const progressTitle = flatDatapackList.length > 1 ? `Refreshing ${flatDatapackList.length} datapacks...` :  `Refreshing ${DatapackUtil.getLabel(flatDatapackList[0])}...`;
-
+        const flatDatapackList = Object.values(datapacksByProject).flat();
         if (!flatDatapackList.length) {
-            return; // do datapacks found
+            throw new Error('No datapacks found in the selected files.');
         }
+        const progressTitle = flatDatapackList.length > 1 ? `Refreshing ${flatDatapackList.length} datapacks...` :  `Refreshing ${DatapackUtil.getLabel(flatDatapackList[0])}...`;
 
         // Resolve the datapack type/definition for each datapack through the same registry the datapack
         // explorer uses, so a refresh applies the same expand and export definition as an export. Prompt
@@ -46,7 +46,17 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
             const results = await mapAsync(Object.entries(datapacksByProject),
                 async ([projectFolder, datapacks]) => {
                     const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection: flatDatapackList.length > 1, definitions });
-                    return this.exportDatapacks(exportEntries.filter(e => e.id), projectFolder, dependencyExportDepth, progress, cancelToken);
+                    const projectResults = new DatapackResultCollection(exportEntries.filter(entry => !entry.id).map(({ datapack }) => ({
+                        key: datapack.key,
+                        label: datapack.key,
+                        success: false,
+                        errorMessage: `No matching Salesforce record found for ${datapack.key} in the connected org.`
+                    })));
+                    const resolvedEntries = exportEntries.filter(entry => entry.id);
+                    if (resolvedEntries.length) {
+                        projectResults.join(await this.exportDatapacks(resolvedEntries, projectFolder, dependencyExportDepth, progress, cancelToken));
+                    }
+                    return projectResults;
                 }
             );
             // report UI progress back

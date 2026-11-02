@@ -267,12 +267,15 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     protected showResultMessage(results : DatapackResultCollection) {
+        if (!results.length) {
+            throw new Error('No datapacks were exported.');
+        }
         [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.errorMessage || 'No error message'}`));
         if (results.hasErrors) {
             const errors = results.getErrors();
             const errorMessage = errors.find(e => e.errorMessage)?.errorMessage ?? 'Unknown error';
             errors.forEach(rec => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
-            throw `Failed to export ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`;
+            throw new Error(`Failed to export ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`);
         }
         const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
         void vscode.window.showInformationMessage(`Successfully exported ${resultSummary}`);
