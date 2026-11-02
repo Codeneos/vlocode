@@ -1540,7 +1540,7 @@
                         ],
                         "default": "RunRelevantTests",
                         "enumDescriptions": [
-                            "Run tests that Salesforce determines are relevant to the deployed metadata.",
+                            "Run tests that Salesforce determines are relevant to the deployed metadata (Salesforce beta).",
                             "Run all local Apex tests in the production org.",
                             "Run all Apex tests in the production org, including managed package tests."
                         ],

@@ -1,14 +1,11 @@
 import DeployMetadataCommand from '../deployMetadataCommand';
+import type { VlocodeSalesforceConfiguration } from '../../../lib/vlocodeConfiguration';
 
 class TestDeployMetadataCommand extends DeployMetadataCommand {
 
-    public execute() {
-        return undefined;
-    }
-
     constructor(
         private readonly productionOrg: boolean,
-        productionDeployTestLevel?: string
+        productionDeployTestLevel?: VlocodeSalesforceConfiguration['productionDeployTestLevel']
     ) {
         super();
         Object.defineProperty(this, 'vlocode', {
@@ -41,15 +38,19 @@ describe('DeployMetadataCommand', () => {
         });
     });
 
-    it('uses the configured production deployment test level', async () => {
-        await expect(new TestDeployMetadataCommand(true, 'RunLocalTests').getOptions()).resolves.toEqual({
+    it.each<VlocodeSalesforceConfiguration['productionDeployTestLevel']>([
+        'RunRelevantTests', 'RunLocalTests', 'RunAllTestsInOrg'
+    ])('uses the configured production deployment test level %s', async testLevel => {
+        await expect(new TestDeployMetadataCommand(true, testLevel).getOptions()).resolves.toEqual({
             ignoreWarnings: true,
-            testLevel: 'RunLocalTests'
+            testLevel
         });
     });
 
-    it('does not set a test level for non-production deployments', async () => {
-        await expect(new TestDeployMetadataCommand(false, 'RunLocalTests').getOptions()).resolves.toEqual({
+    it.each<VlocodeSalesforceConfiguration['productionDeployTestLevel'] | undefined>([
+        undefined, 'RunRelevantTests', 'RunLocalTests', 'RunAllTestsInOrg'
+    ])('does not set a test level for non-production deployments (configured: %s)', async testLevel => {
+        await expect(new TestDeployMetadataCommand(false, testLevel).getOptions()).resolves.toEqual({
             ignoreWarnings: true
         });
     });
