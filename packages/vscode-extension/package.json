@@ -1379,6 +1379,12 @@
                         "default": false,
                         "markdownDescription": "Enable clickable file paths and URLs in the Vlocode output channel. Disabled by default because link detection scans output text and resolves path candidates."
                     },
+                    "vlocity.datapackLint.enabled": {
+                        "type": "boolean",
+                        "default": true,
+                        "scope": "resource",
+                        "markdownDescription": "Validate saved Vlocity/SFI DataPacks in the background and show findings in Problems. Uses the workspace folder's dplint YAML/JSON configuration. Disabling this setting stops validation and clears its diagnostics immediately."
+                    },
                     "vlocity.conditionalContextMenus": {
                         "type": "boolean",
                         "default": true,

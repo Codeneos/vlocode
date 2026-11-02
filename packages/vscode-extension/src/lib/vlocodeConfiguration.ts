@@ -32,6 +32,7 @@ export type CustomExportDefinitionFiles = Record<string, string>;
 export default abstract class VlocodeConfiguration extends BaseConfiguration {
     logLevel: 'info' | 'verbose' | 'debug';
     enableLogLinks: boolean;
+    datapackLint: { enabled: boolean };
     //sfdxUsername?: string;
     projectPath?: string;
     customJobOptionsYaml?: string;

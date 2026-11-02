@@ -74,6 +74,12 @@ All settings for Vlocode in the `.vscode` settings file making it easy to mainta
 -   **Easy setup** Simplified setup based on SFDX using session tokens instead; no need to acquire security tokens or copy-past passwords and usernames around.
 -   **SFDX Support** username or alias to login to Salesforce
 
+## DataPack linting
+
+Vlocity/SFI DataPacks are checked automatically with [`@vlocode/dplint`](../dplint/README.md). Findings appear in Problems and at their JSON source locations, with links to duplicate records. Checks run on workspace startup and after saved JSON files or dplint configuration files change; unsaved edits are checked after saving. A persistent background worker caches source keys and compact validation metadata, so a single-file save can update references without reparsing the entire catalog. Changes to configuration, discovered files, or child-file links rebuild the index. Validation does not require an org connection.
+
+Set `"vlocity.datapackLint.enabled": false` in User, Workspace, or Workspace Folder settings to disable linting. It is enabled by default. Disabling immediately stops validation and clears diagnostics; re-enabling starts a fresh scan. Each workspace folder loads its own `dplint.config.yaml`, `dplint.config.yml`, `dplint.config.json`, or `.dplintrc` YAML/JSON file. The config controls input files, ignores, rule severity, and custom formula rules. Without configured inputs, the extension checks DataPack headers and their referenced JSON children. See the [dplint README](../dplint/README.md) for configuration examples and rule details.
+
 ## Requirements
 
 -   Basic knowledge of Vlocity datapacks

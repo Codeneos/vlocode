@@ -13,6 +13,7 @@ import { getErrorMessage } from '@vlocode/util';
 import { WorkspaceContextDetector } from './lib/workspaceContextDetector';
 import { MetadataDetector } from './lib/salesforce/metadataDetector';
 import { DatapackDetector } from './lib/vlocity/datapackDetector';
+import { DatapackLintService } from './lib/vlocity/datapackLintService';
 
 import HandleClassCreated from './events/onClassCreated';
 import HandleTriggerCreated from './events/onTriggerCreated';
@@ -211,6 +212,7 @@ class Vlocode {
         VirtualContentProvider.register(this.service);
         this.configureLogLinkProvider();
         this.configureDatapackExportDefinitions();
+        this.service.registerDisposable(container.get(DatapackLintService).initialize());
         this.service.registerDisposable(container.get(DataMapperEditorProvider).register());
         this.service.registerDisposable(container.get(IntegrationProcedureEditorProvider).register());
         this.service.registerDisposable(container.get(DatapackEditorProvider).register());

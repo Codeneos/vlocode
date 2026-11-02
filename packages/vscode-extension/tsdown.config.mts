@@ -1,4 +1,5 @@
 import { defineConfig, type UserConfig } from 'tsdown'
+import { createRequire } from 'node:module';
 
 import yaml from '../../build/plugins/yaml-loader.ts';
 import fileTypesPatch from '../../build/patches/file-types.ts';
@@ -15,7 +16,8 @@ import { resolve } from 'path';
  */
 export const entryPoints = {
     'vlocode': './src/extension.ts',
-    'sass-compiler': '../sass/src/bin.ts'
+    'sass-compiler': '../sass/src/bin.ts',
+    'datapack-lint-worker': './src/workers/datapackLintWorker.ts'
 };
 
 export const packageExternals = [
@@ -78,6 +80,15 @@ export default defineConfig((options: UserConfig) => {
       legalComments: 'none'
     },
     plugins: [
+      {
+        name: 'jsonc-parser-esm',
+        resolveId(source) {
+          // The UMD entry contains scoped require calls that cannot be bundled.
+          if (source === 'jsonc-parser') {
+            return createRequire(import.meta.resolve('@vlocode/dplint')).resolve('jsonc-parser/lib/esm/main.js');
+          }
+        }
+      },
       yaml(), 
       fileTypesPatch(), 
       vlocityPatch(),
