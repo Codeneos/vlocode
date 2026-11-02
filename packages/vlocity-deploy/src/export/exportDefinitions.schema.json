@@ -147,10 +147,6 @@
               },
               "type": "array"
             },
-            "includeReadOnly": {
-              "description": "Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only.",
-              "type": "boolean"
-            },
             "limit": {
               "description": "Optional maximum number of records to return when querying this object.",
               "type": "number"
@@ -228,10 +224,6 @@
               },
               "type": "array"
             },
-            "includeReadOnly": {
-              "description": "Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only.",
-              "type": "boolean"
-            },
             "parseJson": {
               "description": "Override JSON parsing for this field. Does not affect strings inside JSON documents.",
               "type": "boolean"
@@ -306,10 +298,6 @@
             "type": "string"
           },
           "type": "array"
-        },
-        "includeReadOnly": {
-          "description": "Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only.",
-          "type": "boolean"
         },
         "parseJson": {
           "description": "Override JSON parsing for this field. Does not affect strings inside JSON documents.",

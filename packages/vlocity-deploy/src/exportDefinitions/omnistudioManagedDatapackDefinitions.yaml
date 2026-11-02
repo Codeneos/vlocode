@@ -130,10 +130,6 @@ definitions:
       - '%vlocity_namespace%__OmniScriptVersion__c'
       - '%vlocity_namespace%__Level__c'
     fields:
-      '%vlocity_namespace%__ParentElementName__c':
-        includeReadOnly: true
-      '%vlocity_namespace%__ParentElementType__c':
-        includeReadOnly: true
       '%vlocity_namespace%__PropertySet__c':
         parseJson: true
         fileName:

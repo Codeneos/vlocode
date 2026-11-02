@@ -249,7 +249,7 @@ Expansion applies the referenced object's `exportKey` to both internal matching 
 
 Output settings apply to expanded files and consolidated exports:
 
-- Field-level `includeReadOnly: true` preserves a calculated or auto-number field in exported output. The bundled element definitions use it for parent name/type; Salesforce write filtering still excludes read-only fields during deployment.
+- Calculated and auto-number fields are preserved in exported output unless explicitly excluded. Deployment filters fields that cannot be written to Salesforce.
 - `ignoreFields` removes fields after ordering and filename evaluation, so excluded fields can still control output order and names.
 - `sortParentField` names a parent lookup for depth-first traversal of an embedded array. `sortFields` orders siblings. Circular parent links fail the export.
 - `sortMode: vlocity` uses the configured sort fields with empty values last and canonical JSON as the final tie-breaker. OmniStudio mapping definitions use the six legacy mapping priorities.

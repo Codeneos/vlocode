@@ -1762,7 +1762,9 @@ describe('DatapackExporter', () => {
     it.each([
         { exclusion: 'configured', field: { name: 'Version__c' }, ignoreFields: ['Version__c'] },
         { exclusion: 'calculated', field: { name: 'Version__c', calculated: true }, ignoreFields: [] },
-        { exclusion: 'auto-number', field: { name: 'Version__c', autoNumber: true }, ignoreFields: [] }
+        { exclusion: 'auto-number', field: { name: 'Version__c', autoNumber: true }, ignoreFields: [] },
+        { exclusion: 'explicitly excluded calculated', field: { name: 'Version__c', calculated: true }, ignoreFields: ['Version__c'] },
+        { exclusion: 'explicitly excluded auto-number', field: { name: 'Version__c', autoNumber: true }, ignoreFields: ['Version__c'] }
     ])('preserves $exclusion identity inputs across consolidated exports', async ({ field, ignoreFields }) => {
         const definitions = new DatapackExportDefinitionStore();
         definitions.load({ Script: { objectType: 'Script__c', name: ['Name'], exportKey: ['Name', 'Version__c'], ignoreFields } });
@@ -1776,10 +1778,10 @@ describe('DatapackExporter', () => {
         const later = expander.expandDatapack(JSON.parse(JSON.stringify(consolidated.datapack)));
         expect(direct.sourceKey).toBe('Script__c/Example/64');
         expect(later.sourceKey).toBe(direct.sourceKey);
-        expect(consolidated.datapack).not.toHaveProperty('Version__c');
+        expect(consolidated.datapack.Version__c).toBe(ignoreFields.length ? undefined : 64);
         const [file] = Object.values(later.files);
         const body = JSON.parse(String(file));
-        expect(body).not.toHaveProperty('Version__c');
+        expect(body.Version__c).toBe(ignoreFields.length ? undefined : 64);
         expect(body).not.toHaveProperty('VlocityRecordExportKeyValues');
     });
 

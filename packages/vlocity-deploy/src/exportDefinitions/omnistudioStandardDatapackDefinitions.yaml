@@ -135,10 +135,6 @@ definitions:
       - OmniProcessVersionNumber
       - IsOmniScriptEmbeddable
     fields:
-      ParentElementName:
-        includeReadOnly: true
-      ParentElementType:
-        includeReadOnly: true
       PropertySetConfig:
         parseJson: true
         fileName:

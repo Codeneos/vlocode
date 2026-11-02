@@ -94,8 +94,6 @@ export interface DatapackExportDefinition extends ObjectFilter {
 }
 
 export interface ExportFieldDefinition extends ExpandFileDefinition {
-    /** Preserve this calculated or auto-number field in exported output. Deployment still treats it as read-only. */
-    includeReadOnly?: boolean;
     /** Override JSON parsing for this field. Does not affect strings inside JSON documents. */
     parseJson?: boolean;
     /**
