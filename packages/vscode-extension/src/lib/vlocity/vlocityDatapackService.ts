@@ -25,6 +25,7 @@ export type DatapackExportMode = 'direct' | 'tools';
 export interface ObjectEntry {
     sobjectType: string;
     datapackType: string;
+    datapack?: VlocityDatapack;
     globalKey?: string;
     name?: string;
     id?: string;
@@ -434,7 +435,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             if (!query) {
                 throw new Error(`Unable to create export query for ${entry.sobjectType} of datapack ${entry.datapackType}`);
             }
-            return { VlocityDataPackType: entry.datapackType, query };
+            return { VlocityDataPackType: entry.datapackType, query: query.toString() };
         }));
     }
 

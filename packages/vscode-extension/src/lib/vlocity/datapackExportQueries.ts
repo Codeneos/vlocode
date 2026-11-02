@@ -61,8 +61,16 @@ export class DatapackExportQueries {
                     this.logger.warn(`Unable to resolve field ${field} for ${datapack.datapackType} export query`);
                     continue;
                 }
-                const value = fieldDescribe.reduce((o, f) => o && o[f.name], datapack) ??
+                // Keep the loaded datapack's namespace-aware access when the org schema uses concrete field names.
+                let value: unknown = fieldDescribe.reduce((o, f) => o && o[f.name], datapack.datapack ?? datapack) ??
                     (fieldDescribe.length === 1 && fieldDescribe[0].name === nameField ? datapack.name : undefined);
+
+                // Build Tools exports can clear the version. Such a file identifies a script across versions;
+                // querying a numeric version with an empty string would instead require Version = null.
+                if (['OmniScript', 'IntegrationProcedure'].includes(datapack.datapackType) &&
+                    ['VersionNumber', 'Version__c'].includes(removeNamespacePrefix(field)) && value === '') {
+                    value = undefined;
+                }
 
                 if (value !== undefined) {
                     const fullName = fieldDescribe.map(f => f.name).join('.');

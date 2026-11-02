@@ -102,6 +102,7 @@ export abstract class DatapackCommand extends CommandBase {
     protected asObjectEntry(datapack: VlocityDatapack, definition?: DatapackTypeDefinition): ObjectEntry {
         return {
             ...datapack.data,
+            datapack,
             sobjectType: definition?.source.sobjectType ?? datapack.sobjectType,
             datapackType: definition?.datapackType ?? datapack.datapackType,
             globalKey: datapack.globalKey,

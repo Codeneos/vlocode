@@ -1,7 +1,7 @@
 import 'jest';
 
 import type { FieldType, SalesforceSchemaService } from '@vlocode/salesforce';
-import { VlocityNamespaceService } from '@vlocode/vlocity';
+import { VlocityDatapack, VlocityNamespaceService } from '@vlocode/vlocity';
 import { container, Logger } from '@vlocode/core';
 import { DatapackExportQueries } from '../lib/vlocity/datapackExportQueries';
 import type { MatchingKeyService } from '@vlocode/vlocity-deploy/src/matchingKeyService';
@@ -36,6 +36,59 @@ describe('DatapackExportQueries', () => {
     });
 
     describe('getQuery', () => {
+        it.each(['OmniScript', 'IntegrationProcedure'])('resolves portable managed %s fields against the org namespace', async (datapackType) => {
+            const fields = ['Type', 'SubType', 'Language'].map(field => `%vlocity_namespace%__${field}__c`);
+            const schema = mockSchema();
+            schema.describeSObjectFieldPath = jest.fn(async (_object, field) =>
+                [{ name: field.replace('%vlocity_namespace%', 'vlocity_cmt'), type: 'string' }] as any);
+            const sut = new DatapackExportQueries(mockMatchingKeyService(fields), schema, Logger.null);
+            const datapack = new VlocityDatapack(datapackType, {
+                VlocityRecordSObjectType: '%vlocity_namespace%__OmniScript__c',
+                '%vlocity_namespace%__Type__c': 'Example',
+                '%vlocity_namespace%__SubType__c': 'Test',
+                '%vlocity_namespace%__Language__c': 'English'
+            });
+            const result = await sut.getQuery({
+                ...datapack.data,
+                datapack,
+                datapackType,
+                sobjectType: datapack.sobjectType
+            });
+
+            expect(result.toString()).toContain("vlocity_cmt__Type__c = 'Example'");
+            expect(result.toString()).toContain("vlocity_cmt__SubType__c = 'Test'");
+            expect(result.toString()).toContain("vlocity_cmt__Language__c = 'English'");
+        });
+
+        it.each([
+            ['OmniScript', 'OmniProcess', 'VersionNumber'],
+            ['IntegrationProcedure', 'OmniProcess', 'VersionNumber'],
+            ['OmniScript', '%vlocity_namespace%__OmniScript__c', '%vlocity_namespace%__Version__c'],
+            ['IntegrationProcedure', '%vlocity_namespace%__OmniScript__c', '%vlocity_namespace%__Version__c']
+        ])('does not filter %s on %s by an empty version', async (datapackType, sobjectType, versionField) => {
+            const fieldName = (name: string) => sobjectType === 'OmniProcess' ? name : `%vlocity_namespace%__${name}__c`;
+            const sut = new DatapackExportQueries(
+                mockMatchingKeyService(['Type', 'SubType', 'Language'].map(fieldName).concat(versionField)),
+                mockSchema({ [versionField]: 'double' }), Logger.null);
+            const entry = {
+                datapackType, sobjectType,
+                [fieldName('Type')]: 'Example',
+                [fieldName('SubType')]: 'Test',
+                [fieldName('Language')]: 'English'
+            };
+
+            for (const version of ['', null, undefined]) {
+                const result = await sut.getQuery({ ...entry, [versionField]: version });
+                expect(result.toString()).toContain(`${fieldName('Type')} = 'Example'`);
+                expect(result.toString()).toContain(`${fieldName('SubType')} = 'Test'`);
+                expect(result.toString()).toContain(`${fieldName('Language')} = 'English'`);
+                expect(result.toString()).not.toContain(`${versionField} = null`);
+            }
+
+            const versioned = await sut.getQuery({ ...entry, [versionField]: 3 });
+            expect(versioned.toString()).toContain(`${versionField} = 3`);
+        });
+
         it('should use null when nummeric fields are empty string', async () => {
             // Arrange
             const types = { '%vlocity_namespace%__Version__c': 'double' } satisfies Record<string, FieldType>;
