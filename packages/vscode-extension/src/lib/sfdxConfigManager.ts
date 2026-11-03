@@ -32,8 +32,10 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
     }
 
     constructor(private logger: Logger) {
-        this.watcher = vscode.workspace.createFileSystemWatcher(`**/${sfdx.defaultConfigPath}`);
+        this.watcher = vscode.workspace.createFileSystemWatcher(`**/{${sfdx.configPaths.join(',')}}`);
         this.watcher.onDidChange((e) => this.handleSfdxConfigChange(e));
+        this.watcher.onDidCreate((e) => this.handleSfdxConfigChange(e));
+        this.watcher.onDidDelete((e) => this.handleSfdxConfigChange(e));
     }
 
     public dispose() {
@@ -117,19 +119,12 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
             // Otherwise the watcher can report our previous org selection as a new external change.
             const update = this.configUpdate;
             await update.catch(() => undefined);
-            const newConfig = await sfdx.getConfig<T>(uri.fsPath.slice(0, -sfdx.defaultConfigPath.length));
+            const newConfig = await sfdx.getConfig<T>(workspace.uri.fsPath);
             if (update !== this.configUpdate) {
                 // Another update was queued during the read; its readback will establish the current state.
                 return;
             }
             const currentConfig = this.configs.get(workspace.uri.fsPath);
-            const path = currentConfig?.path ?? newConfig?.path;
-            
-            if (!path) {
-                // This should not happen, but if it does, we log a warning and return
-                return;
-            }
-
             // Check if the config has changed
             const changedConfig = this.getChangedProperties(currentConfig?.config, newConfig?.config);
             if (Object.keys(changedConfig).length === 0) {
@@ -141,12 +136,9 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
             if (!newConfig) {
                 this.logger.verbose('SFDX config updated: %s', uri.fsPath);
                 this.configs.delete(workspace.uri.fsPath);
-            } else if (!currentConfig) {
+            } else {
                 this.logger.verbose('SFDX config updated: %s', uri.fsPath);
                 this.configs.set(workspace.uri.fsPath, newConfig);
-            } else {
-                this.logger.verbose('SFDX config [%s] changed: %s', () => Object.keys(changedConfig).join(', '), uri.fsPath);
-                Object.assign(currentConfig.config, newConfig.config);
             }
 
             // Emit the changed event with the new configuration

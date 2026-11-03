@@ -137,6 +137,7 @@ export namespace sfdx {
      * Default path to the SF config file relative to the workspace root folder.
      */
     export const sfConfigPath = `.sf/config.json`;
+    export const configPaths = [sfConfigPath, defaultConfigPath] as const;
 
     /**
      * Default login URL to use when no login URL is specified.
@@ -482,13 +483,13 @@ export namespace sfdx {
     }
 
     /**
-     * Get the SFDX config data for the specified folder path by traversing down the folder tree until an SFDX config 
-     * file is found that contains a default username. Returns the default username and the path to the config file.
+     * Read Salesforce CLI configuration, preferring modern `.sf/config.json` settings over legacy SFDX settings.
+     * The target org is also exposed as `defaultusername` for existing callers.
      * 
-     * By default the search is limited to 2 levels down from the initial folder path specified, this can be changed by
+     * By default the search is limited to 2 levels up from the initial folder path specified, this can be changed by
      * specifying a different limit in the options.
      * 
-     * Returns `undefined` if no config file with a default username is found.
+     * Returns `undefined` if no config file is found.
      * 
      * @param folderPath Folder path to start the search from
      * @param options Options for the search
@@ -497,29 +498,23 @@ export namespace sfdx {
     export async function getConfig<T extends object = SfdxConfig>(folderPath: string, options: { fs: FileSystem, limit?: number } = { fs: fs, limit: 2 })
         : Promise<{ config: T, path: string } | undefined>
     {
-        let config: T | undefined;
-        let configPath: string | undefined;
         let limit = options.limit ?? 2;
-
         folderPath = normalizeConfigFolderPath(folderPath);
-
-        while(limit-- > 0) {
-            try {
-                configPath = `${folderPath}/${defaultConfigPath}`
-                config = JSON.parse((await options.fs.readFile(configPath)).toString('utf8'));
-            } catch (err: any) {
-                if (err?.code !== 'ENOENT') {
-                    throw err;
+        while (limit-- > 0) {
+            const [modern, legacy] = await Promise.all(configPaths.map(configPath =>
+                getConfigFile<T>(`${folderPath}/${configPath}`, options.fs)));
+            if (modern || legacy) {
+                const config = { ...legacy?.config, ...modern?.config } as T & SfdxConfig & SalesforceConfig;
+                if (config['target-org'] !== undefined) {
+                    config.defaultusername = config['target-org'];
                 }
+                return { config, path: (modern ?? legacy)!.path };
             }
-
-            if (config) {
-                return { config, path: configPath! };
-            } else if (folderPath.lastIndexOf('/') > 0) {
-                folderPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
-            } else {
+            const parent = path.dirname(folderPath);
+            if (parent === folderPath) {
                 break;
             }
+            folderPath = parent;
         }
     }
 
@@ -553,19 +548,24 @@ export namespace sfdx {
         if (!currentConfig?.path) {
             await createDirectory(options.fs, path.dirname(configPath));
         }
-        await options.fs.writeFile(configPath, Buffer.from(JSON.stringify(newConfig, undefined, 2)));
+        let fileConfig: object = newConfig;
+        if (configPath.replace(/\\/g, '/').endsWith(sfConfigPath) && 'defaultusername' in newConfig) {
+            const { defaultusername, ...settings } = newConfig as T & SfdxConfig;
+            fileConfig = { ...settings, 'target-org': defaultusername };
+        }
+        await options.fs.writeFile(configPath, Buffer.from(JSON.stringify(fileConfig, undefined, 2)));
         return true
     }
 
     function normalizeConfigFolderPath(folderPath: string): string {
         if (getDirectConfigPath(folderPath)) {
-            return folderPath.slice(0, -defaultConfigPath.length).replace(/[\\/]+$/, '');
+            return path.dirname(path.dirname(folderPath));
         }
         return folderPath;
     }
 
     function getDirectConfigPath(folderPath: string): string | undefined {
-        return folderPath.replace(/\\/g, '/').endsWith(defaultConfigPath) ? folderPath : undefined;
+        return configPaths.some(configPath => folderPath.replace(/\\/g, '/').endsWith(configPath)) ? folderPath : undefined;
     }
 
     async function getConfigFile<T extends object>(configPath: string, fileSystem: FileSystem): Promise<{ config: T, path: string } | undefined> {

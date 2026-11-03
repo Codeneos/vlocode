@@ -5,11 +5,46 @@ import { SfdxConfigManager } from '../lib/sfdxConfigManager';
 
 jest.mock('vscode', () => {
     const mock = jest.requireActual('../__mocks__/vscode');
-    return { ...mock, workspace: { ...mock.workspace, getWorkspaceFolder: jest.fn() } };
+    return { ...mock, workspace: { ...mock.workspace, getWorkspaceFolder: jest.fn(), createFileSystemWatcher: jest.fn() } };
 });
 
 describe('SFDX configuration notifications', () => {
     afterEach(() => jest.restoreAllMocks());
+
+    it.each(['onDidChange', 'onDidCreate', 'onDidDelete'] as const)('reloads the workspace selection on modern config %s events', async event => {
+        const workspace = { uri: vscode.Uri.file('/workspace') };
+        const watcher = {
+            onDidChange: jest.fn(), onDidCreate: jest.fn(), onDidDelete: jest.fn(), dispose: jest.fn()
+        };
+        jest.mocked(vscode.workspace.createFileSystemWatcher).mockReturnValue(watcher as unknown as vscode.FileSystemWatcher);
+        jest.mocked(vscode.workspace.getWorkspaceFolder).mockReturnValue(workspace as vscode.WorkspaceFolder);
+        const previousFolders = vscode.workspace.workspaceFolders;
+        Object.defineProperty(vscode.workspace, 'workspaceFolders', { configurable: true, value: [workspace] });
+        const config = jest.spyOn(sfdx, 'getConfig').mockResolvedValue({
+            path: '/workspace/.sfdx/sfdx-config.json', config: { defaultusername: 'old-org' }
+        });
+        const manager = new SfdxConfigManager(Logger.null);
+        try {
+            await manager.initialize();
+            const fire = jest.spyOn(manager['events'].change, 'fire');
+            fire.mockClear();
+            config.mockResolvedValue({ path: '/workspace/.sf/config.json', config: { defaultusername: 'new-org' } });
+            await watcher[event].mock.calls[0][0](vscode.Uri.file('/workspace/.sf/config.json'));
+            expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/{.sf/config.json,.sfdx/sfdx-config.json}');
+            expect(config).toHaveBeenLastCalledWith('/workspace');
+            expect(manager.get('defaultusername')).toBe('new-org');
+            expect(fire).toHaveBeenCalledWith(expect.objectContaining({ changes: { defaultusername: 'new-org' } }));
+            // Removing the selected org must remove it from the snapshot as well.
+            config.mockResolvedValue({ path: '/workspace/.sf/config.json', config: {} });
+            await watcher[event].mock.calls[0][0](vscode.Uri.file('/workspace/.sf/config.json'));
+            expect(manager.get('defaultusername')).toBeUndefined();
+            expect(fire).toHaveBeenLastCalledWith(expect.objectContaining({ changes: { defaultusername: undefined } }));
+        } finally {
+            manager.dispose();
+            expect(watcher.dispose).toHaveBeenCalled();
+            Object.defineProperty(vscode.workspace, 'workspaceFolders', { configurable: true, value: previousFolders });
+        }
+    });
 
     it('does not feed its own org selection write back as a new selection', async () => {
         const workspace = { uri: vscode.Uri.file('/workspace') };
