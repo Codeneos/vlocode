@@ -1,11 +1,8 @@
-import { workspace, Uri, FileType, FileStat as vsFileStat } from 'vscode';
-import { DeleteOptions, FileSystem, StatsOptions, FileInfo, FileStat } from '@vlocode/core';
+import { basename } from 'path';
+import { workspace, Uri, FileType, FileStat as vsFileStat, FileSystemError } from 'vscode';
+import { DeleteOptions, FileSystem, StatsOptions, FileInfo, FileStat, WriteOptions } from '@vlocode/core';
 
 export class VSCodeFileSystemAdapter extends FileSystem {
-
-    public async readFileAsString(fileName: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
-        return this.readFile(fileName).then(buffer => buffer.toString(encoding));
-    }
 
     public async readFile(fileName: string): Promise<Buffer> {
         const result = await workspace.fs.readFile(this.pathToUri(fileName));
@@ -30,8 +27,14 @@ export class VSCodeFileSystemAdapter extends FileSystem {
         return results.map(([name, type]) => new VSCodeFileFileInfoAdapter(name, type));
     }
 
-    public writeFile(path: string, data: Buffer): Promise<void> {
-        return workspace.fs.writeFile(this.pathToUri(path), data) as Promise<void>;
+    public async writeFile(path: string, data: Buffer, options?: WriteOptions): Promise<void> {
+        const uri = this.pathToUri(path);
+        const exists = await this.isFile(path);
+        if (exists && options?.overwrite === false && !options.append) {
+            throw FileSystemError.FileExists(uri);
+        }
+        const content = exists && options?.append ? Buffer.concat([await this.readFile(path), data]) : data;
+        await workspace.fs.writeFile(uri, content);
     }
 
     public createDirectory(path: string): Promise<void> {
@@ -65,7 +68,10 @@ class VSCodeFileStatsAdapter implements FileStat {
     get mtime() { return this.stats.mtime; }
     get size() { return this.stats.size; }
 
-    constructor(readonly name: string, readonly stats: vsFileStat) { 
+    readonly name: string;
+
+    constructor(path: string, readonly stats: vsFileStat) {
+        this.name = basename(path);
     }
 
     isFile(): boolean {

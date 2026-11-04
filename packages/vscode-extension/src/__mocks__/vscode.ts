@@ -115,6 +115,10 @@ export class FileSystemError extends Error {
     public static FileNotFound(message = 'File not found'): FileSystemError {
         return new FileSystemError(message, 'FileNotFound');
     }
+
+    public static FileExists(message = 'File exists'): FileSystemError {
+        return new FileSystemError(String(message), 'FileExists');
+    }
 }
 
 export const FileType = {

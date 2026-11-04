@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { basename } from 'path';
 import { injectable } from '../index';
 import { DeleteOptions, FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
 
@@ -67,7 +68,8 @@ export class NodeFileSystem extends FileSystem {
     }
 
     public writeFile(path: string, data?: Buffer | string, options?: WriteOptions): Promise<void> {
-        return new Promise((resolve, reject) => this.innerFs.writeFile(path, data ?? '', { flag: options?.append ? 'a' : 'w' }, (err) => {
+        const flag = options?.append ? 'a' : options?.overwrite === false ? 'wx' : 'w';
+        return new Promise((resolve, reject) => this.innerFs.writeFile(path, data ?? '', { flag }, (err) => {
             if (err) {
                 reject(err);
             } else {
@@ -93,7 +95,10 @@ class FsStatsAdapter implements FileStat {
     get mtime() { return this.stats.mtimeMs; }
     get size() { return this.stats.size; }
 
-    constructor(readonly name: string, readonly stats: fs.Stats) { 
+    readonly name: string;
+
+    constructor(path: string, readonly stats: fs.Stats) {
+        this.name = basename(path);
     }
 
     isFile(): boolean {

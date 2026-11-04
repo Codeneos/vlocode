@@ -1,7 +1,6 @@
-import { directoryName, spreadAsync } from '@vlocode/util';
-import * as fs from 'fs'
+import { asArray, directoryName, spreadAsync } from '@vlocode/util';
 import fg, { type FileSystemAdapter } from 'fast-glob';
-import { join } from 'path/posix';
+import * as nodePath from 'path';
 
 export interface StatsOptions {
     /**
@@ -38,13 +37,13 @@ export interface OutputOptions extends WriteOptions {
     encoding?: BufferEncoding;
 }
 
-export interface FindOptions extends WriteOptions {
+export interface FindOptions {
     /**
      * Single or multiple Working directories to use when searching. If not specified the current working directory is used.
      */
     cwd?: string | string[];
     /**
-     * Glob patterns of natches to exclude from the search
+     * Glob patterns of matches to exclude from the search
      */
     exclude?: GlobPatterns;
     /**
@@ -52,7 +51,7 @@ export interface FindOptions extends WriteOptions {
      */
     limit?: number;
     /**
-     * Type of items to find, either files or directories or both.
+     * Type of items to find: files, directories or both (`FindType.file | FindType.directory`).
      * By default only files are returned.
      */
     findType?: FindType | 'directory' | 'file';
@@ -72,6 +71,37 @@ type GlobPatterns = string | string[];
 export enum FindType {
     file = 1,
     directory = 2
+}
+
+type PathApi = Pick<typeof nodePath, 'sep' | 'isAbsolute' | 'join' | 'normalize'>;
+
+/**
+ * Convert a glob pattern to the forward-slash form fast-glob requires. On Windows, path separators
+ * are converted while backslashes that escape a glob character are kept, so Windows paths can be
+ * used in patterns. On other platforms a backslash always escapes the next character.
+ * @param pattern Glob pattern
+ * @param pathApi Path implementation of the platform; defaults to the current platform
+ */
+export function toGlobPattern(pattern: string, pathApi: PathApi = nodePath): string {
+    return pathApi.sep === '\\' ? pattern.replace(/\\(?![!()+@[\]{}])/g, '/') : pattern;
+}
+
+/**
+ * Convert a path into a glob pattern that only matches that path, escaping glob characters such as
+ * `(`, `[` and `{` in file names. Use this when building a pattern from a file or folder name.
+ * @param path Literal path
+ * @param pathApi Path implementation of the platform; defaults to the current platform
+ */
+export function escapeGlobPath(path: string, pathApi: PathApi = nodePath): string {
+    return pathApi.sep === '\\' ? fg.win32.convertPathToPattern(path) : fg.posix.convertPathToPattern(path);
+}
+
+/**
+ * Convert a path found by fast-glob to a platform path: relative paths are resolved against the
+ * working directory and separators are normalized, so results can be compared with other paths.
+ */
+export function fromGlobPath(entry: string, cwd: string | undefined, pathApi: PathApi = nodePath): string {
+    return pathApi.normalize(cwd && !pathApi.isAbsolute(entry) ? pathApi.join(cwd, entry) : entry);
 }
 
 export interface FileInfo {
@@ -173,15 +203,17 @@ export abstract class FileSystem {
      * Find files and or folders matching the specified glob pattern as an async iterable. If the result is not iterated completely, the search is stopped.
      * When you need the results as an array, use the `Iterable.spreadAsync` method to convert the async iterable into an array.
      *
-     * By default the current working directory is used as the base directory for the search.
-     * 
-     * You can specify multiple glob patterns to match by specifying an array of glob patterns.
-     * 
+     * Patterns are relative to the working directory, which defaults to the current working directory, or absolute.
+     * Results are platform paths: relative to the working directory when the working directory is relative,
+     * otherwise absolute. Use {@link escapeGlobPath} to build a pattern from a literal path.
+     *
+     * You can specify multiple glob patterns and working directories; each match is returned once.
+     *
      * When a limit is specified, the search is stopped after the specified number of results is reached.
-     * 
+     *
      * When a depth is specified, the search does not go deeper than the specified depth.
-     * 
-    * @param patterns Glob patterns to match
+     *
+     * @param patterns Glob patterns to match
      * @param options find options
      * @returns Async iterable of matching files and or folders
      * @example
@@ -192,37 +224,36 @@ export abstract class FileSystem {
      * ```
      */
     public async *find(patterns: GlobPatterns, options?: FindOptions): AsyncGenerator<string> {
-        const cwdList = options?.cwd && Array.isArray(options.cwd) ? options.cwd : [ options?.cwd ];
-        let limit = options?.limit;
-        for (const cwd of cwdList) {
-            // Ensure cwd is string or undefined
-            const cwdStr = typeof cwd === 'string' ? cwd : undefined;
-            const stream = fg.stream(patterns, {
-                cwd: cwdStr,
-                fs: this.globFs?.() ?? fs,
-                ignore: options?.exclude ? (Array.isArray(options.exclude) ? options.exclude : [ options.exclude ]) : undefined,
-                onlyDirectories: options?.findType === FindType.directory,
-                onlyFiles: options?.findType === FindType.file,
+        let remaining = options?.limit ?? Infinity;
+        if (remaining <= 0) {
+            return;
+        }
+
+        const findType = typeof options?.findType === 'string' ? FindType[options.findType] : options?.findType;
+        const found = new Set<string>();
+        for (const cwd of asArray(options?.cwd)) {
+            const stream = fg.stream(asArray(patterns).map(pattern => toGlobPattern(pattern)), {
+                cwd,
+                fs: this.globFs(),
+                ignore: options?.exclude ? asArray(options.exclude).map(pattern => toGlobPattern(pattern)) : undefined,
+                onlyFiles: findType === undefined || findType === FindType.file,
+                onlyDirectories: findType === FindType.directory,
                 deep: options?.depth,
                 caseSensitiveMatch: options?.noCase === false,
-                absolute: false,
                 unique: true
             });
-            for await (const file of stream) {
-                if (typeof file !== 'string') {
+            for await (const entry of stream) {
+                const file = fromGlobPath(entry.toString(), cwd);
+                if (found.has(file)) {
                     continue;
                 }
-                yield cwdStr ? join(cwdStr, file) : file;
-                if (limit !== undefined && --limit === 0) {
+                found.add(file);
+                yield file;
+                if (--remaining === 0) {
                     return;
                 }
             }
         }
-    }
-
-    private normalizePath(path: string): string {
-        // Normalize windows path separator to posix
-        return path.replace(/[/\\]+/g, '/');
     }
 
     /**
@@ -261,14 +292,28 @@ export abstract class FileSystem {
      * Delete all files and subdirectories contained in a directory while keeping the directory itself.
      * Does nothing when the directory does not exist.
      * @param path Directory to empty
+     * @param options.keep Files to keep; subdirectories that are empty after deleting their files are deleted
+     * @returns Deleted files and directories
      */
-    public async emptyDirectory(path: string): Promise<void> {
+    public async emptyDirectory(path: string, options?: { keep?: (file: string) => boolean }): Promise<string[]> {
         if (!await this.isDirectory(path)) {
-            return;
+            return [];
         }
+        const deleted: string[] = [];
         for (const entry of await this.readDirectory(path)) {
-            await this.delete(join(path, entry.name), { recursive: true });
+            const entryPath = nodePath.join(path, entry.name);
+            if (options?.keep && entry.isDirectory()) {
+                deleted.push(...await this.emptyDirectory(entryPath, options));
+                if (!(await this.readDirectory(entryPath)).length) {
+                    await this.delete(entryPath, { recursive: true });
+                    deleted.push(entryPath);
+                }
+            } else if (!options?.keep?.(entryPath)) {
+                await this.delete(entryPath, { recursive: true });
+                deleted.push(entryPath);
+            }
         }
+        return deleted;
     }
 
     /**
@@ -290,12 +335,41 @@ export abstract class FileSystem {
     public abstract readDirectory(path: string): Promise<FileInfo[]>;
 
     /**
-     * Find files matching the specified glob pattern(s)
+     * Find files matching the specified glob pattern(s); see {@link find}.
      * @param globPatterns Glob patterns to match files with
      */
     public findFiles(globPatterns: string | string[]): Promise<string[]> {
         return spreadAsync(this.find(globPatterns, { findType: FindType.file }));
     }
 
-    protected globFs?(): Partial<FileSystemAdapter>;
+    /**
+     * File system functions used by fast-glob to search this file system. The default implementation
+     * uses `stat` and `readDirectory`, so any file system can be searched; implementations can provide
+     * a faster native implementation.
+     */
+    protected globFs(): Partial<FileSystemAdapter> {
+        const notFound = (path: string) => Object.assign(new Error(`ENOENT: no such file or directory, '${path}'`), { code: 'ENOENT', path });
+        const asStats = (info: FileInfo) => ({
+            name: info.name,
+            isFile: () => info.isFile(),
+            isDirectory: () => info.isDirectory(),
+            isSymbolicLink: () => false
+        });
+        const stat = (path: string, callback: (error: Error | null, stats?: unknown) => void) => {
+            // Promise.resolve: cached implementations return the value itself for a cache hit
+            Promise.resolve(this.stat(path)).then(
+                stats => stats ? callback(null, asStats(stats)) : callback(notFound(path)),
+                error => callback(error)
+            );
+        };
+        const readdir = (path: string, options: unknown, callback?: (error: Error | null, entries?: unknown[]) => void) => {
+            const done = (typeof options === 'function' ? options : callback)!;
+            const withFileTypes = (options as { withFileTypes?: boolean } | undefined)?.withFileTypes;
+            Promise.resolve(this.readDirectory(path)).then(
+                entries => done(null, entries.map(entry => withFileTypes ? asStats(entry) : entry.name)),
+                async error => done(await this.pathExists(path) ? error : notFound(path))
+            );
+        };
+        return { stat, lstat: stat, readdir } as unknown as Partial<FileSystemAdapter>;
+    }
 }

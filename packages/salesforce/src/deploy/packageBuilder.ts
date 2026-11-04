@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ZipArchive from 'jszip';
 import { Minimatch } from 'minimatch';
 
-import { Logger, injectable, FileSystem, Container, container, inject } from '@vlocode/core';
+import { Logger, injectable, FileSystem, Container, container, inject, escapeGlobPath } from '@vlocode/core';
 import { cache, substringAfterLast, Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache, stringEqualsIgnoreCase } from '@vlocode/util';
 
 import { PackageManifest } from './maifest';
@@ -1024,7 +1024,7 @@ export class SalesforcePackageBuilder {
             return metaFileSuggestedContentFile;
         }
 
-        const contentFilePattern = `${this.stripFileExtension(metaFile, 2)}.*`;
+        const contentFilePattern = `${escapeGlobPath(this.stripFileExtension(metaFile, 2))}.*`;
         const contentMatches = (await this.fs.findFiles(contentFilePattern)).filter(f => f !== metaFile)
             .filter(file => !file.endsWith('-meta.xml'));
         if (contentMatches.length) {
@@ -1039,7 +1039,7 @@ export class SalesforcePackageBuilder {
             return metaFile;
         }
 
-        const genericMetaGlob = `${this.stripFileExtension(contentFile)}.*-meta.xml`;
+        const genericMetaGlob = `${escapeGlobPath(this.stripFileExtension(contentFile))}.*-meta.xml`;
         const globMetaMatch = await this.fs.findFiles(genericMetaGlob);
         if (globMetaMatch.length) {
             return globMetaMatch[0];
