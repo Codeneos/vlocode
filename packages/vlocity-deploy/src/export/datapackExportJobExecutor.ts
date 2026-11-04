@@ -32,6 +32,8 @@ export interface DatapackExportJobOptions {
     onBatchStart?: (index: number, batch: DatapackExportJobBatch) => void;
     onBatchEnd?: () => void;
     onProgress?: (progress: DatapackExportJobProgress) => void;
+    /** Keep existing files stable; see `DatapackFileOutputOptions.stable`. Defaults to `true`. */
+    stableWrite?: boolean;
 }
 
 export interface DatapackExportJobResult {
@@ -110,7 +112,7 @@ export class DatapackExportJobExecutor {
             throw new Error('No datapacks matched the export input');
         }
         const services = await this.createExportServices(options.definitionsFile);
-        const writer = new DatapackExportWriter(this.logger);
+        const writer = new DatapackExportWriter(this.logger, { stable: options.stableWrite });
         let exported = 0;
         try {
             const exporter = services.new(DatapackExporter);

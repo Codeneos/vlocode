@@ -70,6 +70,7 @@ describe('editor DataPack writer ownership', () => {
         root.add({} as VlocodeContext, { provides: [VlocodeContext] });
         root.add({
             get services() { return selectedServices; },
+            config: { stableFileWrites: true },
             registerDisposable: jest.fn(),
             onUsernameChanged: jest.fn().mockReturnValue({ dispose: jest.fn() })
         } as unknown as VlocodeService, { provides: [VlocodeService] });

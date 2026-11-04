@@ -3,13 +3,15 @@ import * as vscode from 'vscode';
 import { injectable } from '@vlocode/core';
 import { DatapackExporter } from '@vlocode/vlocity-deploy';
 
+import VlocodeConfiguration from '../vlocodeConfiguration';
 import { DatapackResultCollection, ObjectEntry } from './vlocityDatapackService';
 
 @injectable.transient()
 export class VlocodeDirectExport {
 
     constructor(
-        private readonly exporter: DatapackExporter
+        private readonly exporter: DatapackExporter,
+        private readonly config: VlocodeConfiguration
     ) {
     }
 
@@ -60,7 +62,7 @@ export class VlocodeDirectExport {
         });
 
         for (const expanded of expandedResults) {
-            await expanded.writeToFilesystem(exportFolder);
+            await expanded.writeToFilesystem(exportFolder, { stable: this.config.stableFileWrites });
             results.add({
                 key: expanded.sourceKey,
                 label: exportsById.get(expanded.sourceKey)?.name ?? expanded.sourceKey,

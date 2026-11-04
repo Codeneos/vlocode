@@ -359,7 +359,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         const expander = Container.get(this)!.get(DatapackExpander);
         const expanded = expander.expandDatapack(datapack.data as any, { datapackType: datapack.datapackType, scope });
         this.logger.verbose(`Expanding datapack ${expanded.sourceKey} with direct expander${scope ? ` (${scope})` : ''}`);
-        const filesWritten = await expanded.writeToFilesystem(targetPath);
+        const filesWritten = await expanded.writeToFilesystem(targetPath, { stable: this.config.stableFileWrites });
         const headerFile = filesWritten.find(file => file.endsWith('DataPack.json'));
         return headerFile!;
     }

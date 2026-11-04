@@ -140,3 +140,7 @@ Set `vlocity.exportMode` in VS Code settings to control exports and refreshes fr
 - `classic` uses the Salesforce Industries server and Vlocity Build Tools. The managed package must be installed in the selected org.
 
 This is independent of `vlocity.deploymentMode`. Export manifests run through the shared direct job executor.
+
+### Stable DataPack files
+
+When `vlocity.stableFileWrites` is enabled (default), saving and exporting DataPacks keeps existing files as they are where possible: unchanged files are not rewritten, and JSON files are updated in place. The existing property and record order is kept, so a diff shows only the values that changed. Files that are no longer part of the DataPack are removed instead of recreating the whole folder. Disable the setting to always rewrite the full DataPack folder. The CLI `export` command does the same unless `--no-stable` is passed.

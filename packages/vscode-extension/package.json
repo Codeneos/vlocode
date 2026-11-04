@@ -1411,6 +1411,12 @@
                         "scope": "machine-overridable",
                         "markdownDescription": "Path to the folder containing the Vlocity datapacks relative to the workspace root folder, for example:\n - `./vlocity`\n - `./datapacks`"
                     },
+                    "vlocity.stableFileWrites": {
+                        "type": "boolean",
+                        "scope": "resource",
+                        "default": true,
+                        "markdownDescription": "Keep DataPack files stable when saving or exporting: files whose content did not change are not rewritten and JSON files are updated in place, preserving the existing property and record order so only actually changed values show up in a diff. Disable to always rewrite the full DataPack folder."
+                    },
                     "vlocity.exportMode": {
                         "type": "string",
                         "scope": "resource",

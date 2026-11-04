@@ -2,6 +2,7 @@ import 'jest';
 import * as path from 'path';
 import * as fs from 'fs';
 
+import { MemoryFileSystem } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { DatapackLookupService } from '../datapackLookupService';
 import { DatapackExporter } from '../export/datapackExporter';
@@ -2077,14 +2078,17 @@ describe('DatapackExpander', () => {
             ]
         });
 
-        const outputFile = jest.fn(async () => undefined);
-        const remove = jest.fn(async () => undefined);
-        await result.writeToFilesystem('/tmp/out', { fs: { outputFile, remove }, prune: true });
-
         const targetFolder = path.join('/tmp/out', 'Parent_c', 'Parent');
-        expect(remove).toHaveBeenCalledWith(targetFolder);
-        expect(outputFile).toHaveBeenCalledWith(path.join(targetFolder, 'Parent_Child_First.json'), expect.any(Buffer));
-        expect(outputFile).toHaveBeenCalledWith(path.join(targetFolder, 'Parent_DataPack.json'), expect.any(Buffer));
-        expect(outputFile).not.toHaveBeenCalledWith(path.join(targetFolder, 'Parent_ParentKeys.json'), expect.anything());
+        const fileSystem = new MemoryFileSystem({ [path.join(targetFolder, 'Stale.json')]: '{}' });
+        const written = await result.writeToFilesystem('/tmp/out', { fileSystem, prune: true });
+
+        expect(written.sort()).toEqual([
+            path.join(targetFolder, 'Parent_Child_First.json'),
+            path.join(targetFolder, 'Parent_DataPack.json')
+        ]);
+        expect((await fileSystem.readDirectory(targetFolder)).map(entry => entry.name).sort()).toEqual([
+            'Parent_Child_First.json',
+            'Parent_DataPack.json'
+        ]);
     });
 });

@@ -1,14 +1,14 @@
 import path from "path/posix";
 import nativePath from "path";
 
-import { injectable, Logger } from "@vlocode/core";
+import { FileSystem, injectable, Logger, NodeFileSystem } from "@vlocode/core";
 import { formatString, normalizeName, substringAfter } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
-import * as fs from "fs-extra";
 
 import { DatapackNormalizer } from "./datapackNormalizer";
 import { applyExportKeys } from "./datapackExportKeys";
 import { DatapackObject, DatapackValue, sortObjectKeys } from "./datapackValue";
+import { writeDatapackFiles, type DatapackFileOutputOptions } from "./datapackFileOutput";
 import { DatapackExportDefinitionStore, ObjectRef } from "./exportDefinitionStore";
 
 export interface DatapackExpandResult {
@@ -21,12 +21,9 @@ export interface DatapackExpandResult {
     writeToFilesystem(path: string, options?: WriteToFilesystemOptions): Promise<string[]>;
 }
 
-export interface WriteToFilesystemOptions {
-    fs?: {
-        outputFile: (file: string, data: Buffer | string) => Promise<void>;
-        remove?: (path: string) => Promise<void>;
-    };
-    prune?: boolean;
+export interface WriteToFilesystemOptions extends Pick<DatapackFileOutputOptions, 'stable' | 'prune'> {
+    /** File system to write to; defaults to the Node file system */
+    fileSystem?: FileSystem;
 }
 
 type FieldRef = ObjectRef & { field: string };
@@ -211,26 +208,9 @@ export class DatapackExpander {
         return extension ? `${normalized}${extension}` : normalized;
     }
 
-    private async writeToFilesystem(result: DatapackExpandResult, destinationPath: string, options?: WriteToFilesystemOptions): Promise<string[]> {
-        const outputFs = options?.fs ?? fs;
-        const targetFolder = nativePath.join(destinationPath, result.folder);
-        const filesWritten : string[] = [];
-
-        if (options?.prune) {
-            if (!outputFs.remove) {
-                throw new Error('Cannot prune datapack output folder because the configured filesystem does not provide remove()');
-            }
-            await outputFs.remove(targetFolder);
-        }
-
-        for (const [fileName, fileData] of Object.entries(result.files)) {
-            const outputFile = nativePath.join(targetFolder, fileName);
-            await outputFs.outputFile(outputFile, fileData);
-            this.logger.verbose(`Output file: ${outputFile}`);
-            filesWritten.push(outputFile);
-        }
-
-        return filesWritten;
+    private writeToFilesystem(result: DatapackExpandResult, destinationPath: string, options?: WriteToFilesystemOptions): Promise<string[]> {
+        const { fileSystem = new NodeFileSystem(), ...outputOptions } = options ?? {};
+        return writeDatapackFiles(fileSystem, nativePath.join(destinationPath, result.folder), Object.entries(result.files), this.logger, outputOptions);
     }
 }
 

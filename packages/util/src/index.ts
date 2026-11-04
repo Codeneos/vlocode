@@ -28,6 +28,7 @@ export * from './reflect';
 export * from './salesforce';
 export * from './sfdx';
 export * from './singleton';
+export * from './stableJson';
 export * from './string';
 //export * from './task';
 export * from './types';

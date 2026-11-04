@@ -7,4 +7,5 @@ export * from './datapacksExpandDefinition';
 export * from './expandDefinitionAccessor';
 export * from './datapackExportFileLoader';
 export * from './datapackExportJobExecutor';
+export * from './datapackFileOutput';
 export { sortObjectKeys, type DatapackObject } from './datapackValue';

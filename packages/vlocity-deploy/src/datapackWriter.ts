@@ -11,6 +11,7 @@ import {
 
 import { DatapackExpander, type DatapackExpandResult } from './export/datapackExpander';
 import { DatapackExportDefinitionStore } from './export/exportDefinitionStore';
+import { writeDatapackFiles, type DatapackFileOutputOptions } from './export/datapackFileOutput';
 import { DatapackExportDefinitions, type DatapackExportDefinitionFile } from './exportDefinitions';
 
 const bundledDefinitionFiles: readonly DatapackExportDefinitionFile[] = [
@@ -37,7 +38,7 @@ export class DatapackWriter {
     public constructor(
         private readonly fileSystem: FileSystem,
         private readonly definitions: DatapackExportDefinitionStore,
-        logger: Logger = LogManager.get(DatapackWriter)
+        private readonly logger: Logger = LogManager.get(DatapackWriter)
     ) {
         this.expander = new DatapackExpander(this.definitions, logger);
         this.fallbackExpander = new DatapackExpander(this.fallbackDefinitions, logger);
@@ -76,12 +77,12 @@ export class DatapackWriter {
         };
     }
 
-    public async write(datapack: VlocityDatapack): Promise<void> {
+    /**
+     * Write a datapack to its folder; files that are no longer part of the datapack are removed.
+     */
+    public async write(datapack: VlocityDatapack, options?: Pick<DatapackFileOutputOptions, 'stable'>): Promise<void> {
         const plan = this.getWritePlan(datapack);
-        await this.fileSystem.emptyDirectory(plan.targetFolder);
-        for (const [fileName, data] of plan.files) {
-            await this.fileSystem.outputFile(fileName, data);
-        }
+        await writeDatapackFiles(this.fileSystem, plan.targetFolder, plan.files, this.logger, { ...options, prune: true });
     }
 
     private expand(datapack: VlocityDatapack): DatapackExpandResult {

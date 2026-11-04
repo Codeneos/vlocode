@@ -18,6 +18,7 @@ interface ExportCommandOptions {
     suppressNulls?: boolean;
     failOnError?: boolean;
     progress?: boolean;
+    stable?: boolean;
 }
 
 function existingFile(label: string): (value: string) => string {
@@ -84,6 +85,10 @@ export default class extends SalesforceCommand {
             'fail the export if an error occurs while exporting a datapack'
         ).default(false),
         new Option(
+            '--no-stable',
+            'rewrite exported datapack folders instead of updating existing files in place while preserving their property and record order'
+        ),
+        new Option(
             '--no-progress',
             'disable the interactive progress bar and use plain forward-printing output'
         ),
@@ -106,7 +111,7 @@ export default class extends SalesforceCommand {
         const executor = this.container.new(DatapackExportJobExecutor);
         const defaults = this.getExportSettings(options);
         await this.withExportProgress(options, async progressOptions => {
-            const execution = { ...progressOptions, defaults, definitionsFile: options.definitions };
+            const execution = { ...progressOptions, defaults, definitionsFile: options.definitions, stableWrite: options.stable };
             if (options.file) {
                 await executor.executeFile(options.file, execution);
                 return;

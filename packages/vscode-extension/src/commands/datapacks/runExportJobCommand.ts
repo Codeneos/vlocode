@@ -26,6 +26,7 @@ export default class RunExportJobCommand extends DatapackCommand {
             const result = await executor.executeFile(jobFile.fsPath, {
                 defaults: { folder: this.vlocode.config.projectPath || dirname(jobFile.fsPath), failOnError: true },
                 cancellationToken: token,
+                stableWrite: this.vlocode.config.stableFileWrites,
                 onProgress: status => progress.report({ message: status.sourceKey, progress: status.progress, total: status.total })
             });
             if (!result.cancelled) {

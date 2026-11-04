@@ -165,7 +165,7 @@ export abstract class ModelBackedEditorProvider<
         const writer = this.datapackWriter;
         // Keep the confirmed layout's writer if the selected org changes while the prompt is open.
         await confirmDatapackWrite(datapack, writer.getWritePlan(datapack), this.fileSystem);
-        await writer.write(datapack);
+        await writer.write(datapack, { stable: this.service.config.stableFileWrites });
     }
 
     protected sourceTextMap(entries: Iterable<readonly [string | vscode.Uri, string]>): Map<string, string> {
