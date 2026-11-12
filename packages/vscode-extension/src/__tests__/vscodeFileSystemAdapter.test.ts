@@ -34,6 +34,13 @@ describe('VSCodeFileSystemAdapter', () => {
         expect(fs.writeFile).not.toHaveBeenCalled();
     });
 
+    it('writes without checking the existing file when no write options are given', async () => {
+        givenFile('a');
+        await new VSCodeFileSystemAdapter().writeFile('/a.txt', Buffer.from('b'));
+        expect(fs.stat).not.toHaveBeenCalled();
+        expect(fs.writeFile.mock.calls[0][1].toString()).toBe('b');
+    });
+
     it('returns the file name in stats', async () => {
         givenFile('a');
         expect((await new VSCodeFileSystemAdapter().stat('/dir/a.txt'))?.name).toBe('a.txt');

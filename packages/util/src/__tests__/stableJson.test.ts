@@ -17,6 +17,20 @@ describe('stableJson', () => {
             expect(mergeJsonStable(existing, updated, byKey).value).toEqual(updated);
         });
 
+        it('should return a value equal to the updated value when merging values again after they changed', () => {
+            const existing = { a: 1, items: [{ b: 1, c: 1 }] };
+            const updated = { a: 1, items: [{ b: 1, c: 1 }] };
+            mergeJsonStable(existing, updated);
+            updated.a = 2;
+            updated.items[0].b = 2;
+            const result = mergeJsonStable(existing, updated);
+            expect(result.value).toEqual(updated);
+            expect(result.changes).toEqual([
+                { path: 'a', type: 'changed' },
+                { path: 'items[0].b', type: 'changed' }
+            ]);
+        });
+
         describe('objects', () => {
             it('should keep the existing value and report no changes when only the key order differs', () => {
                 const existing = { b: 1, a: { d: 2, c: 3 } };

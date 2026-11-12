@@ -1,5 +1,5 @@
 import { extname, resolve } from 'path';
-import { updateJsonText, type JsonChange, type StableJsonMergeOptions } from '@vlocode/util';
+import { mapAsync, updateJsonText, type JsonChange, type StableJsonMergeOptions } from '@vlocode/util';
 import { FileSystem } from './fileSystem';
 
 export type StableWriteStatus = 'created' | 'updated' | 'unchanged';
@@ -70,6 +70,9 @@ export class StableFileWriter {
 
     /**
      * Write a set of files into a folder and remove all other files from that folder.
+     *
+     * Other files are removed before writing: on a case-insensitive file system a file renamed only in case
+     * (`Name.json` to `name.json`) is written to the existing file, which must not be removed afterwards.
      * @param folder Folder that contains exactly the specified files after writing
      * @param files Files to write, keyed by path; relative paths are resolved against the folder
      * @param options.keep Files not in the written set that must not be removed
@@ -79,14 +82,12 @@ export class StableFileWriter {
         files: Iterable<readonly [string, Buffer | string]>,
         options?: { keep?: (file: string) => boolean }
     ): Promise<StableFolderWriteResult> {
-        const results: StableWriteResult[] = [];
-        for (const [file, data] of files) {
-            results.push(await this.writeFile(resolve(folder, file), data));
-        }
-        const written = new Set(results.map(result => result.file));
+        const entries = Array.from(files, ([file, data]) => [resolve(folder, file), data] as const);
+        const targets = new Set(entries.map(([file]) => file));
         const removed = await this.fileSystem.emptyDirectory(folder, {
-            keep: file => written.has(resolve(file)) || !!options?.keep?.(file)
+            keep: file => targets.has(resolve(file)) || !!options?.keep?.(file)
         });
+        const results = await mapAsync(entries, ([file, data]) => this.writeFile(file, data));
         return { files: results, removed };
     }
 }

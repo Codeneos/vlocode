@@ -1,5 +1,9 @@
 import 'jest';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { MemoryFileSystem } from '../fs/memoryFileSystem';
+import { NodeFileSystem } from '../fs/nodeFileSystem';
 import { StableFileWriter } from '../fs/stableFileWriter';
 
 describe('StableFileWriter', () => {
@@ -57,6 +61,19 @@ describe('StableFileWriter', () => {
             ]);
             expect(result.removed.sort()).toEqual(['/pack/stale.json', '/pack/sub', '/pack/sub/stale.txt']);
             expect(await fs.pathExists('/pack/sub')).toBe(false);
+        });
+
+        it('should keep a file that is renamed only in case', async () => {
+            // Case-insensitive file systems (macOS, Windows) write the renamed file to the existing file
+            const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'stable-writer-'));
+            try {
+                fs.writeFileSync(path.join(folder, 'Name_DataPack.json'), '{"Name":"Name"}');
+                await new StableFileWriter(new NodeFileSystem()).writeFolder(folder, [['name_DataPack.json', '{"Name":"name"}']]);
+                expect(fs.readdirSync(folder)).toEqual(['name_DataPack.json']);
+                expect(fs.readFileSync(path.join(folder, 'name_DataPack.json'), 'utf-8')).toBe('{"Name":"name"}');
+            } finally {
+                fs.rmSync(folder, { recursive: true, force: true });
+            }
         });
 
         it('should not remove kept files', async () => {

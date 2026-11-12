@@ -149,68 +149,74 @@ function joinPath(path: string, key: string | number): string {
     return path ? `${path}.${key}` : key;
 }
 
-const canonicalCache = new WeakMap<object, string>();
-
-/**
- * JSON text of a value with sorted object keys, so values that only differ in key order have the same text.
- * Cached per object, so nested values are serialized once while merging a document.
- */
-function canonicalJson(value: unknown): string {
-    if (typeof value !== 'object' || value === null) {
-        return JSON.stringify(value);
-    }
-    let text = canonicalCache.get(value);
-    if (text === undefined) {
-        text = Array.isArray(value)
-            ? `[${value.map(canonicalJson).join(',')}]`
-            : `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson((value as JsonObject)[key])}`).join(',')}}`;
-        canonicalCache.set(value, text);
-    }
-    return text;
-}
-
 interface Fingerprint {
     /** Canonical property (`key:value`) or element mapped to its number of occurrences */
     readonly entries: Map<string, number>;
     readonly size: number;
 }
 
-const fingerprintCache = new WeakMap<object, Fingerprint>();
-
 /**
- * Fingerprint of a record (object or array) used to calculate the similarity of two records.
+ * Canonical JSON text and similarity of the values in a document. Results are cached per object, so nested
+ * values are serialized once; use one instance per merge as the cache assumes the values do not change.
  */
-function fingerprint(record: object): Fingerprint {
-    let result = fingerprintCache.get(record);
-    if (!result) {
-        const entries = new Map<string, number>();
-        const items = Array.isArray(record)
-            ? record.map(canonicalJson)
-            : Object.entries(record).map(([key, value]) => `${JSON.stringify(key)}:${canonicalJson(value)}`);
-        for (const item of items) {
-            entries.set(item, (entries.get(item) ?? 0) + 1);
+class JsonDigest {
+    private readonly canonicalCache = new WeakMap<object, string>();
+    private readonly fingerprintCache = new WeakMap<object, Fingerprint>();
+
+    /**
+     * JSON text of a value with sorted object keys, so values that only differ in key order have the same text.
+     */
+    public canonical(value: unknown): string {
+        if (typeof value !== 'object' || value === null) {
+            return JSON.stringify(value);
         }
-        result = { entries, size: items.length };
-        fingerprintCache.set(record, result);
+        let text = this.canonicalCache.get(value);
+        if (text === undefined) {
+            text = Array.isArray(value)
+                ? `[${value.map(item => this.canonical(item)).join(',')}]`
+                : `{${Object.keys(value).sort().map(key => this.canonicalProperty(key, (value as JsonObject)[key])).join(',')}}`;
+            this.canonicalCache.set(value, text);
+        }
+        return text;
     }
-    return result;
-}
 
-/**
- * Similarity of two records: the number of equal properties or elements relative to the larger record.
- */
-function similarity(a: object, b: object): number {
-    const fingerprintA = fingerprint(a);
-    const fingerprintB = fingerprint(b);
-    const size = Math.max(fingerprintA.size, fingerprintB.size);
-    if (size === 0) {
-        return 1;
+    /**
+     * Similarity of two records (objects or arrays): the number of equal properties or elements relative to
+     * the larger record.
+     */
+    public similarity(a: object, b: object): number {
+        const fingerprintA = this.fingerprint(a);
+        const fingerprintB = this.fingerprint(b);
+        const size = Math.max(fingerprintA.size, fingerprintB.size);
+        if (size === 0) {
+            return 1;
+        }
+        let equal = 0;
+        for (const [entry, count] of fingerprintA.entries) {
+            equal += Math.min(count, fingerprintB.entries.get(entry) ?? 0);
+        }
+        return equal / size;
     }
-    let equal = 0;
-    for (const [entry, count] of fingerprintA.entries) {
-        equal += Math.min(count, fingerprintB.entries.get(entry) ?? 0);
+
+    private canonicalProperty(key: string, value: unknown): string {
+        return `${JSON.stringify(key)}:${this.canonical(value)}`;
     }
-    return equal / size;
+
+    private fingerprint(record: object): Fingerprint {
+        let result = this.fingerprintCache.get(record);
+        if (!result) {
+            const entries = new Map<string, number>();
+            const items = Array.isArray(record)
+                ? record.map(item => this.canonical(item))
+                : Object.entries(record).map(([key, value]) => this.canonicalProperty(key, value));
+            for (const item of items) {
+                entries.set(item, (entries.get(item) ?? 0) + 1);
+            }
+            result = { entries, size: items.length };
+            this.fingerprintCache.set(record, result);
+        }
+        return result;
+    }
 }
 
 /**
@@ -236,6 +242,8 @@ const maxSimilarityComparisons = 250_000;
 
 class StableJsonMerger {
 
+    private readonly digest = new JsonDigest();
+
     constructor(
         private readonly options: StableJsonMergeOptions,
         private readonly changes: JsonChange[]
@@ -243,7 +251,7 @@ class StableJsonMerger {
     }
 
     public merge(existing: unknown, updated: unknown, path: string): unknown {
-        if (canonicalJson(existing) === canonicalJson(updated)) {
+        if (this.digest.canonical(existing) === this.digest.canonical(updated)) {
             return existing;
         }
         if (isJsonObject(existing) && isJsonObject(updated)) {
@@ -317,7 +325,7 @@ class StableJsonMerger {
         const existingIdentities = identities(existing);
         const updatedIdentities = identities(updated);
 
-        this.pairByKey(existing.map(canonicalJson), updated.map(canonicalJson), matches, unmatched);
+        this.pairByKey(existing.map(item => this.digest.canonical(item)), updated.map(item => this.digest.canonical(item)), matches, unmatched);
         this.pairByKey(existingIdentities, updatedIdentities, matches, unmatched);
 
         const threshold = this.options.similarity ?? 0.5;
@@ -379,7 +387,7 @@ class StableJsonMerger {
                 if (valueKind(existingRecord) !== valueKind(updatedRecord) || !options.canPair(existingIndex, updatedIndex)) {
                     continue;
                 }
-                const score = similarity(existingRecord, updatedRecord);
+                const score = this.digest.similarity(existingRecord, updatedRecord);
                 if (score > 0 && score >= options.threshold) {
                     pairs.push({ updatedIndex, existingIndex, score });
                 }

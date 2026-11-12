@@ -29,12 +29,13 @@ export class VSCodeFileSystemAdapter extends FileSystem {
 
     public async writeFile(path: string, data: Buffer, options?: WriteOptions): Promise<void> {
         const uri = this.pathToUri(path);
-        const exists = await this.isFile(path);
-        if (exists && options?.overwrite === false && !options.append) {
+        // workspace.fs has no append or create-only write; only check the existing file when one is requested
+        if (options?.append && await this.isFile(path)) {
+            data = Buffer.concat([await this.readFile(path), data]);
+        } else if (options?.overwrite === false && await this.isFile(path)) {
             throw FileSystemError.FileExists(uri);
         }
-        const content = exists && options?.append ? Buffer.concat([await this.readFile(path), data]) : data;
-        await workspace.fs.writeFile(uri, content);
+        await workspace.fs.writeFile(uri, data);
     }
 
     public createDirectory(path: string): Promise<void> {
