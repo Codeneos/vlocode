@@ -249,7 +249,10 @@ export default class VlocodeService implements vscode.Disposable {
             if (err?.message === 'NamedOrgNotFound' || err?.message === 'The org cannot be found') {
                 this.showStatus(`$(error) Unknown Salesforce user - ${username}`, VlocodeCommand.selectOrg);
             } else if (this.isTokenExpiredError(err)) {
-                await this.promptRefreshOAuthToken(username);
+                const refreshed = await this.promptRefreshOAuthToken(username);
+                if (!refreshed && version === this.selectionVersion) {
+                    this.showStatus(`$(key) Authorization expired - ${username}`, VlocodeCommand.selectOrg);
+                }
             } else if (err?.code === 'ENOTFOUND') {
                 this.showStatus('$(cloud-offline) Unable to reach Salesforce', VlocodeCommand.selectOrg);
             } else {
