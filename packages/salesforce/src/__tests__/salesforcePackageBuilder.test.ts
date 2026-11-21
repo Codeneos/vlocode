@@ -44,6 +44,7 @@ describe('SalesforcePackageBuilder', () => {
         // LWC files that should be excluded from deployment
         'src/lwc/test/__tests__/test.spec.js': 'describe("test", () => { it("works", () => {}); });',
         'src/lwc/test/__tests__/testHelper.js': 'export const mockData = {};',
+        'src/lwc/test/__mocks__/mock.js': 'export default {};',
         'src/lwc/test/jsconfig.json': '{"compilerOptions": {}}',
         'src/lwc/test/tsconfig.json': '{"compilerOptions": {}}',
         // Aura
@@ -91,6 +92,16 @@ describe('SalesforcePackageBuilder', () => {
 
     describe('#addFiles', () => {
         describe('#lwcComponent', () => {
+            it('should not package __tests__ or __mocks__ when the whole bundle is added', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/lwc/test' ]);
+
+                const sfPackage = await (await packageBuilder.build()).generateArchive();
+                const packageFiles = Object.keys(sfPackage.files).filter(f => !f.endsWith('/'));
+
+                expect(packageFiles).toEqual(expect.arrayContaining(['lwc/test/test.html', 'lwc/test/test.js']));
+                expect(packageFiles.filter(f => /__tests__|__mocks__/.test(f))).toEqual([]);
+            });
             it('should place bundle files at the correct package paths in the archive', async () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.js-meta.xml' ]);

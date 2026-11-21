@@ -187,6 +187,7 @@ export class SalesforcePackageBuilder {
         '**/.sf',
         '**/.sfdx',
         '**/lwc/**/__tests__/**',
+        '**/lwc/**/__mocks__/**',
         '**/lwc/**/jsconfig.json',
         '**/lwc/**/tsconfig.json',
     ].map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true }));
