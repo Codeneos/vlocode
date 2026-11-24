@@ -284,7 +284,7 @@ export class RetrieveResultPackage {
      */
     public get retrieveCount(): number {
         // Do not count package XML
-        return this.result.fileProperties ? this.result.fileProperties.length - 1 : 0;
+        return this.result.fileProperties?.filter(file => file.fileName !== 'package.xml').length ?? 0;
     }
 
     private files: RetrieveResultFile[] | undefined;

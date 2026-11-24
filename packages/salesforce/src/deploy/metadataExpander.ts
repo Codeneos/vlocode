@@ -3,7 +3,7 @@ import { SalesforcePackageComponentFile } from './package';
 import { outputFile } from 'fs-extra';
 import { MetadataRegistry, MetadataType } from '../metadataRegistry';
 import { injectable } from '@vlocode/core';
-import { asArray, count, substringBefore, XML } from '@vlocode/util';
+import { asArray, count, stringEqualsIgnoreCase, substringBefore, XML } from '@vlocode/util';
 import * as mimeTypes from 'mime-db';
 
 interface MetadataFile extends SalesforcePackageComponentFile {
@@ -23,7 +23,7 @@ export class MetadataExpander {
         const metadataObj = await metadata.metadata();
         const type = MetadataRegistry.getMetadataType(metadata.componentType);
 
-        if (type?.childXmlNames.length) {
+        if (type?.childXmlNames.length && stringEqualsIgnoreCase(type.name, metadata.componentType)) {
             return this.expandMetadataChildren(metadata.componentName, type, content);
         }
 
@@ -47,6 +47,11 @@ export class MetadataExpander {
     }
     
     private expandContent(metadata: MetadataFile, content: Buffer, type?: MetadataType): Record<string, Buffer> {
+        // Direct reads already use source filenames, including escaped profile names.
+        if (metadata.packagePath.endsWith('-meta.xml') && (metadata.componentType === 'Profile' || metadata.componentType === 'RecordType')) {
+            return { [path.basename(metadata.packagePath)]: content };
+        }
+
         if (!type) {
             const basename = this.baseName(metadata.packagePath);
             const expandedName = this.shouldAppendMetaXml(metadata.packagePath, content) ? `${basename}-meta.xml` : basename;

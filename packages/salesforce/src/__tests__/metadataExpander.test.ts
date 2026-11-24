@@ -23,7 +23,62 @@ describe('MetadataExpander', () => {
     const expander = new MetadataExpander();
 
     describe('#expandMetadata - decomposed children', () => {
-        it('CustomObject with fields should expand to child files and parent meta when parent not empty', async () => {
+        it.each(['profile', 'profile-meta.xml'])('expands configured profile children from a .%s file', async (extension) => {
+            const profileType = MetadataRegistry.getMetadataType('Profile')!;
+            const registry = jest.spyOn(MetadataRegistry, 'getMetadataType').mockReturnValueOnce({
+                ...profileType,
+                childXmlNames: ['FieldPermission'],
+                children: {
+                    directories: { fieldPermissions: 'fieldpermission' },
+                    suffixes: { fieldPermission: 'fieldpermission' },
+                    types: {
+                        fieldpermission: {
+                            id: 'fieldpermission',
+                            name: 'FieldPermission',
+                            directoryName: 'fieldPermissions',
+                            suffix: 'fieldPermission',
+                            uniqueIdElement: 'field'
+                        }
+                    }
+                }
+            });
+            const content = Buffer.from(buildXml('Profile', {
+                custom: true,
+                fieldPermissions: [{
+                    field: 'Account.Example__c',
+                    readable: true,
+                    editable: false
+                }]
+            }));
+
+            try {
+                const result = await expander.expandMetadata({
+                    componentType: 'Profile',
+                    componentName: 'Example%2FProfile',
+                    packagePath: `profiles/Example%2FProfile.${extension}`,
+                    content: async () => content,
+                    metadata: async () => undefined
+                });
+
+                expect(Object.keys(result).sort()).toEqual([
+                    'Example%2FProfile/Example%2FProfile.profile-meta.xml',
+                    'Example%2FProfile/fieldPermissions/Account.Example__c.fieldPermission-meta.xml'
+                ]);
+                const parent = XML.parse(result['Example%2FProfile/Example%2FProfile.profile-meta.xml']);
+                const child = XML.parse(result['Example%2FProfile/fieldPermissions/Account.Example__c.fieldPermission-meta.xml']);
+                expect(parent.Profile.custom).toBe(true);
+                expect(parent.Profile.fieldPermissions).toBeUndefined();
+                expect(child.FieldPermission).toMatchObject({
+                    field: 'Account.Example__c',
+                    readable: true,
+                    editable: false
+                });
+            } finally {
+                registry.mockRestore();
+            }
+        });
+
+        it.each(['CustomObject', 'customobject'])('%s with fields should expand to child files and parent meta when parent not empty', async (componentType) => {
             const componentName = 'Account';
             const xml = buildXml('CustomObject', {
                 label: 'Account',
@@ -38,7 +93,7 @@ describe('MetadataExpander', () => {
             });
 
             const metadata: MockMetadataFile = {
-                componentType: 'CustomObject',
+                componentType,
                 componentName,
                 packagePath: `objects/${componentName}.object`,
                 content: async () => Buffer.from(xml),

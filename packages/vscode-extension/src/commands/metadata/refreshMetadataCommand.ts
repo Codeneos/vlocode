@@ -40,7 +40,9 @@ export default class RefreshMetadataCommand extends MetadataCommand {
                 return;
             }
 
-            const result = await this.salesforce.deploy.retrieveManifest(sfPackage.manifest, { apiVersion, cancellationToken: token });
+            const result = await this.salesforce.deploy.retrieveManifest(sfPackage.manifest, {
+                apiVersion, cancellationToken: token, preferMetadataRead: true
+            });
 
             if (token?.isCancellationRequested) {
                 return;

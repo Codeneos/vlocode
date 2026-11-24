@@ -1,17 +1,25 @@
 import { Stream } from 'stream';
+import { posix } from 'path';
 import ZipArchive from 'jszip';
 
 import { Logger, injectable } from '@vlocode/core';
-import { Timer, removeAll, stringEqualsIgnoreCase, Iterable } from '@vlocode/util';
+import { Timer, removeAll, stringEqualsIgnoreCase, Iterable, XML, chunkArray } from '@vlocode/util';
 import { CancellationToken, mapAsyncParallel, wait } from '@vlocode/util';
 import { DeployOptions, SalesforceConnectionProvider, DeployResult } from './connection';
 import { DeploymentProgress, PackageManifest, RetrieveResultPackage, SalesforcePackage } from './deploy';
 import { MetadataRegistry } from './metadataRegistry';
 
+const directReadTypes = ['Profile', 'RecordType'] as const;
+/** Max number of components readMetadata accepts per call */
+const readMetadataBatchSize = 10;
+type DirectReadType = typeof directReadTypes[number];
+
 export interface RetrieveManifestOptions { 
     apiVersion?: string;
     checkInterval?: number;
     cancellationToken?: CancellationToken;
+    /** Use readMetadata for named Profile and RecordType components. */
+    preferMetadataRead?: boolean;
     /**
      * Enable parallel retrieval of metadata types; when set to true
      * each metadata type is retrieved in parallel. By default a max of `5` parallel retrievals are done.
@@ -148,6 +156,26 @@ export class SalesforceDeployService {
         manifest: PackageManifest, 
         options?: RetrieveManifestOptions ): Promise<RetrieveResultPackage> 
     {
+        if (options?.preferMetadataRead) {
+            const isDirectRead = (type: string, name: string) => name !== '*' && directReadTypes.some(readType => readType === type);
+            const directManifest = manifest.filter(isDirectRead);
+            if (!directManifest.isEmpty) {
+                const packageManifest = manifest.filter((type, name) => !isDirectRead(type, name));
+                if (packageManifest.isEmpty) {
+                    return this.readMetadata(directManifest, options);
+                }
+
+                const packageResult = await this.retrievePackageManifest(packageManifest, options);
+                if (!packageResult.success || options.cancellationToken?.isCancellationRequested) {
+                    return packageResult;
+                }
+                return packageResult.merge(await this.readMetadata(directManifest, options));
+            }
+        }
+        return this.retrievePackageManifest(manifest, options);
+    }
+
+    private async retrievePackageManifest(manifest: PackageManifest, options?: RetrieveManifestOptions): Promise<RetrieveResultPackage> {
         if (options?.parallel) {
             const results = await mapAsyncParallel(
                 this.splitManifest(manifest, options.parallelChunkSize ?? 1),
@@ -158,6 +186,51 @@ export class SalesforceDeployService {
         } else {
             return this.getRetrieveTask(manifest, options)(options?.cancellationToken);
         }
+    }
+
+    private async readMetadata(manifest: PackageManifest, options: RetrieveManifestOptions): Promise<RetrieveResultPackage> {
+        const connection = await this.salesforce.getJsForceConnection();
+        const retrieved = new SalesforcePackage(options.apiVersion ?? this.salesforce.getApiVersion());
+
+        for (const type of directReadTypes) {
+            const typeNames = manifest.list(type);
+            if (!typeNames.length) {
+                continue;
+            }
+            for (const names of chunkArray(typeNames, readMetadataBatchSize)) {
+                if (options.cancellationToken?.isCancellationRequested) {
+                    break;
+                }
+                for (const record of await connection.metadata.read(type, names)) {
+                    if (!record?.fullName) {
+                        continue;
+                    }
+                    const { fullName, ...fields } = record;
+                    const fileName = this.getReadMetadataPath(type, fullName);
+                    const data = XML.stringify({
+                        [type]: {
+                            ...(type === 'RecordType' ? { fullName: fullName.split('.')[1] } : {}),
+                            ...fields,
+                            $: { xmlns: MetadataRegistry.xmlNamespace }
+                        }
+                    }, 4);
+                    retrieved.setPackageData(fileName, { componentType: type, componentName: fullName, data });
+                    retrieved.addManifestEntry(type, fullName);
+                }
+            }
+        }
+
+        return retrieved.toRetrieveResultPackage();
+    }
+
+    private getReadMetadataPath(type: DirectReadType, fullName: string): string {
+        const metadataType = MetadataRegistry.getMetadataType(type)!;
+        if (type === 'RecordType') {
+            const [objectName, recordTypeName] = fullName.split('.');
+            const recordType = MetadataRegistry.getDecomposition(metadataType, type)!;
+            return posix.join(metadataType.directoryName, objectName, recordType.directoryName, `${recordTypeName}.${recordType.suffix}-meta.xml`);
+        }
+        return posix.join(metadataType.directoryName, `${fullName}.${metadataType.suffix}-meta.xml`);
     }
 
     /**

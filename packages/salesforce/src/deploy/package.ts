@@ -341,7 +341,7 @@ export class SalesforcePackage {
      */
     public getSourceFolder(componentType: string, componentName: string) {
         const metadataInfo = MetadataRegistry.getMetadataType(componentType);
-        const decomposed = metadataInfo?.strategies?.decomposition !== undefined;
+        const decomposed = metadataInfo?.name === componentType && metadataInfo.strategies?.decomposition !== undefined;
         const matchComponentName = metadataInfo?.folderType
             ? componentName.replace(/\/+$/g, '')
             : componentName;

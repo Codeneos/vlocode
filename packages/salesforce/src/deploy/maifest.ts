@@ -237,7 +237,7 @@ export class PackageManifest {
         }
 
         const manifest = new PackageManifest();
-        for (const info of Object.values(asArray(data.types))) {
+        for (const info of asArray(data.types ?? [])) {
             asArray(info.members).forEach(member => manifest.add(info.name, member));
         }
         return manifest;
