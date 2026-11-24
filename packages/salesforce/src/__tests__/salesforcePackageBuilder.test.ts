@@ -46,6 +46,10 @@ describe('SalesforcePackageBuilder', () => {
         'src/lwc/test/__tests__/testHelper.js': 'export const mockData = {};',
         'src/lwc/test/jsconfig.json': '{"compilerOptions": {}}',
         'src/lwc/test/tsconfig.json': '{"compilerOptions": {}}',
+        // LWC in a workspace inside a hidden folder
+        '.worktree/lwc/test/test.js-meta.xml': buildMetadataXml('LightningComponentBundle', { description: 'test', isExposed: false, masterLabel: 'Test' }),
+        '.worktree/lwc/test/test.js': 'import {LightningElement, api} from \'lwc\';',
+        '.worktree/lwc/test/__tests__/test.spec.js': 'describe("test", () => { it("works", () => {}); });',
         // Aura
         'src/aura/test/test.cmp-meta.xml': buildMetadataXml('AuraDefinitionBundle', { description: 'test' }),
         'src/aura/test/test.cmp': '<aura:component></aura:component>',
@@ -194,6 +198,15 @@ describe('SalesforcePackageBuilder', () => {
                 expect(filesAdded).not.toContain('src/lwc/test/__tests__/test.spec.js');
                 expect(filesAdded).not.toContain('src/lwc/test/__tests__/testHelper.js');
                 expect(filesAdded.length).toEqual(4);
+            });
+            it('should exclude __tests__ files when the workspace is inside a hidden folder', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ '.worktree/lwc/test/test.js-meta.xml' ]);
+
+                const filesAdded = normalizePath([ ...(await packageBuilder.build()).files() ]);
+
+                expect(filesAdded).not.toContain('.worktree/lwc/test/__tests__/test.spec.js');
+                expect(filesAdded.length).toEqual(2);
             });
             it('should exclude jsconfig.json and tsconfig.json from the deployable package', async () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);

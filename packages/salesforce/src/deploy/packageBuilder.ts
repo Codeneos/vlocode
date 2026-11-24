@@ -181,6 +181,7 @@ export class SalesforcePackageBuilder {
     /** 
      * Generic ignore patterns for common unwanted files and directories. 
      * TODO: load this from .forceignore when present on the fs
+     * Uses `dot: true` so `**` also matches when the workspace is inside a hidden folder (i.e. `~/.codex/worktrees/...`)
      * */
     private ignorePatterns = [
         '**/.DS_Store',
@@ -189,7 +190,7 @@ export class SalesforcePackageBuilder {
         '**/lwc/**/__tests__/**',
         '**/lwc/**/jsconfig.json',
         '**/lwc/**/tsconfig.json',
-    ].map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true }));
+    ].map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true, dot: true }));
 
     @inject(Logger) private readonly logger: Logger;
     @inject(FileSystem) private readonly fs: FileSystem;
