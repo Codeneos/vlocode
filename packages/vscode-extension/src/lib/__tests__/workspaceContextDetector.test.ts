@@ -11,13 +11,17 @@ describe('WorkspaceContextDetector', () => {
     };
     const previousFolders = vscode.workspace.workspaceFolders;
     let changeHandler: (uri: vscode.Uri) => Promise<void>;
+    let createHandler: (uri: vscode.Uri) => Promise<void>;
 
     beforeEach(() => {
         jest.useFakeTimers();
         Object.defineProperty(vscode.workspace, 'workspaceFolders', { configurable: true, value: [workspaceFolder] });
         (vscode.workspace as any).onDidChangeWorkspaceFolders = jest.fn().mockReturnValue({ dispose: jest.fn() });
         (vscode.workspace as any).createFileSystemWatcher = jest.fn().mockReturnValue({
-            onDidCreate: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+            onDidCreate: jest.fn((handler: typeof createHandler) => {
+                createHandler = handler;
+                return { dispose: jest.fn() };
+            }),
             onDidChange: jest.fn((handler: typeof changeHandler) => {
                 changeHandler = handler;
                 return { dispose: jest.fn() };
@@ -61,5 +65,46 @@ describe('WorkspaceContextDetector', () => {
                 '/workspace/classes/Test.cls': true
             })
         );
+    });
+
+    it('updates the context for created files when the workspace is inside a hidden folder', async () => {
+        const hiddenWorkspace = { name: 'worktree', uri: vscode.Uri.file('/home/.codex/worktrees/project') };
+        Object.defineProperty(vscode.workspace, 'workspaceFolders', { configurable: true, value: [hiddenWorkspace] });
+        const fileSystem = new MemoryFileSystem({ '/home/.codex/worktrees/project/existing.txt': '' });
+        const detector = new WorkspaceContextDetector('metadata', file => file.name.endsWith('.cls'), fileSystem, Logger.null);
+
+        const initialized = detector.initialize();
+        await jest.runAllTimersAsync();
+        await initialized;
+        jest.clearAllMocks();
+
+        await fileSystem.outputFile('/home/.codex/worktrees/project/classes/Test.cls', '');
+        await createHandler(vscode.Uri.file('/home/.codex/worktrees/project/classes/Test.cls'));
+        await jest.runAllTimersAsync();
+
+        expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+            'setContext',
+            'vlocode.metadata',
+            expect.objectContaining({
+                '/home/.codex/worktrees/project/classes': true,
+                '/home/.codex/worktrees/project/classes/Test.cls': true
+            })
+        );
+    });
+
+    it('ignores created files inside hidden folders of the workspace', async () => {
+        const fileSystem = new MemoryFileSystem({ '/workspace/existing.txt': '' });
+        const detector = new WorkspaceContextDetector('metadata', file => file.name.endsWith('.cls'), fileSystem, Logger.null);
+
+        const initialized = detector.initialize();
+        await jest.runAllTimersAsync();
+        await initialized;
+        jest.clearAllMocks();
+
+        await fileSystem.outputFile('/workspace/.sfdx/classes/Test.cls', '');
+        await createHandler(vscode.Uri.file('/workspace/.sfdx/classes/Test.cls'));
+        await jest.runAllTimersAsync();
+
+        expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
     });
 });

@@ -93,7 +93,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     }
 
     private async onDidDeleteHandler(filePath: string) {
-        if (this.ignorePattern.test(filePath)) {
+        if (this.isIgnored(filePath)) {
             return;
         }
         this.removeAll(filePath);
@@ -107,7 +107,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     }
 
     private async onDidCreateHandler(filePath: string) {
-        if (this.ignorePattern.test(filePath)) {
+        if (this.isIgnored(filePath)) {
             return;
         }
 
@@ -127,6 +127,15 @@ export class WorkspaceContextDetector implements vscode.Disposable {
             this.add(folderFiles);
             this.scheduleContextUpdate();
         }
+    }
+
+    /**
+     * Test the ignore pattern only on the part below the workspace folder, so workspaces that are inside
+     * a hidden folder themselves (i.e. `~/.codex/worktrees/...`) still receive file updates.
+     */
+    private isIgnored(filePath: string) {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.find(folder => filePath.startsWith(folder.uri.fsPath + path.sep));
+        return this.ignorePattern.test(workspaceFolder ? filePath.slice(workspaceFolder.uri.fsPath.length) : filePath);
     }
 
     private add(filePath: string | string[]) {
