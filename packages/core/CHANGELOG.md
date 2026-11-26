@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.5.0](https://github.com/Codeneos/vlocode/compare/v2.4.6...v2.5.0) (2026-11-26)
+
+### Bug Fixes
+
+* **core:** make FileSystem find reliable across file systems and Windows ([e1cc30c](https://github.com/Codeneos/vlocode/commit/e1cc30c469ef57e1c5777f733bb54a8dd77b5c76))
+* **core:** resolve inject.new dependencies per container ([6b5eaa4](https://github.com/Codeneos/vlocode/commit/6b5eaa4ca0cc6597d5ca04593b1c1c003912909e))
+* **export:** keep case-renamed files and changed values in stable writes ([f5c7f2a](https://github.com/Codeneos/vlocode/commit/f5c7f2a596e9eed9be82db6a5fcca719f4de4ea8))
+
+### Features
+
+* **export:** keep datapack files stable when saving and exporting ([c69b00b](https://github.com/Codeneos/vlocode/commit/c69b00bdddc0f39419779dea0e17b582ee2b3dde))
+
 ## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
 
 **Note:** Version bump only for package @vlocode/core

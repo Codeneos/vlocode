@@ -4,6 +4,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.5.0](https://github.com/Codeneos/vlocode/compare/v2.4.6...v2.5.0) (2026-11-26)
+
+**Note:** Version bump only for package @vlocode/apex
+
 ## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
 
 **Note:** Version bump only for package @vlocode/apex

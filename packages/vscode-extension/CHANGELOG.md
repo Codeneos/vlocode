@@ -4,6 +4,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.5.0](https://github.com/codeneos/vlocode/compare/v2.4.6...v2.5.0) (2026-11-26)
+
+### Bug Fixes
+
+* **core:** make FileSystem find reliable across file systems and Windows ([e1cc30c](https://github.com/codeneos/vlocode/commit/e1cc30c469ef57e1c5777f733bb54a8dd77b5c76))
+* **editor:** assign missing Data Mapper global keys ([f4612f9](https://github.com/codeneos/vlocode/commit/f4612f95cc1acd4fcd1b8d59e395a19099d7e99d))
+* **editor:** keep open datapack source documents stable when syncing from the designer ([f4dfa5e](https://github.com/codeneos/vlocode/commit/f4dfa5e91de5840abbe140a202771c42e5853bc4))
+* **export:** keep case-renamed files and changed values in stable writes ([f5c7f2a](https://github.com/codeneos/vlocode/commit/f5c7f2a596e9eed9be82db6a5fcca719f4de4ea8))
+* **export:** make record array ordering deterministic ([04ceee1](https://github.com/codeneos/vlocode/commit/04ceee1b3986be0a423a7d702a3c2f15447da2f5))
+* **export:** match portable datapacks and omit blank script versions ([685d301](https://github.com/codeneos/vlocode/commit/685d30101b2167c7320aba63c7eb8dc13c53bf7e))
+* **extension:** detect metadata files in workspaces inside hidden folders ([8196d78](https://github.com/codeneos/vlocode/commit/8196d786f4079e7e35756474bf082d468117fb5b))
+* **extension:** recognize recreated files in context menus ([a8a0f55](https://github.com/codeneos/vlocode/commit/a8a0f55f7a397e80aedf0636d5f93e69f60480fe))
+* **extension:** synchronize modern Salesforce org selections ([e38f7dd](https://github.com/codeneos/vlocode/commit/e38f7dd89e5ff77e3a46d019d2610d6a33f60849))
+* **metadata:** remove obsolete SFDX retrieval warning ([f65f609](https://github.com/codeneos/vlocode/commit/f65f609ad17ab4e098fdbd5e768aabc9f931ce07))
+* **metadata:** retrieve and refresh profiles and record types through readMetadata ([1ae6642](https://github.com/codeneos/vlocode/commit/1ae664292a8a60a703592d941547f394c08921ab))
+* **refresh:** report missing records and empty export results ([7ec8f63](https://github.com/codeneos/vlocode/commit/7ec8f63cd6a828bcb51744d32685648481443277))
+* **service:** handle OAuth token refresh failure with user notification ([6f90deb](https://github.com/codeneos/vlocode/commit/6f90deb8e4fafac616576213f1d609fa6249924b))
+* **test:** use local vscode mock in job data provider test ([06b0afe](https://github.com/codeneos/vlocode/commit/06b0afe7a3290e737d27f467795cca20a213d6ec))
+
+### Features
+
+* **export:** allow choosing direct or classic export mode ([e0bcab2](https://github.com/codeneos/vlocode/commit/e0bcab2178e58ca14855c49f7493ad5ad983e6e4))
+* **export:** keep datapack files stable when saving and exporting ([c69b00b](https://github.com/codeneos/vlocode/commit/c69b00bdddc0f39419779dea0e17b582ee2b3dde))
+* **export:** share job execution between CLI and VS Code ([660e077](https://github.com/codeneos/vlocode/commit/660e0772748df84f95601a85375101e364ba7643))
+* **extension:** lint datapacks in a persistent background worker ([b164b0c](https://github.com/codeneos/vlocode/commit/b164b0c3a22751d7b78959965330509478a40ff3))
+* make production deploy test level configurable ([#467](https://github.com/codeneos/vlocode/issues/467)) ([46457a1](https://github.com/codeneos/vlocode/commit/46457a1909e1d2fdd4a2dc479ecfe3786d8517d5))
+
 ## [2.4.6](https://github.com/codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
 
 ### Bug Fixes

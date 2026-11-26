@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.5.0](https://github.com/Codeneos/vlocode/compare/v2.4.6...v2.5.0) (2026-11-26)
+
+### Bug Fixes
+
+* **core:** make FileSystem find reliable across file systems and Windows ([e1cc30c](https://github.com/Codeneos/vlocode/commit/e1cc30c469ef57e1c5777f733bb54a8dd77b5c76))
+* **deploy:** exclude LWC jest tests in workspaces inside hidden folders ([73f5b82](https://github.com/Codeneos/vlocode/commit/73f5b829ae7b927061baea1ad79767388e3201c4))
+* **metadata:** retrieve and refresh profiles and record types through readMetadata ([1ae6642](https://github.com/Codeneos/vlocode/commit/1ae664292a8a60a703592d941547f394c08921ab))
+
+### Features
+
+* make production deploy test level configurable ([#467](https://github.com/Codeneos/vlocode/issues/467)) ([46457a1](https://github.com/Codeneos/vlocode/commit/46457a1909e1d2fdd4a2dc479ecfe3786d8517d5))
+
 ## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
 
 **Note:** Version bump only for package @vlocode/salesforce

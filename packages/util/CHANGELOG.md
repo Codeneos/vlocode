@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.5.0](https://github.com/Codeneos/vlocode/compare/v2.4.6...v2.5.0) (2026-11-26)
+
+### Bug Fixes
+
+* **export:** keep case-renamed files and changed values in stable writes ([f5c7f2a](https://github.com/Codeneos/vlocode/commit/f5c7f2a596e9eed9be82db6a5fcca719f4de4ea8))
+* **extension:** synchronize modern Salesforce org selections ([e38f7dd](https://github.com/Codeneos/vlocode/commit/e38f7dd89e5ff77e3a46d019d2610d6a33f60849))
+* **util:** enable PKCE for Salesforce web login ([b56d426](https://github.com/Codeneos/vlocode/commit/b56d426c75b9f61bddbff54c021e24d2ae054ad7))
+
+### Features
+
+* **export:** keep datapack files stable when saving and exporting ([c69b00b](https://github.com/Codeneos/vlocode/commit/c69b00bdddc0f39419779dea0e17b582ee2b3dde))
+
 ## [2.4.4](https://github.com/Codeneos/vlocode/compare/v2.4.3...v2.4.4) (2026-09-02)
 
 ### Features

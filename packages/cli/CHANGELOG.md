@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.5.0](https://github.com/Codeneos/vlocode/compare/v2.4.6...v2.5.0) (2026-11-26)
+
+### Features
+
+* **export:** keep datapack files stable when saving and exporting ([c69b00b](https://github.com/Codeneos/vlocode/commit/c69b00bdddc0f39419779dea0e17b582ee2b3dde))
+* **export:** share job execution between CLI and VS Code ([660e077](https://github.com/Codeneos/vlocode/commit/660e0772748df84f95601a85375101e364ba7643))
+
 ## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
 
 ### Features

@@ -4,6 +4,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.5.0](https://github.com/Codeneos/vlocode/compare/v2.4.6...v2.5.0) (2026-11-26)
+
+### Bug Fixes
+
+* **deploy:** report missing datapack dependencies instead of hiding them as cascade failures ([dbb811c](https://github.com/Codeneos/vlocode/commit/dbb811c368ac3ab9fdd07f5b53f6cdd28d6243b4))
+* **editor:** keep open datapack source documents stable when syncing from the designer ([f4dfa5e](https://github.com/Codeneos/vlocode/commit/f4dfa5e91de5840abbe140a202771c42e5853bc4))
+* **export:** make record array ordering deterministic ([04ceee1](https://github.com/Codeneos/vlocode/commit/04ceee1b3986be0a423a7d702a3c2f15447da2f5))
+* **export:** preserve null Data Mapper header values ([60184ef](https://github.com/Codeneos/vlocode/commit/60184efd966fab2a54cf6cc8f4756025abea80b4))
+
+### Features
+
+* **export:** keep datapack files stable when saving and exporting ([c69b00b](https://github.com/Codeneos/vlocode/commit/c69b00bdddc0f39419779dea0e17b582ee2b3dde))
+* **export:** share job execution between CLI and VS Code ([660e077](https://github.com/Codeneos/vlocode/commit/660e0772748df84f95601a85375101e364ba7643))
+
 ## [2.4.6](https://github.com/Codeneos/vlocode/compare/v2.4.5...v2.4.6) (2026-09-16)
 
 ### Bug Fixes
