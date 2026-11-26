@@ -340,7 +340,8 @@ export class Container {
         try {
             const typeCtor: TypeConstructor = (ctor[symbols.OriginalCtor] ?? ctor);
             const instanceGuid = this.generateServiceGuid(typeCtor);
-            const resolvedArgs = this.resolveParameters(typeCtor, args, instanceGuid);
+            // Copy the arguments; `@inject.new` passes its recorded arguments which must not keep resolved dependencies
+            const resolvedArgs = this.resolveParameters(typeCtor, [...args], instanceGuid);
             const instance = this.decorateWithServiceGuid(
                 new typeCtor(...resolvedArgs), 
                 instanceGuid

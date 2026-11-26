@@ -344,6 +344,33 @@ describe('container', () => {
             constructor(@inject.new({ enabled: true }) public service: ServiceWithOptions) {}
         }
 
+        it('should resolve inject.new dependencies from each creating container', () => {
+            // Arrange
+            class Dependency {}
+            @injectable.transient()
+            class ServiceWithDependency {
+                constructor(public options: { enabled: boolean }, public dependency: Dependency) {}
+            }
+            class ServiceWithNewDependency {
+                constructor(@inject.new({ enabled: true }) public service: ServiceWithDependency) {}
+            }
+            const rootContainer = new Container(Logger.null);
+            const containerA = rootContainer.create();
+            const containerB = rootContainer.create();
+            const dependencyA = new Dependency();
+            const dependencyB = new Dependency();
+            containerA.add(dependencyA, { provides: [Dependency] });
+            containerB.add(dependencyB, { provides: [Dependency] });
+
+            // Act
+            const instanceA = containerA.new(ServiceWithNewDependency);
+            const instanceB = containerB.new(ServiceWithNewDependency);
+
+            // Assert
+            expect(instanceA.service.dependency).toBe(dependencyA);
+            expect(instanceB.service.dependency).toBe(dependencyB);
+        });
+
         it('should inject the creating container for Container-typed properties', () => {
             // Arrange
             const rootContainer = new Container(Logger.null);
