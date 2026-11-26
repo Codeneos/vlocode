@@ -7,6 +7,7 @@ import { createOrgServices } from '../lib/orgSession';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import VlocodeService from '../lib/vlocodeService';
 import { DatapackEditorProvider } from '../webviews/datapackEditorProvider';
+import { ModelBackedDocument } from '../webviews/modelBackedDocument';
 
 jest.mock('vscode', () => ({
     ...jest.requireActual('../__mocks__/vscode'),
@@ -20,6 +21,12 @@ jest.mock('vscode', () => ({
 interface EditorOperations {
     writeDatapack(datapack: VlocityDatapack): Promise<void>;
     serializeSourceDocuments(document: { datapack: VlocityDatapack }): Promise<Map<string, string>>;
+    syncDesignerToOpenSourceDocuments(document: ModelBackedDocument<unknown, any>): Promise<void>;
+}
+
+/** Shape of the `WorkspaceEdit` mock that records replacements */
+interface RecordedWorkspaceEdit {
+    replacements: Array<{ newText: string }>;
 }
 
 describe('editor DataPack writer ownership', () => {
@@ -31,6 +38,7 @@ describe('editor DataPack writer ownership', () => {
     let selectedServices: Container;
     let fileSystem: MemoryFileSystem;
     let editor: EditorOperations;
+    let config: { stableFileWrites: boolean };
 
     function loadDefinitions(services: Container, suffix: string): void {
         services.get(DatapackExportDefinitionStore).load({
@@ -64,13 +72,14 @@ describe('editor DataPack writer ownership', () => {
 
     beforeEach(() => {
         fileSystem = new MemoryFileSystem({ [header]: '{}' });
+        config = { stableFileWrites: true };
         root = container.create();
         root.registerProvider(Logger, () => Logger.null);
         root.add(fileSystem, { provides: [FileSystem] });
         root.add({} as VlocodeContext, { provides: [VlocodeContext] });
         root.add({
             get services() { return selectedServices; },
-            config: { stableFileWrites: true },
+            get config() { return config; },
             registerDisposable: jest.fn(),
             onUsernameChanged: jest.fn().mockReturnValue({ dispose: jest.fn() })
         } as unknown as VlocodeService, { provides: [VlocodeService] });
@@ -92,7 +101,60 @@ describe('editor DataPack writer ownership', () => {
         orgA.dispose();
         orgB.dispose();
         root.dispose();
+        vscode.workspace.textDocuments = [];
         jest.clearAllMocks();
+    });
+
+    describe('designer to source synchronization', () => {
+        async function syncOpenHeader(headerText: string): Promise<string | undefined> {
+            const uri = vscode.Uri.file(header);
+            vscode.workspace.textDocuments = [{
+                uri,
+                getText: () => headerText,
+                positionAt: (offset: number) => new vscode.Position(0, offset)
+            }] as typeof vscode.workspace.textDocuments;
+            const document = new ModelBackedDocument(uri, { model: {}, uri, datapack: datapack() });
+            document.sourceFiles.add(header);
+
+            await editor.syncDesignerToOpenSourceDocuments(document);
+
+            const [edit] = jest.mocked(vscode.workspace.applyEdit).mock.calls[0] ?? [];
+            return (edit as unknown as RecordedWorkspaceEdit | undefined)?.replacements[0]?.newText;
+        }
+
+        async function generatedHeader(): Promise<Record<string, unknown>> {
+            const sources = await editor.serializeSourceDocuments({ datapack: datapack() });
+            return JSON.parse(sources.get(header)!);
+        }
+
+        function reverseKeys(value: Record<string, unknown>): Record<string, unknown> {
+            return Object.fromEntries(Object.entries(value).reverse());
+        }
+
+        it('keeps the property order of an open source document and only updates changed values', async () => {
+            const generated = await generatedHeader();
+            const existing = reverseKeys({ ...generated, Name: 'Previous' });
+
+            const synced = await syncOpenHeader(JSON.stringify(existing, undefined, 2));
+
+            expect(synced).toBe(JSON.stringify(reverseKeys(generated), undefined, 2));
+        });
+
+        it('leaves an open source document untouched when it only differs in property order', async () => {
+            const synced = await syncOpenHeader(JSON.stringify(reverseKeys(await generatedHeader()), undefined, 2));
+
+            expect(synced).toBeUndefined();
+            expect(vscode.workspace.applyEdit).not.toHaveBeenCalled();
+        });
+
+        it('replaces an open source document with the generated text when stable writes are disabled', async () => {
+            config.stableFileWrites = false;
+            const generated = (await editor.serializeSourceDocuments({ datapack: datapack() })).get(header);
+
+            const synced = await syncOpenHeader(JSON.stringify(reverseKeys(await generatedHeader()), undefined, 2));
+
+            expect(synced).toBe(generated);
+        });
     });
 
     it('uses each session\'s custom layout for source synchronization and saving', async () => {

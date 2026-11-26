@@ -5,7 +5,7 @@ import { randomBytes } from 'crypto';
 import { FileSystem } from '@vlocode/core';
 import { escapeHtmlEntity, getErrorMessage, isRecord } from '@vlocode/util';
 import { DatapackInfoService, DatapackLoader, type VlocityDatapack } from '@vlocode/vlocity';
-import { DatapackWriter } from '@vlocode/vlocity-deploy';
+import { DatapackWriter, mergeDatapackFileText } from '@vlocode/vlocity-deploy';
 import VlocodeService from '../lib/vlocodeService';
 import { VlocodeContext } from '../lib/vlocodeContext';
 import { ModelBackedDocument } from './modelBackedDocument';
@@ -388,8 +388,17 @@ export abstract class ModelBackedEditorProvider<
             if (!this.isOpenSourceDocument(document, textDocument)) {
                 continue;
             }
-            const nextText = sourceTexts.get(WorkspaceDocuments.normalizeFileName(textDocument.uri.fsPath));
-            if (nextText === undefined || textDocument.getText() === nextText) {
+            const fileName = WorkspaceDocuments.normalizeFileName(textDocument.uri.fsPath);
+            const generatedText = sourceTexts.get(fileName);
+            if (generatedText === undefined) {
+                continue;
+            }
+            // The generated text has sorted keys; merge it so the document keeps its order like a stable write
+            const currentText = textDocument.getText();
+            const nextText = this.service.config.stableFileWrites === false
+                ? generatedText
+                : mergeDatapackFileText(fileName, currentText, generatedText);
+            if (currentText === nextText) {
                 continue;
             }
             edit.replace(textDocument.uri, WorkspaceDocuments.fullDocumentRange(textDocument), nextText);

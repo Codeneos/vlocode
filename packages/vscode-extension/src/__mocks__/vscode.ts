@@ -59,6 +59,14 @@ export class Range {
 
 export class Selection extends Range {}
 
+export class WorkspaceEdit {
+    public readonly replacements: Array<{ uri: Uri; range: Range; newText: string }> = [];
+
+    public replace(uri: Uri, range: Range, newText: string): void {
+        this.replacements.push({ uri, range, newText });
+    }
+}
+
 export class DocumentLink {
     public tooltip?: string;
 

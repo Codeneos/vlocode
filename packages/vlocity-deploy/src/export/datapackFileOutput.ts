@@ -1,6 +1,6 @@
-import { resolve } from 'path';
+import { extname, resolve } from 'path';
 import { describeStableWrite, FileSystem, Logger, StableFileWriter } from '@vlocode/core';
-import { mapAsync, type StableJsonMergeOptions } from '@vlocode/util';
+import { mapAsync, updateJsonText, type StableJsonMergeOptions } from '@vlocode/util';
 
 export interface DatapackFileOutputOptions {
     /**
@@ -34,6 +34,20 @@ export const datapackJsonMergeOptions: StableJsonMergeOptions = {
         return field && `${field}:${element[field]}`;
     }
 };
+
+/**
+ * Merge the updated text of a datapack file into its current text the way a stable write does, for files that
+ * are edited as text instead of written to disk; JSON files keep their property and record order.
+ * @param file Name of the file, used to detect JSON files
+ * @param currentText Current text of the file
+ * @param updatedText Updated text of the file
+ * @returns Text to replace the current text with
+ */
+export function mergeDatapackFileText(file: string, currentText: string, updatedText: string): string {
+    return extname(file).toLowerCase() === '.json'
+        ? updateJsonText(currentText, updatedText, datapackJsonMergeOptions).text
+        : updatedText;
+}
 
 /**
  * Write the files of a datapack into a folder.
