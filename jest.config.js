@@ -2,6 +2,7 @@
 export default {
   preset: 'ts-jest',
   testRegex: "src/.*(\\.)(test)\\.[jt]sx?$",
+  modulePathIgnorePatterns: [ '<rootDir>/.claude/' ],
   collectCoverage: true,
   coverageProvider: 'v8',
   coverageDirectory: 'coverage',

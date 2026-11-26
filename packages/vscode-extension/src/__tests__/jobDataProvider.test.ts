@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import { JobDataProvider } from '../treeViews/dataProviders/jobDataProvider';
 
 jest.mock('vscode', () => {
-    const vscode = jest.requireActual('vscode');
+    const vscode = jest.requireActual('../__mocks__/vscode');
     return { ...vscode, workspace: { ...vscode.workspace, findFiles: jest.fn() } };
 });
 
